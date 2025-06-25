@@ -1,5 +1,3 @@
-DROP TABLE coffees;
-
 create table coffees (
     id UUID primary key,
     google_id varchar(255) not null,
