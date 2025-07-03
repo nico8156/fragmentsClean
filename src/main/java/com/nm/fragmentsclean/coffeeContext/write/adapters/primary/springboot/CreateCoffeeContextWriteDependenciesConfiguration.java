@@ -27,6 +27,7 @@ public class CreateCoffeeContextWriteDependenciesConfiguration {
     public GooglePlacesApi googlePlacesApi(){
         return new FakeGooglePlacesApi();
     }
+
     @Bean
     public CoffeeRepository coffeeRepository(SpringCoffeeRepository springCoffeeRepository){
         return new JpaCoffeeRepository(springCoffeeRepository);
