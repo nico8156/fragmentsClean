@@ -1,12 +1,10 @@
-package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases;
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.contentblock;
 
-import com.nm.fragmentsclean.aticleContext.ContentBlock;
-import com.nm.fragmentsclean.aticleContext.ContentValue;
-import com.nm.fragmentsclean.aticleContext.OrderBlock;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ContentBlock;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ContentValue;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.OrderBlock;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ContentBlockRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
-
-import java.util.UUID;
 
 public class CreateContentBlockCommandHandler implements CommandHandler<CreateContenBlockCommand> {
 

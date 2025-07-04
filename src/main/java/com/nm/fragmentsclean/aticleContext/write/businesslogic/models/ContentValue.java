@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.aticleContext;
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.models;
 
 public record ContentValue(String value) {
     public ContentValue {

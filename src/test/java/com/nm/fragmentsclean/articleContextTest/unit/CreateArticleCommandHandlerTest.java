@@ -1,9 +1,9 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.Article;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.fake.FakeArticleRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.CreateArticleCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.CreateArticlecCommandHandler;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticlecCommandHandler;
 
 import org.junit.jupiter.api.Test;
 

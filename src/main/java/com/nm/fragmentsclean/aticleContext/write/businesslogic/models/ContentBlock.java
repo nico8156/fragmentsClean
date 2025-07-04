@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.aticleContext;
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.models;
 
 import java.util.UUID;
 

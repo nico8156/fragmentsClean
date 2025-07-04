@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.fake;
 
-import com.nm.fragmentsclean.aticleContext.Article;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
 
 import java.util.ArrayList;

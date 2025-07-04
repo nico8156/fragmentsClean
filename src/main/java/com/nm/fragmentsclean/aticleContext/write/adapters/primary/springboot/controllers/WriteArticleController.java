@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.aticleContext.write.adapters.primary.springboot.co
 
 
 import com.nm.fragmentsclean.aticleContext.write.adapters.primary.springboot.CommandBus;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.CreateArticleCommand;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

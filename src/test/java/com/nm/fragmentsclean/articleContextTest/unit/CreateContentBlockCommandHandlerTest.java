@@ -1,12 +1,12 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.BlockType;
-import com.nm.fragmentsclean.aticleContext.ContentBlock;
-import com.nm.fragmentsclean.aticleContext.ContentValue;
-import com.nm.fragmentsclean.aticleContext.OrderBlock;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.BlockType;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ContentBlock;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ContentValue;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.OrderBlock;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.fake.FakeContentBlockRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.CreateContenBlockCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.CreateContentBlockCommandHandler;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.contentblock.CreateContenBlockCommand;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.contentblock.CreateContentBlockCommandHandler;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;

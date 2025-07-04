@@ -1,7 +1,7 @@
-package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases;
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article;
 
-import com.nm.fragmentsclean.aticleContext.Article;
-import com.nm.fragmentsclean.aticleContext.Title;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Title;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
 
