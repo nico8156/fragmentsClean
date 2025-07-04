@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
+
 public class MakeLikeCommandHandler implements CommandHandler<MakeLikeCommand> {
 
     FakeLikeRepository fakeLikeRepository;
@@ -18,11 +21,21 @@ public class MakeLikeCommandHandler implements CommandHandler<MakeLikeCommand> {
 
     @Override
     public void execute(MakeLikeCommand command) {
-        //check if this like exist in the repo
-
-        List<Like> existingLikesForUser = new ArrayList<>();
-
-
+        //Check if like -with this userId exists?
+        List<Like> likesWithUserId = fakeLikeRepository.likes.stream().filter(
+                like -> like.toSnapshot().userId().equals(command.userId())
+        ).collect(toList());
+        //Si il y a des likes pour ce user, on cherche si la target(le cafe ) est deja present ?
+        if(likesWithUserId.size() > 0){
+            List<Like> likesWithUserIdAndTargetId =likesWithUserId.stream().filter(
+                    like -> like.toSnapshot().targetId().equals(command.targetId())
+            ).collect(Collectors.toList());
+            System.out.println(likesWithUserIdAndTargetId.size());
+            // si like present pour ce cafe on revoie une exception
+            if (likesWithUserIdAndTargetId.size() > 0){
+                throw new IllegalArgumentException("User already liked this article");
+            }
+        }
 
         Like likeToSave = new Like(
             command.likeId(),
