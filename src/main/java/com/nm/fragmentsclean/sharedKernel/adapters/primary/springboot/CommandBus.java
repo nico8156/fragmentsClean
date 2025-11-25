@@ -1,4 +1,5 @@
-package com.nm.fragmentsclean.coffeeContext.write.adapters.primary.springboot;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
+
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Command;
 import org.springframework.aop.support.AopUtils;

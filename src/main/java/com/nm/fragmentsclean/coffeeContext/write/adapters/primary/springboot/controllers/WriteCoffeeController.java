@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.write.adapters.primary.springboot.controllers;
 
-import com.nm.fragmentsclean.coffeeContext.write.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
