@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepo
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Like;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FakeLikeRepository implements LikeRepository {
 
@@ -34,5 +35,10 @@ public class FakeLikeRepository implements LikeRepository {
                 .filter(Like.LikeSnapshot::active)
                 .filter(s -> s.targetId().equals(targetId))
                 .count();
+    }
+    public List<Like.LikeSnapshot> allSnapshots() {
+        return snapshots.values().stream()
+                .sorted(Comparator.comparing(Like.LikeSnapshot::likeId))
+                .collect(Collectors.toList());
     }
 }
