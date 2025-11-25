@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.crons;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;

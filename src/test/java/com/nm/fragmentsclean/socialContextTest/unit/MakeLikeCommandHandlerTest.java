@@ -84,7 +84,8 @@ public class MakeLikeCommandHandlerTest {
                         USER_ID,
                         TARGET_ID,
                         true,   // actif
-                        Instant.parse("2023-09-30T10:00:00Z")
+                        Instant.parse("2023-09-30T10:00:00Z"),
+                        0
                 )
         );
 
@@ -120,7 +121,8 @@ public class MakeLikeCommandHandlerTest {
                         USER_ID,
                         TARGET_ID,
                         true,
-                        Instant.parse("2023-09-30T10:00:00Z")
+                        Instant.parse("2023-09-30T10:00:00Z"),
+                        0
                 )
         );
 

@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.providers.GooglePlacesApi;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
+
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

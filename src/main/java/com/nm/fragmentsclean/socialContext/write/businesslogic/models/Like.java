@@ -11,7 +11,7 @@ public class Like extends AggregateRoot {
     private final UUID targetId;
     private boolean active;
     private Instant updatedAt;
-    private long version; // version serveur de ce like (pour ce user/target)
+    private long version;
 
     private Like(UUID likeId,
                  UUID userId,
@@ -31,55 +31,55 @@ public class Like extends AggregateRoot {
                                  UUID userId,
                                  UUID targetId,
                                  Instant now) {
-        // nouveau like : pas encore actif, version 0
         return new Like(likeId, userId, targetId, false, now, 0L);
     }
 
-    public static Like fromSnapshot(LikeSnapshot snapshot) {
+    public static Like fromSnapshot(LikeSnapshot snap) {
         return new Like(
-                snapshot.likeId(),
-                snapshot.userId(),
-                snapshot.targetId(),
-                snapshot.active(),
-                snapshot.updatedAt(),
-                snapshot.version()
+                snap.likeId(),
+                snap.userId(),
+                snap.targetId(),
+                snap.active(),
+                snap.updatedAt(),
+                snap.version()
         );
     }
 
     /**
-     * Intention métier : l’utilisateur veut être en état "liked" (true) ou "unliked" (false).
-     * Si l’état ne change pas, on ne publie pas d’event.
-     *
-     * @param value     nouvel état demandé (true = LIKE, false = UNLIKE)
-     * @param commandId id de la commande (idempotence / corrélation)
-     * @param serverNow horodatage serveur (source de vérité temporelle)
-     * @param clientAt  horodatage client de la commande
-     * @param count     total des likes serveur pour ce target APRÈS cette modification
+     * Applique UNIQUEMENT l'état métier local
+     * (sans count, sans event)
      */
-    public void set(boolean value,
-                    UUID commandId,
-                    Instant serverNow,
-                    Instant clientAt,
-                    long count) {
+    public boolean applyState(boolean value, Instant serverNow) {
         if (this.active == value) {
-            return; // rien à faire, donc pas d'événement
+            return false; // aucun changement
         }
 
         this.active = value;
         this.updatedAt = serverNow;
         this.version++;
 
+        return true;
+    }
+
+    /**
+     * Enregistre l'événement après calcul du count
+     */
+    public void registerLikeSetEvent(UUID commandId,
+                                     Instant clientAt,
+                                     long count,
+                                     Instant serverNow) {
+
         registerEvent(new LikeSetEvent(
-                UUID.randomUUID(), // eventId
+                UUID.randomUUID(),   // eventId
                 commandId,
-                this.id,           // likeId (agrégat)
+                this.id,             // likeId
                 this.userId,
                 this.targetId,
-                this.active,       // état serveur après traitement
-                count,             // total des likes pour ce target
-                this.version,      // version actuelle de ce like
-                serverNow,         // occurredAt (serveur)
-                clientAt           // clientAt (venant de la commande)
+                this.active,
+                count,
+                this.version,
+                serverNow,
+                clientAt
         ));
     }
 
@@ -101,6 +101,5 @@ public class Like extends AggregateRoot {
             boolean active,
             Instant updatedAt,
             long version
-    ) {
-    }
+    ){}
 }

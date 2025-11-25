@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.coffeeContext;
+package com.nm.fragmentsclean;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.coffeeContextTest.endtoend.adapters.primary;
 
-import com.nm.fragmentsclean.coffeeContext.FragmentsCleanApplication;
+import com.nm.fragmentsclean.FragmentsCleanApplication;
 import com.nm.fragmentsclean.TestContainers;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
