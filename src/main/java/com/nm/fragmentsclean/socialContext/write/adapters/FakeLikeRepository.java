@@ -28,4 +28,11 @@ public class FakeLikeRepository implements LikeRepository {
     public void save(Like like) {
         snapshots.put(like.toSnapshot().likeId(), like.toSnapshot());
     }
+    @Override
+    public long countByTargetId(UUID targetId) {
+        return snapshots.values().stream()
+                .filter(Like.LikeSnapshot::active)
+                .filter(s -> s.targetId().equals(targetId))
+                .count();
+    }
 }

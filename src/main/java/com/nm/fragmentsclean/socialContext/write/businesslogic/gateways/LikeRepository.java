@@ -12,4 +12,7 @@ public interface LikeRepository {
     Optional<Like> byUserIdAndTargetId(UUID userId, UUID targetId);
 
     void save(Like like);
+
+    long countByTargetId(UUID targetId); // <--- ajouté
+
 }

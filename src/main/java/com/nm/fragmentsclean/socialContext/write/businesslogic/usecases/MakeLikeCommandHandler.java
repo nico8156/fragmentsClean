@@ -40,15 +40,16 @@ public class MakeLikeCommandHandler implements CommandHandler<MakeLikeCommand> {
                 || !like.toSnapshot().targetId().equals(command.targetId())) {
             throw new IllegalStateException("LikeId incohérent avec userId/targetId");
         }
-
-        // 3. On applique la commande à l’agrégat (c’est lui qui émet l’event)
-        like.set(command.value(), command.commandId(), now);
-
-        // 4. On persiste l’agrégat
+// load or create Like...
+// persister le like pour que le count soit cohérent :
         likeRepository.save(like);
-
-        // 5. On publie les événements
+// calculer le count après changement :
+        long count = likeRepository.countByTargetId(command.targetId());
+// puis :
+        like.set(command.value(), command.commandId(), now, command.clientAt(), count);
+// et enfin publier les events
         like.domainEvents().forEach(domainEventPublisher::publish);
         like.clearDomainEvents();
+
     }
 }
