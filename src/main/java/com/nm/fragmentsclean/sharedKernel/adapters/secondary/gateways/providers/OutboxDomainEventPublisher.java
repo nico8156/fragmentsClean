@@ -1,11 +1,12 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.providers;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.repositories.SpringOutboxEventRepository;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 
 import java.time.Instant;
@@ -35,7 +36,7 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             outbox.setPayloadJson(payload);
             outbox.setOccurredAt(event.occurredAt());
             outbox.setCreatedAt(Instant.now());
-            outbox.setStatus("PENDING");
+            outbox.setStatus(OutboxStatus.PENDING);
             outbox.setRetryCount(0);
 
             outboxRepo.save(outbox);

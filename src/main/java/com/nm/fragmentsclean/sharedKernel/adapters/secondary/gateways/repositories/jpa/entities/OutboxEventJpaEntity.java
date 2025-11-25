@@ -1,5 +1,6 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.repositories.jpa.entities;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities;
 
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import jakarta.persistence.*;
 
 import java.time.Instant;
@@ -38,7 +39,7 @@ public class OutboxEventJpaEntity {
     private Instant createdAt;    // horodatage insertion outbox
 
     @Column(nullable = false)
-    private String status;        // "PENDING" | "SENT" | "FAILED"
+    private OutboxStatus status;        // "PENDING" | "SENT" | "FAILED"
 
     @Column(nullable = false)
     private Integer retryCount;
@@ -57,7 +58,7 @@ public class OutboxEventJpaEntity {
                                 String payloadJson,
                                 Instant occurredAt,
                                 Instant createdAt,
-                                String status,
+                                OutboxStatus status,
                                 Integer retryCount) {
         this.eventId = eventId;
         this.eventType = eventType;
@@ -109,7 +110,7 @@ public class OutboxEventJpaEntity {
         return createdAt;
     }
 
-    public String getStatus() {
+    public OutboxStatus getStatus() {
         return status;
     }
 
@@ -151,7 +152,7 @@ public class OutboxEventJpaEntity {
         this.createdAt = createdAt;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(OutboxStatus status) {
         this.status = status;
     }
 

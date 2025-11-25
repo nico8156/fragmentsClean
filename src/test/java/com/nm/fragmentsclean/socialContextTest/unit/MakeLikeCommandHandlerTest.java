@@ -1,8 +1,7 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.adapters.FakeLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Like;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
