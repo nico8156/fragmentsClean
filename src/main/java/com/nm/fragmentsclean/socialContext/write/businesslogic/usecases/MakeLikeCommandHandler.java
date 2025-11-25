@@ -1,48 +1,54 @@
 package com.nm.fragmentsclean.socialContext.write.businesslogic.usecases;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
-import com.nm.fragmentsclean.socialContext.write.adpaters.FakeLikeRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Like;
+import jakarta.transaction.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
-
-
+@Transactional
 public class MakeLikeCommandHandler implements CommandHandler<MakeLikeCommand> {
 
-    FakeLikeRepository fakeLikeRepository;
+    private final LikeRepository likeRepository;
+    private final DomainEventPublisher domainEventPublisher;
+    private final DateTimeProvider dateTimeProvider;
 
-    public MakeLikeCommandHandler(FakeLikeRepository fakeLikeRepository) {
-        this.fakeLikeRepository = fakeLikeRepository;
+    public MakeLikeCommandHandler(LikeRepository likeRepository,
+                                  DomainEventPublisher domainEventPublisher,
+                                  DateTimeProvider dateTimeProvider) {
+        this.likeRepository = likeRepository;
+        this.domainEventPublisher = domainEventPublisher;
+        this.dateTimeProvider = dateTimeProvider;
     }
 
     @Override
     public void execute(MakeLikeCommand command) {
-        //Check if like -with this userId exists?
-        List<Like> likesWithUserId = fakeLikeRepository.likes.stream().filter(
-                like -> like.toSnapshot().userId().equals(command.userId())
-        ).collect(toList());
-        //Si il y a des likes pour ce user, on cherche si la target(le cafe ) est deja present ?
-        if(likesWithUserId.size() > 0){
-            List<Like> likesWithUserIdAndTargetId =likesWithUserId.stream().filter(
-                    like -> like.toSnapshot().targetId().equals(command.targetId())
-            ).collect(Collectors.toList());
-            System.out.println(likesWithUserIdAndTargetId.size());
-            // si like present pour ce cafe on revoie une exception
-            if (likesWithUserIdAndTargetId.size() > 0){
-                throw new IllegalArgumentException("User already liked this article");
-            }
+        var now = dateTimeProvider.now();
+
+        // 1. On récupère l’agrégat par son ID envoyé par le front
+        var like = likeRepository.byId(command.likeId())
+                .orElseGet(() -> Like.createNew(
+                        command.likeId(),
+                        command.userId(),
+                        command.targetId(),
+                        now
+                ));
+
+        // 2. Optionnel : cohérence (l’ID ne doit pas changer de user/target)
+        if (!like.toSnapshot().userId().equals(command.userId())
+                || !like.toSnapshot().targetId().equals(command.targetId())) {
+            throw new IllegalStateException("LikeId incohérent avec userId/targetId");
         }
 
-        Like likeToSave = new Like(
-            command.likeId(),
-            command.userId(),
-            command.targetId()
-        );
-        fakeLikeRepository.save(likeToSave);
+        // 3. On applique la commande à l’agrégat (c’est lui qui émet l’event)
+        like.set(command.value(), command.commandId(), now);
 
+        // 4. On persiste l’agrégat
+        likeRepository.save(like);
+
+        // 5. On publie les événements
+        like.domainEvents().forEach(domainEventPublisher::publish);
+        like.clearDomainEvents();
     }
 }
