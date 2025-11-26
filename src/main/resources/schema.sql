@@ -31,3 +31,19 @@ CREATE TABLE outbox_events (
                                status       VARCHAR(50) NOT NULL,
                                retry_count  INTEGER NOT NULL
 );
+
+create table comments (
+                          comment_id  uuid         not null primary key,
+                          target_id   uuid         not null,
+                          author_id   uuid         not null,
+                          parent_id   uuid         null,
+
+                          body        varchar(4000) not null,
+
+                          created_at  timestamp    not null,
+                          edited_at   timestamp    null,
+                          deleted_at  timestamp    null,
+
+                          moderation  varchar(32)  not null,
+                          version     bigint       not null
+);

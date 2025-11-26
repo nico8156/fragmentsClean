@@ -1,3 +1,5 @@
+resumer PERSO pour l'instant !!!
+
 Résumé pipeline LIKE complet (avec ta contrainte “void HTTP”)
 
 

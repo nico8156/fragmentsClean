@@ -3,7 +3,9 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
@@ -40,9 +42,16 @@ public class SocialContextWriteDependenciesConfiguration {
     public LikeRepository likeRepositoryJpa(SpringLikeRepository springLikeRepository) {
         return new JpaLikeRepository(springLikeRepository);
     }
-    @Bean
-    public CommentRepository commentRepository() {
+    @Bean("commentRepository")
+    @Profile("fake")
+    public CommentRepository fakeCommentRepository() {
         return new FakeCommentRepository();
+    }
+
+    @Bean("commentRepository")
+    @Profile("database")
+    public CommentRepository jpaCommentRepository(SpringCommentRepository springCommentRepository) {
+        return new JpaCommentRepository(springCommentRepository);
     }
 
     @Bean
