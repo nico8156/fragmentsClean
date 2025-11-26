@@ -1,6 +1,4 @@
-package com.nm.fragmentsclean.socialContext.read;
-
-import com.nm.fragmentsclean.socialContext.read.projections.CommentView;
+package com.nm.fragmentsclean.socialContext.read.projections;
 
 import java.time.Instant;
 import java.util.List;

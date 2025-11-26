@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.socialContextTest.unit;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
-import com.nm.fragmentsclean.socialContext.write.adapters.FakeCommentRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.UpdateCommentCommand;

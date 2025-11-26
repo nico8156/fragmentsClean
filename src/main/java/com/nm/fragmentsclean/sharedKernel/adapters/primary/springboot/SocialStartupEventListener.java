@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.socialContext.read.GetLikeStatusQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.GetLikeSummaryQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.ListCommentsQueryHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.CreateCommentCommandHandler;
@@ -24,6 +25,7 @@ public class SocialStartupEventListener {
     private final UpdateCommentCommandHandler updateCommentCommandHandler;
     private final DeleteCommentCommandHandler deleteCommentCommandHandler;
     private final GetLikeSummaryQueryHandler getLikeSummaryQueryHandler;
+    private final GetLikeStatusQueryHandler getLikeStatusQueryHandler;
     private final ListCommentsQueryHandler listCommentsQueryHandler;
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
@@ -32,6 +34,7 @@ public class SocialStartupEventListener {
                                       UpdateCommentCommandHandler updateCommentCommandHandler,
                                       DeleteCommentCommandHandler deleteCommentCommandHandler,
                                       GetLikeSummaryQueryHandler getLikeSummaryQueryHandler,
+                                      GetLikeStatusQueryHandler getLikeStatusQueryHandler,
                                       ListCommentsQueryHandler listCommentsQueryHandler) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -40,6 +43,7 @@ public class SocialStartupEventListener {
         this.updateCommentCommandHandler = updateCommentCommandHandler;
         this.deleteCommentCommandHandler = deleteCommentCommandHandler;
         this.getLikeSummaryQueryHandler = getLikeSummaryQueryHandler;
+        this.getLikeStatusQueryHandler = getLikeStatusQueryHandler;
         this.listCommentsQueryHandler = listCommentsQueryHandler;
     }
 
@@ -56,7 +60,8 @@ public class SocialStartupEventListener {
 
         List<QueryHandler<?,?>> queryHandlers = List.of(
                 getLikeSummaryQueryHandler,
-                listCommentsQueryHandler
+                listCommentsQueryHandler,
+                getLikeStatusQueryHandler
         );
         querryBus.registerQuerryHandlers(queryHandlers);
     }

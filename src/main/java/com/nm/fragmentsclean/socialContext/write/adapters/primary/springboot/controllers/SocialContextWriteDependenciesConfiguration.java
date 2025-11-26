@@ -1,8 +1,10 @@
 package com.nm.fragmentsclean.socialContext.write.adapters.primary.springboot.controllers;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.socialContext.write.adapters.FakeCommentRepository;
-import com.nm.fragmentsclean.socialContext.write.adapters.FakeLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.CreateCommentCommandHandler;
@@ -13,6 +15,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 
@@ -24,10 +27,18 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 })
 public class SocialContextWriteDependenciesConfiguration {
 
+    // Profil "fake" : utilisé par défaut / pour les tests unitaires si tu veux
     @Bean
-    public LikeRepository likeRepository() {
-        // pour l’instant on reste en fake ; tu pourras passer en JPA plus tard
+    @Profile("fake")
+    public LikeRepository likeRepositoryFake() {
         return new FakeLikeRepository();
+    }
+
+    // Profil "database" : utilisé pour les tests avec Postgres / JPA
+    @Bean
+    @Profile("database")
+    public LikeRepository likeRepositoryJpa(SpringLikeRepository springLikeRepository) {
+        return new JpaLikeRepository(springLikeRepository);
     }
     @Bean
     public CommentRepository commentRepository() {

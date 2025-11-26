@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.socialContext.write.adapters; // (typo adapter plus tard)
+package com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake; // (typo adapter plus tard)
 
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Like;

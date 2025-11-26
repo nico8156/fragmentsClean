@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.socialContext.write.adapters;
+package com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake;
 
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;

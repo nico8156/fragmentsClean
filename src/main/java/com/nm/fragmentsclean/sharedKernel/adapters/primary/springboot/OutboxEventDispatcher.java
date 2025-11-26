@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.springframework.scheduling.annotation.Scheduled;

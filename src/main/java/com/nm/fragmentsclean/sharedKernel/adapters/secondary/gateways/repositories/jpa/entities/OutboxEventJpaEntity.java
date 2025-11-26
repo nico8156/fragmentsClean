@@ -38,8 +38,9 @@ public class OutboxEventJpaEntity {
     @Column(nullable = false)
     private Instant createdAt;    // horodatage insertion outbox
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OutboxStatus status;        // "PENDING" | "SENT" | "FAILED"
+    private OutboxStatus status;
 
     @Column(nullable = false)
     private Integer retryCount;

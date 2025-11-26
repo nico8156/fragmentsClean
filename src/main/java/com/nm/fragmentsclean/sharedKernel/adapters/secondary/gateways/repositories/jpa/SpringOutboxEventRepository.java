@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
