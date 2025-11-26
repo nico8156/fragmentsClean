@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class WebSocketOutboxEventSender implements OutboxEventSender {
+    //TODO attention plusieurs bean de OutboxEventSender ici et LoggingOutboxEventSender
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
 

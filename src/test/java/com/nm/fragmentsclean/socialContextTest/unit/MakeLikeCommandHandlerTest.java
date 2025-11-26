@@ -28,6 +28,7 @@ public class MakeLikeCommandHandlerTest {
 
     MakeLikeCommandHandler handler;
 
+
     @BeforeEach
     void setup() {
         dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T10:00:00Z");
