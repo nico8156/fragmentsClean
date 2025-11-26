@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.write.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.coffeeContext.read.GetCoffeesQueryHandler;
-import com.nm.fragmentsclean.coffeeContext.read.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;

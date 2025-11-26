@@ -40,6 +40,10 @@ public class SharedKernelDependenciesConfiguration {
     public CommandBus commandBus() {
         return new CommandBus();
     }
+    @Bean
+    public QuerryBus querryBus()  {
+        return new QuerryBus();
+    }
 
     @Bean
     public DateTimeProvider dateTimeProvider() {

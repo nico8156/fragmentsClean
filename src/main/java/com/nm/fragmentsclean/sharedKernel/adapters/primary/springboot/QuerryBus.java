@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.coffeeContext.read;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Query;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
