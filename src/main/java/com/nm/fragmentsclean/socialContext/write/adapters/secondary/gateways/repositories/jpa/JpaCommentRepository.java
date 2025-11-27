@@ -3,9 +3,12 @@ package com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.re
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.entities.CommentJpaEntity;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
+import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
+
+
 
 public class JpaCommentRepository implements CommentRepository {
 
