@@ -104,3 +104,15 @@ CREATE TABLE IF NOT EXISTS social_comments_projection (
 
 CREATE INDEX IF NOT EXISTS idx_social_comments_projection_target_created_at
     ON social_comments_projection (target_id, created_at);
+
+
+create table if not exists users (
+                                     user_id    uuid primary key,
+                                     created_at timestamp with time zone not null,
+                                     updated_at timestamp with time zone not null,
+                                     display_name varchar(255) not null,
+                                     avatar_url  varchar(512),
+                                     bio         text,
+                                     locale      varchar(20) not null,
+                                     version     bigint not null
+);

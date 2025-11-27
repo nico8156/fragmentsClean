@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Configuration;
 public class AuthJpaIntegrationTestConfiguration {
 
     @Bean
-    public IdentityRepository identityRepository(SpringIdentityRepository springIdentityRepository) {
+    public IdentityRepository identityRepository(SpringIdentityRepository springIdentityRepository){
         return new JpaIdentityRepository(springIdentityRepository);
     }
+
 }

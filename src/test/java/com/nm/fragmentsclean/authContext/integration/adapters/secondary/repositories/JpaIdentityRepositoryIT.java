@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.authContext.integration.adapters.secondary.repositories;
 
 
+import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.JpaIdentityRepository;
 import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
 import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.entities.IdentityJpaEntity;
 import com.nm.fragmentsclean.authContext.businesslogic.gateways.IdentityRepository;
@@ -9,6 +10,11 @@ import com.nm.fragmentsclean.authContext.businesslogic.models.Identity;
 import com.nm.fragmentsclean.authContext.integration.AbstractAuthJpaIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,7 +22,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
 public class JpaIdentityRepositoryIT extends AbstractAuthJpaIntegrationTest {
+
 
     private static final UUID ID       = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID USER_ID  = UUID.fromString("22222222-2222-2222-2222-222222222222");
