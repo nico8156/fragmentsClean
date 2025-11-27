@@ -1,11 +1,14 @@
 package com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto;
 
+import java.time.Instant;
 import java.util.List;
 
 public record RefreshSessionRequestDto(
-        String provider,          // "google"
-        AuthTokensDto tokens,
-        String userId,            // peut être null pour first login
+        String provider,
+        String providerUserId,
+        String idToken,
+        String accessToken,
         List<String> scopes,
-        long establishedAt        // epoch ms côté client
+        Instant sessionEstablishedAt,
+        Instant sessionExpiresAt
 ) {}

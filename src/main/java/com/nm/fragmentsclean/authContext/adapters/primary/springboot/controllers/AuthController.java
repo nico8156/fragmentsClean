@@ -2,28 +2,32 @@ package com.nm.fragmentsclean.authContext.adapters.primary.springboot.controller
 
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.RefreshSessionRequestDto;
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.RefreshSessionResponseDto;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+
+import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.mapper.RefreshSessionDtoMapper;
+import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommand;
+import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommandHandler;
+import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionResult;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final com.nm.fragmentsclean.auth.businesslogic.usecases.RefreshSessionCommandHandler refreshSessionCommandHandler;
-    private final AuthDtoMapper mapper;
+    private final RefreshSessionCommandHandler refreshSessionCommandHandler;
 
-    public AuthController(com.nm.fragmentsclean.auth.businesslogic.usecases.RefreshSessionCommandHandler handler, AuthDtoMapper mapper) {
-        this.refreshSessionCommandHandler = handler;
-        this.mapper = mapper;
+    public AuthController(RefreshSessionCommandHandler refreshSessionCommandHandler) {
+        this.refreshSessionCommandHandler = refreshSessionCommandHandler;
     }
 
     @PostMapping("/session/refresh")
-    public RefreshSessionResponseDto refreshSession(@RequestBody RefreshSessionRequestDto request) {
+    public ResponseEntity<RefreshSessionResponseDto> refreshSession(
+            @RequestBody RefreshSessionRequestDto body
+    ) {
+        RefreshSessionCommand command = RefreshSessionDtoMapper.toCommand(body);
+        RefreshSessionResult result = refreshSessionCommandHandler.execute(command);
+        RefreshSessionResponseDto response = RefreshSessionDtoMapper.toResponse(result);
 
-        var cmd = mapper.toCommand(request);
-        var result = refreshSessionCommandHandler.handle(cmd);
-        return mapper.toDto(result);
+        return ResponseEntity.ok(response);
     }
 }
