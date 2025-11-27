@@ -1,7 +1,15 @@
 -- =========================================================
 --  SCHEMA DE BASE
 -- =========================================================
-
+CREATE TABLE IF NOT EXISTS identities (
+                                          id               UUID PRIMARY KEY,
+                                          user_id          UUID         NOT NULL,
+                                          provider         VARCHAR(50)  NOT NULL,
+                                          provider_user_id VARCHAR(255) NOT NULL,
+                                          email            VARCHAR(255),
+                                          created_at       TIMESTAMPTZ  NOT NULL,
+                                          last_auth_at     TIMESTAMPTZ
+);
 -- Coffee shops
 CREATE TABLE IF NOT EXISTS coffees (
                                        id                  UUID PRIMARY KEY,

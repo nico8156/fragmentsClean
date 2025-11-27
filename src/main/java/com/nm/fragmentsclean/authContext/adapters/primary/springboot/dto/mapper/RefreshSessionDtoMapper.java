@@ -1,10 +1,13 @@
 package com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.mapper;
 
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.*;
+import com.nm.fragmentsclean.authContext.businesslogic.models.AppSessionTokens;
 import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommand;
 import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionResult;
-// à adapter selon l’emplacement réel :
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.AppUserSnapshot;
+import com.nm.fragmentsclean.userContext.businesslogic.readmodels.BadgeProgressSnapshot;
+import com.nm.fragmentsclean.userContext.businesslogic.readmodels.LinkedIdentitySnapshot;
+import com.nm.fragmentsclean.userContext.businesslogic.readmodels.UserPreferencesSnapshot;
 
 public final class RefreshSessionDtoMapper {
 
@@ -14,7 +17,6 @@ public final class RefreshSessionDtoMapper {
     // ---------- DTO -> Command ----------
 
     public static RefreshSessionCommand toCommand(RefreshSessionRequestDto dto) {
-        // On dérive les epoch seconds à partir des Instant, si présents
         long expiresAt = dto.sessionExpiresAt() != null
                 ? dto.sessionExpiresAt().getEpochSecond()
                 : 0L;
@@ -24,23 +26,21 @@ public final class RefreshSessionDtoMapper {
                 : null;
 
         return new RefreshSessionCommand(
-                dto.provider(),            // provider
-                dto.accessToken(),         // accessToken (tel que reçu du provider)
-                dto.idToken(),             // idToken
+                dto.provider(),
+                dto.accessToken(),
+                dto.idToken(),
                 null,                      // refreshToken (pas encore géré côté front)
-                expiresAt,                 // expiresAt (provider)
-                issuedAt,                  // issuedAt (provider)
-                dto.scopes(),              // scopes
-                null,                      // existingUserId (pour plus tard, quand tu voudras le passer explicitement)
-                dto.sessionEstablishedAt() // clientEstablishedAt : quand le client a établi la session
+                expiresAt,
+                issuedAt,
+                dto.scopes(),
+                null,                      // existingUserId (pour plus tard)
+                dto.sessionEstablishedAt() // clientEstablishedAt
         );
     }
-
 
     // ---------- Result -> DTO ----------
 
     public static RefreshSessionResponseDto toResponse(RefreshSessionResult result) {
-        // Là aussi, adapte les getters aux vrais noms de ton Result
         AppUserDto userDto = toAppUserDto(result.user());
         AuthTokensDto tokensDto = toAuthTokensDto(result.tokens());
 
@@ -52,7 +52,7 @@ public final class RefreshSessionDtoMapper {
         );
     }
 
-    // ---------- Helpers pour snapshots -> DTO existants ----------
+    // ---------- Helpers : snapshots -> DTO ----------
 
     private static AppUserDto toAppUserDto(AppUserSnapshot snapshot) {
         return new AppUserDto(
@@ -73,10 +73,7 @@ public final class RefreshSessionDtoMapper {
         );
     }
 
-
-    private static LinkedIdentityDto toLinkedIdentityDto(
-            com.nm.fragmentsclean.userContext.businesslogic.readmodels.LinkedIdentitySnapshot snapshot
-    ) {
+    private static LinkedIdentityDto toLinkedIdentityDto(LinkedIdentitySnapshot snapshot) {
         return new LinkedIdentityDto(
                 snapshot.id(),
                 snapshot.provider(),
@@ -87,20 +84,7 @@ public final class RefreshSessionDtoMapper {
         );
     }
 
-    private static BadgeProgressDto toBadgeProgressDto(
-            com.nm.fragmentsclean.userContext.businesslogic.readmodels.BadgeProgressSnapshot snapshot
-    ) {
-        return new BadgeProgressDto(
-                snapshot.exploration(),
-                snapshot.gout(),
-                snapshot.social(),
-                snapshot.unlockedBadges()
-        );
-    }
-
-    private static UserPreferencesDto toUserPreferencesDto(
-            com.nm.fragmentsclean.userContext.businesslogic.readmodels.UserPreferencesSnapshot snapshot
-    ) {
+    private static UserPreferencesDto toUserPreferencesDto(UserPreferencesSnapshot snapshot) {
         return new UserPreferencesDto(
                 snapshot.locale(),
                 snapshot.marketingOptIn(),
@@ -110,10 +94,16 @@ public final class RefreshSessionDtoMapper {
         );
     }
 
+    private static BadgeProgressDto toBadgeProgressDto(BadgeProgressSnapshot snapshot) {
+        return new BadgeProgressDto(
+                snapshot.exploration(),
+                snapshot.gout(),
+                snapshot.social(),
+                snapshot.unlockedBadges()
+        );
+    }
 
-    private static AuthTokensDto toAuthTokensDto(
-            com.nm.fragmentsclean.authContext.businesslogic.models.AppSessionTokens tokens
-    ) {
+    private static AuthTokensDto toAuthTokensDto(AppSessionTokens tokens) {
         return new AuthTokensDto(
                 tokens.accessToken(),
                 tokens.idToken(),

@@ -2,7 +2,6 @@ package com.nm.fragmentsclean.authContext.adapters.primary.springboot.controller
 
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.RefreshSessionRequestDto;
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.RefreshSessionResponseDto;
-
 import com.nm.fragmentsclean.authContext.adapters.primary.springboot.dto.mapper.RefreshSessionDtoMapper;
 import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommand;
 import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommandHandler;

@@ -5,7 +5,6 @@ import java.util.List;
 
 public record RefreshSessionRequestDto(
         String provider,
-        String providerUserId,
         String idToken,
         String accessToken,
         List<String> scopes,
