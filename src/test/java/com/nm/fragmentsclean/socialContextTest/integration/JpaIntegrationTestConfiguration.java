@@ -16,8 +16,10 @@ public class JpaIntegrationTestConfiguration {
     public LikeRepository likeRepository(SpringLikeRepository springLikeRepository) {
         return new JpaLikeRepository(springLikeRepository);
     }
-//    @Bean
-//    public CommentRepository commentRepository(SpringCommentRepository springCommentRepository) {
-//        return new JpaCommentRepository(springCommentRepository);
-//    }
+    //TODO clarifier cette histoire de context ... analyser pourqyoi avec le like repo il n'y a pas de conflict ...
+    // ici on doit suppromer le bean pour faire passer les e2e
+    @Bean
+    public CommentRepository commentRepository(SpringCommentRepository springCommentRepository) {
+        return new JpaCommentRepository(springCommentRepository);
+    }
 }

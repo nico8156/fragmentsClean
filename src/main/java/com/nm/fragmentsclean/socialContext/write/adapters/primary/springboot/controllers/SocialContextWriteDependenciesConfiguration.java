@@ -42,13 +42,12 @@ public class SocialContextWriteDependenciesConfiguration {
     public LikeRepository likeRepositoryJpa(SpringLikeRepository springLikeRepository) {
         return new JpaLikeRepository(springLikeRepository);
     }
-    @Bean("commentRepository")
+
     @Profile("fake")
     public CommentRepository fakeCommentRepository() {
         return new FakeCommentRepository();
     }
 
-    @Bean("commentRepository")
     @Profile("database")
     public CommentRepository jpaCommentRepository(SpringCommentRepository springCommentRepository) {
         return new JpaCommentRepository(springCommentRepository);
