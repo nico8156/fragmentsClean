@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.authContext.e2e;
 
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.entities.IdentityJpaEntity;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.entities.IdentityJpaEntity;
 import com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa.SpringUserRepository;
 import com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa.entities.UserJpaEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -46,6 +47,29 @@ class RefreshSessionControllerIT extends AbstractAuthBaseE2E {
         springIdentityRepository.deleteAll();
         springUserRepository.deleteAll();
     }
+    @Test
+    void should_create_user_and_identity_on_first_login_without_refresh() throws Exception {
+
+        String body = """
+    {
+        "provider": "google",
+        "idToken": "VALID_FAKE_TOKEN",
+        "scopes": ["profile","email"]
+    }
+    """;
+
+        mockMvc.perform(
+                        post("/api/auth/session/login")
+                                .contentType(APPLICATION_JSON)
+                                .content(body)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tokens.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.user.id").isNotEmpty())
+                .andExpect(jsonPath("$.user.identities", hasSize(1)))
+                .andExpect(jsonPath("$.provider").value("google"));
+    }
+
 
     @Test
     void should_create_user_and_identity_on_first_login() throws Exception {
@@ -138,5 +162,6 @@ class RefreshSessionControllerIT extends AbstractAuthBaseE2E {
 
                 .andExpect(jsonPath("$.provider").value(PROVIDER));
     }
+
 
 }

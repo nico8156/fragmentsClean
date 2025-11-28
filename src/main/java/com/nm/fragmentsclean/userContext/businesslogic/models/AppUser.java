@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.userContext.businesslogic.models;
 
-import com.nm.fragmentsclean.authContext.businesslogic.models.Identity;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.Identity;
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.AppUserSnapshot;
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.BadgeProgressSnapshot;
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.LinkedIdentitySnapshot;

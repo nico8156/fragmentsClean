@@ -1,13 +1,13 @@
 package com.nm.fragmentsclean.authContext.unit;
 
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.fake.FakeJwtTokenGenerator;
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.fake.FakeOAuthIdTokenVerifier;
-import com.nm.fragmentsclean.authContext.businesslogic.gateways.IdentityRepository;
-import com.nm.fragmentsclean.authContext.businesslogic.models.AppSessionTokens;
-import com.nm.fragmentsclean.authContext.businesslogic.models.Identity;
-import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommand;
-import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionCommandHandler;
-import com.nm.fragmentsclean.authContext.businesslogic.usecases.RefreshSessionResult;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.fake.FakeJwtTokenGenerator;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.fake.FakeOAuthIdTokenVerifier;
+import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.IdentityRepository;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.AppSessionTokens;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.Identity;
+import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionCommand;
+import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionCommandHandler;
+import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionResult;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;

@@ -1,20 +1,14 @@
 package com.nm.fragmentsclean.authContext.integration.adapters.secondary.repositories;
 
 
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.JpaIdentityRepository;
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.entities.IdentityJpaEntity;
-import com.nm.fragmentsclean.authContext.businesslogic.gateways.IdentityRepository;
-import com.nm.fragmentsclean.authContext.businesslogic.models.Identity;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.entities.IdentityJpaEntity;
+import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.IdentityRepository;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.Identity;
 
 import com.nm.fragmentsclean.authContext.integration.AbstractAuthJpaIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 import java.util.List;

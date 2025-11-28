@@ -1,8 +1,8 @@
 package com.nm.fragmentsclean.authContext.integration;
 
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.JpaIdentityRepository;
-import com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
-import com.nm.fragmentsclean.authContext.businesslogic.gateways.IdentityRepository;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.JpaIdentityRepository;
+import com.nm.fragmentsclean.authContext.write.adapters.secondary.gateways.repositories.jpa.SpringIdentityRepository;
+import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.IdentityRepository;
 import com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa.JpaUserRepository;
 import com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa.SpringUserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
