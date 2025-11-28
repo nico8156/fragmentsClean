@@ -15,9 +15,9 @@ class AuthContextWriteE2EConfiguration {
     public DateTimeProvider authTestDateTimeProvider() {
         return new DeterministicDateTimeProvider();
     }
-    @Primary
-    @Bean
-    public OutboxEventSender testOutboxEventSender() {
-        return new LoggingOutboxEventSender();
-    }
+//    @Primary
+//    @Bean
+//    public OutboxEventSender testOutboxEventSender() {
+//        return new LoggingOutboxEventSender();
+//    }
 }

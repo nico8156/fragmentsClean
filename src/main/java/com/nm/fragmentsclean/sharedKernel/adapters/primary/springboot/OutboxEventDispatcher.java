@@ -1,42 +1,78 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Component
 public class OutboxEventDispatcher {
 
-    private final SpringOutboxEventRepository outboxRepo;
-    private final OutboxEventSender eventSender;
+    private static final Logger log = LoggerFactory.getLogger(OutboxEventDispatcher.class);
 
-    public OutboxEventDispatcher(SpringOutboxEventRepository outboxRepo,
-                                 OutboxEventSender eventSender) {
-        this.outboxRepo = outboxRepo;
-        this.eventSender = eventSender;
+    private static final int MAX_RETRY = 10;
+
+    private final SpringOutboxEventRepository outboxRepository;
+    private final OutboxEventSender outboxEventSender;
+
+    public OutboxEventDispatcher(
+            SpringOutboxEventRepository outboxRepository,
+            OutboxEventSender outboxEventSender
+    ) {
+        this.outboxRepository = outboxRepository;
+        this.outboxEventSender = outboxEventSender;
     }
 
-    @Scheduled(fixedDelay = 1000) // toutes les 1s (à ajuster)
+    /**
+     * Tâche périodique : envoie les events PENDING par batch.
+     * Tu peux ajuster fixedDelay via properties.
+     */
+    @Scheduled(fixedDelayString = "${app.outbox.dispatcher.delay-ms:500}")
     @Transactional
-    public void dispatch() {
-        var pendingEvents = outboxRepo.findTop100ByStatusOrderByIdAsc(OutboxStatus.PENDING);
+    public void dispatchPending() {
+        List<OutboxEventJpaEntity> pending =
+                outboxRepository.findTop50ByStatusOrderByIdAsc(OutboxStatus.PENDING);
 
-        for (var outboxEvent : pendingEvents) {
+        if (pending.isEmpty()) {
+            return;
+        }
+
+        for (OutboxEventJpaEntity event : pending) {
             try {
-                eventSender.send(outboxEvent);
+                // On délègue tout au sender : il reçoit directement l’entity JPA
+                outboxEventSender.send(event);
 
-                outboxEvent.setStatus(OutboxStatus.SENT);
-                outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
+                event.setStatus(OutboxStatus.SENT);
+                // tu peux aussi remettre retryCount à 0 si tu veux
+                outboxRepository.save(event);
 
             } catch (Exception e) {
-                // Politique simple : FAIL + retryCount++
-                outboxEvent.setStatus(OutboxStatus.FAILED);
-                outboxEvent.setRetryCount(outboxEvent.getRetryCount() + 1);
-                // logger l'erreur, etc.
+                log.error("Failed to send outbox event id={} type={}",
+                        event.getId(), event.getEventType(), e);
+                handleFailure(event);
             }
         }
+    }
+
+    private void handleFailure(OutboxEventJpaEntity event) {
+        int currentRetry = event.getRetryCount() != null ? event.getRetryCount() : 0;
+        currentRetry++;
+        event.setRetryCount(currentRetry);
+
+        if (currentRetry >= MAX_RETRY) {
+            event.setStatus(OutboxStatus.FAILED);
+        } else {
+            // on le laisse en PENDING pour un retry futur
+            event.setStatus(OutboxStatus.PENDING);
+        }
+
+        outboxRepository.save(event);
     }
 }

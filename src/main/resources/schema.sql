@@ -42,26 +42,6 @@ CREATE INDEX IF NOT EXISTS idx_likes_target_active
 CREATE INDEX IF NOT EXISTS idx_likes_user_target
     ON likes (user_id, target_id);
 
-
--- Outbox (event streaming)
-CREATE TABLE IF NOT EXISTS outbox_events (
-                                             id             BIGSERIAL PRIMARY KEY,
-                                             event_id       VARCHAR(100) NOT NULL UNIQUE,
-                                             event_type     VARCHAR(100) NOT NULL,
-                                             aggregate_type VARCHAR(100) NOT NULL,
-                                             aggregate_id   VARCHAR(100) NOT NULL,
-                                             stream_key     VARCHAR(200) NOT NULL,
-                                             payload_json   TEXT NOT NULL,
-                                             occurred_at    TIMESTAMPTZ NOT NULL,
-                                             created_at     TIMESTAMPTZ NOT NULL,
-                                             status         VARCHAR(50) NOT NULL,
-                                             retry_count    INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_outbox_status_created_at
-    ON outbox_events (status, created_at);
-
-
 -- Comments (write model)
 CREATE TABLE IF NOT EXISTS comments (
                                         comment_id   UUID          NOT NULL PRIMARY KEY,
@@ -116,3 +96,30 @@ create table if not exists users (
                                      locale      varchar(20) not null,
                                      version     bigint not null
 );
+
+CREATE TABLE IF NOT EXISTS outbox_events (
+                               id              BIGSERIAL PRIMARY KEY,          -- clé interne, cursor
+
+                               event_id        VARCHAR(50)  NOT NULL UNIQUE,   -- UUID métier (string)
+                               event_type      VARCHAR(255) NOT NULL,          -- FQCN de l'event
+                               aggregate_type  VARCHAR(100) NOT NULL,          -- ex: "User"
+                               aggregate_id    VARCHAR(100) NOT NULL,          -- ex: userId.toString()
+                               stream_key      VARCHAR(255) NOT NULL,          -- ex: "user:{userId}"
+
+                               payload_json    TEXT        NOT NULL,           -- @Lob String
+
+                               occurred_at     TIMESTAMPTZ NOT NULL,           -- Instant
+                               created_at      TIMESTAMPTZ NOT NULL,           -- Instant
+
+                               status          VARCHAR(32) NOT NULL,           -- OutboxStatus (enum string)
+                               retry_count     INTEGER     NOT NULL DEFAULT 0
+);
+
+-- -- Index utiles pour le dispatcher (batch sur PENDING, dans l'ordre d'id)
+-- CREATE INDEX idx_outbox_events_status_id
+--     ON outbox_events (status, id);
+--
+-- -- Optionnel : routing / replays par stream
+-- CREATE INDEX idx_outbox_events_stream_key_id
+--     ON outbox_events (stream_key, id);
+

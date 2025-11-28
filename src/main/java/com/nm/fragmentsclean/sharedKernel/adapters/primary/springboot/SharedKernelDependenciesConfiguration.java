@@ -2,6 +2,7 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.OutboxDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.JpaOutboxEventRepsitory;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -26,8 +27,14 @@ public class SharedKernelDependenciesConfiguration {
 
     @Bean
     public DomainEventPublisher domainEventPublisher(SpringOutboxEventRepository outboxRepo,
-                                                     ObjectMapper objectMapper) {
-        return new OutboxDomainEventPublisher(outboxRepo, objectMapper);
+                                                     ObjectMapper objectMapper,
+                                                     DateTimeProvider dateTimeProvider) {
+        return new OutboxDomainEventPublisher(outboxRepo, objectMapper, dateTimeProvider);
+    }
+
+    @Bean
+    public JpaOutboxEventRepsitory jpaOutboxEventRepository(SpringOutboxEventRepository springOutboxEventRepository) {
+        return new JpaOutboxEventRepsitory(springOutboxEventRepository);
     }
 
     @Bean

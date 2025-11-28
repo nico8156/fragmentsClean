@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+@Primary
 @Component
 public class LoggingOutboxEventSender implements OutboxEventSender {
     private static final Logger log = LoggerFactory.getLogger(LoggingOutboxEventSender.class);

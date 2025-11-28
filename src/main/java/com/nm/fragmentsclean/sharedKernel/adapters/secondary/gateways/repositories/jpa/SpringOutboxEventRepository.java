@@ -8,5 +8,6 @@ import java.util.List;
 
 public interface SpringOutboxEventRepository extends JpaRepository<OutboxEventJpaEntity,Long> {
     List<OutboxEventJpaEntity> findTop100ByStatusOrderByIdAsc(OutboxStatus status);
+    List<OutboxEventJpaEntity> findTop50ByStatusOrderByIdAsc(OutboxStatus status);
 
 }

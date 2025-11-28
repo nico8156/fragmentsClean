@@ -2,68 +2,97 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
 public class OutboxDomainEventPublisher implements DomainEventPublisher {
 
-    private final SpringOutboxEventRepository outboxRepo;
-    private final ObjectMapper objectMapper;
+    private static final Logger log = LoggerFactory.getLogger(OutboxDomainEventPublisher.class);
 
-    public OutboxDomainEventPublisher(SpringOutboxEventRepository outboxRepo,
-                                      ObjectMapper objectMapper) {
-        this.outboxRepo = outboxRepo;
+    private final SpringOutboxEventRepository outboxRepository;
+    private final ObjectMapper objectMapper;
+    private final DateTimeProvider dateTimeProvider;
+
+    public OutboxDomainEventPublisher(
+            SpringOutboxEventRepository outboxRepository,
+            ObjectMapper objectMapper,
+            DateTimeProvider dateTimeProvider
+    ) {
+        this.outboxRepository = outboxRepository;
         this.objectMapper = objectMapper;
+        this.dateTimeProvider = dateTimeProvider;
     }
 
     @Override
     public void publish(DomainEvent event) {
+        log.info(">>> OutboxDomainEventPublisher.publish called with {}", event.getClass().getName());
         try {
-            var payload = objectMapper.writeValueAsString(event);
+            // 1. Payload JSON
+            String payloadJson = objectMapper.writeValueAsString(event);
 
-            var outbox = new OutboxEventJpaEntity();
-            outbox.setEventId(event.eventId().toString());
-            outbox.setEventType(event.getClass().getSimpleName());
-            outbox.setAggregateType(resolveAggregateType(event)); // ex "Like"
-            outbox.setAggregateId(resolveAggregateId(event));     // ex likeId.toString()
-            outbox.setStreamKey(resolveStreamKey(event));         // ex "user:{userId}"
-            outbox.setPayloadJson(payload);
-            outbox.setOccurredAt(event.occurredAt());
-            outbox.setCreatedAt(Instant.now());
-            outbox.setStatus(OutboxStatus.PENDING);
-            outbox.setRetryCount(0);
+            // 2. Timestamps
+            Instant occurredAt = event.occurredAt();
+            Instant createdAt = dateTimeProvider.now();
 
-            outboxRepo.save(outbox);
+            // 3. Type logique de l'event (FQCN)
+            String eventType = event.getClass().getName();
+
+            // 4. Routing / clé de stream
+            String aggregateType;
+            String aggregateId;
+            String streamKey;
+
+            if (event instanceof UserAuthenticatedEvent authEvent) {
+                // Vertical Auth : on route par User
+                aggregateType = "User";
+                aggregateId = authEvent.userId().toString();
+                streamKey = "user:" + aggregateId;
+            } else {
+                // Fallback générique pour les autres events (à spécialiser plus tard)
+                aggregateType = "Unknown";
+                aggregateId = "unknown";
+                streamKey = "global";
+
+                log.warn("Persisting domain event of unknown type in outbox: {}",
+                        event.getClass().getName());
+            }
+
+            OutboxEventJpaEntity entity = new OutboxEventJpaEntity(
+                    event.eventId().toString(),
+                    eventType,
+                    aggregateType,
+                    aggregateId,
+                    streamKey,
+                    payloadJson,
+                    occurredAt,
+                    createdAt,
+                    OutboxStatus.PENDING,
+                    0 // retryCount initial
+            );
+
+            outboxRepository.save(entity);
+
+            log.info(">>> OutboxDomainEventPublisher persisted eventId={} aggregateId={}",
+                    event.eventId(), aggregateId);
+
+            log.debug("Persisted outbox event: eventType={} aggregateType={} aggregateId={}",
+                    eventType, aggregateType, aggregateId);
+
         } catch (JsonProcessingException e) {
-            // tu peux logger / remonter l'erreur
-            throw new RuntimeException(e);
+            log.error("Failed to serialize domain event {} for outbox", event, e);
+            // Ici on choisit de fail fast, à adapter si tu veux éviter de casser la TX
+            throw new RuntimeException("Failed to serialize domain event for outbox", e);
         }
-    }
-
-    private String resolveAggregateType(DomainEvent event) {
-        if (event instanceof LikeSetEvent) return "Like";
-        // autres mappings
-        return "Unknown";
-    }
-
-    private String resolveAggregateId(DomainEvent event) {
-        if (event instanceof LikeSetEvent e) return e.likeId().toString();
-        return "UNKNOWN";
-    }
-
-    private String resolveStreamKey(DomainEvent event) {
-        if (event instanceof LikeSetEvent e) {
-            // on peut choisir différentes clés de stream :
-            return "target:" + e.targetId();  // ex: stream par café
-            // ou "user:" + e.userId();
-        }
-        return "global";
     }
 }
