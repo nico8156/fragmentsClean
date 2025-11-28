@@ -13,8 +13,10 @@ import org.springframework.test.context.TestPropertySources;
 
 @DataJpaTest
 @EnableAutoConfiguration
-@EntityScan("com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.entities")
-@EnableJpaRepositories("com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa")
+@EntityScan({"com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa.entities",
+"com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa.entities"})
+@EnableJpaRepositories({"com.nm.fragmentsclean.authContext.adapters.secondary.gateways.repositories.jpa",
+"com.nm.fragmentsclean.userContext.adapters.secondary.gateways.repositories.jpa"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = {AuthJpaIntegrationTestConfiguration.class})
 @TestPropertySources(

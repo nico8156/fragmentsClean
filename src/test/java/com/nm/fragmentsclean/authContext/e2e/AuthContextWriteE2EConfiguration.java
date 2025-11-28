@@ -1,25 +1,23 @@
-package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.springboot.controllers;
+package com.nm.fragmentsclean.authContext.e2e;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.LoggingOutboxEventSender;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-import java.util.UUID;
-
 @TestConfiguration
-public class SocialContextWriteE2EConfiguration {
-    @Primary
+class AuthContextWriteE2EConfiguration {
+
+
     @Bean
-    public DateTimeProvider deterministicClockProvider() {
+    public DateTimeProvider authTestDateTimeProvider() {
+        // même principe que pour le social : horloge stable
         return new DeterministicDateTimeProvider();
+        // ou, si tu préfères :
+        // return () -> Instant.parse("2024-01-01T10:00:00Z");
     }
     @Primary
     @Bean
@@ -28,11 +26,8 @@ public class SocialContextWriteE2EConfiguration {
         // Exemple si ton interface ressemble à : void send(OutboxEvent event)
         return new LoggingOutboxEventSender();
     }
-    @Primary
-    @Bean
-    public CurrentUserProvider testCurrentUserProvider() {
-        // l'utilisateur "me" utilisé dans tes tests E2E
-        return () -> UUID.fromString("11111111-1111-1111-1111-111111111111");
-    }
 
+    // ⚠️ NE PAS redéclarer ici IdentityRepository / UserRepository / RefreshSessionCommandHandler
+    // Ils viennent de AuthContextDependenciesConfiguration (main)
+    // qui est déjà prise dans le component scan de FragmentsCleanApplication.
 }
