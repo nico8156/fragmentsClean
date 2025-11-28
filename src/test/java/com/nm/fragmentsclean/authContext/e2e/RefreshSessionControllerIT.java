@@ -67,7 +67,9 @@ class RefreshSessionControllerIT extends AbstractAuthBaseE2E {
                 .andExpect(jsonPath("$.tokens.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.user.id").isNotEmpty())
                 .andExpect(jsonPath("$.user.identities", hasSize(1)))
-                .andExpect(jsonPath("$.provider").value("google"));
+                .andExpect(jsonPath("$.provider").value("google"))
+                .andExpect(jsonPath("$.serverTime").isNotEmpty());
+
     }
 
 
@@ -102,7 +104,9 @@ class RefreshSessionControllerIT extends AbstractAuthBaseE2E {
                 .andExpect(jsonPath("$.user.displayName").value(DISPLAY_NAME))
 
                 // Provider renvoyé
-                .andExpect(jsonPath("$.provider").value(PROVIDER));
+                .andExpect(jsonPath("$.provider").value(PROVIDER))
+
+                .andExpect(jsonPath("$.serverTime").isNotEmpty());
         // adapte le reste suivant ton RefreshSessionResponseDto
     }
 
@@ -159,8 +163,8 @@ class RefreshSessionControllerIT extends AbstractAuthBaseE2E {
                 // ⬇️ maintenant on peut raisonnablement attendre la réutilisation du même user
                 .andExpect(jsonPath("$.user.id").value(EXISTING_USER_ID.toString()))
                 .andExpect(jsonPath("$.user.displayName").value(DISPLAY_NAME))
-
-                .andExpect(jsonPath("$.provider").value(PROVIDER));
+                .andExpect(jsonPath("$.provider").value(PROVIDER))
+                .andExpect(jsonPath("$.serverTime").isNotEmpty());
     }
 
 

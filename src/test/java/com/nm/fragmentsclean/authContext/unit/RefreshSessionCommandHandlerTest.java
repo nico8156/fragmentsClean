@@ -9,6 +9,8 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSes
 import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionCommandHandler;
 import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionResult;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.AppUserSnapshot;
@@ -34,6 +36,7 @@ public class RefreshSessionCommandHandlerTest {
     FakeUserRepository userRepository = new FakeUserRepository();
     FakeJwtTokenGenerator jwtTokenGenerator = new FakeJwtTokenGenerator();
     FakeOAuthIdTokenVerifier oAuthIdTokenVerifier = new FakeOAuthIdTokenVerifier();
+    DomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 
     RefreshSessionCommandHandler handler;
 
@@ -47,7 +50,8 @@ public class RefreshSessionCommandHandlerTest {
                 identityRepository,
                 userRepository,
                 jwtTokenGenerator,
-                dateTimeProvider
+                dateTimeProvider,
+                domainEventPublisher
         );
     }
 

@@ -8,9 +8,11 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.OAuthIdTok
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.AppSessionTokens;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.Identity;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.VerifiedOAuthProfile;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;
 
@@ -18,6 +20,7 @@ import com.nm.fragmentsclean.userContext.businesslogic.readmodels.AppUserSnapsho
 import jakarta.transaction.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @Transactional
@@ -29,19 +32,23 @@ public class RefreshSessionCommandHandler
     private final UserRepository userRepository;
     private final JwtTokenGenerator jwtTokenGenerator;
     private final DateTimeProvider dateTimeProvider;
+    private final DomainEventPublisher domainEventPublisher;
+
 
     public RefreshSessionCommandHandler(
             OAuthIdTokenVerifier oauthIdTokenVerifier,
             IdentityRepository identityRepository,
             UserRepository userRepository,
             JwtTokenGenerator jwtTokenGenerator,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            DomainEventPublisher domainEventPublisher
     ) {
         this.oauthIdTokenVerifier = oauthIdTokenVerifier;
         this.identityRepository = identityRepository;
         this.userRepository = userRepository;
         this.jwtTokenGenerator = jwtTokenGenerator;
         this.dateTimeProvider = dateTimeProvider;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     @Override
@@ -107,11 +114,24 @@ public class RefreshSessionCommandHandler
         // 6. Snapshot complet pour le read model / HTTP
         AppUserSnapshot userSnapshot = user.toSnapshot(allIdentitiesForUser);
 
+        var nowResult = dateTimeProvider.now();
+
+        domainEventPublisher.publish(
+                new UserAuthenticatedEvent(
+                        UUID.randomUUID(),   // eventId
+                        now,                 // occurredAt
+                        user.id(),
+                        cmd.provider()
+                )
+        );
+
+
         return new RefreshSessionResult(
                 userSnapshot,
                 appTokens,
                 cmd.provider(),
-                cmd.scopes()
+                cmd.scopes(),
+                nowResult
         );
     }
 }

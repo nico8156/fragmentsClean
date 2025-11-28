@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.LoginComma
 import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -48,14 +49,16 @@ public class AuthContextDependenciesConfiguration {
             IdentityRepository identityRepository,
             UserRepository userRepository,
             JwtTokenGenerator jwtTokenGenerator,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            DomainEventPublisher domainEventPublisher
     ) {
         return new RefreshSessionCommandHandler(
                 oAuthIdTokenVerifier,
                 identityRepository,
                 userRepository,
                 jwtTokenGenerator,
-                dateTimeProvider
+                dateTimeProvider,
+                domainEventPublisher
         );
     }
     @Bean
@@ -64,14 +67,16 @@ public class AuthContextDependenciesConfiguration {
             IdentityRepository identityRepository,
             UserRepository userRepository,
             JwtTokenGenerator jwtTokenGenerator,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            DomainEventPublisher domainEventPublisher
     ){
         return new LoginCommandHandler(
                 oAuthIdTokenVerifier,
                 identityRepository,
                 userRepository,
                 jwtTokenGenerator,
-                dateTimeProvider
+                dateTimeProvider,
+                domainEventPublisher
         );
     }
 

@@ -19,7 +19,7 @@ public final class CurrentUserDtoMapper {
 
         return new CurrentUserResponseDto(
                 userDto,
-                result.serverTime()
+                result.serverTime().toString()
         );
     }
 }

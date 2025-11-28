@@ -44,11 +44,13 @@ public final class RefreshSessionDtoMapper {
         AppUserDto userDto = toAppUserDto(result.user());
         AuthTokensDto tokensDto = toAuthTokensDto(result.tokens());
 
+
         return new RefreshSessionResponseDto(
                 userDto,
                 tokensDto,
                 result.provider(),
-                result.scopes()
+                result.scopes(),
+                result.serverTime().toString()
         );
     }
 

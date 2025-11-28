@@ -6,6 +6,7 @@ public record RefreshSessionResponseDto(
         AppUserDto user,
         AuthTokensDto tokens,
         String provider,
-        List<String> scopes
+        List<String> scopes,
+        String serverTime
 ) {
 }

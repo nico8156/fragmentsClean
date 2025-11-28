@@ -4,10 +4,14 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.IdentityRe
 import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.JwtTokenGenerator;
 import com.nm.fragmentsclean.authContext.write.businesslogic.gateways.OAuthIdTokenVerifier;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.Identity;
+import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;
+
+import java.util.UUID;
 
 public class LoginCommandHandler
         implements CommandHandlerWithResult<LoginCommand, RefreshSessionResult> {
@@ -17,19 +21,23 @@ public class LoginCommandHandler
     private final UserRepository userRepository;
     private final JwtTokenGenerator jwtTokenGenerator;
     private final DateTimeProvider dateTimeProvider;
+    private final DomainEventPublisher domainEventPublisher;   // 👈
+
 
     public LoginCommandHandler(
             OAuthIdTokenVerifier oauthIdTokenVerifier,
             IdentityRepository identityRepository,
             UserRepository userRepository,
             JwtTokenGenerator jwtTokenGenerator,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            DomainEventPublisher domainEventPublisher
     ) {
         this.oauthIdTokenVerifier = oauthIdTokenVerifier;
         this.identityRepository = identityRepository;
         this.userRepository = userRepository;
         this.jwtTokenGenerator = jwtTokenGenerator;
         this.dateTimeProvider = dateTimeProvider;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     @Override
@@ -65,11 +73,23 @@ public class LoginCommandHandler
         // Tokens
         var tokens = jwtTokenGenerator.generateAccessToken(user, identity, now);
 
+        var nowResult = dateTimeProvider.now();
+
+        domainEventPublisher.publish(
+                new UserAuthenticatedEvent(
+                        UUID.randomUUID(),   // eventId
+                        now,                 // occurredAt
+                        user.id(),
+                        cmd.provider()
+                )
+        );
+
         return new RefreshSessionResult(
                 snapshot,
                 tokens,
                 cmd.provider(),
-                cmd.scopes()
+                cmd.scopes(),
+                nowResult
         );
     }
 }

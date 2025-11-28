@@ -4,12 +4,14 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.models.AppSessionTo
 import com.nm.fragmentsclean.userContext.businesslogic.readmodels.AppUserSnapshot;
 
 
+import java.time.Instant;
 import java.util.List;
 
 public record RefreshSessionResult(
         AppUserSnapshot user,
         AppSessionTokens tokens,
         String provider,
-        List<String> scopes
+        List<String> scopes,
+        Instant serverTime
 ) {
 }
