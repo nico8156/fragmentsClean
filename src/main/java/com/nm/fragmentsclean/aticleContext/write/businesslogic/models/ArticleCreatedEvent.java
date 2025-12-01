@@ -1,22 +1,19 @@
-package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article;
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.models;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-public record CreateArticleCommand(
+public record ArticleCreatedEvent(
+        UUID eventId,
         UUID commandId,
-        Instant clientAt,
         UUID articleId,
-
         String slug,
         String locale,
-
         UUID authorId,
         String authorName,
-
         String title,
         String intro,
         String blocksJson,
@@ -27,6 +24,10 @@ public record CreateArticleCommand(
         String coverAlt,
         List<String> tags,
         Integer readingTimeMin,
-        List<UUID> coffeeIds
-) implements Command {
+        List<UUID> coffeeIds,
+        ArticleStatus status,
+        long version,
+        Instant occurredAt,
+        Instant clientAt
+) implements DomainEvent {
 }

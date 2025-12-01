@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.springboot.controllers;
 
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.FakeCurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.LoggingOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
@@ -9,7 +10,6 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class SocialContextWriteE2EConfiguration {
     @Bean
     public CurrentUserProvider testCurrentUserProvider() {
         // l'utilisateur "me" utilisé dans tes tests E2E
-        return () -> UUID.fromString("11111111-1111-1111-1111-111111111111");
+        return new FakeCurrentUserProvider();
     }
 
 }

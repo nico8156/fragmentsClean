@@ -13,4 +13,9 @@ public class FakeCurrentUserProvider implements CurrentUserProvider {
         // À ADAPTER selon la vraie signature de l'interface
         return UUID.fromString("11111111-1111-1111-1111-111111111111");
     }
+
+    @Override
+    public String currentUserName() {
+        return "11111111-1111-1111-1111-111111111111";
+    }
 }

@@ -24,7 +24,6 @@ public class WriteArticleController {
 
     @PostMapping
     public ResponseEntity<Void> CreateArticle(CreateArticleRequest createArticleRequest){
-        commandBus.dispatch(new CreateArticleCommand(createArticleRequest.title()));
         return ResponseEntity.created(URI.create("/articles")).build();
     }
 }
