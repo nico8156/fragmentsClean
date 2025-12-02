@@ -7,7 +7,7 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ArticleBlockView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
 import com.nm.fragmentsclean.aticleContext.read.projections.AuthorView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ImageRefView;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -46,6 +46,10 @@ public class GetArticleBySlugQueryHandler
             // à toi de voir : null, exception métier, etc.
             return null;
         }
+    }
+
+    ArticleView mapRowToArticleView(ResultSet rs) throws SQLException {
+        return mapRow(rs);
     }
 
     private ArticleView mapRow(ResultSet rs) throws SQLException {

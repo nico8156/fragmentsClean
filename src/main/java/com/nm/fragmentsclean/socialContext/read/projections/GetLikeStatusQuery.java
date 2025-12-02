@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContext.read.projections;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Query;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.Query;
 
 import java.util.UUID;
 

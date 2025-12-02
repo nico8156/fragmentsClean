@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -66,6 +67,10 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
 
                 log.warn("Persisting domain event of unknown type in outbox: {}",
                         event.getClass().getName());
+            }
+            if (event instanceof ArticleCreatedEvent ace) {
+                eventType = "ArticleCreatedEvent";
+                payloadJson = objectMapper.writeValueAsString(ace);
             }
 
             OutboxEventJpaEntity entity = new OutboxEventJpaEntity(

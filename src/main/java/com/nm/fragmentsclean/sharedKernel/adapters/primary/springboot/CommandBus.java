@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
 import java.lang.reflect.ParameterizedType;

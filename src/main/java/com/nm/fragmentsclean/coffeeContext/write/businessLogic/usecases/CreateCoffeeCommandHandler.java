@@ -3,7 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.providers.CoffeeFromGoogle;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.providers.GooglePlacesApi;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 
 import java.util.List;
 

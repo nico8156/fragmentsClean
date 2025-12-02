@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.aticleContext.read;
 
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleListView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
@@ -12,9 +12,12 @@ public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery,
     private static final int DEFAULT_LIMIT = 10;
 
     private final JdbcTemplate jdbcTemplate;
+    private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
 
-    public ListArticlesQueryHandler(JdbcTemplate jdbcTemplate) {
+
+    public ListArticlesQueryHandler(JdbcTemplate jdbcTemplate, GetArticleBySlugQueryHandler getArticleBySlugQueryHandler) {
         this.jdbcTemplate = jdbcTemplate;
+        this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
     }
 
     @Override
@@ -52,7 +55,7 @@ public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery,
                 ORDER BY published_at DESC
                 LIMIT ? OFFSET ?
                 """,
-                (rs, rowNum) -> new GetArticleBySlugQueryHandler(jdbcTemplate).mapRowToArticleView(rs),
+                (rs, rowNum) ->  getArticleBySlugQueryHandler.mapRowToArticleView(rs),
                 query.locale(),
                 limit,
                 offset

@@ -32,7 +32,8 @@ public class OutboxEventDispatcher {
 
     /**
      * Tâche périodique : envoie les events PENDING par batch.
-     * Tu peux ajuster fixedDelay via properties.
+     * Tu peux ajuster fixedDelay via properties :
+     *   app.outbox.dispatcher.delay-ms=500
      */
     @Scheduled(fixedDelayString = "${app.outbox.dispatcher.delay-ms:500}")
     @Transactional
@@ -46,12 +47,11 @@ public class OutboxEventDispatcher {
 
         for (OutboxEventJpaEntity event : pending) {
             try {
-                // On délègue tout au sender : il reçoit directement l’entity JPA
-                //TODO logique de deserialisation + cablage + adressage a realiser ...
+                // On délègue au sender : désérialisation + EventBus + handlers
                 outboxEventSender.send(event);
 
                 event.setStatus(OutboxStatus.SENT);
-                // tu peux aussi remettre retryCount à 0 si tu veux
+                event.setRetryCount(0);
                 outboxRepository.save(event);
 
             } catch (Exception e) {
@@ -65,6 +65,7 @@ public class OutboxEventDispatcher {
     private void handleFailure(OutboxEventJpaEntity event) {
         int currentRetry = event.getRetryCount() != null ? event.getRetryCount() : 0;
         currentRetry++;
+
         event.setRetryCount(currentRetry);
 
         if (currentRetry >= MAX_RETRY) {

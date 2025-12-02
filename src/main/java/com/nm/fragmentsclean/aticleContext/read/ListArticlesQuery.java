@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.aticleContext.read;
 
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleListView;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Query;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.Query;
 
 public record ListArticlesQuery(
         String locale,

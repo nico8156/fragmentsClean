@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.socialContext.read;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.GetLikeStatusQuery;
 import com.nm.fragmentsclean.socialContext.read.projections.LikeStatusView;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringLikeRepository;

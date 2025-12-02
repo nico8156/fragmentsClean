@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.aticleContext.read.configuration;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.JpaArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
@@ -29,7 +30,7 @@ public class ArticleContextReadDependenciesConfiguration {
     ListArticlesQueryHandler listArticlesQueryHandler(
             JdbcTemplate jdbcTemplate
     ){
-        return new ListArticlesQueryHandler(jdbcTemplate);
+        return new ListArticlesQueryHandler(jdbcTemplate, getArticleBySlugQueryHandler(jdbcTemplate, new ObjectMapper()) );
     }
 
     @Bean
@@ -44,6 +45,11 @@ public class ArticleContextReadDependenciesConfiguration {
             DomainEventPublisher domainEventPublisher,
             DateTimeProvider dateTimeProvider){
         return new CreateArticleCommandHandler(articleRepository, domainEventPublisher, dateTimeProvider);
+    }
+
+    @Bean
+    GetArticleBySlugQueryHandler getArticleBySlugQueryHandler(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper){
+        return new GetArticleBySlugQueryHandler(jdbcTemplate, objectMapper);
     }
 
 }

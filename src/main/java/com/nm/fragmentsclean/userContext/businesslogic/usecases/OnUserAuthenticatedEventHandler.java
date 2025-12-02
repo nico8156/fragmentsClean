@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.userContext.businesslogic.usecases;
 
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;

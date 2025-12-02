@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Query;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.Query;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
 

@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContext.read;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCursor;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentView;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentsListView;

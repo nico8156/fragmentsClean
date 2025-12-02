@@ -1,7 +1,5 @@
 package com.nm.fragmentsclean.coffeeContext.read;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 

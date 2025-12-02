@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
 
 
 public record CreateCoffeeCommand(

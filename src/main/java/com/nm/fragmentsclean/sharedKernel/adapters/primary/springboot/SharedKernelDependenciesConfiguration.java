@@ -51,6 +51,8 @@ public class SharedKernelDependenciesConfiguration {
     public QuerryBus querryBus()  {
         return new QuerryBus();
     }
+    @Bean
+    public EventBus eventBus()  {return new EventBus();}
 
     @Bean
     public DateTimeProvider dateTimeProvider() {

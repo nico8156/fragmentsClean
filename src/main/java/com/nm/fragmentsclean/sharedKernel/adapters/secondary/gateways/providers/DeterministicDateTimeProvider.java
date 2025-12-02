@@ -5,10 +5,11 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import java.time.Instant;
 
 public class DeterministicDateTimeProvider implements DateTimeProvider {
+
     public Instant instantOfNow;
 
     @Override
     public Instant now() {
-        return instantOfNow;
+        return Instant.parse("2024-02-14T08:00:00Z");
     }
 }
