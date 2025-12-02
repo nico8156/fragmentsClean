@@ -23,6 +23,11 @@ public class FakeArticleRepository implements ArticleRepository {
         storage.put(article.id(), article.toSnapshot());
     }
 
+    @Override
+    public List<Article> findAllPublished() {
+        return List.of();
+    }
+
     // Helpers pour les tests
     public List<Article.ArticleSnapshot> allSnapshots() {
         return new ArrayList<>(storage.values());

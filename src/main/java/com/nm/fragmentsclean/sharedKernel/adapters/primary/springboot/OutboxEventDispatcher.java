@@ -47,6 +47,7 @@ public class OutboxEventDispatcher {
         for (OutboxEventJpaEntity event : pending) {
             try {
                 // On délègue tout au sender : il reçoit directement l’entity JPA
+                //TODO logique de deserialisation + cablage + adressage a realiser ...
                 outboxEventSender.send(event);
 
                 event.setStatus(OutboxStatus.SENT);

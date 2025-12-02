@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.articleContextTest.integration;
 
 import com.nm.fragmentsclean.TestContainers;
-import com.nm.fragmentsclean.socialContextTest.integration.JpaIntegrationTestConfiguration;
+
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;

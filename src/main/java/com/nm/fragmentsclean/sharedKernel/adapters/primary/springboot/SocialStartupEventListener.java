@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.QueryHandler;
 import com.nm.fragmentsclean.socialContext.read.GetLikeStatusQueryHandler;
@@ -30,6 +31,7 @@ public class SocialStartupEventListener {
     private final GetLikeStatusQueryHandler getLikeStatusQueryHandler;
     private final ListCommentsQueryHandler listCommentsQueryHandler;
     private final ListArticlesQueryHandler listArticlesQueryHandler;
+    private final CreateArticleCommandHandler createArticleCommandHandler;
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
                                       MakeLikeCommandHandler makeLikeCommandHandler,
@@ -39,7 +41,8 @@ public class SocialStartupEventListener {
                                       GetLikeSummaryQueryHandler getLikeSummaryQueryHandler,
                                       GetLikeStatusQueryHandler getLikeStatusQueryHandler,
                                       ListCommentsQueryHandler listCommentsQueryHandler,
-                                      ListArticlesQueryHandler listArticlesQueryHandler
+                                      ListArticlesQueryHandler listArticlesQueryHandler,
+                                      CreateArticleCommandHandler createArticleCommandHandler
                                       ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -51,6 +54,8 @@ public class SocialStartupEventListener {
         this.getLikeStatusQueryHandler = getLikeStatusQueryHandler;
         this.listCommentsQueryHandler = listCommentsQueryHandler;
         this.listArticlesQueryHandler = listArticlesQueryHandler;
+        this.createArticleCommandHandler = createArticleCommandHandler;
+
     }
 
     @EventListener
@@ -59,7 +64,8 @@ public class SocialStartupEventListener {
                 makeLikeCommandHandler,
                 createCommentCommandHandler,
                 updateCommentCommandHandler,
-                deleteCommentCommandHandler
+                deleteCommentCommandHandler,
+                createArticleCommandHandler
 
         );
         commandBus.registerCommandHandlers(handlers);

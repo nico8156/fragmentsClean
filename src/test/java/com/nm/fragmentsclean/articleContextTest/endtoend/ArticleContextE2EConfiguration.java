@@ -1,20 +1,18 @@
-package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.springboot.controllers;
+package com.nm.fragmentsclean.articleContextTest.endtoend;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.FakeCurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.LoggingOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-
 import org.springframework.context.annotation.Primary;
 
-
 @TestConfiguration
-public class SocialContextWriteE2EConfiguration {
+public class ArticleContextE2EConfiguration {
+
     @Primary
     @Bean
     public DateTimeProvider deterministicClockProvider() {

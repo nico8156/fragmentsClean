@@ -1,31 +1,29 @@
 package com.nm.fragmentsclean.aticleContext.read.projections;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 public record ArticleView(
         UUID id,
         String slug,
-        String locale,                      // "fr-FR" / "en-US"
+        String locale,
 
         String title,
         String intro,
         List<ArticleBlockView> blocks,
         String conclusion,
 
-        ImageRefView cover,
+        ImageRefView cover,       // peut être null
         List<String> tags,
+        AuthorView author,
 
-        UUID authorId,
-        String authorName,
+        int readingTimeMin,
+        Instant publishedAt,
+        Instant updatedAt,
 
-        Integer readingTimeMin,
-        OffsetDateTime publishedAt,
-        OffsetDateTime updatedAt,
-
-        Long version,
-        String status,                      // "draft" | "published" | "archived"
+        long version,
+        String status,            // "published" | "draft" | "archived"
         List<UUID> coffeeIds
 ) {
 }

@@ -115,6 +115,72 @@ CREATE TABLE IF NOT EXISTS outbox_events (
                                retry_count     INTEGER     NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS articles (
+                          article_id        UUID PRIMARY KEY,
+                          slug              VARCHAR(255)   NOT NULL,
+                          locale            VARCHAR(20)    NOT NULL,
+
+                          author_id         UUID           NOT NULL,
+                          author_name       VARCHAR(255)   NOT NULL,
+
+                          title             VARCHAR(255)   NOT NULL,
+                          intro             TEXT           NOT NULL,
+                          blocks_json       TEXT           NOT NULL,
+                          conclusion        TEXT           NOT NULL,
+
+                          cover_url         TEXT,
+                          cover_width       INTEGER,
+                          cover_height      INTEGER,
+                          cover_alt         TEXT,
+
+                          tags_json         TEXT           NOT NULL,
+                          reading_time_min  INTEGER        NOT NULL,
+
+                          coffee_ids_json   TEXT,
+
+                          created_at        TIMESTAMPTZ    NOT NULL,
+                          updated_at        TIMESTAMPTZ    NOT NULL,
+                          published_at      TIMESTAMPTZ,
+
+                          status            VARCHAR(32)    NOT NULL,
+                          version           BIGINT         NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS articles_projection (
+                                     id               UUID PRIMARY KEY,
+                                     slug             VARCHAR(255) NOT NULL,
+                                     locale           VARCHAR(20)  NOT NULL,
+
+                                     title            TEXT         NOT NULL,
+                                     intro            TEXT         NOT NULL,
+                                     blocks_json      TEXT         NOT NULL, -- Array<ArticleBlockView> en JSON
+                                     conclusion       TEXT         NOT NULL,
+
+                                     cover_json       TEXT,                 -- ImageRefView en JSON
+                                     tags_json        TEXT         NOT NULL, -- string[]
+
+                                     author_id        UUID         NOT NULL,
+                                     author_name      VARCHAR(255) NOT NULL,
+
+                                     reading_time_min INT          NOT NULL,
+
+                                     published_at     TIMESTAMPTZ  NOT NULL,
+                                     updated_at       TIMESTAMPTZ  NOT NULL,
+
+                                     version          BIGINT       NOT NULL,
+                                     status           VARCHAR(32)  NOT NULL, -- "published", "draft", "archived"
+
+                                     coffee_ids_json  TEXT         NOT NULL  -- UUID[] sérialisés en JSON
+);
+
+CREATE INDEX idx_articles_projection_slug_locale
+    ON articles_projection (slug, locale);
+
+CREATE INDEX idx_articles_projection_published_at_desc
+    ON articles_projection (published_at DESC, id DESC);
+
+
+
 -- -- Index utiles pour le dispatcher (batch sur PENDING, dans l'ordre d'id)
 -- CREATE INDEX idx_outbox_events_status_id
 --     ON outbox_events (status, id);
