@@ -1,14 +1,18 @@
 package com.nm.fragmentsclean.coffeeContext.write.businessLogic.models;
 
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.OpeningHours;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.*;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AggregateRoot;
 
 import java.time.Instant;
 import java.util.*;
 
-public final class Coffee {
+public final class Coffee extends AggregateRoot {
 
-    private final CoffeeId id;
-    private final GooglePlaceId googleId; // optionnel si certains cafés sont manuels
+    private final CoffeeId id;          // VO d'identité domaine
+
+    private final GooglePlaceId googleId; // optionnel
 
     private CoffeeName name;
     private Address address;
@@ -23,7 +27,7 @@ public final class Coffee {
     private int version;
     private Instant updatedAt;
 
-    // ========= Factory =========
+    // ========= CTOR privé "complet" =========
 
     private Coffee(CoffeeId id,
                    GooglePlaceId googleId,
@@ -38,8 +42,11 @@ public final class Coffee {
                    int version,
                    Instant updatedAt) {
 
+        super(id.value());  // <-- on remonte l'UUID brut à AggregateRoot
         this.id = Objects.requireNonNull(id, "coffee id required");
-        this.googleId = googleId; // peut être null si café non lié à Google
+
+        this.googleId = googleId; // peut être null
+
         this.name = Objects.requireNonNull(name, "coffee name required");
         this.address = address != null ? address : Address.empty();
         this.location = Objects.requireNonNull(location, "location required");
@@ -51,6 +58,8 @@ public final class Coffee {
         this.version = version;
         this.updatedAt = updatedAt != null ? updatedAt : Instant.now();
     }
+
+    // ========= Factory "createNew" (pour les commands) =========
 
     public static Coffee createNew(
             CoffeeId id,
@@ -79,7 +88,39 @@ public final class Coffee {
         );
     }
 
-    // ========= Getters (domain) =========
+    // ========= Factory "rehydrate" (pour les repos JPA) =========
+
+    public static Coffee rehydrate(
+            CoffeeId id,
+            GooglePlaceId googleId,
+            CoffeeName name,
+            Address address,
+            GeoPoint location,
+            PhoneNumber phoneNumber,
+            WebsiteUrl website,
+            Set<Tag> tags,
+            List<Photo> photos,
+            OpeningHours openingHours,
+            int version,
+            Instant updatedAt
+    ) {
+        return new Coffee(
+                id,
+                googleId,
+                name,
+                address,
+                location,
+                phoneNumber,
+                website,
+                tags,
+                photos,
+                openingHours,
+                version,
+                updatedAt
+        );
+    }
+
+    // ========= Getters domaine =========
 
     public CoffeeId id() {
         return id;
@@ -129,7 +170,7 @@ public final class Coffee {
         return updatedAt;
     }
 
-    // ========= Behavior (mutations contrôlées) =========
+    // ========= Behavior =========
 
     public void rename(CoffeeName newName, Instant now) {
         this.name = Objects.requireNonNull(newName);

@@ -1,11 +1,16 @@
 package com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories;
 
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
 
-import java.util.List;
+import java.util.Optional;
 
 public interface CoffeeRepository {
+
     void save(Coffee coffee);
-    void deleteAll();
-    List<Coffee> findAll();
+
+    Optional<Coffee> findById(CoffeeId id);
+
+    boolean existsByGooglePlaceId(GooglePlaceId googlePlaceId);
 }
