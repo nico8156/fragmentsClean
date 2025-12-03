@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;

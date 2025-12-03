@@ -1,7 +1,8 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
@@ -17,6 +18,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
+@Primary
+@Component
 public class OutboxDomainEventPublisher implements DomainEventPublisher {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxDomainEventPublisher.class);
@@ -55,22 +58,20 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             String streamKey;
 
             if (event instanceof UserAuthenticatedEvent authEvent) {
-                // Vertical Auth : on route par User
                 aggregateType = "User";
                 aggregateId = authEvent.userId().toString();
                 streamKey = "user:" + aggregateId;
+            } else if (event instanceof ArticleCreatedEvent articleEvent) {
+                aggregateType = "Article";
+                aggregateId = articleEvent.articleId().toString();
+                streamKey = "article:" + aggregateId;
             } else {
-                // Fallback générique pour les autres events (à spécialiser plus tard)
                 aggregateType = "Unknown";
                 aggregateId = "unknown";
                 streamKey = "global";
 
                 log.warn("Persisting domain event of unknown type in outbox: {}",
                         event.getClass().getName());
-            }
-            if (event instanceof ArticleCreatedEvent ace) {
-                eventType = "ArticleCreatedEvent";
-                payloadJson = objectMapper.writeValueAsString(ace);
             }
 
             OutboxEventJpaEntity entity = new OutboxEventJpaEntity(
@@ -96,7 +97,6 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
 
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize domain event {} for outbox", event, e);
-            // Ici on choisit de fail fast, à adapter si tu veux éviter de casser la TX
             throw new RuntimeException("Failed to serialize domain event for outbox", e);
         }
     }

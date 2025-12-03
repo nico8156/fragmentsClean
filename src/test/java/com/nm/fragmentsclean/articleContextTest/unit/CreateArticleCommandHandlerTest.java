@@ -6,7 +6,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleSta
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

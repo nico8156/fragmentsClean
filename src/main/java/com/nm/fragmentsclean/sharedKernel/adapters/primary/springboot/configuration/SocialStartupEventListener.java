@@ -1,9 +1,12 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration;
 
 
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;

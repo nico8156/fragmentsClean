@@ -1,22 +1,20 @@
 package com.nm.fragmentsclean.aticleContext.read.projections;
 
-
+import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
-
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ArticleCreatedEventHandler implements EventHandler<ArticleCreatedEvent> {
 
-    private final ArticleProjectionHandler projectionHandler;
+    private final ArticleProjectionRepository projectionRepository;
 
-    public ArticleCreatedEventHandler(ArticleProjectionHandler projectionHandler) {
-        this.projectionHandler = projectionHandler;
+    public ArticleCreatedEventHandler(ArticleProjectionRepository projectionRepository) {
+        this.projectionRepository = projectionRepository;
     }
 
-    @Override
     public void handle(ArticleCreatedEvent event) {
-        projectionHandler.on(event);
+        projectionRepository.apply(event);
     }
 }

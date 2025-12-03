@@ -9,7 +9,7 @@ import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSes
 import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionCommandHandler;
 import com.nm.fragmentsclean.authContext.write.businesslogic.usecases.RefreshSessionResult;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userContext.businesslogic.gateways.UserRepository;
 import com.nm.fragmentsclean.userContext.businesslogic.models.AppUser;

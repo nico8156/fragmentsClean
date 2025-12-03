@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.spring
 
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.FakeCurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.LoggingOutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.LoggingOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CurrentUserProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 

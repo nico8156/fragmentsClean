@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;

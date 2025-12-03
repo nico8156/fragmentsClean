@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
+package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -20,7 +20,7 @@ public class OutboxEventDispatcher {
     private static final int MAX_RETRY = 10;
 
     private final SpringOutboxEventRepository outboxRepository;
-    private final OutboxEventSender outboxEventSender;
+    private final OutboxEventSender outboxEventSender; // CompositeOutboxEventSender en pratique
 
     public OutboxEventDispatcher(
             SpringOutboxEventRepository outboxRepository,
@@ -47,7 +47,7 @@ public class OutboxEventDispatcher {
 
         for (OutboxEventJpaEntity event : pending) {
             try {
-                // On délègue au sender : désérialisation + EventBus + handlers
+                // Délégation à l'adapter (CompositeOutboxEventSender)
                 outboxEventSender.send(event);
 
                 event.setStatus(OutboxStatus.SENT);
@@ -71,7 +71,6 @@ public class OutboxEventDispatcher {
         if (currentRetry >= MAX_RETRY) {
             event.setStatus(OutboxStatus.FAILED);
         } else {
-            // on le laisse en PENDING pour un retry futur
             event.setStatus(OutboxStatus.PENDING);
         }
 
