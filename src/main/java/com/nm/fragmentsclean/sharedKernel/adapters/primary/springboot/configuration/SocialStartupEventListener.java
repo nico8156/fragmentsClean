@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration;
 
 
+import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
@@ -38,6 +39,7 @@ public class SocialStartupEventListener {
     private final ListArticlesQueryHandler listArticlesQueryHandler;
     private final CreateArticleCommandHandler createArticleCommandHandler;
     private final ArticleCreatedEventHandler articleCreatedProjectionHandler;
+    private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
@@ -51,7 +53,8 @@ public class SocialStartupEventListener {
                                       ListCommentsQueryHandler listCommentsQueryHandler,
                                       ListArticlesQueryHandler listArticlesQueryHandler,
                                       CreateArticleCommandHandler createArticleCommandHandler,
-                                      ArticleCreatedEventHandler articleCreatedProjectionHandler
+                                      ArticleCreatedEventHandler articleCreatedProjectionHandler,
+                                      GetArticleBySlugQueryHandler getArticleBySlugQueryHandler
 
     ) {
         this.commandBus = commandBus;
@@ -67,6 +70,7 @@ public class SocialStartupEventListener {
         this.listArticlesQueryHandler = listArticlesQueryHandler;
         this.createArticleCommandHandler = createArticleCommandHandler;
         this.articleCreatedProjectionHandler = articleCreatedProjectionHandler;
+        this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
     }
 
     @EventListener
@@ -85,7 +89,8 @@ public class SocialStartupEventListener {
                 getLikeSummaryQueryHandler,
                 listCommentsQueryHandler,
                 getLikeStatusQueryHandler,
-                listArticlesQueryHandler
+                listArticlesQueryHandler,
+                getArticleBySlugQueryHandler
         );
         querryBus.registerQuerryHandlers(queryHandlers);
 

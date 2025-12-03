@@ -57,7 +57,6 @@ public class SharedKernelDependenciesConfiguration {
     }
     @Bean
     public EventBus eventBus()  {return new EventBus();}
-
     @Bean
     public DateTimeProvider dateTimeProvider() {
         return Instant::now; // tu pourras mettre ta version déterministe en test

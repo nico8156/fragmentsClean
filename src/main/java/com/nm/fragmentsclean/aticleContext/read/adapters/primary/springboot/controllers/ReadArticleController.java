@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.aticleContext.read.adapters.primary.springboot.controllers;
 
 import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQuery;
+import com.nm.fragmentsclean.aticleContext.read.ListArticlesQuery;
+import com.nm.fragmentsclean.aticleContext.read.projections.ArticleListView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +31,16 @@ public class ReadArticleController {
         }
 
         return ResponseEntity.ok(view);
+    }
+    @GetMapping
+    public ResponseEntity<ArticleListView> list(
+            @RequestParam String locale,
+            @RequestParam(required = false) Integer limit,
+            @RequestParam(required = false) String cursor
+    ) {
+        var query = new ListArticlesQuery(locale, limit, cursor);
+        ArticleListView listView = querryBus.dispatch(query);
+
+        return ResponseEntity.ok(listView);
     }
 }

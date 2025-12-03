@@ -10,6 +10,6 @@ public class DeterministicDateTimeProvider implements DateTimeProvider {
 
     @Override
     public Instant now() {
-        return Instant.parse("2024-02-14T08:00:00Z");
+        return Instant.parse("2024-01-01T10:00:00Z");
     }
 }

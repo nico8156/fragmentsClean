@@ -14,11 +14,13 @@ public class CompositeOutboxEventSender implements OutboxEventSender {
     private final List<OutboxEventSender> delegates;
 
     public CompositeOutboxEventSender(
-            EventBusOutboxEventSender eventBusSender
+            EventBusOutboxEventSender eventBusSender,
+            LoggingOutboxEventSender loggingOutboxEventSender
             // tu peux en rajouter un troisième ex: LoggingOutboxEventSender si tu veux
     ) {
         this.delegates = List.of(
-                eventBusSender
+                eventBusSender,
+                loggingOutboxEventSender
         );
     }
 

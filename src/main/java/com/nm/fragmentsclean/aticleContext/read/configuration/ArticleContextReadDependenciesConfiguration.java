@@ -27,13 +27,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class ArticleContextReadDependenciesConfiguration {
 
     @Bean
-    ListArticlesQueryHandler listArticlesQueryHandler(
-            JdbcTemplate jdbcTemplate
-    ){
-        return new ListArticlesQueryHandler(jdbcTemplate, getArticleBySlugQueryHandler(jdbcTemplate, new ObjectMapper()) );
-    }
-
-    @Bean
     @Profile("database")
     public ArticleRepository jpaArticleRepository(SpringArticleRepository springArticleRepository, ObjectMapper objectMapper){
         return new JpaArticleRepository(springArticleRepository, objectMapper);
@@ -50,6 +43,11 @@ public class ArticleContextReadDependenciesConfiguration {
     @Bean
     GetArticleBySlugQueryHandler getArticleBySlugQueryHandler(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper){
         return new GetArticleBySlugQueryHandler(jdbcTemplate, objectMapper);
+    }
+
+    @Bean
+    ListArticlesQueryHandler listArticlesQueryHandler(JdbcTemplate jdbcTemplate, GetArticleBySlugQueryHandler getArticleBySlugQueryHandler){
+        return new ListArticlesQueryHandler(jdbcTemplate, getArticleBySlugQueryHandler);
     }
 
 }
