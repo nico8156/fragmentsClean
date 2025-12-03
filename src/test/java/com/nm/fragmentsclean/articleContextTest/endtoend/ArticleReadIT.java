@@ -132,16 +132,6 @@ public class ArticleReadIT extends AbstractBaseE2E {
         assertThat(root.path("blocks").get(0).path("heading").asText())
                 .isEqualTo("Une histoire de terroir");
 
-//                .andExpect(jsonPath("$.id").value(ARTICLE_ID.toString()))
-//                .andExpect(jsonPath("$.slug").value(SLUG))
-//                .andExpect(jsonPath("$.locale").value(LOCALE))
-//                .andExpect(jsonPath("$.title").value("Qu'est-ce que le café de spécialité ?"))
-//                .andExpect(jsonPath("$.intro").value("Le café de spécialité désigne une approche où chaque étape vise l’excellence."))
-//                .andExpect(jsonPath("$.authorId").value(AUTHOR_ID.toString()))
-//                .andExpect(jsonPath("$.authorName").value("Hélène Martin"))
-//                .andExpect(jsonPath("$.readingTimeMin").value(6))
-//                .andExpect(jsonPath("$.status").value("published"));
-
         // THEN 2 : GET /api/articles?locale=fr-FR&limit=10
         var mvcResult = mockMvc.perform(
                         get("/api/articles")
@@ -160,3 +150,40 @@ public class ArticleReadIT extends AbstractBaseE2E {
         assertThat(rows).hasSize(1);
     }
 }
+
+/*
+
+### Write → Outbox
+- Added ArticleCreatedEvent publication through OutboxDomainEventPublisher
+- Ensured proper serialization (payloadJson + streamKey + aggregate metadata)
+- Persist events as OutboxEventJpaEntity with PENDING status
+
+### Outbox → EventBus
+- Implemented OutboxEventDispatcher (manual trigger in tests + @Scheduled in prod)
+- Added CompositeOutboxEventSender (Logging + EventBus sender)
+- Mapped outbox payload back to DomainEvent (ArticleCreatedEvent)
+
+### Projection
+- Added ArticleCreatedEventHandler to populate articles_projection table
+- Implemented JdbcArticleProjectionRepository with clean INSERT logic
+- Ensured projection uses stable JSON structure (blocks, cover, tags, author…)
+
+### Read side
+- Implemented GetArticleBySlugQuery + handler + controller
+- Implemented ListArticlesQuery + handler with pagination (limit/cursor)
+- Reworked SELECTs for consistency with projection columns (cover_json, tags_json…)
+
+### Tests E2E
+- Added ArticleProjectionIT validating full pipeline:
+  write command → outbox → dispatch → projection
+- Added ArticleReadIT verifying:
+  - GET /api/articles/{slug}
+  - GET /api/articles?locale=fr-FR
+  - JSON structure (author, blocks, cover, tags…)
+- Fixed encoding issues by reading response as UTF-8
+- Disabled scheduling in tests to rely on manual dispatcher triggering
+
+Overall:
+This commit delivers the first complete feature using the full DDD + CQRS + Outbox architecture.
+* */
+
