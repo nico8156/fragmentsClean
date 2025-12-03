@@ -37,7 +37,7 @@ public class FakeCoffeeRepository implements CoffeeRepository {
 
     @Override
     public void save(Coffee coffee) {
-        store.put(coffee.id(), coffee);
+        store.put(coffee.coffeeId(), coffee);
 
         snapshots.clear();
         snapshots.addAll(
@@ -66,7 +66,7 @@ public class FakeCoffeeRepository implements CoffeeRepository {
         var loc = c.location();
 
         return new CoffeeSnapshot(
-                c.id().value(),
+                c.coffeeId().value(),
                 c.googleId().map(GooglePlaceId::value).orElse(null),
                 c.name().value(),
                 addr.line1(),

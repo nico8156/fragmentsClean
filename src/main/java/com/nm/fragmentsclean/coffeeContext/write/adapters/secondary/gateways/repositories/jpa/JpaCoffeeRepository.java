@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 @Component
 public class JpaCoffeeRepository implements CoffeeRepository {
 
-    private final SpringCoffeeJpaRepository springRepo;
+    private final SpringCoffeeRepository springRepo;
 
-    public JpaCoffeeRepository(SpringCoffeeJpaRepository springRepo) {
+    public JpaCoffeeRepository(SpringCoffeeRepository springRepo) {
         this.springRepo = springRepo;
     }
 
@@ -54,7 +54,7 @@ public class JpaCoffeeRepository implements CoffeeRepository {
         String googlePlaceId = c.googleId().map(GooglePlaceId::value).orElse(null);
 
         return new CoffeeJpaEntity(
-                c.id().value(),
+                c.coffeeId().value(),
                 googlePlaceId,
                 c.name().value(),
                 addr.line1(),

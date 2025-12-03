@@ -98,7 +98,7 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
         CoffeeCreatedEvent event = new CoffeeCreatedEvent(
                 UUID.randomUUID(),                  // eventId
                 command.commandId(),                // commandId (du client)
-                coffee.id(),
+                coffee.coffeeId(),
                 googlePlaceId,
                 name,
                 address,

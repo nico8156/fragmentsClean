@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-public interface SpringCoffeeJpaRepository extends JpaRepository<CoffeeJpaEntity, UUID> {
+public interface SpringCoffeeRepository extends JpaRepository<CoffeeJpaEntity, UUID> {
 
     boolean existsByGooglePlaceId(String googlePlaceId);
 }

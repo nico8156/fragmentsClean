@@ -10,7 +10,7 @@ import java.util.*;
 
 public final class Coffee extends AggregateRoot {
 
-    private final CoffeeId id;          // VO d'identité domaine
+    private final CoffeeId coffeeId;          // VO d'identité domaine
 
     private final GooglePlaceId googleId; // optionnel
 
@@ -29,7 +29,7 @@ public final class Coffee extends AggregateRoot {
 
     // ========= CTOR privé "complet" =========
 
-    private Coffee(CoffeeId id,
+    private Coffee(CoffeeId coffeeId,
                    GooglePlaceId googleId,
                    CoffeeName name,
                    Address address,
@@ -42,8 +42,8 @@ public final class Coffee extends AggregateRoot {
                    int version,
                    Instant updatedAt) {
 
-        super(id.value());  // <-- on remonte l'UUID brut à AggregateRoot
-        this.id = Objects.requireNonNull(id, "coffee id required");
+        super(coffeeId.value());  // <-- on remonte l'UUID brut à AggregateRoot
+        this.coffeeId = Objects.requireNonNull(coffeeId, "coffee id required");
 
         this.googleId = googleId; // peut être null
 
@@ -62,7 +62,7 @@ public final class Coffee extends AggregateRoot {
     // ========= Factory "createNew" (pour les commands) =========
 
     public static Coffee createNew(
-            CoffeeId id,
+            CoffeeId coffeeId,
             GooglePlaceId googleId,
             CoffeeName name,
             Address address,
@@ -73,7 +73,7 @@ public final class Coffee extends AggregateRoot {
             Instant now
     ) {
         return new Coffee(
-                id != null ? id : CoffeeId.newId(),
+                coffeeId != null ? coffeeId : CoffeeId.newId(),
                 googleId,
                 name,
                 address,
@@ -91,7 +91,7 @@ public final class Coffee extends AggregateRoot {
     // ========= Factory "rehydrate" (pour les repos JPA) =========
 
     public static Coffee rehydrate(
-            CoffeeId id,
+            CoffeeId coffeeId,
             GooglePlaceId googleId,
             CoffeeName name,
             Address address,
@@ -105,7 +105,7 @@ public final class Coffee extends AggregateRoot {
             Instant updatedAt
     ) {
         return new Coffee(
-                id,
+                coffeeId,
                 googleId,
                 name,
                 address,
@@ -122,8 +122,8 @@ public final class Coffee extends AggregateRoot {
 
     // ========= Getters domaine =========
 
-    public CoffeeId id() {
-        return id;
+    public CoffeeId coffeeId() {
+        return coffeeId;
     }
 
     public Optional<GooglePlaceId> googleId() {
