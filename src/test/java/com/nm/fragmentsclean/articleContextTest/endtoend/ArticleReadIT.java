@@ -108,11 +108,6 @@ public class ArticleReadIT extends AbstractBaseE2E {
 // soit tu parses en JsonNode
         JsonNode root = objectMapper.readTree(result.getResponse().getContentAsByteArray());
 
-
-// soit tu mappes direct sur ta projection ArticleView
-// ArticleView view = objectMapper.readValue(json, ArticleView.class);
-
-// Exemple avec JsonNode :
         assertThat(root.path("id").asText()).isEqualTo(ARTICLE_ID.toString());
         assertThat(root.path("slug").asText()).isEqualTo(SLUG);
         assertThat(root.path("locale").asText()).isEqualTo(LOCALE);
@@ -126,7 +121,7 @@ public class ArticleReadIT extends AbstractBaseE2E {
         assertThat(author.path("id").asText()).isEqualTo(AUTHOR_ID.toString());
         assertThat(author.path("name").asText()).isEqualTo("Hélène Martin");
 
-// tu peux même vérifier les blocks / cover / tags si tu veux :
+
         assertThat(root.path("blocks").isArray()).isTrue();
         assertThat(root.path("blocks")).hasSize(1);
         assertThat(root.path("blocks").get(0).path("heading").asText())

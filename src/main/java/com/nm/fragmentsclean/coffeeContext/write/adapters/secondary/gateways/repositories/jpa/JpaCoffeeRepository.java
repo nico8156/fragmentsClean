@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.re
 
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeJpaEntity;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee;
 
 import java.util.List;
 

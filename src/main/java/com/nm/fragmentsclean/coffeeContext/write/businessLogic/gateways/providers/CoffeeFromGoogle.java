@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.providers;
 
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee;
 
 import java.util.List;
 import java.util.UUID;

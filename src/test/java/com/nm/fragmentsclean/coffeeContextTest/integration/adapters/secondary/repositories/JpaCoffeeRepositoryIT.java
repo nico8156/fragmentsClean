@@ -3,8 +3,8 @@ package com.nm.fragmentsclean.coffeeContextTest.integration.adapters.secondary.r
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeJpaEntity;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee.CoffeeSnapshot;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee.CoffeeSnapshot;
 import com.nm.fragmentsclean.coffeeContextTest.integration.AbstractTestIntegration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

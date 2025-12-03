@@ -1,7 +1,6 @@
 package com.nm.fragmentsclean.coffeeContextTest.endtoend.adapters.primary.springboot.controllers;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeJpaEntity;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
 import com.nm.fragmentsclean.coffeeContextTest.endtoend.adapters.primary.abstractBaseE2E;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

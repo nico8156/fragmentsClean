@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories;
 
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Coffee;
 
 import java.util.List;
 
