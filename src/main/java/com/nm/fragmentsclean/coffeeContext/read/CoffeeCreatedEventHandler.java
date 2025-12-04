@@ -8,13 +8,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CoffeeCreatedProjectionHandler implements EventHandler<CoffeeCreatedEvent> {
+public class CoffeeCreatedEventHandler implements EventHandler<CoffeeCreatedEvent> {
 
-    private static final Logger log = LoggerFactory.getLogger(CoffeeCreatedProjectionHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(CoffeeCreatedEventHandler.class);
 
     private final JdbcCoffeeProjectionRepository projectionRepository;
 
-    public CoffeeCreatedProjectionHandler(JdbcCoffeeProjectionRepository projectionRepository) {
+    public CoffeeCreatedEventHandler(JdbcCoffeeProjectionRepository projectionRepository) {
         this.projectionRepository = projectionRepository;
     }
 

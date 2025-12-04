@@ -1,10 +1,15 @@
 package com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories;
 
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Repository
 public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepository {
@@ -20,7 +25,6 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 
         Timestamp updatedAt = Timestamp.from(event.occurredAt());
 
-        // on peut faire un simple INSERT ... ON CONFLICT UPDATE si besoin
         jdbcTemplate.update(
                 """
                 INSERT INTO coffee_summaries_projection (
@@ -74,6 +78,30 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
         );
     }
 
+    @Override
+    public List<CoffeeSummaryView> findAll() {
+        String sql = """
+            SELECT id,
+                   google_place_id,
+                   name,
+                   lat,
+                   lon,
+                   address_line1,
+                   city,
+                   postal_code,
+                   country,
+                   phone_number,
+                   website,
+                   tags_json,
+                   version,
+                   updated_at
+            FROM coffee_summaries_projection
+            ORDER BY name ASC
+            """;
+
+        return jdbcTemplate.query(sql, this::mapRow);
+    }
+
     private String toTagsJson(CoffeeCreatedEvent event) {
         if (event.tags() == null || event.tags().isEmpty()) {
             return "[]";
@@ -84,5 +112,72 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
                 .reduce((a, b) -> a + "," + b)
                 .orElse("");
         return "[" + joined + "]";
+    }
+
+    private CoffeeSummaryView mapRow(ResultSet rs, int rowNum) throws SQLException {
+
+        UUID id = rs.getObject("id", UUID.class);
+        String googleId = rs.getString("google_place_id");
+        String name = rs.getString("name");
+        double latitude = rs.getDouble("lat");
+        double longitude = rs.getDouble("lon");
+
+        String addressLine = rs.getString("address_line1");
+        String city = rs.getString("city");
+        String postalCode = rs.getString("postal_code");
+        String country = rs.getString("country");
+        String phoneNumber = rs.getString("phone_number");
+        String website = rs.getString("website");
+
+        String tagsJson = rs.getString("tags_json");
+        Set<String> tags = parseTagsJson(tagsJson);
+
+        long version = rs.getLong("version");
+        var updatedAt = rs.getTimestamp("updated_at").toInstant();
+
+        return new CoffeeSummaryView(
+                id,
+                googleId,
+                name,
+                latitude,
+                longitude,
+                addressLine,
+                city,
+                postalCode,
+                country,
+                phoneNumber,
+                website,
+                tags,
+                version,
+                updatedAt
+        );
+    }
+
+    /**
+     * Parsing ultra-simple du JSON ["tag1","tag2"] -> Set<String>
+     * (suffisant vu toTagsJson plus haut)
+     */
+    private Set<String> parseTagsJson(String tagsJson) {
+        if (tagsJson == null || tagsJson.isBlank() || tagsJson.equals("[]")) {
+            return Set.of();
+        }
+        // En entrée on a un truc du genre ["filter","specialty"]
+        String trimmed = tagsJson.trim();
+        if (trimmed.startsWith("[")) {
+            trimmed = trimmed.substring(1);
+        }
+        if (trimmed.endsWith("]")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+
+        if (trimmed.isBlank()) {
+            return Set.of();
+        }
+
+        return Arrays.stream(trimmed.split(","))
+                .map(String::trim)
+                .map(s -> s.replace("\"", "")) // enlève les guillemets
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

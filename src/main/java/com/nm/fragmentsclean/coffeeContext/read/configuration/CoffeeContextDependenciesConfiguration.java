@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
 
+import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.JpaCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
@@ -33,5 +35,10 @@ public class CoffeeContextDependenciesConfiguration {
                                                           DomainEventPublisher domainEventPublisher,
                                                           DateTimeProvider dateTimeProvider){
         return new CreateCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+    }
+
+    @Bean
+    ListCoffeesQueryHandler listCoffeesQueryHandler(CoffeeProjectionRepository coffeeProjectionRepository){
+        return new ListCoffeesQueryHandler(coffeeProjectionRepository);
     }
 }
