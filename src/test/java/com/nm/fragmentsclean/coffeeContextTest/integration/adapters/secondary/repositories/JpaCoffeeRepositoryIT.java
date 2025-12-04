@@ -32,6 +32,7 @@ public class JpaCoffeeRepositoryIT extends AbstractJpaIntegrationTest {
     @Test
     void repositories_are_injected() {
         assertThat(coffeeRepository).isNotNull();
+        assertThat(springCoffeeRepository).isNotNull();
     }
 
     @Test
@@ -68,7 +69,7 @@ public class JpaCoffeeRepositoryIT extends AbstractJpaIntegrationTest {
         coffeeRepository.save(coffee);
 
         // THEN : on vérifie la ligne JPA brute
-        var entityOpt = springCoffeeJpaRepository.findById(COFFEE_ID);
+        var entityOpt = springCoffeeRepository.findById(COFFEE_ID);
         assertThat(entityOpt).isPresent();
         CoffeeJpaEntity entity = entityOpt.get();
 
@@ -119,11 +120,11 @@ public class JpaCoffeeRepositoryIT extends AbstractJpaIntegrationTest {
         coffeeRepository.save(loaded);
 
         // THEN : côté JPA brut
-        var entity = springCoffeeJpaRepository.findById(COFFEE_ID).orElseThrow();
+        var entity = springCoffeeRepository.findById(COFFEE_ID).orElseThrow();
         assertThat(entity.getName()).isEqualTo("New Name");
         assertThat(entity.getPhoneNumber()).isEqualTo("01 23 45 67 89");
         assertThat(entity.getWebsite()).isEqualTo("https://new.example.com");
-        assertThat(entity.getVersion()).isEqualTo(1);              // version++ via touch()
+        assertThat(entity.getVersion()).isEqualTo(2);              // version++ via touch()
         assertThat(entity.getUpdatedAt()).isEqualTo(editedAt);     // mis à jour
     }
 }

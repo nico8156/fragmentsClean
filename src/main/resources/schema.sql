@@ -11,19 +11,57 @@ CREATE TABLE IF NOT EXISTS identities (
                                           last_auth_at     TIMESTAMPTZ
 );
 -- Coffee shops
+
 CREATE TABLE IF NOT EXISTS coffees (
-                                       id                  UUID PRIMARY KEY,
-                                       google_id           VARCHAR(255) NOT NULL,
-                                       display_name        VARCHAR(255) NOT NULL,
-                                       formatted_address   VARCHAR(255) NOT NULL,
-                                       national_phone_number VARCHAR(255),
-                                       website_uri         VARCHAR(255),
-                                       latitude            DOUBLE PRECISION NOT NULL,
-                                       longitude           DOUBLE PRECISION NOT NULL
+                         id              UUID PRIMARY KEY,
+                         google_place_id VARCHAR(255),
+                         name            VARCHAR(255) NOT NULL,
+                         address_line1   VARCHAR(255),
+                         city            VARCHAR(255),
+                         postal_code     VARCHAR(32),
+                         country         VARCHAR(8),
+                         lat             DOUBLE PRECISION NOT NULL,
+                         lon             DOUBLE PRECISION NOT NULL,
+                         phone_number    VARCHAR(64),
+                         website         VARCHAR(512),
+                         tags_csv        TEXT,
+                         version         INTEGER NOT NULL,
+                         updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_coffees_google_id
-    ON coffees (google_id);
+-- -- Optionnel, mais bien pratique :
+-- CREATE UNIQUE INDEX ux_coffees_google_place_id
+--     ON coffees (google_place_id)
+--     WHERE google_place_id IS NOT NULL;
+--
+-- CREATE INDEX ix_coffees_city ON coffees (city);
+-- CREATE INDEX ix_coffees_lat_lon ON coffees (lat, lon);
+--
+--
+-- CREATE INDEX IF NOT EXISTS idx_coffees_google_id
+--     ON coffees (google_id);
+
+
+-- COFFEE_Projection
+
+CREATE TABLE IF NOT EXISTS coffee_summaries_projection (
+                                             id              UUID PRIMARY KEY,
+                                             google_place_id VARCHAR(255),
+                                             name            VARCHAR(255) NOT NULL,
+                                             address_line1   VARCHAR(255),
+                                             city            VARCHAR(255),
+                                             postal_code     VARCHAR(32),
+                                             country         VARCHAR(8),
+                                             lat             DOUBLE PRECISION NOT NULL,
+                                             lon             DOUBLE PRECISION NOT NULL,
+                                             phone_number    VARCHAR(64),
+                                             website         VARCHAR(512),
+                                             tags_json       JSONB,
+                                             rating          NUMERIC(3,1),          -- optionnel pour plus tard
+                                             version         INTEGER NOT NULL,
+                                             updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 
 
 -- Likes (write model)

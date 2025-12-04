@@ -13,31 +13,6 @@ DELETE FROM coffees;
 -- COFFEES
 -- =========================
 
-INSERT INTO coffees (
-    id, google_id, display_name, formatted_address,
-    national_phone_number, website_uri, latitude, longitude
-) VALUES
-      (
-          'e67b3b3b-3b3b-3b3b-3b3b-03b3b3b3b3b3',
-          'google-coffee-1',
-          'Fragments Coffee Roasters',
-          '123 Rue du Café, 35000 Rennes, France',
-          '+33 2 99 00 00 01',
-          'https://fragments.coffee',
-          48.111,
-          -1.678
-      ),
-      (
-          'aaaaaaaa-0000-0000-0000-000000000000',
-          'google-coffee-2',
-          'Alternate Brew Lab',
-          '42 Rue des Grains, 35000 Rennes, France',
-          '+33 2 99 00 00 02',
-          'https://alternate-brew.example.com',
-          48.112,
-          -1.679
-      );
-
 
 
 INSERT INTO social_comments_projection (
