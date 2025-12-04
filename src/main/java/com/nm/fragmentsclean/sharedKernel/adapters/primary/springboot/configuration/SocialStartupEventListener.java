@@ -5,6 +5,8 @@ import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedProjectionHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
@@ -40,6 +42,8 @@ public class SocialStartupEventListener {
     private final CreateArticleCommandHandler createArticleCommandHandler;
     private final ArticleCreatedEventHandler articleCreatedProjectionHandler;
     private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
+    private final CreateCoffeeCommandHandler createCoffeeCommandHandler;
+    private final CoffeeCreatedProjectionHandler coffeeCreatedProjectionHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
@@ -54,7 +58,9 @@ public class SocialStartupEventListener {
                                       ListArticlesQueryHandler listArticlesQueryHandler,
                                       CreateArticleCommandHandler createArticleCommandHandler,
                                       ArticleCreatedEventHandler articleCreatedProjectionHandler,
-                                      GetArticleBySlugQueryHandler getArticleBySlugQueryHandler
+                                      GetArticleBySlugQueryHandler getArticleBySlugQueryHandler,
+                                      CreateCoffeeCommandHandler createCoffeeCommandHandler,
+                                      CoffeeCreatedProjectionHandler coffeeCreatedProjectionHandler
 
     ) {
         this.commandBus = commandBus;
@@ -71,6 +77,8 @@ public class SocialStartupEventListener {
         this.createArticleCommandHandler = createArticleCommandHandler;
         this.articleCreatedProjectionHandler = articleCreatedProjectionHandler;
         this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
+        this.createCoffeeCommandHandler = createCoffeeCommandHandler;
+        this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
     }
 
     @EventListener
@@ -80,7 +88,8 @@ public class SocialStartupEventListener {
                 createCommentCommandHandler,
                 updateCommentCommandHandler,
                 deleteCommentCommandHandler,
-                createArticleCommandHandler
+                createArticleCommandHandler,
+                createCoffeeCommandHandler
 
         );
         commandBus.registerCommandHandlers(handlers);
@@ -95,7 +104,8 @@ public class SocialStartupEventListener {
         querryBus.registerQuerryHandlers(queryHandlers);
 
         List<EventHandler<?>> eventHandlers = List.of(
-                articleCreatedProjectionHandler
+                articleCreatedProjectionHandler,
+                coffeeCreatedProjectionHandler
         );
         eventBus.registerEventHandlers(eventHandlers);
     }

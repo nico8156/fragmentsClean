@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -65,6 +66,10 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
                 aggregateType = "Article";
                 aggregateId = articleEvent.articleId().toString();
                 streamKey = "article:" + aggregateId;
+            } else if (event instanceof CoffeeCreatedEvent coffeeEvent) {
+                aggregateType = "Coffee";
+                aggregateId = coffeeEvent.coffeeId().toString();
+                streamKey = "coffee:" + aggregateId;
             } else {
                 aggregateType = "Unknown";
                 aggregateId = "unknown";

@@ -4,6 +4,8 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCrea
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
+
 @Repository
 public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepository {
 
@@ -15,6 +17,9 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 
     @Override
     public void apply(CoffeeCreatedEvent event) {
+
+        Timestamp updatedAt = Timestamp.from(event.occurredAt());
+
         // on peut faire un simple INSERT ... ON CONFLICT UPDATE si besoin
         jdbcTemplate.update(
                 """
@@ -65,7 +70,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
                 toTagsJson(event),
                 null, // rating pour plus tard
                 event.version(),
-                event.occurredAt()
+                updatedAt
         );
     }
 

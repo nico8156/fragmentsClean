@@ -5,7 +5,7 @@ import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.*;
-import org.springframework.stereotype.Component;
+
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -14,7 +14,6 @@ import java.util.Set;
 
 import java.util.stream.Collectors;
 
-@Component
 public class JpaCoffeeRepository implements CoffeeRepository {
 
     private final SpringCoffeeRepository springRepo;

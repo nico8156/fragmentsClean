@@ -34,7 +34,7 @@ public class EventBusOutboxEventSender implements OutboxEventSender {
             log.warn("Unhandled outbox event type={} id={}", type, entity.getId());
             return;
         }
-
+        System.out.println("domainEvent = " + domainEvent);
         // 👉👉👉 C’EST ICI QUE L’EVENTBUS EST UTILISÉ 👈👈👈
         eventBus.publish(domainEvent);
     }

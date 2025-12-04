@@ -1,9 +1,12 @@
-package com.nm.fragmentsclean.coffeeContext.write.adapters.primary.springboot.controllers;
+package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
 
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.JpaCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -17,11 +20,18 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = {
         "com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot"
 })
-public class CoffeeContextWriteDependenciesConfiguration {
+public class CoffeeContextDependenciesConfiguration {
 
     @Bean
     @Profile("database")
     public CoffeeRepository jpaCoffeeRepository(SpringCoffeeRepository springCoffeeRepository){
         return new JpaCoffeeRepository(springCoffeeRepository);
+    }
+
+    @Bean
+    CreateCoffeeCommandHandler createCoffeeCommandHandler(CoffeeRepository coffeeRepository,
+                                                          DomainEventPublisher domainEventPublisher,
+                                                          DateTimeProvider dateTimeProvider){
+        return new CreateCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
     }
 }
