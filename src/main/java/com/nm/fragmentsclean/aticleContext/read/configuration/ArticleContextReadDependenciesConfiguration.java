@@ -4,6 +4,8 @@ package com.nm.fragmentsclean.aticleContext.read.configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
+import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
+import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.JpaArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
@@ -48,6 +50,10 @@ public class ArticleContextReadDependenciesConfiguration {
     @Bean
     ListArticlesQueryHandler listArticlesQueryHandler(JdbcTemplate jdbcTemplate, GetArticleBySlugQueryHandler getArticleBySlugQueryHandler){
         return new ListArticlesQueryHandler(jdbcTemplate, getArticleBySlugQueryHandler);
+    }
+    @Bean
+    ArticleCreatedEventHandler articleCreatedEventHandler(ArticleProjectionRepository articleRepository){
+        return new ArticleCreatedEventHandler(articleRepository);
     }
 
 }
