@@ -1,9 +1,11 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
+
 import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 import java.util.List;
@@ -12,33 +14,78 @@ import java.util.Map;
 @Component
 public class CommandBus {
 
-    private final Map<Class<?>, CommandHandler<?>> handlers = new HashMap<>();
+    // Handlers "classiques" sans retour
+    private final Map<Class<?>, CommandHandler<?>> voidHandlers = new HashMap<>();
 
+    // Handlers avec résultat
+    private final Map<Class<?>, CommandHandlerWithResult<?, ?>> resultHandlers = new HashMap<>();
+
+    // ------- Registration -------
+
+    /**
+     * Enregistré typiquement au startup avec la liste des CommandHandler classiques.
+     */
     public void registerCommandHandlers(List<CommandHandler<?>> handlerList) {
         for (var handler : handlerList) {
             Class<?> commandType = extractGenericCommandType(handler);
-            handlers.put(commandType, handler);
+            voidHandlers.put(commandType, handler);
         }
     }
 
+    /**
+     * À appeler au startup avec la liste des CommandHandlerWithResult.
+     * (via un autre listener, ou le même en injectant aussi List<CommandHandlerWithResult<?, ?>>)
+     */
+    public void registerCommandHandlersWithResult(List<CommandHandlerWithResult<?, ?>> handlerList) {
+        for (var handler : handlerList) {
+            Class<?> commandType = extractGenericCommandTypeForResult(handler);
+            resultHandlers.put(commandType, handler);
+        }
+    }
+
+    // ------- Dispatch -------
+
+    @SuppressWarnings("unchecked")
     public <C extends Command> void dispatch(C command) {
-        CommandHandler<C> handler = (CommandHandler<C>) handlers.get(command.getClass());
+        CommandHandler<C> handler = (CommandHandler<C>) voidHandlers.get(command.getClass());
         if (handler == null) {
-            throw new IllegalArgumentException("No handler for command: " + command.getClass());
+            throw new IllegalArgumentException("No void handler for command: " + command.getClass());
         }
         handler.execute(command);
     }
 
+    @SuppressWarnings("unchecked")
+    public <R> R dispatchWithResult(Command command) {
+        CommandHandlerWithResult<Command, R> handler =
+                (CommandHandlerWithResult<Command, R>) resultHandlers.get(command.getClass());
+        if (handler == null) {
+            throw new IllegalArgumentException("No handler with result for command: " + command.getClass());
+        }
+        return handler.execute(command);
+    }
+
+
+    // ------- Helpers pour introspection des generics -------
+
     private Class<?> extractGenericCommandType(CommandHandler<?> handler) {
-        Class<?> userType = AopUtils.getTargetClass(handler); // Unwrap proxy
+        Class<?> userType = AopUtils.getTargetClass(handler); // unwrap proxy
         for (var iFace : userType.getGenericInterfaces()) {
             if (iFace instanceof ParameterizedType type &&
                     type.getRawType() == CommandHandler.class) {
                 return (Class<?>) type.getActualTypeArguments()[0];
             }
         }
-        throw new IllegalStateException("Cannot infer command type from handler: " + handler);
+        throw new IllegalStateException("Cannot infer command type from void handler: " + handler);
+    }
+
+    private Class<?> extractGenericCommandTypeForResult(CommandHandlerWithResult<?, ?> handler) {
+        Class<?> userType = AopUtils.getTargetClass(handler); // unwrap proxy
+        for (var iFace : userType.getGenericInterfaces()) {
+            if (iFace instanceof ParameterizedType type &&
+                    type.getRawType() == CommandHandlerWithResult.class) {
+                return (Class<?>) type.getActualTypeArguments()[0];
+            }
+        }
+        throw new IllegalStateException("Cannot infer command type from result handler: " + handler);
     }
 }
-
-

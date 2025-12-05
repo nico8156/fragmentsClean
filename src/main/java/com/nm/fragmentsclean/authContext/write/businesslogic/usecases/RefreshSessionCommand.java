@@ -1,5 +1,7 @@
 package com.nm.fragmentsclean.authContext.write.businesslogic.usecases;
 
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -13,5 +15,5 @@ public record RefreshSessionCommand(
         List<String> scopes,
         String existingUserId,
         Instant clientEstablishedAt
-) {
+) implements Command {
 }

@@ -5,36 +5,42 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthProvider;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUser;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-import java.time.Instant;
 
 @Component
-public class GoogleLoginCommandHandler {
+public class GoogleLoginCommandHandler implements CommandHandlerWithResult<GoogleLoginCommand, GoogleLoginResult> {
 
+    private final DomainEventPublisher domainEventPublisher;
     private final GoogleAuthService googleAuthService;
     private final AuthUserRepository authUserRepository;
     private final AppUserRepository appUserRepository;
     private final TokenService tokenService;
-    private final Clock clock;
+    private final DateTimeProvider dateTimeProvider;
 
-    public GoogleLoginCommandHandler(GoogleAuthService googleAuthService,
+    public GoogleLoginCommandHandler(
+                                    DomainEventPublisher domainEventPublisher,
+                                    GoogleAuthService googleAuthService,
                                      AuthUserRepository authUserRepository,
                                      AppUserRepository appUserRepository,
                                      TokenService tokenService,
-                                     Clock clock) {
+                                     DateTimeProvider dateTimeProvider) {
+        this.domainEventPublisher = domainEventPublisher;
         this.googleAuthService = googleAuthService;
         this.authUserRepository = authUserRepository;
         this.appUserRepository = appUserRepository;
         this.tokenService = tokenService;
-        this.clock = clock;
+        this.dateTimeProvider = dateTimeProvider;
     }
 
-    public GoogleLoginResult handle(GoogleLoginCommand command) {
-        Instant now = Instant.now(clock);
+    public GoogleLoginResult execute(GoogleLoginCommand command) {
+        var now = dateTimeProvider.now();
 
         // 1. Échanger le code contre un user Google
         var google = googleAuthService.exchangeCodeForUser(
@@ -68,6 +74,13 @@ public class GoogleLoginCommandHandler {
                     var created = AppUser.createNew(authUser.id(), google.name(), now);
                     return appUserRepository.save(created);
                 });
+
+        // 3 BIS . Publier les events domaine dans l’outbox
+        authUser.domainEvents().forEach(domainEventPublisher::publish);
+        authUser.clearDomainEvents();
+
+        appUser.domainEvents().forEach(domainEventPublisher::publish);
+        appUser.clearDomainEvents();
 
         // 4. Générer les tokens
         var tokens = tokenService.generateTokensForUser(appUser.id());

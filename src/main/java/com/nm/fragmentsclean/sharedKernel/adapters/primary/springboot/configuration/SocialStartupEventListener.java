@@ -1,16 +1,17 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration;
 
-
 import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
@@ -46,6 +47,7 @@ public class SocialStartupEventListener {
     private final CreateCoffeeCommandHandler createCoffeeCommandHandler;
     private final CoffeeCreatedEventHandler coffeeCreatedProjectionHandler;
     private final ListCoffeesQueryHandler listCoffeesQueryHandler;
+    private final GoogleLoginCommandHandler googleLoginCommandHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
@@ -63,7 +65,8 @@ public class SocialStartupEventListener {
                                       GetArticleBySlugQueryHandler getArticleBySlugQueryHandler,
                                       CreateCoffeeCommandHandler createCoffeeCommandHandler,
                                       CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
-                                      ListCoffeesQueryHandler listCoffeesQueryHandler
+                                      ListCoffeesQueryHandler listCoffeesQueryHandler,
+                                      GoogleLoginCommandHandler googleLoginCommandHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -82,6 +85,7 @@ public class SocialStartupEventListener {
         this.createCoffeeCommandHandler = createCoffeeCommandHandler;
         this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
         this.listCoffeesQueryHandler = listCoffeesQueryHandler;
+        this.googleLoginCommandHandler = googleLoginCommandHandler;
     }
 
     @EventListener
@@ -96,6 +100,11 @@ public class SocialStartupEventListener {
 
         );
         commandBus.registerCommandHandlers(handlers);
+
+        List<CommandHandlerWithResult<?,?>> handlersWithResult = List.of(
+                googleLoginCommandHandler
+        );
+        commandBus.registerCommandHandlersWithResult(handlersWithResult);
 
         List<QueryHandler<?,?>> queryHandlers = List.of(
                 getLikeSummaryQueryHandler,

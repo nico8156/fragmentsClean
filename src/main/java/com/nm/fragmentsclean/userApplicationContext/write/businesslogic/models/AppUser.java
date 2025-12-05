@@ -11,7 +11,7 @@ public class AppUser extends AggregateRoot {
     private String displayName;
     private final Instant createdAt;
 
-    private AppUser(UUID id, UUID authUserId, String displayName, Instant createdAt) {
+    public AppUser(UUID id, UUID authUserId, String displayName, Instant createdAt) {
         super(id);
         this.authUserId = authUserId;
         this.displayName = displayName;
@@ -22,8 +22,7 @@ public class AppUser extends AggregateRoot {
         UUID id = UUID.randomUUID();
         var user = new AppUser(id, authUserId, displayName, now);
 
-        // Ici tu pourrais faire un registerEvent(new AppUserCreatedEvent(...));
-        // user.registerEvent(...);
+        user.registerEvent(AppUserCreatedEvent.of(user, now));
 
         return user;
     }

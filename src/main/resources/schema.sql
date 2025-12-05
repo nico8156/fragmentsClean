@@ -210,6 +210,7 @@ CREATE TABLE IF NOT EXISTS articles_projection (
 
                                      coffee_ids_json  TEXT         NOT NULL  -- UUID[] sérialisés en JSON
 );
+
 --
 -- CREATE INDEX idx_articles_projection_slug_locale
 --     ON articles_projection (slug, locale);
@@ -227,3 +228,25 @@ CREATE TABLE IF NOT EXISTS articles_projection (
 -- CREATE INDEX idx_outbox_events_stream_key_id
 --     ON outbox_events (stream_key, id);
 
+CREATE TABLE IF NOT EXISTS auth_users (
+                                          id               UUID PRIMARY KEY,
+                                          provider         VARCHAR(32)      NOT NULL, -- "GOOGLE"
+                                          provider_user_id VARCHAR(255)     NOT NULL, -- Google sub
+                                          email            VARCHAR(255)     NOT NULL,
+                                          email_verified   BOOLEAN          NOT NULL,
+                                          last_login_at    TIMESTAMPTZ      NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_auth_users_provider_user
+    ON auth_users (provider, provider_user_id);
+
+
+CREATE TABLE IF NOT EXISTS app_users (
+                                         id            UUID PRIMARY KEY,
+                                         auth_user_id  UUID           NOT NULL REFERENCES auth_users(id),
+                                         display_name  VARCHAR(255)   NOT NULL,
+                                         created_at    TIMESTAMPTZ    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
+    ON app_users (auth_user_id);

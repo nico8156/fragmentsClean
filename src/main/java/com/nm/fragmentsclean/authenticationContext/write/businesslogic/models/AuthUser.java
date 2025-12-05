@@ -13,12 +13,12 @@ public class AuthUser extends AggregateRoot {
     private final boolean emailVerified;
     private Instant lastLoginAt;
 
-    private AuthUser(UUID id,
-                     AuthProvider provider,
-                     String providerUserId,
-                     String email,
-                     boolean emailVerified,
-                     Instant lastLoginAt) {
+    public AuthUser(UUID id,
+                    AuthProvider provider,
+                    String providerUserId,
+                    String email,
+                    boolean emailVerified,
+                    Instant lastLoginAt) {
         super(id);
         this.provider = provider;
         this.providerUserId = providerUserId;
@@ -35,8 +35,7 @@ public class AuthUser extends AggregateRoot {
         UUID id = UUID.randomUUID();
         var authUser = new AuthUser(id, provider, providerUserId, email, emailVerified, now);
 
-        // Ici aussi tu peux émettre un event domaine si tu veux :
-        // authUser.registerEvent(new AuthUserCreatedEvent(...));
+        authUser.registerEvent(AuthUserCreatedEvent.of(authUser, now));
 
         return authUser;
     }
