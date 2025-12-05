@@ -1,6 +1,5 @@
 package com.nm.fragmentsclean.coffeeContextTest.endtoend.adapters.primary.springboot.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,9 +22,6 @@ public class CoffeeReadIT extends AbstractBaseE2E {
     private static final UUID COMMAND_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID COFFEE_ID  = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final String GOOGLE_ID = "ChIJ-Coffee-Google-Place-Id";
-
-    @Autowired
-    ObjectMapper objectMapper;
 
     @Autowired
     private MockMvc mockMvc;
