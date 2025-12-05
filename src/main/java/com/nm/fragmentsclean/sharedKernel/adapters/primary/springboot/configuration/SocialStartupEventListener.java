@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
@@ -48,6 +49,7 @@ public class SocialStartupEventListener {
     private final CoffeeCreatedEventHandler coffeeCreatedProjectionHandler;
     private final ListCoffeesQueryHandler listCoffeesQueryHandler;
     private final GoogleLoginCommandHandler googleLoginCommandHandler;
+    private final RefreshTokenCommandHandler refreshTokenCommandHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QuerryBus querryBus,
@@ -66,7 +68,8 @@ public class SocialStartupEventListener {
                                       CreateCoffeeCommandHandler createCoffeeCommandHandler,
                                       CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
                                       ListCoffeesQueryHandler listCoffeesQueryHandler,
-                                      GoogleLoginCommandHandler googleLoginCommandHandler
+                                      GoogleLoginCommandHandler googleLoginCommandHandler,
+                                      RefreshTokenCommandHandler refreshTokenCommandHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -86,6 +89,7 @@ public class SocialStartupEventListener {
         this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
         this.listCoffeesQueryHandler = listCoffeesQueryHandler;
         this.googleLoginCommandHandler = googleLoginCommandHandler;
+        this.refreshTokenCommandHandler = refreshTokenCommandHandler;
     }
 
     @EventListener
@@ -102,7 +106,8 @@ public class SocialStartupEventListener {
         commandBus.registerCommandHandlers(handlers);
 
         List<CommandHandlerWithResult<?,?>> handlersWithResult = List.of(
-                googleLoginCommandHandler
+                googleLoginCommandHandler,
+                refreshTokenCommandHandler
         );
         commandBus.registerCommandHandlersWithResult(handlersWithResult);
 

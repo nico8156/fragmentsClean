@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa;
+package com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.entities;
 
 import jakarta.persistence.*;
 

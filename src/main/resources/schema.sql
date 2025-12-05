@@ -250,3 +250,14 @@ CREATE TABLE IF NOT EXISTS app_users (
 
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+                                              id         UUID PRIMARY KEY,
+                                              user_id    UUID        NOT NULL,
+                                              token      VARCHAR(512) NOT NULL,
+                                              expires_at TIMESTAMPTZ NOT NULL,
+                                              revoked    BOOLEAN      NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token
+    ON refresh_tokens (token);

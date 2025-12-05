@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa;
 
+import com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.entities.AppUserJpaEntity;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.springframework.stereotype.Repository;

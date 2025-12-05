@@ -1,8 +1,6 @@
 package com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.controllers;
 
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommand;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginResult;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.*;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +38,20 @@ public class AuthController {
                 result.accessToken(),
                 result.refreshToken(),
                 userSummary
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponseDto> refresh(@RequestBody RefreshTokenRequestDto body) {
+
+        var command = new RefreshTokenCommand(body.refreshToken());
+        RefreshTokenResult result = commandBus.dispatchWithResult(command);
+
+        var response = new RefreshTokenResponseDto(
+                result.accessToken(),
+                result.refreshToken()
         );
 
         return ResponseEntity.ok(response);

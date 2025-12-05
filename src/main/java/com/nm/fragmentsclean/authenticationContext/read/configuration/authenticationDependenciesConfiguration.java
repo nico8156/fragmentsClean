@@ -1,12 +1,13 @@
 package com.nm.fragmentsclean.authenticationContext.read.configuration;
 
-
 import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.JpaAuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.SpringAuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
@@ -40,5 +41,14 @@ public class authenticationDependenciesConfiguration {
             DateTimeProvider dateTimeProvider
     ) {
         return new GoogleLoginCommandHandler(domainEventPublisher, googleAuthService, authUserRepository, appUserRepository, tokenService, dateTimeProvider);
+    }
+
+    @Bean
+    RefreshTokenCommandHandler refreshTokenCommandHandler(
+            RefreshTokenRepository refreshTokenRepository,
+            TokenService tokenService,
+            DateTimeProvider dateTimeProvider
+    ) {
+        return new RefreshTokenCommandHandler(refreshTokenRepository, tokenService, dateTimeProvider);
     }
 }

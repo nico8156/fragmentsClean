@@ -88,7 +88,7 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
         // 5. Retourner le résultat
         return new GoogleLoginResult(
                 tokens.accessToken(),
-                tokens.refreshToken(),
+                tokens.refreshToken().token(),
                 appUser.id(),
                 appUser.displayName(),
                 google.email(),
