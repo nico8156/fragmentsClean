@@ -46,12 +46,12 @@ public class AuthFlowIT extends AbstractBaseE2E {
                         post("/auth/google/exchange")
                                 .contentType("application/json")
                                 .content("""
-                                        {
-                                          "code": "%s",
-                                          "codeVerifier": "dummy-verifier",
-                                          "redirectUri": "com.fragments:/oauth2redirect"
-                                        }
-                                        """.formatted(code))
+                                    {
+                                      "code": "%s",
+                                      "codeVerifier": "dummy-verifier",
+                                      "redirectUri": "com.fragments:/oauth2redirect"
+                                    }
+                                    """.formatted(code))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -61,16 +61,18 @@ public class AuthFlowIT extends AbstractBaseE2E {
                 .andExpect(jsonPath("$.user.email").value(code + "@example.com"))
                 .andReturn();
 
-        // THEN : on vérifie le JSON en détail
         JsonNode root = objectMapper.readTree(mvcResult.getResponse().getContentAsByteArray());
 
         String accessToken = root.path("accessToken").asText();
         String refreshToken = root.path("refreshToken").asText();
         String userId = root.path("user").path("id").asText();
 
-        assertThat(accessToken).startsWith("access-");
-        assertThat(refreshToken).startsWith("refresh-");
+        assertThat(accessToken).isNotBlank();
+        assertThat(refreshToken).isNotBlank();
         assertThat(userId).isNotBlank();
+
+        // Optionnel : vérifier que c’est bien un JWT (3 parties séparées par des ".")
+        assertThat(accessToken.split("\\.")).hasSize(3);
 
         // Sanity check DB : 1 auth_user + 1 app_user
         var authUsers = jdbcTemplate.queryForList("SELECT * FROM auth_users");
@@ -78,9 +80,5 @@ public class AuthFlowIT extends AbstractBaseE2E {
 
         assertThat(authUsers).hasSize(1);
         assertThat(appUsers).hasSize(1);
-
-        // Optionnel : vérifier l’outbox a reçu des events
-//        var outboxEvents = outboxEventRepository.findAll();
-//        assertThat(outboxEvents).isNotEmpty();
     }
 }

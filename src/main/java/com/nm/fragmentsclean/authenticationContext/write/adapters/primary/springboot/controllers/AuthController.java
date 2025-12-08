@@ -3,7 +3,12 @@ package com.nm.fragmentsclean.authenticationContext.write.adapters.primary.sprin
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.*;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -56,4 +61,25 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<MeResponse> me(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
+        MeResponse response = new MeResponse(
+                userId,
+                jwt.getIssuedAt(),
+                jwt.getExpiresAt(),
+                Instant.now()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    public record MeResponse(
+            UUID userId,
+            Instant issuedAt,
+            Instant expiresAt,
+            Instant serverTime
+    ) {}
 }

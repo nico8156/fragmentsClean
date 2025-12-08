@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
@@ -23,7 +24,7 @@ public class CreateArticleCommandHandler implements CommandHandler<CreateArticle
     }
 
     @Override
-    public void execute(CreateArticleCommand cmd) {
+    public void execute(CreateArticleCommand cmd)  {
         var now = dateTimeProvider.now();
 
         // idempotence simple : si l’article existe déjà, on ne recrée pas

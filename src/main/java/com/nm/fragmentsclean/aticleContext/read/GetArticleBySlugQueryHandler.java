@@ -1,8 +1,5 @@
 package com.nm.fragmentsclean.aticleContext.read;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleBlockView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
 import com.nm.fragmentsclean.aticleContext.read.projections.AuthorView;
@@ -10,6 +7,9 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ImageRefView;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -108,8 +108,10 @@ public class GetArticleBySlugQueryHandler
     private List<ArticleBlockView> parseBlocks(String json) {
         if (json == null || json.isBlank()) return Collections.emptyList();
         try {
-            // On mappe directement sur ArticleBlockView
-            return objectMapper.readValue(json, new TypeReference<List<ArticleBlockView>>() {});
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<ArticleBlockView>>() {}
+            );
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse blocks_json", e);
         }
@@ -127,7 +129,10 @@ public class GetArticleBySlugQueryHandler
     private List<String> parseStringList(String json) {
         if (json == null || json.isBlank()) return Collections.emptyList();
         try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<String>>() {}
+            );
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse string list JSON", e);
         }
@@ -136,7 +141,10 @@ public class GetArticleBySlugQueryHandler
     private List<UUID> parseUuidList(String json) {
         if (json == null || json.isBlank()) return Collections.emptyList();
         try {
-            List<String> raw = objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            List<String> raw = objectMapper.readValue(
+                    json,
+                    new TypeReference<List<String>>() {}
+            );
             return raw.stream().map(UUID::fromString).toList();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse UUID list JSON", e);

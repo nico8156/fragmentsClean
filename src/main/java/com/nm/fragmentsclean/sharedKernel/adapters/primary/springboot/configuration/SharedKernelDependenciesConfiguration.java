@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
+
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -60,5 +61,10 @@ public class SharedKernelDependenciesConfiguration {
     @Bean
     public DateTimeProvider dateTimeProvider() {
         return Instant::now; // tu pourras mettre ta version déterministe en test
+    }
+    @Bean
+    public ObjectMapper objectMapper() {
+        // findAndRegisterModules() pour JavaTime, etc.
+        return new ObjectMapper().findAndRegisterModules();
     }
 }

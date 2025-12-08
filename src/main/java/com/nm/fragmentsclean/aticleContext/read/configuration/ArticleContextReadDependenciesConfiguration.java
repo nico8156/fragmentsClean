@@ -1,7 +1,5 @@
 package com.nm.fragmentsclean.aticleContext.read.configuration;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
@@ -12,13 +10,16 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.reposito
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+
+
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 @Configuration
 @EntityScan(basePackages = "com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.entities")
@@ -29,7 +30,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class ArticleContextReadDependenciesConfiguration {
 
     @Bean
-    @Profile("database")
     public ArticleRepository jpaArticleRepository(SpringArticleRepository springArticleRepository, ObjectMapper objectMapper){
         return new JpaArticleRepository(springArticleRepository, objectMapper);
     }

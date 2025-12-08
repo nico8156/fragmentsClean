@@ -22,9 +22,6 @@ public class CommandBus {
 
     // ------- Registration -------
 
-    /**
-     * Enregistré typiquement au startup avec la liste des CommandHandler classiques.
-     */
     public void registerCommandHandlers(List<CommandHandler<?>> handlerList) {
         for (var handler : handlerList) {
             Class<?> commandType = extractGenericCommandType(handler);
@@ -32,10 +29,6 @@ public class CommandBus {
         }
     }
 
-    /**
-     * À appeler au startup avec la liste des CommandHandlerWithResult.
-     * (via un autre listener, ou le même en injectant aussi List<CommandHandlerWithResult<?, ?>>)
-     */
     public void registerCommandHandlersWithResult(List<CommandHandlerWithResult<?, ?>> handlerList) {
         for (var handler : handlerList) {
             Class<?> commandType = extractGenericCommandTypeForResult(handler);
@@ -64,11 +57,10 @@ public class CommandBus {
         return handler.execute(command);
     }
 
-
-    // ------- Helpers pour introspection des generics -------
+    // ------- Helpers -------
 
     private Class<?> extractGenericCommandType(CommandHandler<?> handler) {
-        Class<?> userType = AopUtils.getTargetClass(handler); // unwrap proxy
+        Class<?> userType = AopUtils.getTargetClass(handler);
         for (var iFace : userType.getGenericInterfaces()) {
             if (iFace instanceof ParameterizedType type &&
                     type.getRawType() == CommandHandler.class) {
@@ -79,7 +71,7 @@ public class CommandBus {
     }
 
     private Class<?> extractGenericCommandTypeForResult(CommandHandlerWithResult<?, ?> handler) {
-        Class<?> userType = AopUtils.getTargetClass(handler); // unwrap proxy
+        Class<?> userType = AopUtils.getTargetClass(handler);
         for (var iFace : userType.getGenericInterfaces()) {
             if (iFace instanceof ParameterizedType type &&
                     type.getRawType() == CommandHandlerWithResult.class) {

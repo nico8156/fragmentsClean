@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -41,12 +42,12 @@ public class AuthRefreshIT extends AbstractBaseE2E {
                         post("/auth/google/exchange")
                                 .contentType("application/json")
                                 .content("""
-                                        {
-                                          "code": "%s",
-                                          "codeVerifier": "dummy-verifier",
-                                          "redirectUri": "com.fragments:/oauth2redirect"
-                                        }
-                                        """.formatted(code))
+                                    {
+                                      "code": "%s",
+                                      "codeVerifier": "dummy-verifier",
+                                      "redirectUri": "com.fragments:/oauth2redirect"
+                                    }
+                                    """.formatted(code))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -69,10 +70,10 @@ public class AuthRefreshIT extends AbstractBaseE2E {
                         post("/auth/refresh")
                                 .contentType("application/json")
                                 .content("""
-                                        {
-                                          "refreshToken": "%s"
-                                        }
-                                        """.formatted(refreshToken1))
+                                    {
+                                      "refreshToken": "%s"
+                                    }
+                                    """.formatted(refreshToken1))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -89,6 +90,10 @@ public class AuthRefreshIT extends AbstractBaseE2E {
         assertThat(refreshToken2).isNotBlank();
         assertThat(accessToken2).isNotEqualTo(accessToken1);
         assertThat(refreshToken2).isNotEqualTo(refreshToken1);
+
+        // Optionnel : vérif structure JWT
+        assertThat(accessToken1.split("\\.")).hasSize(3);
+        assertThat(accessToken2.split("\\.")).hasSize(3);
 
         // Sanity check DB : 1 auth_user, 1 app_user
         var authUsers = jdbcTemplate.queryForList("SELECT * FROM auth_users");
@@ -113,4 +118,5 @@ public class AuthRefreshIT extends AbstractBaseE2E {
         assertThat(revokedCount).isEqualTo(1);
         assertThat(activeCount).isEqualTo(1);
     }
+
 }

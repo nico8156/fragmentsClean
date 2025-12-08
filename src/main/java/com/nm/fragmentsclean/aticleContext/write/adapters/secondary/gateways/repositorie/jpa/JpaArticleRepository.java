@@ -8,7 +8,6 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.reposito
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleStatus;
 
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -137,7 +136,10 @@ public class JpaArticleRepository implements ArticleRepository {
             return Collections.emptyList();
         }
         try {
-            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
+            return objectMapper.readValue(
+                    json,
+                    new TypeReference<List<String>>() {}
+            );
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Failed to deserialize JSON for Article", e);
         }

@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary;
+package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.TokenGateway;
 
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
@@ -7,7 +7,6 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Component
