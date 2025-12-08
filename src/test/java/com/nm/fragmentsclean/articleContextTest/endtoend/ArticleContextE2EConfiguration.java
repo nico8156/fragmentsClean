@@ -9,12 +9,12 @@ import org.springframework.context.annotation.Primary;
 @TestConfiguration
 public class ArticleContextE2EConfiguration {
 
-
     @Primary
     @Bean
     public CurrentUserProvider testCurrentUserProvider() {
         // l'utilisateur "me" utilisé dans tes tests E2E
         return new FakeCurrentUserProvider();
     }
+
 
 }

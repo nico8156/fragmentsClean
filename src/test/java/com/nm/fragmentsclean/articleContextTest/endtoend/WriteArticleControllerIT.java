@@ -32,6 +32,7 @@ public class WriteArticleControllerIT extends AbstractBaseE2E {
     @Autowired
     private DateTimeProvider dateTimeProvider;
 
+
     @BeforeEach
     void setup() {
         springArticleRepository.deleteAll();

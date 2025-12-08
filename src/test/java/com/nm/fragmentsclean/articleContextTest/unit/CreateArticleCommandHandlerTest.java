@@ -31,7 +31,7 @@ public class CreateArticleCommandHandlerTest {
 
     @BeforeEach
     void setup() {
-        dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T10:00:00Z");
+        dateTimeProvider.instantOfNow = Instant.parse("2024-01-01T10:00:00Z");
         handler = new CreateArticleCommandHandler(articleRepository, domainEventPublisher, dateTimeProvider);
     }
 

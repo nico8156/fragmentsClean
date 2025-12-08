@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 @DataJpaTest
 @EnableAutoConfiguration
-@EntityScan("com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.entities")
+@EntityScan("com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpaentities")
 @EnableJpaRepositories("com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = {JpaIntegrationTestConfiguration.class})

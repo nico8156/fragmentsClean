@@ -15,13 +15,17 @@ public class CompositeOutboxEventSender implements OutboxEventSender {
 
     public CompositeOutboxEventSender(
             EventBusOutboxEventSender eventBusSender,
-            LoggingOutboxEventSender loggingOutboxEventSender
+            LoggingOutboxEventSender loggingOutboxEventSender,
+            KafkaOutboxEventSender kafkaOutboxEventSender // optionnel
             // tu peux en rajouter un troisième ex: LoggingOutboxEventSender si tu veux
     ) {
-        this.delegates = List.of(
-                eventBusSender,
-                loggingOutboxEventSender
-        );
+        var list = new java.util.ArrayList<OutboxEventSender>();
+        list.add(eventBusSender);
+        list.add(loggingOutboxEventSender);
+        if (kafkaOutboxEventSender != null) {
+            list.add(kafkaOutboxEventSender);
+        }
+        this.delegates = java.util.List.copyOf(list);
     }
 
     @Override
