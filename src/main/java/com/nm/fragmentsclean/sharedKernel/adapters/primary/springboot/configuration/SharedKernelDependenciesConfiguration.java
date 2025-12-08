@@ -1,9 +1,10 @@
 
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.OutboxDomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.JpaOutboxEventRepsitory;
@@ -53,8 +54,8 @@ public class SharedKernelDependenciesConfiguration {
         return new CommandBus();
     }
     @Bean
-    public QuerryBus querryBus()  {
-        return new QuerryBus();
+    public QueryBus queryBus()  {
+        return new QueryBus();
     }
     @Bean
     public EventBus eventBus()  {return new EventBus();}

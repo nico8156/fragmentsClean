@@ -42,7 +42,7 @@ public class AuthUser extends AggregateRoot {
 
     public void markLogin(Instant now) {
         this.lastLoginAt = now;
-        // registerEvent(new AuthUserLoggedInEvent(this.id(), now));
+        registerEvent(AuthUserLoggedInEvent.of(this, now));
     }
 
     public AuthProvider provider() {

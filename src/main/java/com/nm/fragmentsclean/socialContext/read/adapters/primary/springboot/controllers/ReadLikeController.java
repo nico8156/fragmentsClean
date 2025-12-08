@@ -1,6 +1,6 @@
     package com.nm.fragmentsclean.socialContext.read.adapters.primary.springboot.controllers;
 
-    import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+    import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 
     import com.nm.fragmentsclean.socialContext.read.projections.GetLikeStatusQuery;
     import com.nm.fragmentsclean.socialContext.read.projections.LikeStatusView;
@@ -13,9 +13,9 @@
     @RequestMapping("/api/social/targets")
     public class ReadLikeController {
 
-        private final QuerryBus querryBus;
+        private final QueryBus querryBus;
 
-        public ReadLikeController(QuerryBus querryBus) {
+        public ReadLikeController(QueryBus querryBus) {
             this.querryBus = querryBus;
         }
 

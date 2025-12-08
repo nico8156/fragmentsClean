@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.read.GetMeQueryHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
@@ -11,7 +12,7 @@ import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
@@ -32,7 +33,7 @@ import java.util.List;
 @Component
 public class SocialStartupEventListener {
     private final CommandBus commandBus;
-    private final QuerryBus querryBus;
+    private final QueryBus querryBus;
     private final EventBus eventBus;
     private final MakeLikeCommandHandler makeLikeCommandHandler;
     private final CreateCommentCommandHandler createCommentCommandHandler;
@@ -50,9 +51,10 @@ public class SocialStartupEventListener {
     private final ListCoffeesQueryHandler listCoffeesQueryHandler;
     private final GoogleLoginCommandHandler googleLoginCommandHandler;
     private final RefreshTokenCommandHandler refreshTokenCommandHandler;
+    private final GetMeQueryHandler getMeQueryHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
-                                      QuerryBus querryBus,
+                                      QueryBus querryBus,
                                       EventBus eventBus,
                                       MakeLikeCommandHandler makeLikeCommandHandler,
                                       CreateCommentCommandHandler createCommentCommandHandler,
@@ -69,7 +71,8 @@ public class SocialStartupEventListener {
                                       CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
                                       ListCoffeesQueryHandler listCoffeesQueryHandler,
                                       GoogleLoginCommandHandler googleLoginCommandHandler,
-                                      RefreshTokenCommandHandler refreshTokenCommandHandler
+                                      RefreshTokenCommandHandler refreshTokenCommandHandler,
+                                      GetMeQueryHandler getMeQueryHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -90,6 +93,7 @@ public class SocialStartupEventListener {
         this.listCoffeesQueryHandler = listCoffeesQueryHandler;
         this.googleLoginCommandHandler = googleLoginCommandHandler;
         this.refreshTokenCommandHandler = refreshTokenCommandHandler;
+        this.getMeQueryHandler = getMeQueryHandler;
     }
 
     @EventListener
@@ -117,9 +121,10 @@ public class SocialStartupEventListener {
                 getLikeStatusQueryHandler,
                 listArticlesQueryHandler,
                 getArticleBySlugQueryHandler,
-                listCoffeesQueryHandler
+                listCoffeesQueryHandler,
+                getMeQueryHandler
         );
-        querryBus.registerQuerryHandlers(queryHandlers);
+        querryBus.registerQueryHandlers(queryHandlers);
 
         List<EventHandler<?>> eventHandlers = List.of(
                 articleCreatedProjectionHandler,

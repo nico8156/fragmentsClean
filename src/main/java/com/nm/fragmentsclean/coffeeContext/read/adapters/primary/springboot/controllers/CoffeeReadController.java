@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.con
 
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,9 +11,9 @@ import java.util.List;
 @RestController
 class CoffeeReadController {
 
-    private final QuerryBus querryBus;
+    private final QueryBus querryBus;
 
-    public CoffeeReadController(QuerryBus querryBus) {
+    public CoffeeReadController(QueryBus querryBus) {
         this.querryBus = querryBus;
     }
 

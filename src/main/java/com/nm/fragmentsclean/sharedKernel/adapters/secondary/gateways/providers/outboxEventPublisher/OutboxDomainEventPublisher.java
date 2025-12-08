@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
-import com.nm.fragmentsclean.authContext.write.businesslogic.models.events.UserAuthenticatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -58,11 +57,8 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             String aggregateId;
             String streamKey;
 
-            if (event instanceof UserAuthenticatedEvent authEvent) {
-                aggregateType = "User";
-                aggregateId = authEvent.userId().toString();
-                streamKey = "user:" + aggregateId;
-            } else if (event instanceof ArticleCreatedEvent articleEvent) {
+
+            if (event instanceof ArticleCreatedEvent articleEvent) {
                 aggregateType = "Article";
                 aggregateId = articleEvent.articleId().toString();
                 streamKey = "article:" + aggregateId;

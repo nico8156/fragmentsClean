@@ -4,7 +4,7 @@ import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQuery;
 import com.nm.fragmentsclean.aticleContext.read.ListArticlesQuery;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleListView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QuerryBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/articles")
 public class ReadArticleController {
 
-    private final QuerryBus querryBus;
+    private final QueryBus querryBus;
 
-    public ReadArticleController(QuerryBus querryBus) {
+    public ReadArticleController(QueryBus querryBus) {
         this.querryBus = querryBus;
     }
 

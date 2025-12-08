@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.authenticationContext.read.configuration;
 
+import com.nm.fragmentsclean.authenticationContext.read.GetMeQueryHandler;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.JpaAuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.SpringAuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AuthUserRepository;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 @EntityScan(basePackages = "com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.entities")
@@ -51,5 +53,10 @@ public class authenticationDependenciesConfiguration {
             DateTimeProvider dateTimeProvider
     ) {
         return new RefreshTokenCommandHandler(refreshTokenRepository, tokenService, dateTimeProvider);
+    }
+
+    @Bean
+    GetMeQueryHandler getMeQueryHandler(JdbcTemplate jdbcTemplate){
+        return new GetMeQueryHandler(jdbcTemplate);
     }
 }
