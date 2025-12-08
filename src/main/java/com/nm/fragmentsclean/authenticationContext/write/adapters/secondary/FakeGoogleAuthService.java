@@ -1,14 +1,11 @@
 package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary;
 
-
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Locale;
 
 @Component
-@Profile("test")
 public class FakeGoogleAuthService implements GoogleAuthService {
 
     @Override

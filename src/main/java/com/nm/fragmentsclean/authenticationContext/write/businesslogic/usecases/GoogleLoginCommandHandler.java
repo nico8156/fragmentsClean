@@ -25,12 +25,12 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
     private final DateTimeProvider dateTimeProvider;
 
     public GoogleLoginCommandHandler(
-                                    DomainEventPublisher domainEventPublisher,
-                                    GoogleAuthService googleAuthService,
-                                     AuthUserRepository authUserRepository,
-                                     AppUserRepository appUserRepository,
-                                     TokenService tokenService,
-                                     DateTimeProvider dateTimeProvider) {
+            DomainEventPublisher domainEventPublisher,
+            GoogleAuthService googleAuthService,
+            AuthUserRepository authUserRepository,
+            AppUserRepository appUserRepository,
+            TokenService tokenService,
+            DateTimeProvider dateTimeProvider) {
         this.domainEventPublisher = domainEventPublisher;
         this.googleAuthService = googleAuthService;
         this.authUserRepository = authUserRepository;
@@ -39,22 +39,24 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
         this.dateTimeProvider = dateTimeProvider;
     }
 
+    @Override
     public GoogleLoginResult execute(GoogleLoginCommand command) {
         var now = dateTimeProvider.now();
 
-        // 1. Échanger le code contre un user Google
+        // 1. Google user
         var google = googleAuthService.exchangeCodeForUser(
                 command.code(),
                 command.codeVerifier(),
                 command.redirectUri()
         );
 
-        // 2. Résoudre / créer AuthUser
+        // 2. AuthUser : on garde l’instance qui porte les events
         AuthUser authUser = authUserRepository
                 .findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
                 .map(existing -> {
                     existing.markLogin(now);
-                    return authUserRepository.save(existing);
+                    authUserRepository.save(existing);    // on ignore le retour
+                    return existing;                      // on retourne l’instance qui a les events
                 })
                 .orElseGet(() -> {
                     var created = AuthUser.createNew(
@@ -64,28 +66,34 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
                             google.emailVerified(),
                             now
                     );
-                    return authUserRepository.save(created);
+                    authUserRepository.save(created);
+                    return created;
                 });
 
-        // 3. Résoudre / créer AppUser
+        // 3. AppUser : même logique
         AppUser appUser = appUserRepository
                 .findByAuthUserId(authUser.id())
+                .map(existing -> {
+                    // ici tu peux décider de lever un event "AppUserLoggedIn" si tu veux
+                    return existing;
+                })
                 .orElseGet(() -> {
                     var created = AppUser.createNew(authUser.id(), google.name(), now);
-                    return appUserRepository.save(created);
+                    appUserRepository.save(created);
+                    return created;
                 });
 
-        // 3 BIS . Publier les events domaine dans l’outbox
+        // 3 BIS : publier les events depuis LES bonnes instances
         authUser.domainEvents().forEach(domainEventPublisher::publish);
         authUser.clearDomainEvents();
 
         appUser.domainEvents().forEach(domainEventPublisher::publish);
         appUser.clearDomainEvents();
 
-        // 4. Générer les tokens
+        // 4. Tokens
         var tokens = tokenService.generateTokensForUser(appUser.id());
 
-        // 5. Retourner le résultat
+        // 5. Résultat
         return new GoogleLoginResult(
                 tokens.accessToken(),
                 tokens.refreshToken().token(),

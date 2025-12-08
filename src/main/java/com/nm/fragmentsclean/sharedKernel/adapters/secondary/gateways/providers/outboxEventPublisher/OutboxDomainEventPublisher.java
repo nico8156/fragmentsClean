@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -11,6 +13,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -66,6 +69,18 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
                 aggregateType = "Coffee";
                 aggregateId = coffeeEvent.coffeeId().toString();
                 streamKey = "coffee:" + aggregateId;
+            } else if (event instanceof AuthUserCreatedEvent createdEvent) {
+                aggregateType = "AuthUser";
+                aggregateId = createdEvent.authUserId().toString();
+                streamKey = "authUser:" + aggregateId;
+            } else if (event instanceof AuthUserLoggedInEvent loginEvent) {
+                aggregateType = "AuthUser";
+                aggregateId = loginEvent.authUserId().toString();
+                streamKey = "authUser:" + aggregateId;
+            } else if (event instanceof AppUserCreatedEvent appEvent) {
+                aggregateType = "AppUser";
+                aggregateId = appEvent.userId().toString();
+                streamKey = "appUser:" + aggregateId;
             } else {
                 aggregateType = "Unknown";
                 aggregateId = "unknown";

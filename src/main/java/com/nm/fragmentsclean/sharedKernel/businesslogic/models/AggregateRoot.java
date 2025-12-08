@@ -14,6 +14,7 @@ public abstract class AggregateRoot extends Entity {
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     protected void registerEvent(DomainEvent event) {
+        System.out.println("New event added"+event);
         domainEvents.add(event);
     }
 
