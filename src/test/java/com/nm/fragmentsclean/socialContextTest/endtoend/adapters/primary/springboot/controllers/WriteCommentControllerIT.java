@@ -2,6 +2,10 @@ package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.spring
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.entities.CommentJpaEntity;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.ModerationStatus;
@@ -13,9 +17,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+// imports junit / mockmvc etc...
 
 public class WriteCommentControllerIT extends AbstractBaseE2E {
 
@@ -31,23 +36,26 @@ public class WriteCommentControllerIT extends AbstractBaseE2E {
     private SpringCommentRepository springCommentRepository;
 
     @Autowired
+    private SpringOutboxEventRepository outboxRepository;
+
+    @Autowired
     private DateTimeProvider dateTimeProvider;
 
     @BeforeEach
     void setup() {
         springCommentRepository.deleteAll();
+        outboxRepository.deleteAll();
 
-        // instant "serveur" utilisé par le domaine (DateTimeProvider)
         ((DeterministicDateTimeProvider) dateTimeProvider).instantOfNow =
                 Instant.parse("2024-01-01T10:00:00Z");
     }
 
     @Test
-    void can_create_comment() throws Exception {
+    void can_create_comment_and_persist_outbox_event() throws Exception {
         var clientAt = "2024-01-01T09:00:00Z";
 
         mockMvc.perform(
-                        post("/api/social/comments") // <-- mapping du WriteCommentController
+                        post("/api/social/comments")
                                 .contentType("application/json")
                                 .content(
                                         """
@@ -69,23 +77,39 @@ public class WriteCommentControllerIT extends AbstractBaseE2E {
                                         )
                                 )
                 )
-                .andExpect(status().isAccepted()); // 202 comme pour les likes
+                .andExpect(status().isAccepted());
 
-        var now = Instant.parse("2024-01-01T10:00:00Z"); // date "serveur"
+        var now = Instant.parse("2024-01-01T10:00:00Z");
 
+        // 1) Vérif write model
         assertThat(springCommentRepository.findAll()).containsExactly(
                 new CommentJpaEntity(
                         COMMENT_ID,
                         TARGET_ID,
                         USER_ID,
-                        null,                       // parentId
+                        null,
                         "Hello world",
-                        now,                        // createdAt (serveur)
-                        null,                       // editedAt
-                        null,                       // deletedAt
-                        ModerationStatus.PUBLISHED, // état "par défaut"
-                        0L                          // version initiale (ajuste à 1L si tu décides d'incrémenter à la création)
+                        now,
+                        null,
+                        null,
+                        ModerationStatus.PUBLISHED,
+                        0L
                 )
         );
+
+        // 2) Vérif outbox
+        var outboxEvents = outboxRepository.findAll();
+        assertThat(outboxEvents).hasSize(1);
+
+        OutboxEventJpaEntity event = outboxEvents.get(0);
+
+        assertThat(event.getStatus()).isEqualTo(OutboxStatus.PENDING);
+        assertThat(event.getEventType()).isEqualTo(CommentCreatedEvent.class.getName());
+        assertThat(event.getAggregateType()).isEqualTo("Comment");
+        assertThat(event.getAggregateId()).isEqualTo(COMMENT_ID.toString());
+        assertThat(event.getStreamKey()).isEqualTo("social:" + TARGET_ID);
+
+        // Payload JSON bien présent
+        assertThat(event.getPayloadJson()).isNotBlank();
     }
 }

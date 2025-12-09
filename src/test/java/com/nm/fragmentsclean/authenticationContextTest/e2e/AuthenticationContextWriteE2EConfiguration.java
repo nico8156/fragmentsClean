@@ -11,7 +11,7 @@ import java.time.Instant;
 public class AuthenticationContextWriteE2EConfiguration {
 
     @Bean
-    @Primary
+
     DateTimeProvider systemDateTimeProviderForAuthTests() {
         return Instant::now;
     }

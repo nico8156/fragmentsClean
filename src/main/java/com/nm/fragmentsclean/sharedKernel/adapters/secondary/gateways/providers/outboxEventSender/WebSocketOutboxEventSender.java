@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Component;
 
-
+@Component
 public class WebSocketOutboxEventSender implements OutboxEventSender {
 
     private final SimpMessagingTemplate messagingTemplate;

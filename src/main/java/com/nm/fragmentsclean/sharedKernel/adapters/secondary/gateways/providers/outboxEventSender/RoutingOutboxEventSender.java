@@ -22,12 +22,15 @@ public class RoutingOutboxEventSender implements OutboxEventSender {
     private final KafkaOutboxEventSender kafkaSender;
     private final LoggingOutboxEventSender loggingSender;
     private final ObjectMapper objectMapper;
+    private final WebSocketOutboxEventSender webSocketSender;
+
 
     public RoutingOutboxEventSender(
             DomainEventRouter router,
             EventBusOutboxEventSender eventBusSender,
             KafkaOutboxEventSender kafkaSender,
             LoggingOutboxEventSender loggingSender,
+            WebSocketOutboxEventSender webSocketSender,
             ObjectMapper objectMapper
     ) {
         this.router = router;
@@ -35,6 +38,7 @@ public class RoutingOutboxEventSender implements OutboxEventSender {
         this.kafkaSender = kafkaSender;
         this.loggingSender = loggingSender;
         this.objectMapper = objectMapper;
+        this.webSocketSender = webSocketSender;
     }
 
     @Override
@@ -67,6 +71,9 @@ public class RoutingOutboxEventSender implements OutboxEventSender {
 
         if (routing.sendToKafka() && kafkaSender != null) {
             kafkaSender.send(jpaEvent);
+        }
+        if (routing.sendToWebSocket() && webSocketSender != null) {
+            webSocketSender.send(jpaEvent);
         }
 
     }

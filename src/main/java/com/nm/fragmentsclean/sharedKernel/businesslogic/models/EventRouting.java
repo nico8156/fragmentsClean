@@ -16,6 +16,15 @@ public record EventRouting( boolean sendToEventBus,
         return new EventRouting(false, true, true);
     }
 
+
+    public static EventRouting eventBusAndWebSocket() {
+        return new EventRouting(true, false, true);
+    }
+
+    public static EventRouting all() {
+        return new EventRouting(true, true, true);
+    }
+
     public static EventRouting none() {
         return new EventRouting(false, false, false);
     }

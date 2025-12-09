@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Primary;
 
 @TestConfiguration
 public class SocialContextWriteE2EConfiguration {
+
     @Primary
     @Bean
     public DateTimeProvider deterministicClockProvider() {

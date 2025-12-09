@@ -10,7 +10,10 @@ import org.springframework.test.context.ContextConfiguration;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-        classes = FragmentsCleanApplication.class
+        classes = FragmentsCleanApplication.class,
+        properties = {
+                "spring.task.scheduling.enabled=false"
+        }
 )
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
