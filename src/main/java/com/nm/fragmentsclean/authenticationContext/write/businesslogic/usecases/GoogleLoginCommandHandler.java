@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases
 
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.JwtClaimsFactory;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthProvider;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUser;
@@ -23,6 +24,8 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
     private final AppUserRepository appUserRepository;
     private final TokenService tokenService;
     private final DateTimeProvider dateTimeProvider;
+    private final JwtClaimsFactory jwtClaimsFactory;   // 👈 nouveau
+
 
     public GoogleLoginCommandHandler(
             DomainEventPublisher domainEventPublisher,
@@ -30,33 +33,35 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
             AuthUserRepository authUserRepository,
             AppUserRepository appUserRepository,
             TokenService tokenService,
-            DateTimeProvider dateTimeProvider) {
+            DateTimeProvider dateTimeProvider,
+            JwtClaimsFactory jwtClaimsFactory) {
         this.domainEventPublisher = domainEventPublisher;
         this.googleAuthService = googleAuthService;
         this.authUserRepository = authUserRepository;
         this.appUserRepository = appUserRepository;
         this.tokenService = tokenService;
         this.dateTimeProvider = dateTimeProvider;
+        this.jwtClaimsFactory = jwtClaimsFactory;
     }
 
     @Override
     public GoogleLoginResult execute(GoogleLoginCommand command) {
         var now = dateTimeProvider.now();
 
-        // 1. Google user
+        // 1. Échange code → user Google
         var google = googleAuthService.exchangeCodeForUser(
                 command.code(),
                 command.codeVerifier(),
                 command.redirectUri()
         );
 
-        // 2. AuthUser : on garde l’instance qui porte les events
+        // 2. AuthUser (porteur des events)
         AuthUser authUser = authUserRepository
                 .findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
                 .map(existing -> {
                     existing.markLogin(now);
-                    authUserRepository.save(existing);    // on ignore le retour
-                    return existing;                      // on retourne l’instance qui a les events
+                    authUserRepository.save(existing);
+                    return existing;
                 })
                 .orElseGet(() -> {
                     var created = AuthUser.createNew(
@@ -70,30 +75,29 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
                     return created;
                 });
 
-        // 3. AppUser : même logique
+        // 3. AppUser
         AppUser appUser = appUserRepository
                 .findByAuthUserId(authUser.id())
-                .map(existing -> {
-                    // ici tu peux décider de lever un event "AppUserLoggedIn" si tu veux
-                    return existing;
-                })
                 .orElseGet(() -> {
                     var created = AppUser.createNew(authUser.id(), google.name(), now);
                     appUserRepository.save(created);
                     return created;
                 });
 
-        // 3 BIS : publier les events depuis LES bonnes instances
+        // 3 BIS : publier les events
         authUser.domainEvents().forEach(domainEventPublisher::publish);
         authUser.clearDomainEvents();
 
         appUser.domainEvents().forEach(domainEventPublisher::publish);
         appUser.clearDomainEvents();
 
-        // 4. Tokens
-        var tokens = tokenService.generateTokensForUser(appUser.id());
+        // 🔹 4. Construire les claims (roles/scopes) au niveau domaine
+        var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-        // 5. Résultat
+        // 🔹 5. Générer les tokens à partir de l'appUserId + claims
+        var tokens = tokenService.generateTokensForUser(appUser.id(), claims);
+
+        // 6. Résultat
         return new GoogleLoginResult(
                 tokens.accessToken(),
                 tokens.refreshToken().token(),

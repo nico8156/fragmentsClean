@@ -1,10 +1,13 @@
 package com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases;
 
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AuthUserRepository;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.JwtClaimsFactory;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.RefreshToken;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -12,17 +15,27 @@ import java.time.Instant;
 @Component
 public class RefreshTokenCommandHandler
         implements CommandHandlerWithResult<RefreshTokenCommand, RefreshTokenResult> {
-
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenService tokenService;
     private final DateTimeProvider dateTimeProvider;
+    private final AppUserRepository appUserRepository;
+    private final AuthUserRepository authUserRepository;
+    private final JwtClaimsFactory jwtClaimsFactory;
 
-    public RefreshTokenCommandHandler(RefreshTokenRepository refreshTokenRepository,
-                                      TokenService tokenService,
-                                      DateTimeProvider dateTimeProvider) {
+    public RefreshTokenCommandHandler(
+            RefreshTokenRepository refreshTokenRepository,
+            TokenService tokenService,
+            DateTimeProvider dateTimeProvider,
+            AppUserRepository appUserRepository,
+            AuthUserRepository authUserRepository,
+            JwtClaimsFactory jwtClaimsFactory
+    ) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.tokenService = tokenService;
         this.dateTimeProvider = dateTimeProvider;
+        this.appUserRepository = appUserRepository;
+        this.authUserRepository = authUserRepository;
+        this.jwtClaimsFactory = jwtClaimsFactory;
     }
 
     @Override
@@ -40,8 +53,17 @@ public class RefreshTokenCommandHandler
         existing.revoke();
         refreshTokenRepository.save(existing);
 
-        // Génère un nouveau couple pour ce user
-        var tokenPair = tokenService.generateTokensForUser(existing.userId());
+        // 🔹 Recharger AppUser puis AuthUser pour reconstruire les claims
+        var appUser = appUserRepository.findByAuthUserId(existing.userId())
+                .orElseThrow(() -> new IllegalStateException("AppUser not found for refresh token"));
+
+        var authUser = authUserRepository.findById(appUser.authUserId())
+                .orElseThrow(() -> new IllegalStateException("AuthUser not found for refresh token"));
+
+        var claims = jwtClaimsFactory.forAuthUser(authUser);
+
+        // 🔹 Génère un nouveau couple pour ce user avec les bons roles/scopes
+        var tokenPair = tokenService.generateTokensForUser(existing.userId(), claims);
 
         return new RefreshTokenResult(
                 tokenPair.accessToken(),

@@ -7,8 +7,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -28,6 +32,10 @@ public class AuthFlowIT extends AbstractBaseE2E {
 
     @Autowired
     SpringOutboxEventRepository outboxEventRepository;
+
+    // 👇 nouveau : on récupère le même decoder que l’app utilise en prod
+    @Autowired
+    JwtDecoder jwtDecoder;
 
     @BeforeEach
     void setup() {
@@ -71,8 +79,27 @@ public class AuthFlowIT extends AbstractBaseE2E {
         assertThat(refreshToken).isNotBlank();
         assertThat(userId).isNotBlank();
 
-        // Optionnel : vérifier que c’est bien un JWT (3 parties séparées par des ".")
+        // ✅ Sanity check : bien un JWT (header.payload.signature)
         assertThat(accessToken.split("\\.")).hasSize(3);
+
+        // 🔍 Décoder le token et vérifier roles/scopes
+        Jwt jwt = jwtDecoder.decode(accessToken);
+
+        // roles est stocké comme Set<String> côté token → ici List<String>
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        List<String> scopes = jwt.getClaimAsStringList("scopes");
+
+        assertThat(roles)
+                .isNotNull()
+                .containsExactly("USER"); // tu peux élargir si tu ajoutes d’autres rôles plus tard
+
+        assertThat(scopes)
+                .isNotNull()
+                .contains("gamification:read", "gamification:earn");
+
+        // Optionnel : vérifier issuer / subject
+        assertThat(jwt.getIssuer().toString()).isEqualTo("https://auth.fragments");
+        assertThat(jwt.getSubject()).isNotBlank();
 
         // Sanity check DB : 1 auth_user + 1 app_user
         var authUsers = jdbcTemplate.queryForList("SELECT * FROM auth_users");
