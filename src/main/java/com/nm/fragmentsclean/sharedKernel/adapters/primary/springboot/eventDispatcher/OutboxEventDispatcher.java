@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDisp
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

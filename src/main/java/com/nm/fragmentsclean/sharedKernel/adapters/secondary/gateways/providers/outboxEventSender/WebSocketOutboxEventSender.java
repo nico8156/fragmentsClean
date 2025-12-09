@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 

@@ -11,7 +11,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
