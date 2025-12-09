@@ -7,6 +7,7 @@ import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nm.fragmentsclean.authenticationContext.read.adapters.primary.springboot.security.JwtAuthConverters;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,7 +55,9 @@ public class AuthSecurityConfiguration {
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter))
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(JwtAuthConverters.jwtAuthenticationConverter())
+                        )
                 )
                 .build();
     }
