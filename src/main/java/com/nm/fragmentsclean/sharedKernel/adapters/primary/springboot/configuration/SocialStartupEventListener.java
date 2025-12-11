@@ -25,6 +25,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.CreateCo
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.DeleteCommentCommandHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.MakeLikeCommandHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.UpdateCommentCommandHandler;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.AuthUserCreatedEventHandler;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -54,6 +55,7 @@ public class SocialStartupEventListener {
     private final RefreshTokenCommandHandler refreshTokenCommandHandler;
     private final GetMeQueryHandler getMeQueryHandler;
     private final LogoutCommandHandler logoutCommandHandler;
+    private final AuthUserCreatedEventHandler authUserCreatedEventHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QueryBus querryBus,
@@ -75,7 +77,8 @@ public class SocialStartupEventListener {
                                       GoogleLoginCommandHandler googleLoginCommandHandler,
                                       RefreshTokenCommandHandler refreshTokenCommandHandler,
                                       GetMeQueryHandler getMeQueryHandler,
-                                      LogoutCommandHandler logoutCommandHandler
+                                      LogoutCommandHandler logoutCommandHandler,
+                                      AuthUserCreatedEventHandler authUserCreatedEventHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -98,6 +101,7 @@ public class SocialStartupEventListener {
         this.refreshTokenCommandHandler = refreshTokenCommandHandler;
         this.getMeQueryHandler = getMeQueryHandler;
         this.logoutCommandHandler = logoutCommandHandler;
+        this.authUserCreatedEventHandler = authUserCreatedEventHandler;
     }
 
     @EventListener
@@ -133,7 +137,8 @@ public class SocialStartupEventListener {
 
         List<EventHandler<?>> eventHandlers = List.of(
                 articleCreatedProjectionHandler,
-                coffeeCreatedProjectionHandler
+                coffeeCreatedProjectionHandler,
+                authUserCreatedEventHandler
         );
         eventBus.registerEventHandlers(eventHandlers);
     }

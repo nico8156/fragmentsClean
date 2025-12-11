@@ -25,10 +25,12 @@ public class AuthUsersEventsKafkaListener {
     }
 
     @KafkaListener(
-            topics = "auth-users-events",
+            topics = {"auth-users-events"},
             groupId = "user-application-context"
     )
     public void onMessage(ConsumerRecord<String, String> record) {
+        log.info("Kafka listener received raw record on auth-users-events: key={}, value={}", record.key(), record.value());
+
         String payload = record.value();
         try {
             AuthUserCreatedEvent event =
