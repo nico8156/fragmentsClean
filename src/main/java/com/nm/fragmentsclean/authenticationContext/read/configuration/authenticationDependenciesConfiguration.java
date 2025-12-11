@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gate
 import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.SpringAuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.*;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.LogoutCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -18,6 +19,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 
@@ -61,6 +63,11 @@ public class authenticationDependenciesConfiguration {
     }
 
     @Bean
+    LogoutCommandHandler logoutCommandHandler(RefreshTokenRepository refreshTokenRepository){
+        return new LogoutCommandHandler(refreshTokenRepository);
+    }
+
+    @Bean
     GetMeQueryHandler getMeQueryHandler(JdbcTemplate jdbcTemplate){
         return new GetMeQueryHandler(jdbcTemplate);
     }
@@ -71,5 +78,10 @@ public class authenticationDependenciesConfiguration {
             @Value("${auth.jwt.access-token-ttl:PT15M}") Duration accessTokenTtl
     ) {
         return new DefaultJwtClaimsFactory(dateTimeProvider, accessTokenTtl);
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

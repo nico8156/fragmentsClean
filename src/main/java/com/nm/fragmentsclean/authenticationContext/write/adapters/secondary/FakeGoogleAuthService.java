@@ -9,16 +9,15 @@ import java.util.Locale;
 public class FakeGoogleAuthService implements GoogleAuthService {
 
     @Override
-    public GoogleUserInfo exchangeCodeForUser(String code, String codeVerifier, String redirectUri) {
-        // Pour l’instant on ignore code/codeVerifier
-        String sub = "fake-google-sub-" + code;
-        String email = code.toLowerCase(Locale.ROOT) + "@example.com";
+    public GoogleUserInfo exchangeCodeForUser(String authorizationCode) {
+        String sub = "fake-google-sub-" + authorizationCode;
+        String email = authorizationCode.toLowerCase(Locale.ROOT) + "@example.com";
         return new GoogleUserInfo(
                 sub,
                 email,
                 true,
-                "User " + code,
-                "https://example.com/avatar/" + code
+                "User " + authorizationCode,
+                "https://example.com/avatar/" + authorizationCode
         );
     }
 }

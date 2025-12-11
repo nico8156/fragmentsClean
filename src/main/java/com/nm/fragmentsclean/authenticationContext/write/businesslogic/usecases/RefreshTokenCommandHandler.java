@@ -15,6 +15,7 @@ import java.time.Instant;
 @Component
 public class RefreshTokenCommandHandler
         implements CommandHandlerWithResult<RefreshTokenCommand, RefreshTokenResult> {
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenService tokenService;
     private final DateTimeProvider dateTimeProvider;
@@ -53,17 +54,19 @@ public class RefreshTokenCommandHandler
         existing.revoke();
         refreshTokenRepository.save(existing);
 
-        // 🔹 Recharger AppUser puis AuthUser pour reconstruire les claims
-        var appUser = appUserRepository.findByAuthUserId(existing.userId())
+        // 🔹 1. Charger l'AppUser par son ID (userId = AppUserId)
+        var appUser = appUserRepository.findById(existing.userId())
                 .orElseThrow(() -> new IllegalStateException("AppUser not found for refresh token"));
 
+        // 🔹 2. Charger l'AuthUser via appUser.authUserId()
         var authUser = authUserRepository.findById(appUser.authUserId())
                 .orElseThrow(() -> new IllegalStateException("AuthUser not found for refresh token"));
 
+        // 🔹 3. Recréer les claims
         var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-        // 🔹 Génère un nouveau couple pour ce user avec les bons roles/scopes
-        var tokenPair = tokenService.generateTokensForUser(existing.userId(), claims);
+        // 🔹 4. Générer un nouveau couple de tokens pour ce AppUser
+        var tokenPair = tokenService.generateTokensForUser(appUser.id(), claims);
 
         return new RefreshTokenResult(
                 tokenPair.accessToken(),
@@ -71,3 +74,4 @@ public class RefreshTokenCommandHandler
         );
     }
 }
+

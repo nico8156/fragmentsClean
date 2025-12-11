@@ -9,5 +9,7 @@ public interface AppUserRepository {
 
     Optional<AppUser> findByAuthUserId(UUID authUserId);
 
+    Optional<AppUser> findById(UUID userId);
+
     AppUser save(AppUser user);
 }

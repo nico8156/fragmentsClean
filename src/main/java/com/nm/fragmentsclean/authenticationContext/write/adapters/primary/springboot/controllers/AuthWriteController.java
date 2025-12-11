@@ -20,9 +20,7 @@ public class AuthWriteController {
     public ResponseEntity<GoogleLoginResponseDto> googleExchange(@RequestBody GoogleLoginRequestDto body) {
 
         GoogleLoginCommand command = new GoogleLoginCommand(
-                body.code(),
-                body.codeVerifier(),
-                body.redirectUri()
+                body.authorizationCode()
         );
 
         GoogleLoginResult result = commandBus.dispatchWithResult(command);
@@ -55,5 +53,12 @@ public class AuthWriteController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody LogoutRequestDto body) {
+        var command = new LogoutCommand(body.refreshToken());
+        commandBus.dispatch(command);
+        return ResponseEntity.noContent().build();
     }
 }

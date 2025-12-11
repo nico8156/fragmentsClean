@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventH
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.read.GetMeQueryHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.LogoutCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
@@ -52,6 +53,7 @@ public class SocialStartupEventListener {
     private final GoogleLoginCommandHandler googleLoginCommandHandler;
     private final RefreshTokenCommandHandler refreshTokenCommandHandler;
     private final GetMeQueryHandler getMeQueryHandler;
+    private final LogoutCommandHandler logoutCommandHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QueryBus querryBus,
@@ -72,7 +74,8 @@ public class SocialStartupEventListener {
                                       ListCoffeesQueryHandler listCoffeesQueryHandler,
                                       GoogleLoginCommandHandler googleLoginCommandHandler,
                                       RefreshTokenCommandHandler refreshTokenCommandHandler,
-                                      GetMeQueryHandler getMeQueryHandler
+                                      GetMeQueryHandler getMeQueryHandler,
+                                      LogoutCommandHandler logoutCommandHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -94,6 +97,7 @@ public class SocialStartupEventListener {
         this.googleLoginCommandHandler = googleLoginCommandHandler;
         this.refreshTokenCommandHandler = refreshTokenCommandHandler;
         this.getMeQueryHandler = getMeQueryHandler;
+        this.logoutCommandHandler = logoutCommandHandler;
     }
 
     @EventListener
@@ -104,7 +108,8 @@ public class SocialStartupEventListener {
                 updateCommentCommandHandler,
                 deleteCommentCommandHandler,
                 createArticleCommandHandler,
-                createCoffeeCommandHandler
+                createCoffeeCommandHandler,
+                logoutCommandHandler
 
         );
         commandBus.registerCommandHandlers(handlers);

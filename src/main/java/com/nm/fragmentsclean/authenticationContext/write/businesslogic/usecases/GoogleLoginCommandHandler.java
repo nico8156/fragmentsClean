@@ -9,11 +9,9 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.Au
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.springframework.stereotype.Component;
-
 
 @Component
 public class GoogleLoginCommandHandler implements CommandHandlerWithResult<GoogleLoginCommand, GoogleLoginResult> {
@@ -24,8 +22,7 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
     private final AppUserRepository appUserRepository;
     private final TokenService tokenService;
     private final DateTimeProvider dateTimeProvider;
-    private final JwtClaimsFactory jwtClaimsFactory;   // 👈 nouveau
-
+    private final JwtClaimsFactory jwtClaimsFactory;
 
     public GoogleLoginCommandHandler(
             DomainEventPublisher domainEventPublisher,
@@ -48,14 +45,12 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
     public GoogleLoginResult execute(GoogleLoginCommand command) {
         var now = dateTimeProvider.now();
 
-        // 1. Échange code → user Google
+        // 1. Échange authorizationCode -> infos user Google
         var google = googleAuthService.exchangeCodeForUser(
-                command.code(),
-                command.codeVerifier(),
-                command.redirectUri()
+                command.authorizationCode()
         );
 
-        // 2. AuthUser (porteur des events)
+        // 2. AuthUser (porteur des events / rôles / sécurité)
         AuthUser authUser = authUserRepository
                 .findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
                 .map(existing -> {
@@ -75,34 +70,35 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
                     return created;
                 });
 
-        // 3. AppUser
+        // 3. AppUser (profil applicatif)
         AppUser appUser = appUserRepository
                 .findByAuthUserId(authUser.id())
                 .orElseGet(() -> {
-                    var created = AppUser.createNew(authUser.id(), google.name(), now);
+                    var displayName = google.name(); // peut être null, à gérer dans l'agg si besoin
+                    var created = AppUser.createNew(authUser.id(), displayName, now);
                     appUserRepository.save(created);
                     return created;
                 });
 
-        // 3 BIS : publier les events
+        // 3 BIS : publier les events de domaine
         authUser.domainEvents().forEach(domainEventPublisher::publish);
         authUser.clearDomainEvents();
 
         appUser.domainEvents().forEach(domainEventPublisher::publish);
         appUser.clearDomainEvents();
 
-        // 🔹 4. Construire les claims (roles/scopes) au niveau domaine
+        // 4. Construire les claims (roles/scopes) au niveau domaine
         var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-        // 🔹 5. Générer les tokens à partir de l'appUserId + claims
+        // 5. Générer les tokens à partir de l'appUserId + claims
         var tokens = tokenService.generateTokensForUser(appUser.id(), claims);
 
-        // 6. Résultat
+        // 6. Résultat pour l'adapter HTTP
         return new GoogleLoginResult(
                 tokens.accessToken(),
                 tokens.refreshToken().token(),
                 appUser.id(),
-                appUser.displayName(),
+                appUser.displayName(), // peut être null, OK, le front gérera
                 google.email(),
                 google.pictureUrl()
         );

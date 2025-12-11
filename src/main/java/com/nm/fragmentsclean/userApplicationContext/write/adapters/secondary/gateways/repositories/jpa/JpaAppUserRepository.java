@@ -24,6 +24,12 @@ public class JpaAppUserRepository implements AppUserRepository {
     }
 
     @Override
+    public Optional<AppUser> findById(UUID userId) {
+        return springRepo.findById(userId)
+                .map(this::toDomain);
+    }
+
+    @Override
     public AppUser save(AppUser user) {
         AppUserJpaEntity entity = toEntity(user);
         AppUserJpaEntity saved = springRepo.save(entity);
