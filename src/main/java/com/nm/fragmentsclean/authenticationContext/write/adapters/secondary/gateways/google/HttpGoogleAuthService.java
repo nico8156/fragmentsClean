@@ -1,7 +1,6 @@
-package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary;
+package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.google;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.google.GoogleOAuthProperties;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.*;
