@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record MeResponse(
         UUID userId,
+        String displayName,
         Instant issuedAt,
         Instant expiresAt,
         Instant serverTime

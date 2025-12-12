@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public record LikeSetEvent(
         UUID eventId,        // identifiant unique de l’événement
-        UUID commandId,      // pour corréler avec la commande envoyée depuis l’Outbox front
+        String commandId,      // pour corréler avec la commande envoyée depuis l’Outbox front
         UUID likeId,         // agrégat (généré côté front)
         UUID userId,
         UUID targetId,

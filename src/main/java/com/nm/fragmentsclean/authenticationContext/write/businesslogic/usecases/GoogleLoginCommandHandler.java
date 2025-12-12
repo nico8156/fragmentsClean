@@ -71,6 +71,10 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
                 });
 
         // 3. AppUser (profil applicatif)
+        /*TODO refacto DDD ===> Supprimer l’accès à AppUserRepository dans GoogleLoginCommandHandler.
+          TODO AppUser serait créé uniquement par AuthUserCreatedEventHandler
+          TODO tu renvoies authUser.id() comme userId (et tu alignes AppUser.id = authUser.id dans AppUser.createNew)
+        */
         AppUser appUser = appUserRepository
                 .findByAuthUserId(authUser.id())
                 .orElseGet(() -> {

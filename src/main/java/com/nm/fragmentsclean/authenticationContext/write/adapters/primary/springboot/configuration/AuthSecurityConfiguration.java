@@ -52,6 +52,7 @@ public class AuthSecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/auth/google/exchange").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

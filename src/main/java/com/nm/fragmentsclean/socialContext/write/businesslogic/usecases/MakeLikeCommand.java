@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record MakeLikeCommand(
-        UUID commandId,     // idempotence côté back
+        String commandId,     // idempotence côté back
         UUID likeId,        // ID d’agrégat fourni par le front
         UUID userId,
         UUID targetId,

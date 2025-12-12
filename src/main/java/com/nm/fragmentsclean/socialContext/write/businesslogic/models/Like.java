@@ -64,7 +64,7 @@ public class Like extends AggregateRoot {
     /**
      * Enregistre l'événement après calcul du count
      */
-    public void registerLikeSetEvent(UUID commandId,
+    public void registerLikeSetEvent(String commandId,
                                      Instant clientAt,
                                      long count,
                                      Instant serverNow) {

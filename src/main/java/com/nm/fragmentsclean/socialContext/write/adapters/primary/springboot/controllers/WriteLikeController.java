@@ -3,14 +3,12 @@ package com.nm.fragmentsclean.socialContext.write.adapters.primary.springboot.co
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.MakeLikeCommand;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.UUID;
-
 
 @RestController
 @RequestMapping("/api/social/likes")
@@ -22,12 +20,16 @@ public class WriteLikeController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> like(@RequestBody LikeRequestDto body) {
+    public ResponseEntity<Void> like(@RequestBody LikeRequestDto body,
+                                     @AuthenticationPrincipal Jwt jwt) {
+
+        // 🔹 1. userId = subject du JWT backend (AppUser.id)
+        UUID userId = UUID.fromString(jwt.getSubject());
 
         var command = new MakeLikeCommand(
-                UUID.fromString(body.commandId()),
+                body.commandId(),
                 UUID.fromString(body.likeId()),
-                UUID.fromString(body.userId()),
+                userId,                               // 👈 vient du JWT, plus du body
                 UUID.fromString(body.targetId()),
                 body.value(),
                 Instant.parse(body.at())
@@ -35,10 +37,9 @@ public class WriteLikeController {
 
         try {
             commandBus.dispatch(command);
-            // async + ACK en socket -> 202 Accepted ou 204 No Content
+            // async + ACK en socket -> 202 Accepted
             return ResponseEntity.accepted().build();
         } catch (IllegalStateException e) {
-            // incohérence métier (likeId ≠ user/target, etc.)
             return ResponseEntity.badRequest().build();
         }
     }

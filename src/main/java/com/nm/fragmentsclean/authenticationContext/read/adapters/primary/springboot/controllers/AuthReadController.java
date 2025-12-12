@@ -34,7 +34,8 @@ public class AuthReadController {
         }
 
         MeResponse response = new MeResponse(
-                view.userId(),
+                view.userId(),          // <- ID applicatif (AppUser.id)
+                view.displayName(),     // <- profil applicatif
                 jwt.getIssuedAt(),
                 jwt.getExpiresAt(),
                 Instant.now()
