@@ -89,22 +89,22 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             } else if (event instanceof LikeSetEvent likeEvent) {
                 aggregateType = "Like";
                 aggregateId = likeEvent.likeId().toString();
-                streamKey = "social:" + likeEvent.targetId();
+                streamKey = "user:" + likeEvent.userId().toString();
 
             } else if (event instanceof CommentCreatedEvent commentEvent) {
                 aggregateType = "Comment";
                 aggregateId = commentEvent.commentId().toString();
-                streamKey = "social:" + commentEvent.targetId();
+                streamKey = "user:" + commentEvent.authorId().toString();
 
             } else if (event instanceof CommentUpdatedEvent commentEvent) {
                 aggregateType = "Comment";
                 aggregateId = commentEvent.commentId().toString();
-                streamKey = "social:" + commentEvent.targetId();
+                streamKey = "user:" + commentEvent.authorId().toString();
 
             } else if (event instanceof CommentDeletedEvent commentEvent) {
                 aggregateType = "Comment";
                 aggregateId = commentEvent.commentId().toString();
-                streamKey = "social:" + commentEvent.targetId();
+                streamKey = "user:" + commentEvent.authorId().toString();
 
             } else {
                 aggregateType = "Unknown";
