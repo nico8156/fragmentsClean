@@ -247,6 +247,10 @@ CREATE TABLE IF NOT EXISTS app_users (
                                          display_name  VARCHAR(255)   NOT NULL,
                                          created_at    TIMESTAMPTZ    NOT NULL
 );
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_url varchar(512);
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
 
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);

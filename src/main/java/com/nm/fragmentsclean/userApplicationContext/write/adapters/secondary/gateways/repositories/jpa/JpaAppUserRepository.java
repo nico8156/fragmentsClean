@@ -41,7 +41,10 @@ public class JpaAppUserRepository implements AppUserRepository {
                 e.getId(),
                 e.getAuthUserId(),
                 e.getDisplayName(),
-                e.getCreatedAt()
+                e.getAvatarUrl(),
+                e.getCreatedAt(),
+                e.getUpdatedAt(),
+                e.getVersion()
         );
     }
 
@@ -50,7 +53,10 @@ public class JpaAppUserRepository implements AppUserRepository {
                 user.id(),
                 user.authUserId(),
                 user.displayName(),
-                user.createdAt()
+                user.avatarUrl(),
+                user.createdAt(),
+                user.updatedAt(),
+                user.version()
         );
     }
 }

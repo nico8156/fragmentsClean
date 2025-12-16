@@ -7,9 +7,11 @@ import java.util.UUID;
 
 public record AppUserCreatedEvent(
         UUID eventId,
-        UUID userId,
+        UUID userId,      // IMPORTANT: garder userId pour matcher OutboxDomainEventPublisher
         UUID authUserId,
         String displayName,
+        String avatarUrl,
+        long version,
         Instant occurredAt
 ) implements DomainEvent {
 
@@ -19,6 +21,8 @@ public record AppUserCreatedEvent(
                 user.id(),
                 user.authUserId(),
                 user.displayName(),
+                user.avatarUrl(),
+                user.version(),
                 occurredAt
         );
     }

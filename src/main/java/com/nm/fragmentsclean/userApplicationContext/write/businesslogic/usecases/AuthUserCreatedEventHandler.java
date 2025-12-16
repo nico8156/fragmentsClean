@@ -49,6 +49,7 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
         AppUser appUser = AppUser.createNew(
                 event.authUserId(),
                 displayName,
+                null,
                 now
         );
 

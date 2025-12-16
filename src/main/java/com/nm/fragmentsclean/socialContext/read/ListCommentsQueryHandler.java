@@ -2,15 +2,16 @@ package com.nm.fragmentsclean.socialContext.read;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCursor;
+import com.nm.fragmentsclean.socialContext.read.projections.CommentItemView;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentView;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentsListView;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
+// mêmes imports que précédemment
 public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery, CommentsListView> {
     private final JdbcTemplate jdbcTemplate;
 
@@ -23,8 +24,6 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
 
         CommentCursor cursor = CommentCursor.parse(query.cursor());
         int pageSize = query.limit() <= 0 ? 20 : query.limit();
-
-        // On demande une ligne de plus pour savoir s’il y a une suite
         int fetchSize = pageSize + 1;
 
         String baseSql = """
@@ -53,16 +52,21 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
                     params.add(Timestamp.from(cursor.createdAt()));
                     params.add(cursor.id());
                 }
-                // sinon, pas de filtre supplémentaire → comportement proche de "retrieve"
             }
             case "refresh" -> {
-                // TODO : plus tard, pour récupérer les nouveaux commentaires
-                // ex: created_at > cursor.createdAt OR (created_at = ... AND id > ...)
-                // pour l'instant, tu peux le traiter comme "retrieve"
+                if (cursor != null) {
+                    sql.append("""
+                        AND (
+                          created_at > ?
+                          OR (created_at = ? AND id > ?)
+                        )
+                        """);
+                    params.add(Timestamp.from(cursor.createdAt()));
+                    params.add(Timestamp.from(cursor.createdAt()));
+                    params.add(cursor.id());
+                }
             }
-            case "retrieve" -> {
-                // première page → pas de condition sur le curseur
-            }
+            case "retrieve" -> { }
             default -> throw new IllegalArgumentException("Unknown op: " + query.op());
         }
 
@@ -89,22 +93,37 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
         );
 
         boolean hasMore = fetched.size() > pageSize;
-        List<CommentView> items = hasMore ? fetched.subList(0, pageSize) : fetched;
+        List<CommentView> page = hasMore ? fetched.subList(0, pageSize) : fetched;
+
+        var usersById = loadUsersPublic(page);
+
+        List<CommentItemView> items = page.stream()
+                .map(c -> {
+                    var u = usersById.get(c.authorId());
+                    String authorName = u != null ? u.displayName() : "Unknown";
+                    String avatarUrl = u != null ? u.avatarUrl() : null;
+
+                    return new CommentItemView(
+                            c.id(),
+                            c.targetId(),
+                            c.parentId(),
+                            c.authorId(),
+                            authorName,
+                            avatarUrl,
+                            c.body(),
+                            c.createdAt(),
+                            c.editedAt(),
+                            c.likeCount(),
+                            c.replyCount(),
+                            c.version()
+                    );
+                })
+                .toList();
 
         String nextCursor = null;
-        String prevCursor = null;
-
         if (!items.isEmpty()) {
-            // Pour un flux descendant (createdAt DESC),
-            // le "suivant" vers le passé est basé sur le dernier élément.
-            CommentView last = items.get(items.size() - 1);
+            CommentItemView last = items.get(items.size() - 1);
             nextCursor = new CommentCursor(last.createdAt(), last.id()).encode();
-
-            // Le prevCursor (retour vers du plus récent) devient utile
-            // quand tu feras navigate dans les deux sens ; pour l'instant
-            // tu peux le laisser à null ou le calculer symétriquement.
-            // CommentView first = items.get(0);
-            // prevCursor = new CommentCursor(first.createdAt(), first.id()).encode();
         }
 
         return new CommentsListView(
@@ -112,12 +131,40 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
                 query.op(),
                 items,
                 nextCursor,
-                prevCursor,
+                null,
                 Instant.now()
         );
+    }
+
+    private Map<UUID, UserRow> loadUsersPublic(List<CommentView> comments) {
+        Set<UUID> ids = comments.stream()
+                .map(CommentView::authorId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (ids.isEmpty()) return Map.of();
+
+        String placeholders = ids.stream().map(x -> "?").collect(java.util.stream.Collectors.joining(","));
+        String sql = "SELECT user_id, display_name, avatar_url FROM users WHERE user_id IN (" + placeholders + ")";
+
+        List<Object> params = new java.util.ArrayList<>(ids);
+
+        List<UserRow> rows = jdbcTemplate.query(
+                sql,
+                params.toArray(),
+                (rs, rowNum) -> new UserRow(
+                        rs.getObject("user_id", UUID.class),
+                        rs.getString("display_name"),
+                        rs.getString("avatar_url")
+                )
+        );
+
+        return rows.stream().collect(java.util.stream.Collectors.toMap(UserRow::id, r -> r));
     }
 
     private Instant toInstantOrNull(Timestamp ts) {
         return ts != null ? Instant.ofEpochMilli(ts.getTime()) : null;
     }
+
+    private record UserRow(UUID id, String displayName, String avatarUrl) {}
 }

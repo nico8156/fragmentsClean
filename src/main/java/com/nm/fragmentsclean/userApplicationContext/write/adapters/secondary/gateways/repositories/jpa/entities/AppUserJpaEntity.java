@@ -18,17 +18,29 @@ public class AppUserJpaEntity {
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    protected AppUserJpaEntity() {
-    }
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-    public AppUserJpaEntity(UUID id, UUID authUserId, String displayName, Instant createdAt) {
+    @Column(name = "version", nullable = false)
+    private long version;
+
+    protected AppUserJpaEntity() {}
+
+    public AppUserJpaEntity(UUID id, UUID authUserId, String displayName, String avatarUrl,
+                            Instant createdAt, Instant updatedAt, long version) {
         this.id = id;
         this.authUserId = authUserId;
         this.displayName = displayName;
+        this.avatarUrl = avatarUrl;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.version = version;
     }
 
     public UUID getId() {
@@ -43,7 +55,21 @@ public class AppUserJpaEntity {
         return displayName;
     }
 
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public long getVersion() {
+        return version;
+    }
+    // getters...
 }
+

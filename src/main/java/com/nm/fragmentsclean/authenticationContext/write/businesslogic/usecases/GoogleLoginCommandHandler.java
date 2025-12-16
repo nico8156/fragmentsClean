@@ -77,9 +77,13 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
         */
         AppUser appUser = appUserRepository
                 .findByAuthUserId(authUser.id())
+                .map(existing -> {
+                    existing.updatePublicProfile(google.name(), google.pictureUrl(), now);
+                    appUserRepository.save(existing);
+                    return existing;
+                })
                 .orElseGet(() -> {
-                    var displayName = google.name(); // peut être null, à gérer dans l'agg si besoin
-                    var created = AppUser.createNew(authUser.id(), displayName, now);
+                    var created = AppUser.createNew(authUser.id(), google.name(), google.pictureUrl(), now);
                     appUserRepository.save(created);
                     return created;
                 });

@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDel
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -30,6 +31,9 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
         }
 
         if (event instanceof AppUserCreatedEvent) {
+            return EventRouting.kafkaOnly();
+        }
+        if (event instanceof AppUserProfileUpdatedEvent) {
             return EventRouting.kafkaOnly();
         }
 

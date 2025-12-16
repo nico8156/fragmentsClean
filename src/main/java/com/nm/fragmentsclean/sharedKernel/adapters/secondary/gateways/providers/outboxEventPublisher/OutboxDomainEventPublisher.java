@@ -18,6 +18,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDel
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Primary;
@@ -79,6 +80,11 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
                 aggregateType = "AuthUser";
                 aggregateId = loginEvent.authUserId().toString();
                 streamKey = "authUser:" + aggregateId;
+
+            } else if (event instanceof AppUserProfileUpdatedEvent appEvent) {
+                aggregateType = "AppUser";
+                aggregateId = appEvent.userId().toString();
+                streamKey = "appUser:" + aggregateId;
 
             } else if (event instanceof AppUserCreatedEvent appEvent) {
                 aggregateType = "AppUser";

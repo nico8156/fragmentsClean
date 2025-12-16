@@ -53,6 +53,9 @@ public class AuthSecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/social/comments").authenticated()
+                        .requestMatchers(HttpMethod.PUT,  "/api/social/comments").authenticated()
+                        .requestMatchers(HttpMethod.DELETE,"/api/social/comments").authenticated()
                         .anyRequest().permitAll()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
