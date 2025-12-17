@@ -11,6 +11,9 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toMap;
+
 // mêmes imports que précédemment
 public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery, CommentsListView> {
     private final JdbcTemplate jdbcTemplate;
@@ -144,8 +147,8 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
 
         if (ids.isEmpty()) return Map.of();
 
-        String placeholders = ids.stream().map(x -> "?").collect(java.util.stream.Collectors.joining(","));
-        String sql = "SELECT user_id, display_name, avatar_url FROM users WHERE user_id IN (" + placeholders + ")";
+        String placeholders = ids.stream().map(x -> "?").collect(joining(","));
+        String sql = "SELECT user_id, display_name, avatar_url FROM user_social_projection WHERE user_id IN (" + placeholders + ")";
 
         List<Object> params = new java.util.ArrayList<>(ids);
 
@@ -159,7 +162,7 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
                 )
         );
 
-        return rows.stream().collect(java.util.stream.Collectors.toMap(UserRow::id, r -> r));
+        return rows.stream().collect(toMap(UserRow::id, r -> r));
     }
 
     private Instant toInstantOrNull(Timestamp ts) {

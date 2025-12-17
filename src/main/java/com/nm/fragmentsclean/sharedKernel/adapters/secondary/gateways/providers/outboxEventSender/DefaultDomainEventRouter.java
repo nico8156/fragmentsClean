@@ -52,7 +52,7 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
         }
 
         if (event instanceof CommentCreatedEvent) {
-            return EventRouting.all();
+            return EventRouting.kafkaOnly();
         }
 
         if (event instanceof CommentUpdatedEvent) {
