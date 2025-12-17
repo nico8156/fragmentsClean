@@ -83,7 +83,7 @@ class SocialEventRoutingTest {
     void like_events_are_routed_to_eventbus_kafka_and_websocket() {
         var likeEvent = new LikeSetEvent(
                 UUID.randomUUID(), // eventId
-                UUID.randomUUID(), // commandId
+                UUID.randomUUID().toString(), // commandId
                 UUID.randomUUID(), // likeId
                 UUID.randomUUID(), // userId
                 UUID.randomUUID(), // targetId

@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gat
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -10,7 +11,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-@Primary
+@Profile("prod")
 public class HttpGoogleAuthService implements GoogleAuthService {
 
     private final RestTemplate restTemplate;

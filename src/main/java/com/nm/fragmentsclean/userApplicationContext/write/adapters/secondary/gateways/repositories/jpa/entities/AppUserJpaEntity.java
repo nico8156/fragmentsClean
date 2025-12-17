@@ -70,6 +70,5 @@ public class AppUserJpaEntity {
     public long getVersion() {
         return version;
     }
-    // getters...
 }
 

@@ -9,10 +9,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
@@ -36,6 +38,26 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
         jdbcTemplate.update("DELETE FROM app_users");
         jdbcTemplate.update("DELETE FROM auth_users");
         outboxEventRepository.deleteAll();
+    }
+    @Test
+    void debug_google_login_400() throws Exception {
+        var code = "userA";
+
+        var result = mockMvc.perform(
+                        post("/auth/google/exchange")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "code": "%s",
+                                  "codeVerifier": "dummy-verifier",
+                                  "redirectUri": "com.fragments:/oauth2redirect"
+                                }
+                                """.formatted(code))
+                )
+                .andDo(print())
+                .andReturn();
+
+        System.out.println("RESPONSE BODY = " + result.getResponse().getContentAsString());
     }
 
     @Test
@@ -72,21 +94,20 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
                 .as("On doit avoir au moins un événement AuthUser en outbox")
                 .isNotEmpty();
     }
+
     @Test
     void google_login_persists_auth_events_in_outbox_with_2_login() throws Exception {
-        var code = "outbox-login-123";
+        var authorizationCode = "userA";
 
         // 1) Premier login
         mockMvc.perform(
                         post("/auth/google/exchange")
                                 .contentType("application/json")
                                 .content("""
-                                    {
-                                      "code": "%s",
-                                      "codeVerifier": "dummy-verifier",
-                                      "redirectUri": "com.fragments:/oauth2redirect"
-                                    }
-                                    """.formatted(code))
+                                {
+                                  "authorizationCode": "%s"
+                                }
+                                """.formatted(authorizationCode))
                 )
                 .andExpect(status().isOk());
 
@@ -100,17 +121,15 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
                 AppUserCreatedEvent.class.getName()
         );
 
-        // 2) Deuxième login avec le même code → même google.sub → même AuthUser
+        // 2) Deuxième login (même authorizationCode -> même sub dans FakeGoogleAuthService)
         mockMvc.perform(
                         post("/auth/google/exchange")
                                 .contentType("application/json")
                                 .content("""
-                                    {
-                                      "code": "%s",
-                                      "codeVerifier": "dummy-verifier",
-                                      "redirectUri": "com.fragments:/oauth2redirect"
-                                    }
-                                    """.formatted(code))
+                                {
+                                  "authorizationCode": "%s"
+                                }
+                                """.formatted(authorizationCode))
                 )
                 .andExpect(status().isOk());
 
@@ -121,6 +140,12 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 
         assertThat(typesAfterSecondLogin)
                 .anyMatch(t -> t.equals(AuthUserLoggedInEvent.class.getName()));
+
+        // Bonus anti-doublon : toujours 1 AppUser
+        Integer appUsers = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_users", Integer.class);
+        assertThat(appUsers).isEqualTo(1);
     }
+
+
 
 }

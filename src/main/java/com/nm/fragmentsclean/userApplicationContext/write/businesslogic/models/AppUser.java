@@ -9,10 +9,10 @@ public class AppUser extends AggregateRoot {
 
     private final UUID authUserId;
     private String displayName;
-    private String avatarUrl;      // NEW
+    private String avatarUrl;
     private final Instant createdAt;
-    private Instant updatedAt;     // NEW
-    private long version;          // NEW
+    private Instant updatedAt;
+    private long version;
 
     public AppUser(UUID id,
                    UUID authUserId,
@@ -32,7 +32,15 @@ public class AppUser extends AggregateRoot {
 
     public static AppUser createNew(UUID authUserId, String displayName, String avatarUrl, Instant now) {
         UUID id = UUID.randomUUID();
-        var user = new AppUser(id, authUserId, displayName, avatarUrl, now, now, 0L);
+        var user = new AppUser(
+                id,
+                authUserId,
+                normalizeDisplayName(displayName),
+                avatarUrl,
+                now,
+                now,
+                0L
+        );
 
         user.registerEvent(new AppUserCreatedEvent(
                 UUID.randomUUID(),
@@ -54,12 +62,13 @@ public class AppUser extends AggregateRoot {
     public Instant updatedAt() { return updatedAt; }
     public long version() { return version; }
 
-    /** Update public profile: idempotent + event si changement */
+    /** Idempotent update + event if changed */
     public boolean updatePublicProfile(String newDisplayName, String newAvatarUrl, Instant now) {
         boolean changed = false;
 
-        if (newDisplayName != null && !newDisplayName.isBlank() && !newDisplayName.equals(this.displayName)) {
-            this.displayName = newDisplayName;
+        String normalized = normalizeDisplayName(newDisplayName);
+        if (normalized != null && !normalized.equals(this.displayName)) {
+            this.displayName = normalized;
             changed = true;
         }
 
@@ -72,7 +81,7 @@ public class AppUser extends AggregateRoot {
             this.updatedAt = now;
             this.version++;
 
-            this.registerEvent(new AppUserProfileUpdatedEvent(
+            registerEvent(new AppUserProfileUpdatedEvent(
                     UUID.randomUUID(),
                     this.id,
                     this.displayName,
@@ -83,5 +92,11 @@ public class AppUser extends AggregateRoot {
         }
 
         return changed;
+    }
+
+    private static String normalizeDisplayName(String name) {
+        if (name == null) return null;
+        String trimmed = name.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

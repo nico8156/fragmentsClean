@@ -39,7 +39,7 @@ public class MakeLikeCommandHandlerTest {
     void should_create_new_like_and_publish_event() {
         // WHEN
         handler.execute(new MakeLikeCommand(
-                CMD_ID,
+                CMD_ID.toString(),
                 LIKE_ID,
                 USER_ID,
                 TARGET_ID,
@@ -76,7 +76,7 @@ public class MakeLikeCommandHandlerTest {
     void should_toggle_like_off_and_decrement_count() {
         // GIVEN : déjà liké
         handler.execute(new MakeLikeCommand(
-                CMD_ID,
+                CMD_ID.toString(),
                 LIKE_ID,
                 USER_ID,
                 TARGET_ID,
@@ -89,7 +89,7 @@ public class MakeLikeCommandHandlerTest {
 
         // WHEN : unlike
         handler.execute(new MakeLikeCommand(
-                UUID.fromString("55555555-5555-5555-5555-555555555555"),
+                ("55555555-5555-5555-5555-555555555555"),
                 LIKE_ID,
                 USER_ID,
                 TARGET_ID,
@@ -111,7 +111,7 @@ public class MakeLikeCommandHandlerTest {
     void should_be_idempotent_when_state_does_not_change() {
         // GIVEN
         handler.execute(new MakeLikeCommand(
-                CMD_ID,
+                CMD_ID.toString(),
                 LIKE_ID,
                 USER_ID,
                 TARGET_ID,
@@ -122,7 +122,7 @@ public class MakeLikeCommandHandlerTest {
 
         // WHEN : même état (true -> true)
         handler.execute(new MakeLikeCommand(
-                UUID.fromString("66666666-6666-6666-6666-666666666666"),
+                ("66666666-6666-6666-6666-666666666666"),
                 LIKE_ID,
                 USER_ID,
                 TARGET_ID,

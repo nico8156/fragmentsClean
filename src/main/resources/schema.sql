@@ -134,6 +134,18 @@ create table if not exists users (
                                      locale      varchar(20) not null,
                                      version     bigint not null
 );
+CREATE TABLE IF NOT EXISTS user_social_projection (
+                                                      user_id      UUID PRIMARY KEY,
+                                                      display_name VARCHAR(255) NOT NULL,
+                                                      avatar_url   VARCHAR(512),
+                                                      created_at   TIMESTAMP    NOT NULL,
+                                                      updated_at   TIMESTAMP    NOT NULL,
+                                                      version      BIGINT       NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_social_projection_updated_at
+    ON user_social_projection (updated_at);
+
 
 CREATE TABLE IF NOT EXISTS outbox_events (
                                id              BIGSERIAL PRIMARY KEY,          -- clé interne, cursor
@@ -248,9 +260,8 @@ CREATE TABLE IF NOT EXISTS app_users (
                                          created_at    TIMESTAMPTZ    NOT NULL
 );
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_url varchar(512);
-ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0;
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
-
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);

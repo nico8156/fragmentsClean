@@ -83,7 +83,12 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
                     return existing;
                 })
                 .orElseGet(() -> {
-                    var created = AppUser.createNew(authUser.id(), google.name(), google.pictureUrl(), now);
+                    var created = AppUser.createNew(
+                            authUser.id(),
+                            google.name(),
+                            google.pictureUrl(),
+                            now
+                    );
                     appUserRepository.save(created);
                     return created;
                 });
