@@ -14,8 +14,10 @@ import java.util.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
-// mêmes imports que précédemment
 public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery, CommentsListView> {
+
+    private static final int DEFAULT_PAGE_SIZE = 20;
+
     private final JdbcTemplate jdbcTemplate;
 
     public ListCommentsQueryHandler(JdbcTemplate jdbcTemplate) {
@@ -26,54 +28,29 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
     public CommentsListView handle(ListCommentsQuery query) {
 
         CommentCursor cursor = CommentCursor.parse(query.cursor());
-        int pageSize = query.limit() <= 0 ? 20 : query.limit();
+
+        int pageSize = query.limit() <= 0 ? DEFAULT_PAGE_SIZE : query.limit();
         int fetchSize = pageSize + 1;
 
-        String baseSql = """
+        StringBuilder sql = new StringBuilder("""
             SELECT *
             FROM social_comments_projection
             WHERE target_id = ?
               AND deleted_at IS NULL
-            """;
+            """);
 
-        String orderBy = " ORDER BY created_at DESC, id DESC ";
-
-        StringBuilder sql = new StringBuilder(baseSql);
-        List<Object> params = new java.util.ArrayList<>();
+        List<Object> params = new ArrayList<>();
         params.add(query.targetId());
 
         switch (query.op()) {
-            case "older" -> {
-                if (cursor != null) {
-                    sql.append("""
-                        AND (
-                          created_at < ?
-                          OR (created_at = ? AND id < ?)
-                        )
-                        """);
-                    params.add(Timestamp.from(cursor.createdAt()));
-                    params.add(Timestamp.from(cursor.createdAt()));
-                    params.add(cursor.id());
-                }
-            }
-            case "refresh" -> {
-                if (cursor != null) {
-                    sql.append("""
-                        AND (
-                          created_at > ?
-                          OR (created_at = ? AND id > ?)
-                        )
-                        """);
-                    params.add(Timestamp.from(cursor.createdAt()));
-                    params.add(Timestamp.from(cursor.createdAt()));
-                    params.add(cursor.id());
-                }
-            }
-            case "retrieve" -> { }
+            case "older" -> appendOlderClause(sql, params, cursor);
+            case "refresh" -> appendRefreshClause(sql, params, cursor);
+            case "retrieve" -> { /* no cursor filter */ }
             default -> throw new IllegalArgumentException("Unknown op: " + query.op());
         }
 
-        sql.append(orderBy).append(" LIMIT ? ");
+        sql.append(" ORDER BY created_at DESC, id DESC ");
+        sql.append(" LIMIT ? ");
         params.add(fetchSize);
 
         List<CommentView> fetched = jdbcTemplate.query(
@@ -98,76 +75,121 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
         boolean hasMore = fetched.size() > pageSize;
         List<CommentView> page = hasMore ? fetched.subList(0, pageSize) : fetched;
 
-        var usersById = loadUsersPublic(page);
+        Map<UUID, UserSocialRow> usersById = loadUsersSocial(page);
 
         List<CommentItemView> items = page.stream()
-                .map(c -> {
-                    var u = usersById.get(c.authorId());
-                    String authorName = u != null ? u.displayName() : "Unknown";
-                    String avatarUrl = u != null ? u.avatarUrl() : null;
-
-                    return new CommentItemView(
-                            c.id(),
-                            c.targetId(),
-                            c.parentId(),
-                            c.authorId(),
-                            authorName,
-                            avatarUrl,
-                            c.body(),
-                            c.createdAt(),
-                            c.editedAt(),
-                            c.likeCount(),
-                            c.replyCount(),
-                            c.version()
-                    );
-                })
+                .map(c -> toItemView(c, usersById.get(c.authorId())))
                 .toList();
 
-        String nextCursor = null;
-        if (!items.isEmpty()) {
-            CommentItemView last = items.get(items.size() - 1);
-            nextCursor = new CommentCursor(last.createdAt(), last.id()).encode();
-        }
+        String nextCursor = computeNextCursor(items, hasMore);
+        String prevCursor = computePrevCursor(items);
 
         return new CommentsListView(
                 query.targetId(),
                 query.op(),
                 items,
                 nextCursor,
-                null,
+                prevCursor,
                 Instant.now()
         );
     }
 
-    private Map<UUID, UserRow> loadUsersPublic(List<CommentView> comments) {
-        Set<UUID> ids = comments.stream()
+    private void appendOlderClause(StringBuilder sql, List<Object> params, CommentCursor cursor) {
+        if (cursor == null) return;
+        sql.append("""
+            AND (
+              created_at < ?
+              OR (created_at = ? AND id < ?)
+            )
+            """);
+        params.add(Timestamp.from(cursor.createdAt()));
+        params.add(Timestamp.from(cursor.createdAt()));
+        params.add(cursor.id());
+    }
+
+    private void appendRefreshClause(StringBuilder sql, List<Object> params, CommentCursor cursor) {
+        if (cursor == null) return;
+        sql.append("""
+            AND (
+              created_at > ?
+              OR (created_at = ? AND id > ?)
+            )
+            """);
+        params.add(Timestamp.from(cursor.createdAt()));
+        params.add(Timestamp.from(cursor.createdAt()));
+        params.add(cursor.id());
+    }
+
+    private CommentItemView toItemView(CommentView c, UserSocialRow u) {
+        String authorName = (u != null && u.displayName() != null && !u.displayName().isBlank())
+                ? u.displayName()
+                : "Utilisateur";
+
+        String avatarUrl = (u != null) ? u.avatarUrl() : null;
+
+        return new CommentItemView(
+                c.id(),
+                c.targetId(),
+                c.parentId(),
+                c.authorId(),
+                authorName,
+                avatarUrl,
+                c.body(),
+                c.createdAt(),
+                c.editedAt(),
+                c.likeCount(),
+                c.replyCount(),
+                c.version()
+        );
+    }
+
+    private String computeNextCursor(List<CommentItemView> items, boolean hasMore) {
+        if (!hasMore || items.isEmpty()) return null;
+        CommentItemView last = items.get(items.size() - 1);
+        return new CommentCursor(last.createdAt(), last.id()).encode();
+    }
+
+    private String computePrevCursor(List<CommentItemView> items) {
+        if (items.isEmpty()) return null;
+        CommentItemView first = items.get(0);
+        return new CommentCursor(first.createdAt(), first.id()).encode();
+    }
+
+    /**
+     * 2nd query: batch fetch user profiles for the current page (no JOIN).
+     */
+    private Map<UUID, UserSocialRow> loadUsersSocial(List<CommentView> comments) {
+        List<UUID> ids = comments.stream()
                 .map(CommentView::authorId)
                 .filter(Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
+                .distinct()
+                .toList();
 
         if (ids.isEmpty()) return Map.of();
 
         String placeholders = ids.stream().map(x -> "?").collect(joining(","));
-        String sql = "SELECT user_id, display_name, avatar_url FROM user_social_projection WHERE user_id IN (" + placeholders + ")";
 
-        List<Object> params = new java.util.ArrayList<>(ids);
+        String sql = """
+            SELECT user_id, display_name, avatar_url
+            FROM user_social_projection
+            WHERE user_id IN (""" + placeholders + ")";
 
-        List<UserRow> rows = jdbcTemplate.query(
+        List<UserSocialRow> rows = jdbcTemplate.query(
                 sql,
-                params.toArray(),
-                (rs, rowNum) -> new UserRow(
+                ids.toArray(),
+                (rs, rowNum) -> new UserSocialRow(
                         rs.getObject("user_id", UUID.class),
                         rs.getString("display_name"),
                         rs.getString("avatar_url")
                 )
         );
 
-        return rows.stream().collect(toMap(UserRow::id, r -> r));
+        return rows.stream().collect(toMap(UserSocialRow::id, r -> r));
     }
 
     private Instant toInstantOrNull(Timestamp ts) {
-        return ts != null ? Instant.ofEpochMilli(ts.getTime()) : null;
+        return ts != null ? ts.toInstant() : null;
     }
 
-    private record UserRow(UUID id, String displayName, String avatarUrl) {}
+    private record UserSocialRow(UUID id, String displayName, String avatarUrl) {}
 }

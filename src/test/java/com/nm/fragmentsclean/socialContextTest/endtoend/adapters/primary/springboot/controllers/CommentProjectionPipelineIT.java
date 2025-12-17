@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -27,6 +28,8 @@ import static org.awaitility.Awaitility.await;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -162,4 +165,276 @@ public class CommentProjectionPipelineIT extends AbstractBaseE2E {
         assertThat(total).isEqualTo(1);
 
     }
+
+    @Test
+    void update_comment_projects_body_and_editedAt() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+
+        // 1) Create
+        UUID createCommandId = UUID.randomUUID();
+        Instant createdAt = Instant.now();
+
+        mockMvc.perform(
+                post("/api/social/comments")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "commandId": "%s",
+                          "commentId": "%s",
+                          "userId": "%s",
+                          "targetId": "%s",
+                          "parentId": null,
+                          "body": "initial",
+                          "at": "%s"
+                        }
+                        """.formatted(createCommandId, commentId, userId, targetId, createdAt))
+        ).andExpect(status().isAccepted());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer outboxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM outbox_events WHERE aggregate_type = 'Comment'",
+                    Integer.class
+            );
+            assertThat(outboxCount).isGreaterThan(0);
+        });
+        outboxEventDispatcher.dispatchPending();
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM social_comments_projection WHERE id = ?",
+                    Integer.class,
+                    commentId
+            );
+            assertThat(count).isEqualTo(1);
+        });
+
+        // 2) Update
+        UUID updateCommandId = UUID.randomUUID();
+        Instant editedAt = Instant.now();
+        Map<String, Object> before = jdbcTemplate.queryForMap(
+                "SELECT body, version FROM social_comments_projection WHERE id = ?",
+                commentId
+        );
+        System.out.println("BEFORE UPDATE projection=" + before);
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/social/comments")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "commandId": "%s",
+                          "commentId": "%s",
+                          "body": "updated body",
+                          "editedAt": "%s"
+                        }
+                        """.formatted(updateCommandId, commentId, editedAt))
+        ).andExpect(status().isAccepted());
+
+        // attend outbox + dispatch
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer outboxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM outbox_events WHERE aggregate_type = 'Comment'",
+                    Integer.class
+            );
+            assertThat(outboxCount).isGreaterThan(0);
+        });
+        var events = jdbcTemplate.queryForList("""
+  SELECT event_type, payload_json
+  FROM outbox_events
+  WHERE aggregate_type = 'Comment'
+  ORDER BY id DESC
+  LIMIT 5
+""");
+        System.out.println("OUTBOX Comment events=" + events);
+
+        outboxEventDispatcher.dispatchPending();
+        Map<String, Object> after = jdbcTemplate.queryForMap(
+                "SELECT body, version, edited_at FROM social_comments_projection WHERE id = ?",
+                commentId
+        );
+        System.out.println("AFTER UPDATE projection=" + after);
+
+        // 3) Assert projection updated
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Map<String, Object> row = jdbcTemplate.queryForMap(
+                    "SELECT body, edited_at FROM social_comments_projection WHERE id = ?",
+                    commentId
+            );
+            assertThat(row.get("body")).isEqualTo("updated body");
+            assertThat(row.get("edited_at")).isNotNull();
+        });
+    }
+
+    @Test
+    void delete_comment_dispatches_outbox_event_and_projection_sets_deleted_at() throws Exception {
+        // GIVEN
+        UUID userId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+
+        // 1) Create
+        UUID createCommandId = UUID.randomUUID();
+        Instant createdAt = Instant.now();
+
+        mockMvc.perform(
+                post("/api/social/comments")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "commandId": "%s",
+                          "commentId": "%s",
+                          "userId": "%s",
+                          "targetId": "%s",
+                          "parentId": null,
+                          "body": "to delete",
+                          "at": "%s"
+                        }
+                        """.formatted(createCommandId, commentId, userId, targetId, createdAt))
+        ).andExpect(status().isAccepted());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer outboxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM outbox_events WHERE aggregate_type = 'Comment'",
+                    Integer.class
+            );
+            assertThat(outboxCount).isGreaterThan(0);
+        });
+
+        outboxEventDispatcher.dispatchPending();
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM social_comments_projection WHERE id = ?",
+                    Integer.class,
+                    commentId
+            );
+            assertThat(count).isEqualTo(1);
+        });
+
+        // 2) Delete
+        UUID deleteCommandId = UUID.randomUUID();
+        Instant deletedAt = Instant.now();
+
+        mockMvc.perform(
+                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/social/comments")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "commandId": "%s",
+                          "commentId": "%s",
+                          "deletedAt": "%s"
+                        }
+                        """.formatted(deleteCommandId, commentId, deletedAt))
+        ).andExpect(status().isAccepted());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer outboxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM outbox_events WHERE aggregate_type = 'Comment'",
+                    Integer.class
+            );
+            assertThat(outboxCount).isGreaterThan(0);
+        });
+
+        outboxEventDispatcher.dispatchPending();
+
+        // THEN: projection deleted_at set + moderation soft_deleted + version bumped
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Map<String, Object> row = jdbcTemplate.queryForMap("""
+            SELECT deleted_at, moderation, version
+            FROM social_comments_projection
+            WHERE id = ?
+        """, commentId);
+
+            assertThat(row.get("deleted_at")).isNotNull();
+            assertThat(row.get("moderation")).isEqualTo("SOFT_DELETED");
+            assertThat(((Number) row.get("version")).longValue()).isGreaterThanOrEqualTo(1L);
+        });
+    }
+    @Test
+    void list_comments_returns_enriched_author_from_user_social_projection() throws Exception {
+        // GIVEN
+        UUID userId = UUID.randomUUID();
+        UUID targetId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+        UUID commandId = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        // Seed user_social_projection (no dependency on user pipeline)
+        jdbcTemplate.update("""
+        INSERT INTO user_social_projection (
+          user_id, display_name, avatar_url, created_at, updated_at, version
+        )
+        VALUES (?,?,?,?,?,?)
+        """,
+                userId,
+                "Nina",
+                "https://example.com/nina.png",
+                Timestamp.from(now),
+                Timestamp.from(now),
+                1L
+        );
+
+        // WHEN: create comment (write)
+        mockMvc.perform(
+                post("/api/social/comments")
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "commandId": "%s",
+                          "commentId": "%s",
+                          "userId": "%s",
+                          "targetId": "%s",
+                          "parentId": null,
+                          "body": "hello",
+                          "at": "%s"
+                        }
+                        """.formatted(commandId, commentId, userId, targetId, now))
+        ).andExpect(status().isAccepted());
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer outboxCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM outbox_events WHERE aggregate_type = 'Comment'",
+                    Integer.class
+            );
+            assertThat(outboxCount).isNotNull();
+            assertThat(outboxCount).isGreaterThan(0);
+        });
+
+        outboxEventDispatcher.dispatchPending();
+
+        // Wait projection exists
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM social_comments_projection WHERE id = ?",
+                    Integer.class,
+                    commentId
+            );
+            assertThat(count).isEqualTo(1);
+        });
+
+        // THEN: read endpoint returns enriched authorName/avatarUrl
+        mockMvc.perform(
+                        get("/api/social-context/comments")
+                                .with(jwt().jwt(jwt -> jwt.subject(userId.toString()))) // keep if endpoint is secured
+                                .param("targetId", targetId.toString())
+                                .param("op", "retrieve")
+                                .param("limit", "20")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.targetId").value(targetId.toString()))
+                .andExpect(jsonPath("$.items[0].id").value(commentId.toString()))
+                .andExpect(jsonPath("$.items[0].authorId").value(userId.toString()))
+                .andExpect(jsonPath("$.items[0].authorName").value("Nina"))
+                .andExpect(jsonPath("$.items[0].avatarUrl").value("https://example.com/nina.png"));
+    }
+
+
+
 }
