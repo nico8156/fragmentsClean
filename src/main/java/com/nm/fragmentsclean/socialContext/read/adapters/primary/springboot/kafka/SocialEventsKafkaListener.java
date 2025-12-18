@@ -41,21 +41,28 @@ public class SocialEventsKafkaListener {
         try {
             JsonNode root = objectMapper.readTree(payload);
 
-            // 1) DELETE
+            // ✅ GUARD: ignore tout ce qui n'est pas un event Comment
+            // (ex: LikeSetEvent contient likeId, etc.)
+            if (!root.has("commentId")) {
+                log.debug("[social-read] ignore non-comment event on domain-events: {}", payload);
+                return;
+            }
+
+            // DELETE
             if (root.has("deletedAt")) {
                 CommentDeletedEvent evt = objectMapper.treeToValue(root, CommentDeletedEvent.class);
                 deletedHandler.handle(evt);
                 return;
             }
 
-            // 2) CREATE (parentId présent même si null)
+            // CREATE (parentId présent même si null)
             if (root.has("parentId")) {
                 CommentCreatedEvent evt = objectMapper.treeToValue(root, CommentCreatedEvent.class);
                 createdHandler.handle(evt);
                 return;
             }
 
-            // 3) UPDATE
+            // UPDATE
             CommentUpdatedEvent evt = objectMapper.treeToValue(root, CommentUpdatedEvent.class);
             updatedHandler.handle(evt);
 
@@ -63,4 +70,5 @@ public class SocialEventsKafkaListener {
             log.error("[social-read] failed to handle domain-events payload={}", payload, e);
         }
     }
+
 }

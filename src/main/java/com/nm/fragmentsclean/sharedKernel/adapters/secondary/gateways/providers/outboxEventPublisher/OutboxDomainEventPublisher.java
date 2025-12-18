@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
@@ -49,8 +51,21 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
     @Override
     public void publish(DomainEvent event) {
         log.info(">>> OutboxDomainEventPublisher.publish called with {}", event.getClass().getName());
+        log.info("ObjectMapper WRITE_DATES_AS_TIMESTAMPS = {}",
+                objectMapper.isEnabled(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS));
+
         try {
-            String payloadJson = objectMapper.writeValueAsString(event);
+            ObjectMapper om = objectMapper.copy()
+                    .registerModule(new JavaTimeModule())
+                    .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    .disable(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS);
+
+// IMPORTANT: log sur om, pas sur objectMapper
+            log.info("Outbox ObjectMapper WRITE_DATES_AS_TIMESTAMPS = {}",
+                    om.isEnabled(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS));
+
+// ✅ ici tu sérialises avec om (pas objectMapper)
+            String payloadJson = om.writeValueAsString(event);
 
             Instant occurredAt = event.occurredAt();
             Instant createdAt = dateTimeProvider.now();

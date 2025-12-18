@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/social-context/comments")
+@RequestMapping("/api/social/comments")
 public class ReadCommentsController {
 
     private final ListCommentsQueryHandler handler;
