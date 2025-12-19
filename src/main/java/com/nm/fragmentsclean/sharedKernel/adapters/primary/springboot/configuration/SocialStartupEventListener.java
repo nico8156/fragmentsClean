@@ -25,6 +25,9 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.CreateCo
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.DeleteCommentCommandHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.MakeLikeCommandHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.UpdateCommentCommandHandler;
+import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.AuthUserCreatedEventHandler;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -56,6 +59,9 @@ public class SocialStartupEventListener {
     private final GetMeQueryHandler getMeQueryHandler;
     private final LogoutCommandHandler logoutCommandHandler;
     private final AuthUserCreatedEventHandler authUserCreatedEventHandler;
+    private final VerifyTicketCommandHandler verifyTicketCommandHandler;
+    private final TicketVerificationCompletedEventHandler ticketVerificationCompletedEventHandler;
+    private final ProcessTicketVerificationEventHandler processTicketVerificationEventHandler;
 
     public SocialStartupEventListener(CommandBus commandBus,
                                       QueryBus querryBus,
@@ -78,7 +84,10 @@ public class SocialStartupEventListener {
                                       RefreshTokenCommandHandler refreshTokenCommandHandler,
                                       GetMeQueryHandler getMeQueryHandler,
                                       LogoutCommandHandler logoutCommandHandler,
-                                      AuthUserCreatedEventHandler authUserCreatedEventHandler
+                                      AuthUserCreatedEventHandler authUserCreatedEventHandler,
+                                      VerifyTicketCommandHandler verifyTicketCommandHandler,
+                                      TicketVerificationCompletedEventHandler ticketVerificationCompletedEventHandler,
+                                      ProcessTicketVerificationEventHandler processTicketVerificationEventHandler
     ) {
         this.commandBus = commandBus;
         this.querryBus = querryBus;
@@ -102,6 +111,9 @@ public class SocialStartupEventListener {
         this.getMeQueryHandler = getMeQueryHandler;
         this.logoutCommandHandler = logoutCommandHandler;
         this.authUserCreatedEventHandler = authUserCreatedEventHandler;
+        this.verifyTicketCommandHandler = verifyTicketCommandHandler;
+        this.ticketVerificationCompletedEventHandler = ticketVerificationCompletedEventHandler;
+        this.processTicketVerificationEventHandler = processTicketVerificationEventHandler;
     }
 
     @EventListener
@@ -113,7 +125,8 @@ public class SocialStartupEventListener {
                 deleteCommentCommandHandler,
                 createArticleCommandHandler,
                 createCoffeeCommandHandler,
-                logoutCommandHandler
+                logoutCommandHandler,
+                verifyTicketCommandHandler
 
         );
         commandBus.registerCommandHandlers(handlers);
@@ -138,7 +151,9 @@ public class SocialStartupEventListener {
         List<EventHandler<?>> eventHandlers = List.of(
                 articleCreatedProjectionHandler,
                 coffeeCreatedProjectionHandler,
-                authUserCreatedEventHandler
+                authUserCreatedEventHandler,
+                ticketVerificationCompletedEventHandler,
+                processTicketVerificationEventHandler
         );
         eventBus.registerEventHandlers(eventHandlers);
     }

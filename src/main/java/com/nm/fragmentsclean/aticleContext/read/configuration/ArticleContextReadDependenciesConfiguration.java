@@ -12,6 +12,8 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 
 
+import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake.FakeTicketVerificationProvider;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -19,6 +21,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake.FakeTicketVerificationProvider.Mode.APPROVE;
 
 
 @Configuration
@@ -29,6 +33,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 })
 public class ArticleContextReadDependenciesConfiguration {
 
+    @Bean
+    TicketVerificationProvider ticketVerificationProvider(){
+        return new FakeTicketVerificationProvider(APPROVE);
+    }
     @Bean
     public ArticleRepository jpaArticleRepository(SpringArticleRepository springArticleRepository, ObjectMapper objectMapper){
         return new JpaArticleRepository(springArticleRepository, objectMapper);

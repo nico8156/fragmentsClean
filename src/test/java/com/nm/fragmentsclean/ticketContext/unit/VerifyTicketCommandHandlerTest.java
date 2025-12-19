@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.ticketContext.unit;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
-import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.fake.FakeTicketRepository;
+import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake.FakeTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommand;

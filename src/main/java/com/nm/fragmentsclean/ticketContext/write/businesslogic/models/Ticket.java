@@ -215,14 +215,14 @@ public class Ticket extends AggregateRoot {
     public void registerVerifiedAcceptedEvent(UUID commandId, Instant clientAt, Instant serverNow) {
         registerEvent(new TicketVerifyAcceptedEvent(
                 UUID.randomUUID(),
-                Objects.requireNonNull(commandId, "commandId"),
+                commandId,
                 this.id,
                 this.userId,
-                this.ocrText,
-                this.imageRef,
-                this.status,
+                this.ocrText,     // ✅ ocrText
+                this.imageRef,    // ✅ imageRef
+                this.status.name(),
                 this.version,
-                Objects.requireNonNull(serverNow, "serverNow"),
+                serverNow,
                 clientAt
         ));
     }

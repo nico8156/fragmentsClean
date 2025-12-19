@@ -12,7 +12,7 @@ public record TicketVerifyAcceptedEvent(
         UUID userId,
         String ocrText,
         String imageRef,
-        Ticket.TicketStatus status,
+        String status,
         long version,
         Instant occurredAt,
         Instant clientAt

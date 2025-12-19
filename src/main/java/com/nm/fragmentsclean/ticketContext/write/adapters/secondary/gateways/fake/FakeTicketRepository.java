@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.fake;
+package com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake;
 
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -23,30 +24,47 @@ public class KafkaOutboxEventSender implements OutboxEventSender {
 
     @Override
     public void send(OutboxEventJpaEntity event) throws Exception {
-        String topic = topicFor(event);
+        List<String> topics = topicsFor(event);
         String key = keyFor(event);
         String payload = event.getPayloadJson();
 
-        log.info("KafkaOutboxEventSender sending to topic={} key={} type={}",
-                topic, key, event.getEventType());
+        for (String topic : topics) {
+            log.info("KafkaOutboxEventSender sending to topic={} key={} type={}",
+                    topic, key, event.getEventType());
 
-        // ✅ IMPORTANT : on attend l'ACK Kafka (sinon le dispatcher va marquer SENT trop tôt)
-        var future = kafkaTemplate.send(topic, key, payload);
-        var result = future.get(10, TimeUnit.SECONDS);
+            var future = kafkaTemplate.send(topic, key, payload);
+            var result = future.get(10, TimeUnit.SECONDS);
 
-        RecordMetadata meta = result.getRecordMetadata();
-        log.info("Outbox event {} sent to Kafka topic={} partition={} offset={}",
-                event.getId(), meta.topic(), meta.partition(), meta.offset());
+            RecordMetadata meta = result.getRecordMetadata();
+            log.info("Outbox event {} sent to Kafka topic={} partition={} offset={}",
+                    event.getId(), meta.topic(), meta.partition(), meta.offset());
+        }
     }
 
-    private String topicFor(OutboxEventJpaEntity event) {
+    private List<String> topicsFor(OutboxEventJpaEntity event) {
+        // Ticket: eventType-based routing
+        if ("Ticket".equals(event.getAggregateType())) {
+            String t = event.getEventType();
+
+            // FQCN stored in outbox
+            if (t.endsWith("TicketVerifyAcceptedEvent")) {
+                // ✅ duplicate to projection stream + worker queue
+                return List.of("ticket-events", "ticket-verification-requested");
+            }
+            if (t.endsWith("TicketVerificationCompletedEvent")) {
+                return List.of("ticket-events");
+            }
+            return List.of("ticket-events");
+        }
+
+        // Other aggregates: keep your existing convention
         return switch (event.getAggregateType()) {
-            case "Ticket" -> "ticket-verification-requested";
-            case "Article" -> "articles-events";
-            case "Coffee" -> "coffees-events";
-            case "AuthUser" -> "auth-users-events";
-            case "AppUser" -> "app-users-events";
-            default -> "domain-events";
+            case "Article" -> List.of("articles-events");
+            case "Ticket" -> List.of("ticket-events");
+            case "Coffee" -> List.of("coffees-events");
+            case "AuthUser" -> List.of("auth-users-events");
+            case "AppUser" -> List.of("app-users-events");
+            default -> List.of("domain-events");
         };
     }
 

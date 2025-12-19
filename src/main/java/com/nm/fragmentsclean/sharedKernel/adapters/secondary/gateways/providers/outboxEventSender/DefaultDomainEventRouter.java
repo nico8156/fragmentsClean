@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCre
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
@@ -26,7 +27,9 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
         if (event instanceof TicketVerifyAcceptedEvent) {
             return EventRouting.kafkaOnly();
         }
-
+        if (event instanceof TicketVerificationCompletedEvent) {
+            return EventRouting.kafkaAndWebSocket();
+        }
         // 🔹 AUTH / USER TECHNIQUE → Kafka uniquement
         if (event instanceof AuthUserCreatedEvent) {
             return EventRouting.kafkaOnly();

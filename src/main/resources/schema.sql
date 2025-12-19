@@ -305,5 +305,29 @@ create table if not exists tickets (
                                        version bigint not null
 );
 
-create index if not exists idx_tickets_user_id on tickets(user_id);
-create index if not exists idx_tickets_status on tickets(status);
+create table if not exists ticket_status_projection (
+                                                        ticket_id uuid primary key,
+                                                        user_id uuid not null,
+
+                                                        status varchar(32) not null,
+                                                        outcome varchar(32) null,
+
+                                                        image_ref text null,
+                                                        ocr_text text null,
+
+                                                        amount_cents integer null,
+                                                        currency varchar(8) null,
+                                                        ticket_date timestamptz null,
+
+                                                        merchant_name text null,
+                                                        merchant_address text null,
+                                                        payment_method text null,
+
+                                                        rejection_reason text null,
+
+                                                        version bigint not null,
+                                                        occurred_at timestamptz not null
+);
+
+create index if not exists idx_ticket_status_user on ticket_status_projection(user_id);
+create index if not exists idx_ticket_status_status on ticket_status_projection(status);

@@ -12,7 +12,7 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRe
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+
 
 @TestConfiguration
 public class TicketOutboxJpaIntegrationTestConfiguration {
