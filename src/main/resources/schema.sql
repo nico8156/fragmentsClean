@@ -276,3 +276,34 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token
     ON refresh_tokens (token);
+
+create table if not exists tickets (
+                                       ticket_id uuid primary key,
+                                       user_id uuid not null,
+
+                                       status varchar(32) not null,
+
+                                       ocr_text text null,
+                                       image_ref text null,
+
+                                       amount_cents integer null,
+                                       currency varchar(8) not null,
+
+                                       ticket_date timestamptz null,
+
+                                       merchant_name text null,
+                                       merchant_address text null,
+                                       payment_method text null,
+
+                                       line_items_json text null,
+
+                                       rejection_reason text null,
+
+                                       created_at timestamptz not null,
+                                       updated_at timestamptz not null,
+
+                                       version bigint not null
+);
+
+create index if not exists idx_tickets_user_id on tickets(user_id);
+create index if not exists idx_tickets_status on tickets(status);

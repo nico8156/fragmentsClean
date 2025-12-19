@@ -19,6 +19,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCre
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.slf4j.Logger;
@@ -80,6 +81,11 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
                 aggregateType = "Article";
                 aggregateId = articleEvent.articleId().toString();
                 streamKey = "article:" + aggregateId;
+
+            } else if (event instanceof TicketVerifyAcceptedEvent ticketEvent) {
+                aggregateType = "Ticket";
+                aggregateId = ticketEvent.ticketId().toString();
+                streamKey = "user:" + ticketEvent.userId().toString();
 
             } else if (event instanceof CoffeeCreatedEvent coffeeEvent) {
                 aggregateType = "Coffee";

@@ -161,7 +161,6 @@ public class Ticket extends AggregateRoot {
     public boolean confirm(ConfirmResult result, Instant serverNow) {
         Objects.requireNonNull(result, "result");
         if (this.status == TicketStatus.CONFIRMED) {
-            // Option: comparer un sous-ensemble de champs si tu veux une idempotence "strong"
             return false;
         }
         if (this.status == TicketStatus.REJECTED) {
@@ -202,7 +201,6 @@ public class Ticket extends AggregateRoot {
         this.status = TicketStatus.REJECTED;
         this.rejectionReason = reason;
 
-        // Option: garder ce qu'on a déjà appris du marchand même en rejet
         touch(serverNow);
         return true;
     }
@@ -212,23 +210,29 @@ public class Ticket extends AggregateRoot {
         this.version++;
     }
 
-    // ---- Events (stubs, tu les cales comme pour Comment) ----
+    // ---- Events ----
 
     public void registerVerifiedAcceptedEvent(UUID commandId, Instant clientAt, Instant serverNow) {
-        // event "TicketVerifyAccepted" (optionnel) si tu veux tracer le passage en ANALYZING
-        // registerEvent(new TicketVerifyAcceptedEvent(...));
+        registerEvent(new TicketVerifyAcceptedEvent(
+                UUID.randomUUID(),
+                Objects.requireNonNull(commandId, "commandId"),
+                this.id,
+                this.userId,
+                this.ocrText,
+                this.imageRef,
+                this.status,
+                this.version,
+                Objects.requireNonNull(serverNow, "serverNow"),
+                clientAt
+        ));
     }
 
     public void registerConfirmedEvent(UUID commandId, Instant clientAt, Instant serverNow) {
-        // registerEvent(new TicketConfirmedEvent(
-        //      UUID.randomUUID(), commandId, this.id, this.userId, this.version, serverNow, clientAt, ...payload...
-        // ));
+        // plus tard
     }
 
     public void registerRejectedEvent(UUID commandId, Instant clientAt, Instant serverNow) {
-        // registerEvent(new TicketRejectedEvent(
-        //      UUID.randomUUID(), commandId, this.id, this.userId, this.rejectionReason, this.version, serverNow, clientAt
-        // ));
+        // plus tard
     }
 
     // ---- Snapshot ----
@@ -276,7 +280,7 @@ public class Ticket extends AggregateRoot {
     // ---- Value objects ----
 
     public enum TicketStatus {
-        CAPTURED,   // si un jour tu crées un ticket "local" avant verify
+        CAPTURED,
         ANALYZING,
         CONFIRMED,
         REJECTED
@@ -288,10 +292,6 @@ public class Ticket extends AggregateRoot {
             Integer amountCents
     ) {}
 
-    /**
-     * Résultat "normalisé" de la vérif OpenAI (ce que ton application veut stocker).
-     * (Le score / raw output OpenAI peut rester hors agrégat, ou en audit séparé)
-     */
     public record ConfirmResult(
             int amountCents,
             String currency,

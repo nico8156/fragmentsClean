@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCre
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.springframework.stereotype.Component;
@@ -21,15 +22,18 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
     @Override
     public EventRouting routingFor(DomainEvent event) {
 
-        // 🔹 AUTH / USER TECHNIQUE → Kafka uniquement (projections, userContext & co)
+        // 🔹 TICKET → Kafka (consumer OpenAI)
+        if (event instanceof TicketVerifyAcceptedEvent) {
+            return EventRouting.kafkaOnly();
+        }
+
+        // 🔹 AUTH / USER TECHNIQUE → Kafka uniquement
         if (event instanceof AuthUserCreatedEvent) {
             return EventRouting.kafkaOnly();
         }
-
         if (event instanceof AuthUserLoggedInEvent) {
             return EventRouting.kafkaOnly();
         }
-
         if (event instanceof AppUserCreatedEvent) {
             return EventRouting.kafkaOnly();
         }
@@ -37,48 +41,29 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
             return EventRouting.kafkaOnly();
         }
 
-        // 🔹 ARTICLE / COFFEE → projections + temps réel (feed, carte, etc.)
+        // 🔹 ARTICLE / COFFEE → Kafka + WebSocket
         if (event instanceof ArticleCreatedEvent) {
             return EventRouting.kafkaAndWebSocket();
         }
-
         if (event instanceof CoffeeCreatedEvent) {
             return EventRouting.kafkaAndWebSocket();
         }
 
-        // 🔹 SOCIAL (likes + comments) → projections + temps réel UI
+        // 🔹 SOCIAL → all()
         if (event instanceof LikeSetEvent) {
             return EventRouting.all();
         }
-
         if (event instanceof CommentCreatedEvent) {
             return EventRouting.all();
         }
-
         if (event instanceof CommentUpdatedEvent) {
             return EventRouting.all();
         }
-
         if (event instanceof CommentDeletedEvent) {
             return EventRouting.all();
         }
-//        if (event instanceof LikeSetEvent) {
-//            return EventRouting.kafkaAndWebSocket();
-//        }
-//
-//        if (event instanceof CommentCreatedEvent) {
-//            return EventRouting.kafkaAndWebSocket();
-//        }
-//
-//        if (event instanceof CommentUpdatedEvent) {
-//            return EventRouting.kafkaAndWebSocket();
-//        }
-//
-//        if (event instanceof CommentDeletedEvent) {
-//            return EventRouting.kafkaAndWebSocket();
-//        }
 
-        // 🔹 Par défaut : seulement EventBus interne
+        // 🔹 Par défaut : EventBus interne
         return EventRouting.eventBusOnly();
     }
 }

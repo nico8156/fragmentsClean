@@ -28,14 +28,11 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
     public void execute(VerifyTicketCommand cmd) {
         var now = dateTimeProvider.now();
 
-        // garde-fous (contract)
         if ((cmd.ocrText() == null || cmd.ocrText().isBlank())
                 && (cmd.imageRef() == null || cmd.imageRef().isBlank())) {
             throw new IllegalArgumentException("VerifyTicket requires ocrText or imageRef");
         }
 
-        // Idempotence: si ticket existe déjà, on ne le recrée pas.
-        // On autorise par contre "markAnalyzing/enrich" si ticket pas terminal.
         var existingOpt = ticketRepository.byId(cmd.ticketId());
 
         final Ticket ticket;
@@ -44,7 +41,6 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
         if (existingOpt.isPresent()) {
             ticket = existingOpt.get();
 
-            // Optionnel: vérifier cohérence userId (anti-tamper)
             if (!Objects.equals(ticket.toSnapshot().userId(), cmd.userId())) {
                 throw new IllegalStateException("Ticket userId mismatch");
             }
@@ -66,8 +62,6 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
             changed = true;
         }
 
-        // Event(s): au minimum, un event "accepted/analyzing" si changed
-        // (si tu veux rester minimaliste, tu peux publier même si idempotent = false, mais je préfère éviter)
         if (changed) {
             ticket.registerVerifiedAcceptedEvent(
                     cmd.commandId(),
@@ -78,9 +72,5 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
             ticket.domainEvents().forEach(eventPublisher::publish);
             ticket.clearDomainEvents();
         }
-
-        // IMPORTANT:
-        // La suite "OpenAI -> confirm/reject -> publish ack final" se fera dans un autre handler (async)
-        // typiquement via un consumer/outbox/job qui prendra le ticket en ANALYZING et sortira CONFIRMED/REJECTED.
     }
 }

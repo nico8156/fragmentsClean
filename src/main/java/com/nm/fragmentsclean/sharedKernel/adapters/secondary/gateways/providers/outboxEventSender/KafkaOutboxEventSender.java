@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.TimeUnit;
+
 @Component
 public class KafkaOutboxEventSender implements OutboxEventSender {
 
@@ -28,22 +30,18 @@ public class KafkaOutboxEventSender implements OutboxEventSender {
         log.info("KafkaOutboxEventSender sending to topic={} key={} type={}",
                 topic, key, event.getEventType());
 
-        kafkaTemplate.send(topic, key, payload)
-                .whenComplete((result, ex) -> {
-                    if (ex != null) {
-                        log.error("Failed to send outbox event {} to Kafka", event.getId(), ex);
-                    } else {
-                        RecordMetadata meta = result.getRecordMetadata();
-                        log.info("Outbox event {} sent to Kafka topic={} partition={} offset={}",
-                                event.getId(), meta.topic(), meta.partition(), meta.offset());
-                    }
-                });
+        // ✅ IMPORTANT : on attend l'ACK Kafka (sinon le dispatcher va marquer SENT trop tôt)
+        var future = kafkaTemplate.send(topic, key, payload);
+        var result = future.get(10, TimeUnit.SECONDS);
+
+        RecordMetadata meta = result.getRecordMetadata();
+        log.info("Outbox event {} sent to Kafka topic={} partition={} offset={}",
+                event.getId(), meta.topic(), meta.partition(), meta.offset());
     }
 
     private String topicFor(OutboxEventJpaEntity event) {
-        // tu peux raffiner ici : 1 topic par aggregateType, etc.
-        // Exemple simple :
         return switch (event.getAggregateType()) {
+            case "Ticket" -> "ticket-verification-requested";
             case "Article" -> "articles-events";
             case "Coffee" -> "coffees-events";
             case "AuthUser" -> "auth-users-events";
@@ -53,7 +51,6 @@ public class KafkaOutboxEventSender implements OutboxEventSender {
     }
 
     private String keyFor(OutboxEventJpaEntity event) {
-        // souvent on met aggregateId ou streamKey comme clé Kafka
         String streamKey = event.getStreamKey();
         return (streamKey != null && !streamKey.isBlank())
                 ? streamKey
