@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Docker volumes / DB local
+docker-postgresql-data-for-dev/
+**/docker-postgresql-data-for-dev/
+**/postgres-data/
+**/pgdata/
+

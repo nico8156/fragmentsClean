@@ -5,12 +5,14 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcTicketStatusProjectionRepository;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.openai.OpenAiTicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.JpaTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.SpringTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -52,4 +54,5 @@ public class TicketWriteDependenciesConfiguration {
     ){
         return new ProcessTicketVerificationEventHandler(ticketRepository, ticketVerificationProvider, domainEventPublisher, dateTimeProvider);
     }
+
 }
