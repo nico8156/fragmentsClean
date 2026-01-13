@@ -54,8 +54,9 @@ public class VerifyTicketCommandHandlerTest {
 		assertThat(snap.status().toString()).isEqualTo(Ticket.TicketStatus.ANALYZING.toString());
 		assertThat(snap.ocrText()).isNull();
 		assertThat(snap.imageRef()).isEqualTo("s3://bucket/tickets/111.png");
-		assertThat(snap.createdAt()).isEqualTo(Instant.parse("2024-01-01T10:00:00Z"));
-		assertThat(snap.updatedAt()).isEqualTo(Instant.parse("2024-01-01T10:00:00Z"));
+
+		assertThat(snap.createdAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
+		assertThat(snap.updatedAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
 		assertThat(snap.version()).isEqualTo(0L);
 
 		// THEN : event publié
@@ -69,7 +70,7 @@ public class VerifyTicketCommandHandlerTest {
 		assertThat(evt.imageRef()).isEqualTo("s3://bucket/tickets/111.png");
 		assertThat(evt.status().toString()).isEqualTo(Ticket.TicketStatus.ANALYZING.toString());
 		assertThat(evt.version()).isEqualTo(0L);
-		assertThat(evt.occurredAt()).isEqualTo(Instant.parse("2024-01-01T10:00:00Z"));
+		assertThat(evt.occurredAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
 		assertThat(evt.clientAt()).isEqualTo(Instant.parse("2023-10-01T09:59:00Z"));
 	}
 }
