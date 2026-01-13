@@ -1,129 +1,135 @@
 package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.springboot.controllers;
 
-import com.nm.fragmentsclean.articleContextTest.endtoend.AbstractBaseE2E;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.KafkaOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.WebSocketOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.mockito.ArgumentCaptor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * Flow :
  * POST /api/social/comments
- *   → CommentCreatedEvent
- *   → OutboxDomainEventPublisher (PENDING)
- *   → OutboxEventDispatcher.dispatchPending()
- *   → RoutingOutboxEventSender
- *      → KafkaOutboxEventSender
- *      → WebSocketOutboxEventSender
+ * → CommentCreatedEvent
+ * → OutboxDomainEventPublisher (PENDING)
+ * → OutboxEventDispatcher.dispatchPending()
+ * → RoutingOutboxEventSender
+ * → KafkaOutboxEventSender
+ * → WebSocketOutboxEventSender
  */
 public class SocialCommentOutboxRoutingIT extends AbstractBaseE2E {
 
-    private static final UUID COMMAND_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-    private static final UUID COMMENT_ID = UUID.fromString("f47b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
-    private static final UUID USER_ID    = UUID.fromString("d57b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
-    private static final UUID TARGET_ID  = UUID.fromString("e67b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
+	private static final UUID COMMAND_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+	private static final UUID COMMENT_ID = UUID.fromString("f47b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
+	private static final UUID USER_ID = UUID.fromString("d57b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
+	private static final UUID TARGET_ID = UUID.fromString("e67b3b3b-3b3b-3b3b-3b3b-3b3b3b3b3b3");
 
-    @Autowired
-    private MockMvc mockMvc;
+	private static final String COMMENT_CREATED_EVENT = "com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent";
 
-    @Autowired
-    private SpringOutboxEventRepository outboxEventRepository;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @Autowired
-    private OutboxEventDispatcher outboxEventDispatcher;
+	@Autowired
+	private SpringOutboxEventRepository outboxEventRepository;
 
-    @SpyBean
-    private KafkaOutboxEventSender kafkaOutboxEventSender;
+	@Autowired
+	private OutboxEventDispatcher outboxEventDispatcher;
 
-    @SpyBean
-    private WebSocketOutboxEventSender webSocketOutboxEventSender;
+	@SpyBean
+	private KafkaOutboxEventSender kafkaOutboxEventSender;
 
-    @BeforeEach
-    void setup() {
-        outboxEventRepository.deleteAll();
-    }
+	@SpyBean
+	private WebSocketOutboxEventSender webSocketOutboxEventSender;
 
-    @Test
-    void creating_comment_routes_outbox_event_to_kafka_and_websocket() throws Exception {
-        var clientAt = "2024-01-01T09:00:00Z";
+	private static RequestPostProcessor authUser(UUID userId) {
+		return jwt().jwt(j -> j
+				.subject(userId.toString())
+				.claim("roles", List.of("USER")));
+	}
 
-        mockMvc.perform(
-                        post("/api/social/comments")
-                                .contentType("application/json")
-                                .content(
-                                        """
-                                        {
-                                          "commandId": "%s",
-                                          "commentId": "%s",
-                                          "userId": "%s",
-                                          "targetId": "%s",
-                                          "parentId": null,
-                                          "body": "Hello world",
-                                          "at": "%s"
-                                        }
-                                        """.formatted(
-                                                COMMAND_ID,
-                                                COMMENT_ID,
-                                                USER_ID,
-                                                TARGET_ID,
-                                                clientAt
-                                        )
-                                )
-                )
-                .andExpect(status().isAccepted());
+	@BeforeEach
+	void setup() {
+		outboxEventRepository.deleteAll();
+	}
 
-        // Sanity check : il y a au moins un event en outbox (le nôtre + éventuellement d'autres)
-        var outboxBefore = outboxEventRepository.findAll();
-        assertThat(outboxBefore).isNotEmpty();
+	@Test
+	void creating_comment_routes_outbox_event_to_kafka_and_websocket() throws Exception {
+		var clientAt = "2024-01-01T09:00:00Z";
 
-        // WHEN
-        outboxEventDispatcher.dispatchPending();
+		// GIVEN: create comment (JWT=sub; body sans userId)
+		mockMvc.perform(
+				post("/api/social/comments")
+						.with(authUser(USER_ID))
+						.contentType("application/json")
+						.content("""
+								{
+								  "commandId": "%s",
+								  "commentId": "%s",
+								  "targetId": "%s",
+								  "parentId": null,
+								  "body": "Hello world",
+								  "at": "%s"
+								}
+								""".formatted(
+								COMMAND_ID,
+								COMMENT_ID,
+								TARGET_ID,
+								clientAt)))
+				.andExpect(status().isAccepted());
 
-        // THEN : on capture tous les appels WS
-        ArgumentCaptor<OutboxEventJpaEntity> wsCaptor = ArgumentCaptor.forClass(OutboxEventJpaEntity.class);
-        verify(webSocketOutboxEventSender, atLeastOnce()).send(wsCaptor.capture());
+		// Sanity: outbox not empty
+		var outboxBefore = outboxEventRepository.findAll();
+		assertThat(outboxBefore).isNotEmpty();
 
-        var wsEvents = wsCaptor.getAllValues();
+		// WHEN
+		outboxEventDispatcher.dispatchPending();
 
-        // On vérifie qu'il y a BIEN notre event social dans le lot
-        assertThat(wsEvents)
-                .anySatisfy(e -> {
-                    assertThat(e.getEventType())
-                            .isEqualTo("com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent");
-                    assertThat(e.getStreamKey())
-                            .isEqualTo("social:" + TARGET_ID);
-                    assertThat(e.getAggregateId())
-                            .isEqualTo(COMMENT_ID.toString());
-                });
+		// THEN: capture WS sends
+		ArgumentCaptor<OutboxEventJpaEntity> wsCaptor = ArgumentCaptor.forClass(OutboxEventJpaEntity.class);
+		verify(webSocketOutboxEventSender, atLeastOnce()).send(wsCaptor.capture());
 
-        // Même chose côté Kafka si tu veux
-        ArgumentCaptor<OutboxEventJpaEntity> kafkaCaptor = ArgumentCaptor.forClass(OutboxEventJpaEntity.class);
-        verify(kafkaOutboxEventSender, atLeastOnce()).send(kafkaCaptor.capture());
-        var kafkaEvents = kafkaCaptor.getAllValues();
+		var wsEvents = wsCaptor.getAllValues();
+		assertThat(wsEvents)
+				.anySatisfy(e -> {
+					assertThat(e.getEventType()).isEqualTo(COMMENT_CREATED_EVENT);
+					// abonnement WS par user
+					assertThat(e.getStreamKey()).isEqualTo("user:" + USER_ID);
+					assertThat(e.getAggregateId()).isEqualTo(COMMENT_ID.toString());
+				});
 
-        assertThat(kafkaEvents)
-                .anySatisfy(e -> {
-                    assertThat(e.getEventType())
-                            .isEqualTo("com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent");
-                    assertThat(e.getStreamKey())
-                            .isEqualTo("social:" + TARGET_ID);
-                });
-    }
+		// THEN: capture Kafka sends
+		ArgumentCaptor<OutboxEventJpaEntity> kafkaCaptor = ArgumentCaptor.forClass(OutboxEventJpaEntity.class);
+		verify(kafkaOutboxEventSender, atLeastOnce()).send(kafkaCaptor.capture());
+
+		var kafkaEvents = kafkaCaptor.getAllValues();
+		assertThat(kafkaEvents)
+				.anySatisfy(e -> {
+					assertThat(e.getEventType()).isEqualTo(COMMENT_CREATED_EVENT);
+					assertThat(e.getStreamKey()).isEqualTo("user:" + USER_ID);
+					assertThat(e.getAggregateId()).isEqualTo(COMMENT_ID.toString());
+				});
+	}
 }
