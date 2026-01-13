@@ -100,4 +100,46 @@ public class WriteLikeControllerIT extends AbstractBaseE2E {
 		assertThat(event.getStreamKey()).isEqualTo("user:" + USER_ID);
 		assertThat(event.getPayloadJson()).isNotBlank();
 	}
+
+	@Test
+	void like_set_is_idempotent_when_sent_twice() throws Exception {
+		var clientAt = "2025-11-25T10:15:30.000Z";
+
+		var body = """
+				{
+				  "commandId": "%s",
+				  "likeId": "%s",
+				  "targetId": "%s",
+				  "value": true,
+				  "at": "%s"
+				}
+				""".formatted(COMMAND_ID, LIKE_ID, TARGET_ID, clientAt);
+
+		var auth = jwt().jwt(j -> j
+				.subject(USER_ID.toString())
+				.claim("roles", java.util.List.of("USER")));
+
+		mockMvc.perform(post("/api/social/likes").with(auth)
+				.contentType("application/json").content(body))
+				.andExpect(status().isAccepted());
+
+		mockMvc.perform(post("/api/social/likes").with(auth)
+				.contentType("application/json").content(body))
+				.andExpect(status().isAccepted());
+
+		// THEN: 1 row only
+		var rows = springLikeRepository.findAll();
+		assertThat(rows).hasSize(1);
+
+		// Use equals/hashCode-based comparison as you already do, but avoid asserting
+		// updatedAt strict
+		var saved = rows.get(0);
+		assertThat(saved)
+				.usingRecursiveComparison()
+				.ignoringFields("updatedAt")
+				.isEqualTo(new LikeJpaEntity(LIKE_ID, USER_ID, TARGET_ID, true, null, 1L));
+
+		assertThat(outboxRepository.findAll()).hasSize(1);
+	}
+
 }
