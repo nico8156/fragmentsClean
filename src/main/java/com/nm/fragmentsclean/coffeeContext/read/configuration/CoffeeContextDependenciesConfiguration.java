@@ -1,8 +1,9 @@
 package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
-
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.JdbcCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.JpaCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
@@ -20,24 +21,29 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan("com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities")
 @EnableJpaRepositories("com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa")
 @ComponentScan(basePackages = {
-        "com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot"
+		"com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot"
 })
 public class CoffeeContextDependenciesConfiguration {
 
-    @Bean
-    public CoffeeRepository jpaCoffeeRepository(SpringCoffeeRepository springCoffeeRepository){
-        return new JpaCoffeeRepository(springCoffeeRepository);
-    }
+	@Bean
+	public CoffeeRepository jpaCoffeeRepository(SpringCoffeeRepository springCoffeeRepository) {
+		return new JpaCoffeeRepository(springCoffeeRepository);
+	}
 
-    @Bean
-    CreateCoffeeCommandHandler createCoffeeCommandHandler(CoffeeRepository coffeeRepository,
-                                                          DomainEventPublisher domainEventPublisher,
-                                                          DateTimeProvider dateTimeProvider){
-        return new CreateCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
-    }
+	@Bean
+	CreateCoffeeCommandHandler createCoffeeCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		return new CreateCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
 
-    @Bean
-    ListCoffeesQueryHandler listCoffeesQueryHandler(CoffeeProjectionRepository coffeeProjectionRepository){
-        return new ListCoffeesQueryHandler(coffeeProjectionRepository);
-    }
+	@Bean
+	ListCoffeesQueryHandler listCoffeesQueryHandler(CoffeeProjectionRepository coffeeProjectionRepository) {
+		return new ListCoffeesQueryHandler(coffeeProjectionRepository);
+	}
+
+	@Bean
+	CoffeeCreatedEventHandler coffeeCreatedEventHandler(JdbcCoffeeProjectionRepository projectionRepository) {
+		return new CoffeeCreatedEventHandler(projectionRepository);
+	}
 }
