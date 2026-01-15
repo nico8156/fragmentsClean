@@ -7,13 +7,17 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.reposito
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
-
 @TestConfiguration
 public class JpaIntegrationTestConfiguration {
 
+	@Bean
+	ObjectMapper objectMapper() {
+		return new ObjectMapper();
+	}
 
-    @Bean
-    public ArticleRepository articleRepository(SpringArticleRepository springArticleRepository, ObjectMapper objectMapper) {
-        return new JpaArticleRepository(springArticleRepository, objectMapper);
-    }
+	@Bean
+	public ArticleRepository articleRepository(SpringArticleRepository springArticleRepository,
+			ObjectMapper objectMapper) {
+		return new JpaArticleRepository(springArticleRepository, objectMapper);
+	}
 }
