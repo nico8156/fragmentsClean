@@ -12,35 +12,34 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/articles")
 public class ReadArticleController {
 
-    private final QueryBus querryBus;
+	private final QueryBus querryBus;
 
-    public ReadArticleController(QueryBus querryBus) {
-        this.querryBus = querryBus;
-    }
+	public ReadArticleController(QueryBus querryBus) {
+		this.querryBus = querryBus;
+	}
 
-    @GetMapping("/{slug}")
-    public ResponseEntity<ArticleView> getBySlug(
-            @PathVariable String slug,
-            @RequestParam String locale
-    ) {
-        var query = new GetArticleBySlugQuery(slug, locale);
-        ArticleView view = querryBus.dispatch(query);
+	@GetMapping("/{slug}")
+	public ResponseEntity<ArticleView> getBySlug(
+			@PathVariable String slug,
+			@RequestParam String locale) {
+		var query = new GetArticleBySlugQuery(slug, locale);
+		ArticleView view = querryBus.dispatch(query);
 
-        if (view == null) {
-            return ResponseEntity.notFound().build();
-        }
+		if (view == null) {
+			return ResponseEntity.notFound().build();
+		}
 
-        return ResponseEntity.ok(view);
-    }
-    @GetMapping
-    public ResponseEntity<ArticleListView> list(
-            @RequestParam String locale,
-            @RequestParam(required = false) Integer limit,
-            @RequestParam(required = false) String cursor
-    ) {
-        var query = new ListArticlesQuery(locale, limit, cursor);
-        ArticleListView listView = querryBus.dispatch(query);
+		return ResponseEntity.ok(view);
+	}
 
-        return ResponseEntity.ok(listView);
-    }
+	@GetMapping
+	public ResponseEntity<ArticleListView> list(
+			@RequestParam String locale,
+			@RequestParam(required = false) Integer limit,
+			@RequestParam(required = false) String cursor) {
+		var query = new ListArticlesQuery(locale, limit, cursor);
+		ArticleListView listView = querryBus.dispatch(query);
+
+		return ResponseEntity.ok(listView);
+	}
 }
