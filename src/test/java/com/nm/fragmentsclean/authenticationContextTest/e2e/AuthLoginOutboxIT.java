@@ -1,151 +1,142 @@
 package com.nm.fragmentsclean.authenticationContextTest.e2e;
 
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 
 public class AuthLoginOutboxIT extends AbstractBaseE2E {
 
-    @Autowired
-    MockMvc mockMvc;
+	@Autowired
+	MockMvc mockMvc;
 
-    @Autowired
-    JdbcTemplate jdbcTemplate;
+	@Autowired
+	JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    SpringOutboxEventRepository outboxEventRepository;
+	@Autowired
+	SpringOutboxEventRepository outboxEventRepository;
 
-    @Autowired
-    private OutboxEventDispatcher outboxEventDispatcher;
+	@Autowired
+	private OutboxEventDispatcher outboxEventDispatcher;
 
-    @BeforeEach
-    void setup() {
-        jdbcTemplate.update("DELETE FROM refresh_tokens");
-        jdbcTemplate.update("DELETE FROM app_users");
-        jdbcTemplate.update("DELETE FROM auth_users");
-        outboxEventRepository.deleteAll();
-    }
-    @Test
-    void debug_google_login_400() throws Exception {
-        var code = "userA";
+	@BeforeEach
+	void setup() {
+		jdbcTemplate.update("DELETE FROM refresh_tokens");
+		jdbcTemplate.update("DELETE FROM app_users");
+		jdbcTemplate.update("DELETE FROM auth_users");
+		outboxEventRepository.deleteAll();
+	}
 
-        var result = mockMvc.perform(
-                        post("/auth/google/exchange")
-                                .contentType("application/json")
-                                .content("""
-                                {
-                                  "code": "%s",
-                                  "codeVerifier": "dummy-verifier",
-                                  "redirectUri": "com.fragments:/oauth2redirect"
-                                }
-                                """.formatted(code))
-                )
-                .andDo(print())
-                .andReturn();
+	@Test
+	void debug_google_login_400() throws Exception {
+		var code = "userA";
 
-        System.out.println("RESPONSE BODY = " + result.getResponse().getContentAsString());
-    }
+		var result = mockMvc.perform(
+				post("/auth/google/exchange")
+						.contentType("application/json")
+						.content("""
+								{
+								  "code": "%s",
+								  "codeVerifier": "dummy-verifier",
+								  "redirectUri": "com.fragments:/oauth2redirect"
+								}
+								""".formatted(code)))
+				.andDo(print())
+				.andReturn();
 
-    @Test
-    void google_login_persists_auth_events_in_outbox() throws Exception {
-        // GIVEN
-        var code = "outbox-login-123";
+		System.out.println("RESPONSE BODY = " + result.getResponse().getContentAsString());
+	};
 
-        // WHEN : login Google
-        mockMvc.perform(
-                        post("/auth/google/exchange")
-                                .contentType("application/json")
-                                .content("""
-                                        {
-                                          "code": "%s",
-                                          "codeVerifier": "dummy-verifier",
-                                          "redirectUri": "com.fragments:/oauth2redirect"
-                                        }
-                                        """.formatted(code))
-                )
-                .andExpect(status().isOk());
+	@Test
+	void google_login_persists_auth_events_in_outbox() throws Exception {
+		// GIVEN
+		var authorizationCode = "outbox-login-123";
 
-        // WHEN : on déclenche manuellement le dispatcher outbox → eventBus → projection
-        outboxEventDispatcher.dispatchPending();
-        // THEN : des events ont été écrits dans l’outbox
-        var allEvents = outboxEventRepository.findAll();
-        assertThat(allEvents).isNotEmpty();
+		// WHEN : login Google
+		mockMvc.perform(
+				post("/auth/google/exchange")
+						.contentType("application/json")
+						.content("""
+								{
+								  "authorizationCode": "%s"
+								}
+								""".formatted(authorizationCode)))
+				.andDo(print())
+				.andExpect(status().isOk());
 
-        // On filtre sur aggregateType = "AuthUser"
-        var authEvents = allEvents.stream()
-                .filter(e -> "AuthUser".equals(e.getAggregateType()))
-                .toList();
+		// THEN : des events ont été écrits dans l’outbox
+		var allEvents = outboxEventRepository.findAll();
+		assertThat(allEvents).isNotEmpty();
 
-        assertThat(authEvents)
-                .as("On doit avoir au moins un événement AuthUser en outbox")
-                .isNotEmpty();
-    }
+		// On filtre sur aggregateType = "AuthUser"
+		var authEvents = allEvents.stream()
+				.filter(e -> "AuthUser".equals(e.getAggregateType()))
+				.toList();
 
-    @Test
-    void google_login_persists_auth_events_in_outbox_with_2_login() throws Exception {
-        var authorizationCode = "userA";
+		assertThat(authEvents)
+				.as("On doit avoir au moins un événement AuthUser en outbox")
+				.isNotEmpty();
+	}
 
-        // 1) Premier login
-        mockMvc.perform(
-                        post("/auth/google/exchange")
-                                .contentType("application/json")
-                                .content("""
-                                {
-                                  "authorizationCode": "%s"
-                                }
-                                """.formatted(authorizationCode))
-                )
-                .andExpect(status().isOk());
+	@Test
+	void google_login_persists_auth_events_in_outbox_with_2_login() throws Exception {
+		var authorizationCode = "userA";
 
-        var eventsAfterFirstLogin = outboxEventRepository.findAll();
-        var typesAfterFirstLogin = eventsAfterFirstLogin.stream()
-                .map(e -> e.getEventType())
-                .toList();
+		// 1) Premier login
+		mockMvc.perform(
+				post("/auth/google/exchange")
+						.contentType("application/json")
+						.content("""
+								{
+								  "authorizationCode": "%s"
+								}
+								""".formatted(authorizationCode)))
+				.andExpect(status().isOk());
 
-        assertThat(typesAfterFirstLogin).contains(
-                AuthUserCreatedEvent.class.getName(),
-                AppUserCreatedEvent.class.getName()
-        );
+		var eventsAfterFirstLogin = outboxEventRepository.findAll();
+		var typesAfterFirstLogin = eventsAfterFirstLogin.stream()
+				.map(e -> e.getEventType())
+				.toList();
 
-        // 2) Deuxième login (même authorizationCode -> même sub dans FakeGoogleAuthService)
-        mockMvc.perform(
-                        post("/auth/google/exchange")
-                                .contentType("application/json")
-                                .content("""
-                                {
-                                  "authorizationCode": "%s"
-                                }
-                                """.formatted(authorizationCode))
-                )
-                .andExpect(status().isOk());
+		assertThat(typesAfterFirstLogin).contains(
+				AuthUserCreatedEvent.class.getName(),
+				AppUserCreatedEvent.class.getName());
 
-        var eventsAfterSecondLogin = outboxEventRepository.findAll();
-        var typesAfterSecondLogin = eventsAfterSecondLogin.stream()
-                .map(e -> e.getEventType())
-                .toList();
+		// 2) Deuxième login (même authorizationCode -> même sub dans
+		// FakeGoogleAuthService)
+		mockMvc.perform(
+				post("/auth/google/exchange")
+						.contentType("application/json")
+						.content("""
+								{
+								  "authorizationCode": "%s"
+								}
+								""".formatted(authorizationCode)))
+				.andExpect(status().isOk());
 
-        assertThat(typesAfterSecondLogin)
-                .anyMatch(t -> t.equals(AuthUserLoggedInEvent.class.getName()));
+		var eventsAfterSecondLogin = outboxEventRepository.findAll();
+		var typesAfterSecondLogin = eventsAfterSecondLogin.stream()
+				.map(e -> e.getEventType())
+				.toList();
 
-        // Bonus anti-doublon : toujours 1 AppUser
-        Integer appUsers = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_users", Integer.class);
-        assertThat(appUsers).isEqualTo(1);
-    }
+		assertThat(typesAfterSecondLogin)
+				.anyMatch(t -> t.equals(AuthUserLoggedInEvent.class.getName()));
 
-
+		// Bonus anti-doublon : toujours 1 AppUser
+		Integer appUsers = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_users", Integer.class);
+		assertThat(appUsers).isEqualTo(1);
+	}
 
 }

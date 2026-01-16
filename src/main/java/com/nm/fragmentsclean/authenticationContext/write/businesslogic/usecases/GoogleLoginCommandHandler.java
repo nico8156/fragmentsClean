@@ -1,5 +1,7 @@
 package com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases;
 
+import org.springframework.stereotype.Component;
+
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AuthUserRepository;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.GoogleAuthService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.JwtClaimsFactory;
@@ -11,7 +13,6 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
-import org.springframework.stereotype.Component;
 
 @Component
 public class GoogleLoginCommandHandler implements CommandHandlerWithResult<GoogleLoginCommand, GoogleLoginResult> {
@@ -115,6 +116,5 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 				appUser.displayName(),
 				google.email(),
 				google.pictureUrl());
-
 	}
 }
