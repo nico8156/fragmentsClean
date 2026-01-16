@@ -16,104 +16,105 @@ import org.springframework.stereotype.Component;
 @Component
 public class GoogleLoginCommandHandler implements CommandHandlerWithResult<GoogleLoginCommand, GoogleLoginResult> {
 
-    private final DomainEventPublisher domainEventPublisher;
-    private final GoogleAuthService googleAuthService;
-    private final AuthUserRepository authUserRepository;
-    private final AppUserRepository appUserRepository;
-    private final TokenService tokenService;
-    private final DateTimeProvider dateTimeProvider;
-    private final JwtClaimsFactory jwtClaimsFactory;
+	private final DomainEventPublisher domainEventPublisher;
+	private final GoogleAuthService googleAuthService;
+	private final AuthUserRepository authUserRepository;
+	private final AppUserRepository appUserRepository;
+	private final TokenService tokenService;
+	private final DateTimeProvider dateTimeProvider;
+	private final JwtClaimsFactory jwtClaimsFactory;
 
-    public GoogleLoginCommandHandler(
-            DomainEventPublisher domainEventPublisher,
-            GoogleAuthService googleAuthService,
-            AuthUserRepository authUserRepository,
-            AppUserRepository appUserRepository,
-            TokenService tokenService,
-            DateTimeProvider dateTimeProvider,
-            JwtClaimsFactory jwtClaimsFactory) {
-        this.domainEventPublisher = domainEventPublisher;
-        this.googleAuthService = googleAuthService;
-        this.authUserRepository = authUserRepository;
-        this.appUserRepository = appUserRepository;
-        this.tokenService = tokenService;
-        this.dateTimeProvider = dateTimeProvider;
-        this.jwtClaimsFactory = jwtClaimsFactory;
-    }
+	public GoogleLoginCommandHandler(
+			DomainEventPublisher domainEventPublisher,
+			GoogleAuthService googleAuthService,
+			AuthUserRepository authUserRepository,
+			AppUserRepository appUserRepository,
+			TokenService tokenService,
+			DateTimeProvider dateTimeProvider,
+			JwtClaimsFactory jwtClaimsFactory) {
+		this.domainEventPublisher = domainEventPublisher;
+		this.googleAuthService = googleAuthService;
+		this.authUserRepository = authUserRepository;
+		this.appUserRepository = appUserRepository;
+		this.tokenService = tokenService;
+		this.dateTimeProvider = dateTimeProvider;
+		this.jwtClaimsFactory = jwtClaimsFactory;
+	}
 
-    @Override
-    public GoogleLoginResult execute(GoogleLoginCommand command) {
-        var now = dateTimeProvider.now();
+	@Override
+	public GoogleLoginResult execute(GoogleLoginCommand command) {
+		var now = dateTimeProvider.now();
 
-        // 1. Échange authorizationCode -> infos user Google
-        var google = googleAuthService.exchangeCodeForUser(
-                command.authorizationCode()
-        );
+		// 1. Échange authorizationCode -> infos user Google
+		var google = googleAuthService.exchangeCodeForUser(
+				command.authorizationCode());
 
-        // 2. AuthUser (porteur des events / rôles / sécurité)
-        AuthUser authUser = authUserRepository
-                .findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
-                .map(existing -> {
-                    existing.markLogin(now);
-                    authUserRepository.save(existing);
-                    return existing;
-                })
-                .orElseGet(() -> {
-                    var created = AuthUser.createNew(
-                            AuthProvider.GOOGLE,
-                            google.sub(),
-                            google.email(),
-                            google.emailVerified(),
-                            now
-                    );
-                    authUserRepository.save(created);
-                    return created;
-                });
+		// 2. AuthUser (porteur des events / rôles / sécurité)
+		AuthUser authUser = authUserRepository
+				.findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
+				.map(existing -> {
+					existing.markLogin(now);
+					authUserRepository.save(existing);
+					return existing;
+				})
+				.orElseGet(() -> {
+					var created = AuthUser.createNew(
+							AuthProvider.GOOGLE,
+							google.sub(),
+							google.email(),
+							google.emailVerified(),
+							now);
+					authUserRepository.save(created);
+					return created;
+				});
 
-        // 3. AppUser (profil applicatif)
-        /*TODO refacto DDD ===> Supprimer l’accès à AppUserRepository dans GoogleLoginCommandHandler.
-          TODO AppUser serait créé uniquement par AuthUserCreatedEventHandler
-          TODO tu renvoies authUser.id() comme userId (et tu alignes AppUser.id = authUser.id dans AppUser.createNew)
-        */
-        AppUser appUser = appUserRepository
-                .findByAuthUserId(authUser.id())
-                .map(existing -> {
-                    existing.updatePublicProfile(google.name(), google.pictureUrl(), now);
-                    appUserRepository.save(existing);
-                    return existing;
-                })
-                .orElseGet(() -> {
-                    var created = AppUser.createNew(
-                            authUser.id(),
-                            google.name(),
-                            google.pictureUrl(),
-                            now
-                    );
-                    appUserRepository.save(created);
-                    return created;
-                });
+		// 3. AppUser (profil applicatif)
+		/*
+		 * TODO refacto DDD ===> Supprimer l’accès à AppUserRepository dans
+		 * GoogleLoginCommandHandler.
+		 * TODO AppUser serait créé uniquement par AuthUserCreatedEventHandler
+		 * TODO tu renvoies authUser.id() comme userId (et tu alignes AppUser.id =
+		 * authUser.id dans AppUser.createNew)
+		 */
+		AppUser appUser = appUserRepository
+				.findByAuthUserId(authUser.id())
+				.map(existing -> {
+					existing.updatePublicProfile(google.name(), google.pictureUrl(), now);
+					appUserRepository.save(existing);
+					return existing;
+				})
+				.orElseGet(() -> {
+					var created = AppUser.createNew(
+							authUser.id(),
+							google.name(),
+							google.pictureUrl(),
+							now);
+					appUserRepository.save(created);
+					return created;
+				});
 
-        // 3 BIS : publier les events de domaine
-        authUser.domainEvents().forEach(domainEventPublisher::publish);
-        authUser.clearDomainEvents();
+		// 3 BIS : publier les events de domaine
+		authUser.domainEvents().forEach(domainEventPublisher::publish);
+		authUser.clearDomainEvents();
 
-        appUser.domainEvents().forEach(domainEventPublisher::publish);
-        appUser.clearDomainEvents();
+		appUser.domainEvents().forEach(domainEventPublisher::publish);
+		appUser.clearDomainEvents();
 
-        // 4. Construire les claims (roles/scopes) au niveau domaine
-        var claims = jwtClaimsFactory.forAuthUser(authUser);
+		// 4. Construire les claims (roles/scopes) au niveau domaine
+		var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-        // 5. Générer les tokens à partir de l'appUserId + claims
-        var tokens = tokenService.generateTokensForUser(appUser.id(), claims);
+		// 5. Générer les tokens à partir de l'appUserId + claims
+		var tokens = tokenService.generateTokensForUser(authUser.id(), claims);
 
-        // 6. Résultat pour l'adapter HTTP
-        return new GoogleLoginResult(
-                tokens.accessToken(),
-                tokens.refreshToken().token(),
-                appUser.id(),
-                appUser.displayName(), // peut être null, OK, le front gérera
-                google.email(),
-                google.pictureUrl()
-        );
-    }
+		// 6. Résultat pour l'adapter HTTP
+		return new GoogleLoginResult(
+				tokens.accessToken(),
+				tokens.refreshToken().token(),
+				authUser.id(),
+				appUser.id(),
+				appUser.displayName(),
+				google.email(),
+				google.pictureUrl());
+
+	}
 }
