@@ -5,8 +5,7 @@ import java.util.UUID;
 public record GoogleLoginResult(
 		String accessToken,
 		String refreshToken,
-		UUID authUserId,
-		UUID appUserId,
+		UUID userId, // = authUserId (et futur appUserId)
 		String displayName,
 		String email,
 		String avatarUrl) {

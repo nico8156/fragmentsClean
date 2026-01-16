@@ -1,15 +1,18 @@
 package com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases;
 
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Component;
+
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.stereotype.Component;
 
 @Component
 public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreatedEvent> {
@@ -32,20 +35,20 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
 	@Override
 	public void handle(AuthUserCreatedEvent event) {
 		var now = dateTimeProvider.now();
+		UUID userId = event.authUserId(); // 🔥 clé primaire
 
-		// Idempotence applicative : si déjà créé, on ne fait rien
-		if (appUserRepository.findByAuthUserId(event.authUserId()).isPresent()) {
-			log.info("AppUser already exists for authUserId={}, ignoring AuthUserCreatedEvent",
-					event.authUserId());
+		// ✅ Idempotence applicative (plus robuste que findByAuthUserId)
+		if (appUserRepository.findById(userId).isPresent()) {
+			log.info("AppUser already exists id={}, ignoring AuthUserCreatedEvent", userId);
 			return;
 		}
 
-		// Création "minimal profile"
-		var displayName = event.email(); // fallback
+		var displayName = event.email();
 		String avatarUrl = null;
 
+		// ✅ AppUser.id = authUserId
 		var created = AppUser.createNew(
-				event.authUserId(),
+				userId, // authUserId (si tu le gardes)
 				displayName,
 				avatarUrl,
 				now);
@@ -53,16 +56,14 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
 		try {
 			appUserRepository.save(created);
 		} catch (DataIntegrityViolationException e) {
-			// Idempotence DB (unique auth_user_id) en cas de race / replay
-			log.warn("AppUser creation raced/replayed for authUserId={}, ignoring. msg={}",
-					event.authUserId(), e.getMessage());
+			// ✅ Idempotence DB en cas de race / double delivery
+			log.warn("AppUser creation raced for id={}, ignoring. msg={}", userId, e.getMessage());
 			return;
 		}
 
 		created.domainEvents().forEach(domainEventPublisher::publish);
 		created.clearDomainEvents();
 
-		log.info("AppUser created from AuthUserCreatedEvent. authUserId={} appUserId={}",
-				event.authUserId(), created.id());
+		log.info("AppUser created from AuthUserCreatedEvent. id={}", userId);
 	}
 }

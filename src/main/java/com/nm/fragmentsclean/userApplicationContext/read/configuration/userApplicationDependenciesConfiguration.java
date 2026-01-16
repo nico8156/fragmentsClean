@@ -1,8 +1,11 @@
 package com.nm.fragmentsclean.userApplicationContext.read.configuration;
 
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.JpaAppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.SpringAppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.AuthUserCreatedEventHandler;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -14,14 +17,20 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackages = "com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.entities")
 @EnableJpaRepositories(basePackages = "com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa")
 @ComponentScan(basePackages = {
-        "com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot",
-        "com.nm.fragmentsclean.sharedKernel.adapters.secondary"
+		"com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot",
+		"com.nm.fragmentsclean.sharedKernel.adapters.secondary"
 })
 public class userApplicationDependenciesConfiguration {
 
-    @Bean
-    public AppUserRepository appUserRepository(SpringAppUserRepository springAppUserRepository){
-        return new JpaAppUserRepository(springAppUserRepository);
-    }
+	@Bean
+	public AppUserRepository appUserRepository(SpringAppUserRepository springAppUserRepository) {
+		return new JpaAppUserRepository(springAppUserRepository);
+	}
+
+	@Bean
+	AuthUserCreatedEventHandler authUserCreatedEventHandler(AppUserRepository appUserRepository,
+			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
+		return new AuthUserCreatedEventHandler(appUserRepository, domainEventPublisher, dateTimeProvider);
+	}
 
 }

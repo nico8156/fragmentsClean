@@ -37,7 +37,7 @@ public class AuthWriteController {
 		GoogleLoginResult result = commandBus.dispatchWithResult(command);
 
 		var userSummary = new GoogleLoginResponseDto.UserSummary(
-				result.authUserId(),
+				result.userId(),
 				result.displayName(),
 				result.email(),
 				result.avatarUrl());
