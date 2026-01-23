@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.authenticationContext.read.adapters.primary.springb
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
@@ -35,71 +36,73 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Configuration
-@EnableWebSecurity          // 👈 IMPORTANT
+@EnableWebSecurity // 👈 IMPORTANT
 @EnableMethodSecurity
 public class AuthSecurityConfiguration {
 
-    @Value("${auth.jwt.secret:test-secret-change-me-min-32-chars-xxxx}")
-    private String secret;
+	@Value("${auth.jwt.secret:test-secret-change-me-min-32-chars-xxxx}")
+	private String secret;
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   JwtAuthenticationConverter jwtAuthConverter) throws Exception {
-        return http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/auth/google/exchange").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/social/comments").authenticated()
-                        .requestMatchers(HttpMethod.PUT,  "/api/social/comments").authenticated()
-                        .requestMatchers(HttpMethod.DELETE,"/api/social/comments").authenticated()
-                        .anyRequest().permitAll()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(JwtAuthConverters.jwtAuthenticationConverter())
-                        )
-                )
-                .build();
-    }
+	@Bean
+	@Order(1)
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,
+			JwtAuthenticationConverter jwtAuthConverter) throws Exception {
+		return http
+				.csrf(AbstractHttpConfigurer::disable)
+				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.POST, "/auth/google/exchange").permitAll()
+						.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
+						.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
+						.requestMatchers("/api/tickets/**").authenticated()
+						.requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
+						.requestMatchers(HttpMethod.POST, "/api/social/comments")
+						.authenticated()
+						.requestMatchers(HttpMethod.PUT, "/api/social/comments").authenticated()
+						.requestMatchers(HttpMethod.DELETE, "/api/social/comments")
+						.authenticated()
+						.anyRequest().permitAll())
+				.oauth2ResourceServer(oauth2 -> oauth2
+						.jwt(jwt -> jwt
+								.jwtAuthenticationConverter(JwtAuthConverters
+										.jwtAuthenticationConverter())))
+				.build();
+	}
 
-    @Bean
-    public JwtDecoder jwtDecoder() {
-        SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        return NimbusJwtDecoder
-                .withSecretKey(key)
-                .macAlgorithm(MacAlgorithm.HS256)
-                .build();
-    }
+	@Bean
+	public JwtDecoder jwtDecoder() {
+		SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+		return NimbusJwtDecoder
+				.withSecretKey(key)
+				.macAlgorithm(MacAlgorithm.HS256)
+				.build();
+	}
 
-    @Bean
-    public JwtEncoder jwtEncoder() {
-        SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        JWK jwk = new OctetSequenceKey.Builder(key)
-                .algorithm(JWSAlgorithm.HS256)
-                .build();
+	@Bean
+	public JwtEncoder jwtEncoder() {
+		SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+		JWK jwk = new OctetSequenceKey.Builder(key)
+				.algorithm(JWSAlgorithm.HS256)
+				.build();
 
-        JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
+		JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
 
-        return new NimbusJwtEncoder(jwkSource);
-    }
+		return new NimbusJwtEncoder(jwkSource);
+	}
 
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            List<String> roles = jwt.getClaimAsStringList("roles");
-            if (roles == null) {
-                return Collections.emptyList();
-            }
-            return roles.stream()
-                    .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                    .map(a -> (GrantedAuthority) a)
-                    .collect(Collectors.toList());
-        });
-        return converter;
-    }
+	@Bean
+	public JwtAuthenticationConverter jwtAuthenticationConverter() {
+		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+		converter.setJwtGrantedAuthoritiesConverter(jwt -> {
+			List<String> roles = jwt.getClaimAsStringList("roles");
+			if (roles == null) {
+				return Collections.emptyList();
+			}
+			return roles.stream()
+					.map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+					.map(a -> (GrantedAuthority) a)
+					.collect(Collectors.toList());
+		});
+		return converter;
+	}
 }
