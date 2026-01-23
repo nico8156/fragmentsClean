@@ -1,187 +1,238 @@
+# FragmentsClean
 
-# Fragments – Backend (Write & Read – Social Context)
-
-Ce backend implémente progressivement le domaine *Social* de l’application **Fragments**, permettant aux utilisateurs d’interagir autour des cafés (likes, commentaires, découverte).
-
-> ✅ Objectif actuel : construire une architecture robuste et testée autour du like et du commentaire, en appliquant DDD, Hexagonal Architecture, CQRS et Outbox Pattern.
-
----
-
-## 🏛️ Architecture
-
-Le backend suit :
-
-* **DDD (Domain-Driven Design)**
-* **Hexagonal / Ports & Adapters**
-* **CQRS léger**
-* **Event-driven architecture interne**
-* **Outbox Pattern** pour la diffusion d’événements
-
-### Vue simplifiée
-
-```
-HTTP
- ↓
-Controller (primary adapter)
- ↓
-CommandBus / QueryBus
- ↓
-Use Case / Handler
- ↓
-Domain Model (Aggregate)
- ↓
-Domain Events
- ↓
-Outbox (JPA)
- ↓
-Projections (JPA read models)
- ↓
-QueryBus
- ↓
-Read Controllers
-```
+> **FragmentsClean** est une plateforme mobile **offline-first**, orientée expérience utilisateur, construite sur une architecture **event‑driven**, **CQRS**, **hexagonale**, et pensée pour des systèmes distribués robustes.
+>
+> Le projet démontre une approche **production‑grade** : séparation des contextes métier, pipelines asynchrones, outbox, projections read, contrats stricts entre composants, et intégration d’un moteur natif externe.
 
 ---
 
-## ✅ Write Side (command)
+## 🎯 Vision
 
-Implémenté :
+FragmentsClean est conçu comme une plateforme modulaire orientée **domain‑driven design** permettant :
 
-* CommandBus générique (registration automatique des handlers)
-* Aggregate `Like`
-* Use case `MakeLikeCommandHandler`
-* Validation métier
-* Enregistrement d’événements domaine
-* Outbox persistante via JPA
+* des interactions mobiles **offline‑first**
+* des traitements métier **asynchrones**
+* des pipelines distribuées
+* une architecture testable, évolutive et industrialisable
 
-### Stockage
-
-```
-Database (PostgreSQL via Testcontainers)
-└── outbox_events
-└── likes
-└── comments (fake pour l’instant)
-```
+L’objectif n’est pas un simple prototype, mais un **socle applicatif réel**, structuré comme un produit.
 
 ---
 
-## 📤 Outbox Pattern
+## 🧠 Ce que le projet démontre
 
-Lors d’une commande valide :
+### Architecture
 
-1. L’aggregate produit un événement domaine
-2. Celui-ci est persisté en `outbox_events`
-3. Un dispatcher (work in progress) lira l’outbox
-4. Diffusion vers :
+* Architecture **hexagonale (ports/adapters)**
+* **CQRS** (write model / read model séparés)
+* **Event‑driven architecture**
+* **Outbox pattern**
+* **Projections read**
+* **Kafka** comme bus d’événements
+* **WebSocket ACK**
+* **Idempotence / retry / backoff**
 
-    * WebSocket
-    * logs
-    * futurs services externes
+### Plateforme
 
-> but : **fiabilité / résilience / idempotence**
-
----
-
-## ✅ Read Side (query)
-
-Implémenté :
-
-* QueryBus générique
-* Projection JPA pour le statut de like
-* Query handler :
-
-```
-GetLikeStatusQuery
-↓
-GetLikeStatusQueryHandler
-↓
-LikeProjectionRepository (JPA)
-```
-
-* REST endpoint :
-
-```
-GET /api/social/likes/{targetId}/status
-```
-
-### Contrat exposé (utilisé par le front)
-
-```json
-{
-  "count": number,
-  "me": boolean,
-  "version": number,
-  "serverTime": string
-}
-```
+* Backend : Spring Boot
+* Mobile : React Native (offline‑first)
+* Engine natif : C++ (CLI contractuel)
+* Communication inter‑services : événements
+* Séparation stricte : domaine / application / infra
 
 ---
 
-## ✅ Tests
+## 🧩 Contexts métier
 
-Le projet dispose désormais d’une boucle complète testée :
+Le projet est structuré en **bounded contexts** indépendants :
 
-### Unitaires
+* **authenticationContext**
+  Authentification, OAuth2, JWT, gestion des identités
 
-* logique métier du Like (aggregate)
+* **ticketContext**
+  Vérification de tickets, pipeline de traitement asynchrone, intégration moteur natif
 
-### Intégration
+* **socialContext**
+  Likes, commentaires, interactions sociales, events, websocket
 
-* JPA repositories
-* Outbox persistence
+Chaque context possède :
 
-### End-to-End (E2E)
-
-* HTTP → write → outbox → projection → read → HTTP
-
-Basés sur :
-
-* Spring Boot Test
-* MockMvc
-* Testcontainers (PostgreSQL)
+* son modèle de domaine
+* ses commandes
+* ses événements
+* ses projections read
+* ses adapters
 
 ---
 
-## 🔥 Milestone atteint
+## 🔁 Pipeline démonstrateur (ticket verification)
 
-✅ Boucle CQRS complète :
+Le use‑case **Ticket Verification** sert de démonstration E2E complète :
 
 ```
-write command
-→ domain
-→ outbox
-→ projection
-→ read query
-→ REST response
+Mobile App (RN)
+   ↓
+Outbox client
+   ↓
+Spring Boot (Command)
+   ↓
+Outbox
+   ↓
+Kafka
+   ↓
+Event Handler
+   ↓
+ProcessBuilder Provider
+   ↓
+Engine C++ (CLI)
+   ↓
+JSON contractuel
+   ↓
+Mapping domaine
+   ↓
+Event
+   ↓
+Projection Read
+   ↓
+API Query
+   ↓
+WebSocket ACK / Poll
 ```
 
-✅ Architecture stable
-✅ Contrat front respecté
-✅ Tests E2E réalistes
+### Points clés
+
+* moteur natif externe **isolé** (C++ CLI)
+* contrat **stdout JSON strict**
+* timeout contrôlé
+* exit codes
+* parsing robuste
+* mapping domaine propre
+* aucun code métier dans le wrapper Java
 
 ---
 
-## 🚧 Prochaines étapes
+## 🚀 Démo locale (recruteur‑ready)
 
-* Traitement asynchrone de l’outbox
+### Prérequis
 
-    * dispatcher périodique
-    * WebSocket push
-* read models supplémentaires (commentaires)
-* auth / users context
-* hardening (idempotence, retry, DLQ)
-
----
-
-## 🧩 Technologies
-
+* Docker
 * Java 21
-* Spring Boot
-* Spring Data JPA
-* Testcontainers
-* PostgreSQL
-* WebSocket (à venir)
-* Maven 
+* Maven
+
+### Lancer la démo
+
+```bash
+docker compose up -d
+./scripts/run-demo.sh
+```
+
+Dans un autre terminal :
+
+```bash
+./scripts/demo.sh
+```
+
+### Ce que la démo montre
+
+* POST asynchrone `/api/tickets/verify`
+* pipeline event‑driven
+* appel moteur C++
+* projection read
+* polling read model
+* réponse finale métier
 
 ---
+
+## 🧭 Organisation du projet
+
+```
+fragmentsClean/
+├── authenticationContext/
+├── ticketContext/
+├── socialContext/
+├── bin/
+│   └── ticketverify
+├── scripts/
+│   ├── run-demo.sh
+│   └── demo.sh
+├── docker-compose.yml
+├── src/
+├── README.md
+```
+
+---
+
+## ⭐ Highlights techniques
+
+Points clés à explorer dans le code :
+
+* `ProcessBuilderTicketVerificationProvider`
+
+  * gestion stdin/stdout
+  * timeout
+  * exit codes
+  * parsing JSON
+
+* Outbox dispatcher / consumer
+
+* CQRS command handlers
+
+* Projections read
+
+* Event contracts
+
+* CLI contract moteur C++
+
+---
+
+## 🧠 Choix d’architecture (trade‑offs)
+
+* CQRS pour découpler écriture / lecture
+* Outbox pour garantir la fiabilité des événements
+* CLI contractuel pour l’engine → découplage total
+* Event‑driven pour scalabilité
+* Hexagonal pour testabilité
+* Offline‑first pour UX mobile
+
+---
+
+## 🧪 Qualité & testabilité
+
+* Tests unitaires domaine
+* Adapters fake
+* CLI fake pour tests
+* Testcontainers
+* Architecture orientée tests
+* contrats stricts
+
+---
+
+## 🧭 Roadmap courte
+
+* stabilisation packaging engine C++
+* versioning binaire
+* schéma JSON versionné
+* observabilité (traceId)
+* enrichissement parsing
+
+---
+
+## 🎤 Pitch technique (30 secondes)
+
+> « FragmentsClean est une plateforme mobile offline‑first construite sur une architecture event‑driven CQRS.
+> Elle intègre un moteur natif C++ via un contrat CLI strict, utilise une pipeline asynchrone avec outbox, Kafka et projections read, et démontre une architecture production‑grade testable, modulaire et scalable. »
+
+---
+
+## 📚 README par context
+
+Chaque context possède sa documentation technique détaillée :
+
+* `authenticationContext/README.md`
+* `ticketContext/README.md`
+* `socialContext/README.md`
+
+---
+
+## 🏁 Statut
 
