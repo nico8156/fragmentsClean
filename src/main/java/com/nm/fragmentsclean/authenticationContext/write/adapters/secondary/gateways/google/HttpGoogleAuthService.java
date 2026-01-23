@@ -65,7 +65,11 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 		form.add("client_secret", properties.getClientSecret());
 		form.add("redirect_uri", properties.getRedirectUri());
 		form.add("grant_type", "authorization_code");
-
+		System.out.println(
+				"code" + authorizationCode);
+		System.out.println("client_id" + properties.getClientId());
+		System.out.println("client_secret" + properties.getClientSecret());
+		System.out.println("redirect_uri" + properties.getRedirectUri());
 		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
 
 		ResponseEntity<GoogleTokenResponse> response = restTemplate.postForEntity(url, entity,
@@ -91,6 +95,7 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 				GoogleUserInfoResponse.class);
 
 		if (!response.getStatusCode().is2xxSuccessful()) {
+			System.out.println("REASON : " + response.getBody());
 			throw new IllegalStateException(
 					"Google userinfo failed: " + response.getStatusCode());
 		}

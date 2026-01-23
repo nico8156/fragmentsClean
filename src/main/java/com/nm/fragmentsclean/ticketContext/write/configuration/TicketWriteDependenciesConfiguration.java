@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.ticketContext.write.configuration;
 import java.time.Duration;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -27,6 +29,7 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTi
 @EntityScan(basePackages = "com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.entities")
 @EnableJpaRepositories(basePackages = "com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa")
 public class TicketWriteDependenciesConfiguration {
+	private static final Logger log = LoggerFactory.getLogger(TicketVerificationProvider.class);
 
 	@Bean
 	@ConditionalOnMissingBean(TicketRepository.class)
@@ -62,8 +65,11 @@ public class TicketWriteDependenciesConfiguration {
 	@Bean
 	public TicketVerificationProvider ticketVerificationProvider(
 			ObjectMapper objectMapper,
-			@Value("${ticket.verify.binary-path}") String binaryPath,
+			@Value("${ticketverify.binary-path:./bin/ticketverify}") String binaryPath,
 			@Value("${ticketverify.timeout-ms:1500}") long timeoutMs) {
+		log.info("[ticketverify] binaryPath=" + binaryPath);
+		log.info("[ticketverify] timeoutMs=" + timeoutMs);
+
 		return new ProcessBuilderTicketVerificationProvider(
 				objectMapper,
 				List.of(binaryPath),
