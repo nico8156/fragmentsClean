@@ -1,17 +1,25 @@
-## 🔗 Navigation rapide
-
-- [Vision](#-vision)
-- [Architecture](#-ce-que-le-projet-démontre)
-- [Contexts](#-contexts-métier)
-- [Pipeline Ticket](#-pipeline-démonstrateur-ticket-verification)
-- [Démo](#-démo-locale-recruteur-ready)
-- [Docs techniques](#-documentation-par-domaine-et-composants)
-
 # FragmentsClean
 
 > **FragmentsClean** est une plateforme mobile **offline-first**, orientée expérience utilisateur, construite sur une architecture **event‑driven**, **CQRS**, **hexagonale**, et pensée pour des systèmes distribués robustes.
 >
 > Le projet démontre une approche **production‑grade** : séparation des contextes métier, pipelines asynchrones, outbox, projections read, contrats stricts entre composants, et intégration d’un moteur natif externe.
+
+---
+
+## 🔗 Navigation rapide
+
+* [Vision](#-vision)
+* [Ce que le projet démontre](#-ce-que-le-projet-démontre)
+* [Contexts métier](#-contexts-métier)
+* [Pipeline Ticket](#-pipeline-démonstrateur-ticket-verification)
+* [Démo locale](#-démo-locale-recruteur-ready)
+* [Organisation du projet](#-organisation-du-projet)
+* [Highlights techniques](#-highlights-techniques)
+* [Choix d’architecture](#-choix-darchitecture-trade-offs)
+* [Qualité & testabilité](#-qualité--testabilité)
+* [Roadmap](#-roadmap-courte)
+* [Pitch](#-pitch-technique-30-secondes)
+* [Documentation](#-documentation-par-domaine-et-composants)
 
 ---
 
@@ -58,11 +66,20 @@ Le projet est structuré en **bounded contexts** indépendants :
 * **authenticationContext**
   Authentification, OAuth2, JWT, gestion des identités
 
-* **ticketContext**
-  Vérification de tickets, pipeline de traitement asynchrone, intégration moteur natif
+* **userApplicationContext**
+  User applicatif (profil, compte, données produit), distinct de l’auth
+
+* **coffeeContext**
+  Référentiel des lieux, socle spatial du produit
+
+* **articleContext**
+  Contenus éditoriaux, modèle CQRS, template architectural
 
 * **socialContext**
-  Likes, commentaires, interactions sociales, events, websocket
+  Likes, commentaires, interactions sociales, temps réel
+
+* **ticketContext**
+  Vérification de tickets, pipeline de traitement asynchrone, intégration moteur natif
 
 Chaque context possède :
 
@@ -157,8 +174,12 @@ Dans un autre terminal :
 ```
 fragmentsClean/
 ├── authenticationContext/
-├── ticketContext/
+├── userApplicationContext/
+├── coffeeContext/
+├── articleContext/
 ├── socialContext/
+├── ticketContext/
+├── sharedKernel/
 ├── bin/
 │   └── ticketverify
 ├── scripts/
@@ -233,15 +254,44 @@ Points clés à explorer dans le code :
 
 ---
 
-## 📚 README par context
+## 📚 Documentation par domaine et composants
 
-Chaque context possède sa documentation technique détaillée :
+### 🧩 Bounded Contexts
 
-* `authenticationContext/README.md`
-* `ticketContext/README.md`
-* `socialContext/README.md`
+* 🔐 Authentication / Identity
+  `src/main/java/com/nm/fragmentsclean/authenticationContext/README.md`
+
+* 👤 User Application
+  `src/main/java/com/nm/fragmentsclean/userApplicationContext/README.md`
+
+* ☕ Coffee
+  `src/main/java/com/nm/fragmentsclean/coffeeContext/README.md`
+
+* 📰 Article
+  `src/main/java/com/nm/fragmentsclean/articleContext/README.md`
+
+* 💬 Social
+  `src/main/java/com/nm/fragmentsclean/socialContext/README.md`
+
+* 🎫 Ticket
+  `src/main/java/com/nm/fragmentsclean/ticketContext/README.md`
+
+### 🧱 Infrastructure & Architecture
+
+* 🧠 Shared Kernel
+  `src/main/java/com/nm/fragmentsclean/sharedKernel/README.md`
+
+### ⚙️ Composants techniques
+
+* 🧠 Moteur natif C++
+  `ticketverify-engine/README.md`
+
+* 🎬 Scripts de démonstration
+  `scripts/README.md`
 
 ---
 
 ## 🏁 Statut
-v1-demo — démo E2E stable, reproductible, vitrine technique prête pour démonstration, review et entretien.
+
+**v1-demo** — démo E2E stable, reproductible, vitrine technique prête pour démonstration, review et entretien.
+
