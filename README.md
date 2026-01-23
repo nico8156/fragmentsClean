@@ -1,3 +1,12 @@
+## 🔗 Navigation rapide
+
+- [Vision](#-vision)
+- [Architecture](#-ce-que-le-projet-démontre)
+- [Contexts](#-contexts-métier)
+- [Pipeline Ticket](#-pipeline-démonstrateur-ticket-verification)
+- [Démo](#-démo-locale-recruteur-ready)
+- [Docs techniques](#-documentation-par-domaine-et-composants)
+
 # FragmentsClean
 
 > **FragmentsClean** est une plateforme mobile **offline-first**, orientée expérience utilisateur, construite sur une architecture **event‑driven**, **CQRS**, **hexagonale**, et pensée pour des systèmes distribués robustes.
