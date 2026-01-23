@@ -1,3 +1,12 @@
+![Java](https://img.shields.io/badge/java-21-blue)
+![Spring Boot](https://img.shields.io/badge/springboot-3.x-green)
+![Kafka](https://img.shields.io/badge/kafka-event--driven-black)
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+![React Native](https://img.shields.io/badge/mobile-react--native-61dafb)
+![C++](https://img.shields.io/badge/c%2B%2B-20-orange)
+![Architecture](https://img.shields.io/badge/architecture-CQRS%20%2B%20Hexagonal-purple)
+![Offline-first](https://img.shields.io/badge/ux-offline--first-success)
+
 # FragmentsClean
 
 > **FragmentsClean** est une plateforme mobile **offline-first**, orientée expérience utilisateur, construite sur une architecture **event‑driven**, **CQRS**, **hexagonale**, et pensée pour des systèmes distribués robustes.
