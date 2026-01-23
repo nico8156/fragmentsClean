@@ -235,4 +235,4 @@ Chaque context possède sa documentation technique détaillée :
 ---
 
 ## 🏁 Statut
-
+v1-demo — démo E2E stable, reproductible, vitrine technique prête pour démonstration, review et entretien.
