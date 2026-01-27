@@ -61,6 +61,23 @@ CREATE TABLE IF NOT EXISTS coffee_summaries_projection (
                                              version         INTEGER NOT NULL,
                                              updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
 );
+CREATE TABLE IF NOT EXISTS coffee_photos_projection (
+  id         UUID PRIMARY KEY,
+  coffee_id  UUID NOT NULL,
+  photo_uri  VARCHAR(2000) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_coffee_photos_coffee_id
+  ON coffee_photos_projection(coffee_id);
+
+CREATE TABLE IF NOT EXISTS coffee_openinghours_projection (
+  id                  UUID PRIMARY KEY,
+  coffee_id           UUID NOT NULL,
+  weekday_description VARCHAR(255) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_coffee_openinghours_coffee_id
+  ON coffee_openinghours_projection(coffee_id);
 
 
 
