@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories;
 
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,35 +13,36 @@ import java.util.UUID;
 @Repository
 public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectionRepository {
 
-	private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbc;
 
-	public JdbcCoffeePhotoProjectionRepository(JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
+	public JdbcCoffeePhotoProjectionRepository(JdbcTemplate jdbc) {
+		this.jdbc = jdbc;
 	}
 
 	@Override
 	public long count() {
-		Long v = jdbcTemplate.queryForObject("SELECT count(*) FROM coffee_photos_projection", Long.class);
-		return v == null ? 0 : v;
-	}
-
-	@Override
-	public List<CoffeePhotoView> findAll() {
-		String sql = """
-				SELECT id, coffee_id, photo_uri
-				FROM coffee_photos_projection
-				ORDER BY coffee_id
-				""";
-		return jdbcTemplate.query(sql, this::mapRow);
+		Long n = jdbc.queryForObject("SELECT COUNT(*) FROM coffee_photos_projection", Long.class);
+		return n == null ? 0L : n;
 	}
 
 	@Override
 	public void insertSeed(CoffeePhotoView view) {
-		jdbcTemplate.update("""
-				  INSERT INTO coffee_photos_projection (id, coffee_id, photo_uri)
-				  VALUES (?, ?, ?)
-				  ON CONFLICT (id) DO NOTHING
+		jdbc.update("""
+				    INSERT INTO coffee_photos_projection (id, coffee_id, photo_uri)
+				    VALUES (?, ?, ?)
+				    ON CONFLICT (id) DO UPDATE SET
+				      coffee_id = EXCLUDED.coffee_id,
+				      photo_uri = EXCLUDED.photo_uri
 				""", view.id(), view.coffeeId(), view.photoUri());
+	}
+
+	@Override
+	public List<CoffeePhotoView> findAll() {
+		return jdbc.query("""
+				    SELECT id, coffee_id, photo_uri
+				    FROM coffee_photos_projection
+				    ORDER BY coffee_id ASC
+				""", this::mapRow);
 	}
 
 	private CoffeePhotoView mapRow(ResultSet rs, int rowNum) throws SQLException {

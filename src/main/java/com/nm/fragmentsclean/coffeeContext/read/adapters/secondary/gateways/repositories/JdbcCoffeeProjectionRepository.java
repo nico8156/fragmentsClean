@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,25 +21,49 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 	}
 
 	@Override
-	public void apply(CoffeeCreatedEvent event) {
-		Timestamp updatedAt = Timestamp.from(event.occurredAt());
+	public long count() {
+		Long n = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM coffee_summaries_projection", Long.class);
+		return n == null ? 0L : n;
+	}
 
+	@Override
+	public void apply(CoffeeCreatedEvent event) {
 		upsert(
 				event.coffeeId().value(),
 				event.googlePlaceId() != null ? event.googlePlaceId().value() : null,
 				event.name().value(),
+				event.location().lat(),
+				event.location().lon(),
 				event.address().line1(),
 				event.address().city(),
 				event.address().postalCode(),
 				event.address().country(),
-				event.location().lat(),
-				event.location().lon(),
 				event.phoneNumber() != null ? event.phoneNumber().value() : null,
 				event.website() != null ? event.website().value() : null,
-				toTagsJson(event),
-				null, // rating pour plus tard
+				toTagsJsonFromEvent(event),
+				null, // rating future
 				event.version(),
-				updatedAt.toInstant());
+				Timestamp.from(event.occurredAt()));
+	}
+
+	@Override
+	public void insertSeed(CoffeeSummaryView view) {
+		upsert(
+				view.id(),
+				view.googleId(),
+				view.name(),
+				view.latitude(),
+				view.longitude(),
+				view.addressLine(),
+				view.city(),
+				view.postalCode(),
+				view.country(),
+				view.phoneNumber(),
+				view.website(),
+				toTagsJson(view.tags()),
+				null, // rating future
+				(int) view.version(),
+				Timestamp.from(view.updatedAt()));
 	}
 
 	@Override
@@ -67,55 +90,24 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 		return jdbcTemplate.query(sql, this::mapRow);
 	}
 
-	@Override
-	public long count() {
-		Long v = jdbcTemplate.queryForObject("SELECT count(*) FROM coffee_summaries_projection", Long.class);
-		return v == null ? 0 : v;
-	}
-
-	@Override
-	public void upsertSeed(CoffeeSummaryView view) {
-		// tags_json : on sérialise comme ton parseTagsJson le consomme : ["a","b"]
-		String tagsJson = toTagsJson(view.tags());
-
-		upsert(
-				view.id(),
-				view.googleId(),
-				view.name(),
-				view.addressLine(),
-				view.city(),
-				view.postalCode(),
-				view.country(),
-				view.latitude(),
-				view.longitude(),
-				view.phoneNumber(),
-				view.website(),
-				tagsJson,
-				null, // rating pour plus tard
-				(int) view.version(),
-				view.updatedAt());
-	}
-
-	// ---------------------------
-	// Internal helpers
-	// ---------------------------
+	// ----------------- private -----------------
 
 	private void upsert(
 			UUID id,
 			String googlePlaceId,
 			String name,
+			double lat,
+			double lon,
 			String addressLine1,
 			String city,
 			String postalCode,
 			String country,
-			double lat,
-			double lon,
 			String phoneNumber,
 			String website,
 			String tagsJson,
 			Double rating,
 			int version,
-			Instant updatedAt) {
+			Timestamp updatedAt) {
 		jdbcTemplate.update(
 				"""
 						INSERT INTO coffee_summaries_projection (
@@ -165,34 +157,10 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				tagsJson,
 				rating,
 				version,
-				Timestamp.from(updatedAt));
-	}
-
-	private String toTagsJson(CoffeeCreatedEvent event) {
-		if (event.tags() == null || event.tags().isEmpty()) {
-			return "[]";
-		}
-		String joined = event.tags().stream()
-				.map(t -> "\"" + t.value().replace("\"", "\\\"") + "\"")
-				.reduce((a, b) -> a + "," + b)
-				.orElse("");
-		return "[" + joined + "]";
-	}
-
-	private String toTagsJson(Set<String> tags) {
-		if (tags == null || tags.isEmpty())
-			return "[]";
-		String joined = tags.stream()
-				.filter(Objects::nonNull)
-				.map(String::trim)
-				.filter(s -> !s.isEmpty())
-				.map(t -> "\"" + t.replace("\"", "\\\"") + "\"")
-				.collect(Collectors.joining(","));
-		return "[" + joined + "]";
+				updatedAt);
 	}
 
 	private CoffeeSummaryView mapRow(ResultSet rs, int rowNum) throws SQLException {
-
 		UUID id = rs.getObject("id", UUID.class);
 		String googleId = rs.getString("google_place_id");
 		String name = rs.getString("name");
@@ -229,10 +197,27 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				updatedAt);
 	}
 
+	private String toTagsJsonFromEvent(CoffeeCreatedEvent event) {
+		if (event.tags() == null || event.tags().isEmpty())
+			return "[]";
+		String joined = event.tags().stream()
+				.map(t -> "\"" + t.value().replace("\"", "\\\"") + "\"")
+				.collect(Collectors.joining(","));
+		return "[" + joined + "]";
+	}
+
+	private String toTagsJson(Set<String> tags) {
+		if (tags == null || tags.isEmpty())
+			return "[]";
+		String joined = tags.stream()
+				.map(t -> "\"" + t.replace("\"", "\\\"") + "\"")
+				.collect(Collectors.joining(","));
+		return "[" + joined + "]";
+	}
+
 	private Set<String> parseTagsJson(String tagsJson) {
-		if (tagsJson == null || tagsJson.isBlank() || tagsJson.equals("[]")) {
+		if (tagsJson == null || tagsJson.isBlank() || tagsJson.equals("[]"))
 			return Set.of();
-		}
 		String trimmed = tagsJson.trim();
 		if (trimmed.startsWith("["))
 			trimmed = trimmed.substring(1);

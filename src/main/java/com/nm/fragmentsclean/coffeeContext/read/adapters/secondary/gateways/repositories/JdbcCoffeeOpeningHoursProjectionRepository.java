@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories;
 
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,35 +13,36 @@ import java.util.UUID;
 @Repository
 public class JdbcCoffeeOpeningHoursProjectionRepository implements CoffeeOpeningHoursProjectionRepository {
 
-	private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbc;
 
-	public JdbcCoffeeOpeningHoursProjectionRepository(JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
+	public JdbcCoffeeOpeningHoursProjectionRepository(JdbcTemplate jdbc) {
+		this.jdbc = jdbc;
 	}
 
 	@Override
 	public long count() {
-		Long v = jdbcTemplate.queryForObject("SELECT count(*) FROM coffee_openinghours_projection", Long.class);
-		return v == null ? 0 : v;
-	}
-
-	@Override
-	public List<CoffeeOpeningHoursView> findAll() {
-		String sql = """
-				SELECT id, coffee_id, weekday_description
-				FROM coffee_openinghours_projection
-				ORDER BY coffee_id
-				""";
-		return jdbcTemplate.query(sql, this::mapRow);
+		Long n = jdbc.queryForObject("SELECT COUNT(*) FROM coffee_openinghours_projection", Long.class);
+		return n == null ? 0L : n;
 	}
 
 	@Override
 	public void insertSeed(CoffeeOpeningHoursView view) {
-		jdbcTemplate.update("""
-				  INSERT INTO coffee_openinghours_projection (id, coffee_id, weekday_description)
-				  VALUES (?, ?, ?)
-				  ON CONFLICT (id) DO NOTHING
+		jdbc.update("""
+				    INSERT INTO coffee_openinghours_projection (id, coffee_id, weekday_description)
+				    VALUES (?, ?, ?)
+				    ON CONFLICT (id) DO UPDATE SET
+				      coffee_id = EXCLUDED.coffee_id,
+				      weekday_description = EXCLUDED.weekday_description
 				""", view.id(), view.coffeeId(), view.weekdayDescription());
+	}
+
+	@Override
+	public List<CoffeeOpeningHoursView> findAll() {
+		return jdbc.query("""
+				    SELECT id, coffee_id, weekday_description
+				    FROM coffee_openinghours_projection
+				    ORDER BY coffee_id ASC
+				""", this::mapRow);
 	}
 
 	private CoffeeOpeningHoursView mapRow(ResultSet rs, int rowNum) throws SQLException {
