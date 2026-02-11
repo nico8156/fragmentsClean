@@ -6,24 +6,33 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record AuthUserCreatedEvent(
-        UUID eventId,
-        UUID authUserId,
-        AuthProvider provider,
-        String providerUserId,
-        String email,
-        boolean emailVerified,
-        Instant occurredAt
-) implements DomainEvent {
+		UUID eventId,
+		UUID authUserId,
+		AuthProvider provider,
+		String providerUserId,
 
-    public static AuthUserCreatedEvent of(AuthUser authUser, Instant occurredAt) {
-        return new AuthUserCreatedEvent(
-                UUID.randomUUID(),
-                authUser.id(),
-                authUser.provider(),
-                authUser.providerUserId(),
-                authUser.email(),
-                authUser.emailVerified(),
-                occurredAt
-        );
-    }
+		String email,
+		boolean emailVerified,
+
+		// ✅ NOUVEAUX CHAMPS
+		String displayName,
+		String avatarUrl,
+
+		Instant occurredAt) implements DomainEvent {
+
+	public static AuthUserCreatedEvent of(AuthUser authUser, Instant occurredAt) {
+		return new AuthUserCreatedEvent(
+				UUID.randomUUID(),
+				authUser.id(),
+				authUser.provider(),
+				authUser.providerUserId(),
+				authUser.email(),
+				authUser.emailVerified(),
+
+				// nouveaux champs issus de l’aggregate
+				authUser.displayName(),
+				authUser.avatarUrl(),
+
+				occurredAt);
+	}
 }

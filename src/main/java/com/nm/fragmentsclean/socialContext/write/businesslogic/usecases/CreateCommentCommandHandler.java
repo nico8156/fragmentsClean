@@ -7,50 +7,46 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentR
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
 import jakarta.transaction.Transactional;
 
-
 @Transactional
 public class CreateCommentCommandHandler implements CommandHandler<CreateCommentCommand> {
-    private final CommentRepository commentRepository;
-    private final DomainEventPublisher eventPublisher;
-    private final DateTimeProvider dateTimeProvider;
+	private final CommentRepository commentRepository;
+	private final DomainEventPublisher eventPublisher;
+	private final DateTimeProvider dateTimeProvider;
 
-    public CreateCommentCommandHandler(CommentRepository commentRepository,
-                                       DomainEventPublisher eventPublisher,
-                                       DateTimeProvider dateTimeProvider) {
-        this.commentRepository = commentRepository;
-        this.eventPublisher = eventPublisher;
-        this.dateTimeProvider = dateTimeProvider;
-    }
+	public CreateCommentCommandHandler(CommentRepository commentRepository,
+			DomainEventPublisher eventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		this.commentRepository = commentRepository;
+		this.eventPublisher = eventPublisher;
+		this.dateTimeProvider = dateTimeProvider;
+	}
 
-    @Override
-    public void execute(CreateCommentCommand cmd) {
-        var now = dateTimeProvider.now();
+	@Override
+	public void execute(CreateCommentCommand cmd) {
+		var now = dateTimeProvider.now();
 
-        // idempotence simple : si le commentaire existe déjà, on ne recrée pas
-        var existing = commentRepository.byId(cmd.commentId());
-        if (existing.isPresent()) {
-            // TODO: on pourrait vérifier cohérence target/author/parent
-            return;
-        }
+		// idempotence simple : si le commentaire existe déjà, on ne recrée pas
+		var existing = commentRepository.byId(cmd.commentId());
+		if (existing.isPresent()) {
+			return;
+		}
 
-        var comment = Comment.createNew(
-                cmd.commentId(),
-                cmd.targetId(),
-                cmd.authorId(),
-                cmd.parentId(),
-                cmd.body(),
-                now
-        );
+		var comment = Comment.createNew(
+				cmd.commentId(),
+				cmd.targetId(),
+				cmd.authorId(),
+				cmd.parentId(),
+				cmd.body(),
+				now);
 
-        commentRepository.save(comment);
+		commentRepository.save(comment);
 
-        comment.registerCreatedEvent(
-                cmd.commandId(),
-                cmd.clientAt(),
-                now
-        );
+		comment.registerCreatedEvent(
+				cmd.commandId(),
+				cmd.clientAt(),
+				now);
 
-        comment.domainEvents().forEach(eventPublisher::publish);
-        comment.clearDomainEvents();
-    }
+		comment.domainEvents().forEach(eventPublisher::publish);
+		comment.clearDomainEvents();
+	}
 }

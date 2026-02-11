@@ -2,12 +2,14 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +34,25 @@ public class KafkaOutboxEventSender implements OutboxEventSender {
 			log.info("KafkaOutboxEventSender sending to topic={} key={} type={}",
 					topic, key, event.getEventType());
 
-			var future = kafkaTemplate.send(topic, key, payload);
+			ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, payload);
+
+			// ✅ Critical: add eventType header so consumers can route without guessing JSON
+			// shape
+			if (event.getEventType() != null) {
+				record.headers().add("type", event.getEventType().getBytes(StandardCharsets.UTF_8));
+			}
+			if (event.getAggregateType() != null) {
+				record.headers().add("aggregateType",
+						event.getAggregateType().getBytes(StandardCharsets.UTF_8));
+			}
+			if (event.getAggregateId() != null) {
+				record.headers().add("aggregateId",
+						event.getAggregateId().getBytes(StandardCharsets.UTF_8));
+			}
+			record.headers().add("outboxId",
+					String.valueOf(event.getId()).getBytes(StandardCharsets.UTF_8));
+
+			var future = kafkaTemplate.send(record);
 			var result = future.get(10, TimeUnit.SECONDS);
 
 			RecordMetadata meta = result.getRecordMetadata();

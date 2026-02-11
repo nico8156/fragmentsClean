@@ -54,15 +54,18 @@ public class authenticationDependenciesConfiguration {
 	}
 
 	@Bean
-	RefreshTokenCommandHandler refreshTokenCommandHandler(
+	public RefreshTokenCommandHandler refreshTokenCommandHandler(
 			RefreshTokenRepository refreshTokenRepository,
 			TokenService tokenService,
 			DateTimeProvider dateTimeProvider,
-			AppUserRepository appUserRepository,
 			AuthUserRepository authUserRepository,
 			JwtClaimsFactory jwtClaimsFactory) {
-		return new RefreshTokenCommandHandler(refreshTokenRepository, tokenService, dateTimeProvider,
-				appUserRepository, authUserRepository, jwtClaimsFactory);
+		return new RefreshTokenCommandHandler(
+				refreshTokenRepository,
+				tokenService,
+				dateTimeProvider,
+				authUserRepository,
+				jwtClaimsFactory);
 	}
 
 	@Bean

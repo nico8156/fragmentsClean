@@ -10,64 +10,82 @@ import java.util.UUID;
 @Table(name = "auth_users")
 public class AuthUserJpaEntity {
 
-    @Id
-    private UUID id;
+	@Id
+	private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AuthProvider provider;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private AuthProvider provider;
 
-    @Column(name = "provider_user_id", nullable = false)
-    private String providerUserId;
+	@Column(name = "provider_user_id", nullable = false)
+	private String providerUserId;
 
-    @Column(nullable = false)
-    private String email;
+	@Column(nullable = false)
+	private String email;
 
-    @Column(name = "email_verified", nullable = false)
-    private boolean emailVerified;
+	@Column(name = "email_verified", nullable = false)
+	private boolean emailVerified;
 
-    @Column(name = "last_login_at", nullable = false)
-    private Instant lastLoginAt;
+	// ✅ nouveaux champs
+	@Column(name = "display_name")
+	private String displayName;
 
-    protected AuthUserJpaEntity() {
-        // for JPA
-    }
+	@Column(name = "avatar_url")
+	private String avatarUrl;
 
-    public AuthUserJpaEntity(UUID id,
-                             AuthProvider provider,
-                             String providerUserId,
-                             String email,
-                             boolean emailVerified,
-                             Instant lastLoginAt) {
-        this.id = id;
-        this.provider = provider;
-        this.providerUserId = providerUserId;
-        this.email = email;
-        this.emailVerified = emailVerified;
-        this.lastLoginAt = lastLoginAt;
-    }
+	@Column(name = "last_login_at", nullable = false)
+	private Instant lastLoginAt;
 
-    public UUID getId() {
-        return id;
-    }
+	protected AuthUserJpaEntity() {
+	}
 
-    public AuthProvider getProvider() {
-        return provider;
-    }
+	public AuthUserJpaEntity(UUID id,
+			AuthProvider provider,
+			String providerUserId,
+			String email,
+			boolean emailVerified,
+			String displayName,
+			String avatarUrl,
+			Instant lastLoginAt) {
+		this.id = id;
+		this.provider = provider;
+		this.providerUserId = providerUserId;
+		this.email = email;
+		this.emailVerified = emailVerified;
+		this.displayName = displayName;
+		this.avatarUrl = avatarUrl;
+		this.lastLoginAt = lastLoginAt;
+	}
 
-    public String getProviderUserId() {
-        return providerUserId;
-    }
+	public UUID getId() {
+		return id;
+	}
 
-    public String getEmail() {
-        return email;
-    }
+	public AuthProvider getProvider() {
+		return provider;
+	}
 
-    public boolean isEmailVerified() {
-        return emailVerified;
-    }
+	public String getProviderUserId() {
+		return providerUserId;
+	}
 
-    public Instant getLastLoginAt() {
-        return lastLoginAt;
-    }
+	public String getEmail() {
+		return email;
+	}
+
+	public boolean isEmailVerified() {
+		return emailVerified;
+	}
+
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
+	public Instant getLastLoginAt() {
+		return lastLoginAt;
+	}
 }

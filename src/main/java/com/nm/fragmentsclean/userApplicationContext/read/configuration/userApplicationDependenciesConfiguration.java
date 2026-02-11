@@ -29,8 +29,8 @@ public class userApplicationDependenciesConfiguration {
 
 	@Bean
 	AuthUserCreatedEventHandler authUserCreatedEventHandler(AppUserRepository appUserRepository,
-			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
-		return new AuthUserCreatedEventHandler(appUserRepository, domainEventPublisher, dateTimeProvider);
+			DateTimeProvider dateTimeProvider) {
+		return new AuthUserCreatedEventHandler(appUserRepository, dateTimeProvider);
 	}
 
 }

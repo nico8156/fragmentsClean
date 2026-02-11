@@ -1,18 +1,18 @@
 package com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases;
 
-import java.util.UUID;
-
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler; // ✅ adapte le package si besoin
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 
 @Component
 public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreatedEvent> {
@@ -20,50 +20,65 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
 	private static final Logger log = LoggerFactory.getLogger(AuthUserCreatedEventHandler.class);
 
 	private final AppUserRepository appUserRepository;
-	private final DomainEventPublisher domainEventPublisher;
 	private final DateTimeProvider dateTimeProvider;
 
-	public AuthUserCreatedEventHandler(
-			AppUserRepository appUserRepository,
-			DomainEventPublisher domainEventPublisher,
+	public AuthUserCreatedEventHandler(AppUserRepository appUserRepository,
 			DateTimeProvider dateTimeProvider) {
 		this.appUserRepository = appUserRepository;
-		this.domainEventPublisher = domainEventPublisher;
 		this.dateTimeProvider = dateTimeProvider;
 	}
 
 	@Override
 	public void handle(AuthUserCreatedEvent event) {
-		var now = dateTimeProvider.now();
-		UUID userId = event.authUserId(); // 🔥 clé primaire
+		UUID authUserId = event.authUserId();
+		Instant now = dateTimeProvider.now();
 
-		// ✅ Idempotence applicative (plus robuste que findByAuthUserId)
-		if (appUserRepository.findById(userId).isPresent()) {
-			log.info("AppUser already exists id={}, ignoring AuthUserCreatedEvent", userId);
+		Optional<AppUser> existing = appUserRepository.findById(authUserId);
+		if (existing.isPresent()) {
+			log.info("AppUser already exists for id={}, ignoring AuthUserCreatedEvent", authUserId);
 			return;
 		}
 
-		var displayName = event.email();
-		String avatarUrl = null;
+		String displayName = firstNonBlank(
+				event.displayName(),
+				event.email(),
+				"Utilisateur");
 
-		// ✅ AppUser.id = authUserId
-		var created = AppUser.createNew(
-				userId, // authUserId (si tu le gardes)
+		String avatarUrl = blankToNull(event.avatarUrl());
+
+		AppUser user = new AppUser(
+				authUserId,
+				authUserId,
 				displayName,
 				avatarUrl,
-				now);
+				now,
+				now,
+				0L);
 
 		try {
-			appUserRepository.save(created);
+			appUserRepository.save(user);
+			log.info("AppUser created from AuthUserCreatedEvent. id={}, displayName={}", authUserId,
+					displayName);
 		} catch (DataIntegrityViolationException e) {
-			// ✅ Idempotence DB en cas de race / double delivery
-			log.warn("AppUser creation raced for id={}, ignoring. msg={}", userId, e.getMessage());
-			return;
+			String msg = String.valueOf(
+					e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage()
+							: e.getMessage());
+			log.warn("AppUser creation raced for id={}, ignoring. msg={}", authUserId, msg);
 		}
+	}
 
-		created.domainEvents().forEach(domainEventPublisher::publish);
-		created.clearDomainEvents();
+	private static String firstNonBlank(String... values) {
+		for (String v : values) {
+			if (v != null && !v.trim().isEmpty())
+				return v.trim();
+		}
+		return "Utilisateur";
+	}
 
-		log.info("AppUser created from AuthUserCreatedEvent. id={}", userId);
+	private static String blankToNull(String s) {
+		if (s == null)
+			return null;
+		String t = s.trim();
+		return t.isEmpty() ? null : t;
 	}
 }

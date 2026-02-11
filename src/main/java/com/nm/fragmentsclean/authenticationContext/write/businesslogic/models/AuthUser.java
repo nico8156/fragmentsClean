@@ -7,61 +7,125 @@ import java.util.UUID;
 
 public class AuthUser extends AggregateRoot {
 
-    private final AuthProvider provider;
-    private final String providerUserId; // Google sub
-    private final String email;
-    private final boolean emailVerified;
-    private Instant lastLoginAt;
+	private final AuthProvider provider;
+	private final String providerUserId; // Google sub
+	private final String email;
+	private final boolean emailVerified;
 
-    public AuthUser(UUID id,
-                    AuthProvider provider,
-                    String providerUserId,
-                    String email,
-                    boolean emailVerified,
-                    Instant lastLoginAt) {
-        super(id);
-        this.provider = provider;
-        this.providerUserId = providerUserId;
-        this.email = email;
-        this.emailVerified = emailVerified;
-        this.lastLoginAt = lastLoginAt;
-    }
+	// ✅ NOUVEAUX CHAMPS
+	private String displayName;
+	private String avatarUrl;
 
-    public static AuthUser createNew(AuthProvider provider,
-                                     String providerUserId,
-                                     String email,
-                                     boolean emailVerified,
-                                     Instant now) {
-        UUID id = UUID.randomUUID();
-        var authUser = new AuthUser(id, provider, providerUserId, email, emailVerified, now);
+	private Instant lastLoginAt;
 
-        authUser.registerEvent(AuthUserCreatedEvent.of(authUser, now));
+	public AuthUser(UUID id,
+			AuthProvider provider,
+			String providerUserId,
+			String email,
+			boolean emailVerified,
 
-        return authUser;
-    }
+			// ✅ nouveaux paramètres
+			String displayName,
+			String avatarUrl,
 
-    public void markLogin(Instant now) {
-        this.lastLoginAt = now;
-        registerEvent(AuthUserLoggedInEvent.of(this, now));
-    }
+			Instant lastLoginAt) {
 
-    public AuthProvider provider() {
-        return provider;
-    }
+		super(id);
+		this.provider = provider;
+		this.providerUserId = providerUserId;
+		this.email = email;
+		this.emailVerified = emailVerified;
 
-    public String providerUserId() {
-        return providerUserId;
-    }
+		this.displayName = displayName;
+		this.avatarUrl = avatarUrl;
 
-    public String email() {
-        return email;
-    }
+		this.lastLoginAt = lastLoginAt;
+	}
 
-    public boolean emailVerified() {
-        return emailVerified;
-    }
+	// ----------------------------------------------------------------------
+	// FACTORY ENRICHIE
+	// ----------------------------------------------------------------------
 
-    public Instant lastLoginAt() {
-        return lastLoginAt;
-    }
+	public static AuthUser createNew(AuthProvider provider,
+			String providerUserId,
+			String email,
+			boolean emailVerified,
+
+			// ✅ nouveaux arguments
+			String displayName,
+			String avatarUrl,
+
+			Instant now) {
+
+		UUID id = UUID.randomUUID();
+
+		var authUser = new AuthUser(
+				id,
+				provider,
+				providerUserId,
+				email,
+				emailVerified,
+
+				displayName,
+				avatarUrl,
+
+				now);
+
+		// 🔥 Event enrichi
+		authUser.registerEvent(AuthUserCreatedEvent.of(authUser, now));
+
+		return authUser;
+	}
+
+	// ----------------------------------------------------------------------
+	// EXISTANT CONSERVÉ
+	// ----------------------------------------------------------------------
+
+	public void markLogin(Instant now) {
+		this.lastLoginAt = now;
+		registerEvent(AuthUserLoggedInEvent.of(this, now));
+	}
+
+	// ----------------------------------------------------------------------
+	// GETTERS
+	// ----------------------------------------------------------------------
+
+	public AuthProvider provider() {
+		return provider;
+	}
+
+	public String providerUserId() {
+		return providerUserId;
+	}
+
+	public String email() {
+		return email;
+	}
+
+	public boolean emailVerified() {
+		return emailVerified;
+	}
+
+	public Instant lastLoginAt() {
+		return lastLoginAt;
+	}
+
+	// ✅ NOUVEAUX GETTERS
+
+	public String displayName() {
+		return displayName;
+	}
+
+	public String avatarUrl() {
+		return avatarUrl;
+	}
+
+	// ----------------------------------------------------------------------
+	// FUTUR : possibilité d’update profil
+	// ----------------------------------------------------------------------
+
+	public void updateProfile(String displayName, String avatarUrl) {
+		this.displayName = displayName;
+		this.avatarUrl = avatarUrl;
+	}
 }

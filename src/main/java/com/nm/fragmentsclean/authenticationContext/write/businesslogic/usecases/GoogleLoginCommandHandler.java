@@ -49,16 +49,27 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 				.findByProviderAndProviderUserId(AuthProvider.GOOGLE, google.sub())
 				.map(existing -> {
 					existing.markLogin(now);
+
+					// ✅ Optionnel mais utile: garder à jour profil google si tu veux
+					// (ça n’émet pas d’event ici, c’est juste pour l’aggregate en DB)
+					existing.updateProfile(google.name(), google.pictureUrl());
+
 					authUserRepository.save(existing);
 					return existing;
 				})
 				.orElseGet(() -> {
+					// ✅ création enrichie => event AuthUserCreatedEvent enrichi
 					var created = AuthUser.createNew(
 							AuthProvider.GOOGLE,
 							google.sub(),
 							google.email(),
 							google.emailVerified(),
+
+							google.name(), // displayName
+							google.pictureUrl(), // avatarUrl
+
 							now);
+
 					authUserRepository.save(created);
 					return created;
 				});
@@ -70,10 +81,10 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 		// 4) Claims from AuthUser
 		var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-		// 5) Tokens subject = authUser.id (=> future: AppUser.id == AuthUser.id)
+		// 5) Tokens subject = authUser.id (=> AppUser.id == AuthUser.id)
 		var tokens = tokenService.generateTokensForUser(authUser.id(), claims);
 
-		// 6) Result for HTTP adapter (no AppUser repo here)
+		// 6) Result for HTTP adapter
 		return new GoogleLoginResult(
 				tokens.accessToken(),
 				tokens.refreshToken().token(),
