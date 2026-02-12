@@ -11,29 +11,28 @@ import java.util.UUID;
 @Component
 public class GetMeQueryHandler implements QueryHandler<GetMeQuery, AuthMeView> {
 
-    private final JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
-    public GetMeQueryHandler(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
-    }
+	public GetMeQueryHandler(JdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
+	}
 
-    @Override
-    public AuthMeView handle(GetMeQuery query) {
-        try {
-            return jdbcTemplate.queryForObject(
-                    """
-                    SELECT id, display_name
-                    FROM app_users
-                    WHERE id = ?
-                    """,
-                    (rs, rowNum) -> new AuthMeView(
-                            UUID.fromString(rs.getString("id")),
-                            rs.getString("display_name")
-                    ),
-                    query.userId()
-            );
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
-    }
+	@Override
+	public AuthMeView handle(GetMeQuery query) {
+		try {
+			return jdbcTemplate.queryForObject(
+					"""
+							SELECT id, display_name, avatar_url
+							FROM app_users
+							WHERE id = ?
+							""",
+					(rs, rowNum) -> new AuthMeView(
+							UUID.fromString(rs.getString("id")),
+							rs.getString("display_name"),
+							rs.getString("avatar_url")),
+					query.userId());
+		} catch (EmptyResultDataAccessException e) {
+			return null;
+		}
+	}
 }

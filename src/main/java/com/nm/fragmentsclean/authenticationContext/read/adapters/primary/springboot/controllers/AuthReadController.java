@@ -17,30 +17,38 @@ import java.util.UUID;
 @RequestMapping("/auth")
 public class AuthReadController {
 
-    private final QueryBus queryBus;
+	private final QueryBus queryBus;
 
-    public AuthReadController(
-                              QueryBus queryBus) {
+	public AuthReadController(QueryBus queryBus) {
+		this.queryBus = queryBus;
+	}
 
-        this.queryBus = queryBus;
-    }
-    @GetMapping("/me")
-    public ResponseEntity<MeResponse> me(@AuthenticationPrincipal Jwt jwt) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+	@GetMapping("/me")
+	public ResponseEntity<MeResponse> me(@AuthenticationPrincipal Jwt jwt) {
+		UUID userId = UUID.fromString(jwt.getSubject());
 
-        AuthMeView view = queryBus.dispatch(new GetMeQuery(userId));
-        if (view == null) {
-            return ResponseEntity.notFound().build();
-        }
+		AuthMeView view = queryBus.dispatch(new GetMeQuery(userId));
+		if (view == null) {
+			return ResponseEntity.notFound().build();
+		}
 
-        MeResponse response = new MeResponse(
-                view.userId(),          // <- ID applicatif (AppUser.id)
-                view.displayName(),     // <- profil applicatif
-                jwt.getIssuedAt(),
-                jwt.getExpiresAt(),
-                Instant.now()
-        );
+		MeResponse response = new MeResponse(
+				view.userId(),
+				view.displayName(),
+				view.avatarUrl(), // ✅ NEW
+				jwt.getIssuedAt(),
+				jwt.getExpiresAt(),
+				Instant.now());
 
-        return ResponseEntity.ok(response);
-    }
+		return ResponseEntity.ok(response);
+	}
+
+	public record MeResponse(
+			UUID userId,
+			String displayName,
+			String avatarUrl, // ✅ NEW
+			Instant issuedAt,
+			Instant expiresAt,
+			Instant serverTime) {
+	}
 }
