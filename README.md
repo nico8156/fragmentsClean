@@ -1,6 +1,6 @@
 ![Java](https://img.shields.io/badge/java-21-blue)
 ![Spring Boot](https://img.shields.io/badge/springboot-3.x-green)
-![Kafka](https://img.shields.io/badge/kafka-event--driven-black)
+![SQS](https://img.shields.io/badge/aws-sqs-orange)
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![React Native](https://img.shields.io/badge/mobile-react--native-61dafb)
 ![C++](https://img.shields.io/badge/c%2B%2B-20-orange)
@@ -54,7 +54,7 @@ L’objectif n’est pas un simple prototype, mais un **socle applicatif réel**
 * **Event‑driven architecture**
 * **Outbox pattern**
 * **Projections read**
-* **Kafka** comme bus d’événements
+* **AWS SQS** comme transport cible MVP
 * **WebSocket ACK**
 * **Idempotence / retry / backoff**
 
@@ -113,7 +113,7 @@ Spring Boot (Command)
    ↓
 Outbox
    ↓
-Kafka
+SQS / local event bus dev
    ↓
 Event Handler
    ↓
@@ -259,11 +259,20 @@ Points clés à explorer dans le code :
 ## 🎤 Pitch technique (30 secondes)
 
 > « FragmentsClean est une plateforme mobile offline‑first construite sur une architecture event‑driven CQRS.
-> Elle intègre un moteur natif C++ via un contrat CLI strict, utilise une pipeline asynchrone avec outbox, Kafka et projections read, et démontre une architecture production‑grade testable, modulaire et scalable. »
+> Elle intègre un moteur natif C++ via un contrat CLI strict, utilise une pipeline asynchrone avec outbox, SQS comme transport cible et projections read, et démontre une architecture production-grade testable, modulaire et scalable. »
 
 ---
 
 ## 📚 Documentation par domaine et composants
+
+La référence architecturale actuelle est :
+
+* `AGENTS.md` : doctrine générale Fragments.
+* `.agents/backend/AGENTS.md` : règles backend pour agents et développeurs.
+* `.agents/backend/routing.md` : sélection de l'orchestrator avant implémentation.
+* `docs/architecture/README.md` : index des décisions d'architecture.
+
+Cette documentation remplace l'ancienne lecture "Kafka par défaut" : le transport cible MVP est désormais SQS, avec WebSocket opportuniste et `/commands/{commandId}` comme fallback canonique mobile.
 
 ### 🧩 Bounded Contexts
 
@@ -303,4 +312,3 @@ Points clés à explorer dans le code :
 ## 🏁 Statut
 
 **v1-demo** — démo E2E stable, reproductible, vitrine technique prête pour démonstration, review et entretien.
-
