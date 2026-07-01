@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDisp
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.CommandStatusRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.slf4j.Logger;
@@ -21,13 +22,16 @@ public class OutboxEventDispatcher {
 
     private final SpringOutboxEventRepository outboxRepository;
     private final OutboxEventSender outboxEventSender; // CompositeOutboxEventSender en pratique
+    private final CommandStatusRepository commandStatusRepository;
 
     public OutboxEventDispatcher(
             SpringOutboxEventRepository outboxRepository,
-            OutboxEventSender outboxEventSender
+            OutboxEventSender outboxEventSender,
+            CommandStatusRepository commandStatusRepository
     ) {
         this.outboxRepository = outboxRepository;
         this.outboxEventSender = outboxEventSender;
+        this.commandStatusRepository = commandStatusRepository;
     }
 
     /**
@@ -53,6 +57,7 @@ public class OutboxEventDispatcher {
                 event.setStatus(OutboxStatus.SENT);
                 event.setRetryCount(0);
                 outboxRepository.save(event);
+                commandStatusRepository.markAppliedFromEvent(event);
 
             } catch (Exception e) {
                 log.error("Failed to send outbox event id={} type={}",

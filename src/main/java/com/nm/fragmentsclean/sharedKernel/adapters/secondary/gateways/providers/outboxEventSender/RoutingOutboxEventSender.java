@@ -8,11 +8,11 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.DomainEv
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Primary;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@Primary
+@ConditionalOnProperty(name = "app.messaging.kafka.enabled", havingValue = "true", matchIfMissing = true)
 public class RoutingOutboxEventSender implements OutboxEventSender {
 
     private static final Logger log = LoggerFactory.getLogger(RoutingOutboxEventSender.class);

@@ -7,6 +7,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.OutboxDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.CommandStatusRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.JpaOutboxEventRepsitory;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -45,8 +46,9 @@ public class SharedKernelDependenciesConfiguration {
 
     @Bean
     public OutboxEventDispatcher outboxEventDispatcher(SpringOutboxEventRepository outboxRepo,
-                                                       OutboxEventSender sender) {
-        return new OutboxEventDispatcher(outboxRepo, sender);
+                                                       OutboxEventSender sender,
+                                                       CommandStatusRepository commandStatusRepository) {
+        return new OutboxEventDispatcher(outboxRepo, sender, commandStatusRepository);
     }
 
     @Bean

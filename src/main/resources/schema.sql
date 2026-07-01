@@ -182,6 +182,35 @@ CREATE TABLE IF NOT EXISTS outbox_events (
                                retry_count     INTEGER     NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS inbox_messages (
+    id              BIGSERIAL PRIMARY KEY,
+    destination     VARCHAR(255) NOT NULL,
+    event_id        VARCHAR(50)  NOT NULL,
+    event_type      VARCHAR(255) NOT NULL,
+    event_version   INTEGER      NOT NULL,
+    received_at     TIMESTAMPTZ  NOT NULL,
+    processed_at    TIMESTAMPTZ,
+    status          VARCHAR(32)  NOT NULL,
+    error_message   TEXT,
+    UNIQUE(destination, event_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_inbox_messages_destination_status
+    ON inbox_messages (destination, status);
+
+CREATE TABLE IF NOT EXISTS command_status (
+    command_id      UUID PRIMARY KEY,
+    status          VARCHAR(32) NOT NULL,
+    aggregate_type  VARCHAR(100),
+    aggregate_id    VARCHAR(100),
+    event_id        VARCHAR(50),
+    event_type      VARCHAR(255),
+    applied_at      TIMESTAMPTZ,
+    rejected_at     TIMESTAMPTZ,
+    reason          TEXT,
+    updated_at      TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS articles (
                           article_id        UUID PRIMARY KEY,
                           slug              VARCHAR(255)   NOT NULL,

@@ -7,6 +7,8 @@ DELETE FROM social_comments_projection;
 DELETE FROM comments;
 DELETE FROM likes;
 DELETE FROM outbox_events;
+DELETE FROM inbox_messages;
+DELETE FROM command_status;
 DELETE FROM coffees;
 
 -- =========================

@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configura
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.ChannelInterceptor;
@@ -32,7 +33,7 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                return message; // ou throw si tu veux refuser
+                throw new MessagingException("Missing STOMP bearer token");
             }
 
             String token = authHeader.substring("Bearer ".length());
