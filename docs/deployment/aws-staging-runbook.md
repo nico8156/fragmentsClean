@@ -97,7 +97,7 @@ The workflow:
 For the production EAS build, set:
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://<APP_DOMAIN>
+eas secret:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://fragments-staging.anchor-event.fr
 ```
 
 Then build:
@@ -124,8 +124,8 @@ docker compose logs backend --tail 200
 From outside after DNS/HTTPS:
 
 ```bash
-curl -i https://<APP_DOMAIN>/actuator/health
-curl -i https://<APP_DOMAIN>/api/coffees
+curl -i https://fragments-staging.anchor-event.fr/actuator/health
+curl -i https://fragments-staging.anchor-event.fr/api/coffees
 ```
 
 ## Rollback

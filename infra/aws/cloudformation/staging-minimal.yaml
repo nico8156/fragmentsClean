@@ -192,7 +192,7 @@ Resources:
                   - !GetAtt TicketVerificationRequestedQueue.Arn
 
   InstanceProfile:
-    Type: AWS::EC2::InstanceProfile
+    Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
         - !Ref InstanceRole
