@@ -1,0 +1,15 @@
+.git
+.github
+.idea
+.settings
+.classpath
+.project
+.factorypath
+.DS_Store
+.env
+target
+docker-postgresql-data-for-dev
+**/docker-postgresql-data-for-dev
+**/postgres-data
+**/pgdata
+node_modules

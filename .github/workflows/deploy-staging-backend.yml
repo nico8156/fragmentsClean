@@ -1,0 +1,141 @@
+name: Deploy Staging Backend
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'bin/**'
+      - 'pom.xml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'infra/aws/compose/staging/**'
+      - '.github/workflows/deploy-staging-backend.yml'
+
+env:
+  AWS_REGION: eu-west-3
+  ECR_REPOSITORY: ${{ secrets.STAGING_ECR_REPOSITORY }}
+  STAGING_REMOTE_DIR: /srv/fragments/staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test backend deployment guard
+        run: |
+          ./mvnw -q \
+            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,CreateCoffeeCommandHandlerTest \
+            test
+
+      - name: Package backend
+        run: ./mvnw -q -DskipTests package
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push staging backend image
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          test -n "${ECR_REPOSITORY}"
+          docker buildx build \
+            --platform linux/arm64 \
+            --tag "${ECR_REPOSITORY}:${IMAGE_TAG}" \
+            --tag "${ECR_REPOSITORY}:staging-latest" \
+            --file Dockerfile \
+            . \
+            --push
+
+      - name: Write SSH private key
+        env:
+          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/staging_key
+          chmod 600 ~/.ssh/staging_key
+          ssh-keyscan -H "${{ secrets.STAGING_EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync deployment files
+        run: |
+          ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" \
+            "mkdir -p '${STAGING_REMOTE_DIR}/db'"
+          scp -i ~/.ssh/staging_key \
+            infra/aws/compose/staging/docker-compose.yml \
+            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/docker-compose.yml"
+          scp -i ~/.ssh/staging_key \
+            infra/aws/compose/staging/Caddyfile \
+            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/Caddyfile"
+          scp -i ~/.ssh/staging_key \
+            src/main/resources/schema.sql \
+            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/db/schema.sql"
+          scp -i ~/.ssh/staging_key \
+            src/main/resources/data.sql \
+            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/db/data.sql"
+
+      - name: Deploy on staging host
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" <<EOF
+          set -euo pipefail
+          cd "${STAGING_REMOTE_DIR}"
+          test -f .env
+          grep -q '^BACKEND_IMAGE=' .env && \
+            sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${ECR_REPOSITORY}:${IMAGE_TAG}|" .env || \
+            echo "BACKEND_IMAGE=${ECR_REPOSITORY}:${IMAGE_TAG}" >> .env
+          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
+          docker compose pull backend
+          docker compose up -d postgres backend
+          if grep -q '^COMPOSE_PROFILES=.*https' .env; then
+            docker compose --profile https up -d caddy
+          fi
+          docker compose ps
+          EOF
+
+      - name: Smoke test staging backend
+        run: |
+          ssh -T -o LogLevel=ERROR -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" 'bash -seuo pipefail' <<'EOF'
+          cd /srv/fragments/staging
+          status_code=""
+          for _ in $(seq 1 30); do
+            status_code=$(curl -s -o /tmp/fragments-health.json -w '%{http_code}' "http://127.0.0.1:8080/actuator/health" || true)
+            echo "fragments staging health status: ${status_code}"
+            if [ "$status_code" = "200" ]; then
+              cat /tmp/fragments-health.json
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Backend smoke test failed after retries with status: ${status_code:-none}"
+          docker compose ps || true
+          docker compose logs --tail=200 backend || true
+          exit 1
+          EOF

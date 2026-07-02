@@ -1,0 +1,292 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Fragments staging minimal infrastructure for a single-host Docker Compose deployment.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: fragments
+  EnvironmentName:
+    Type: String
+    Default: staging
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 key pair name for SSH access.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where the staging instance will run.
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public subnet where the staging instance will run.
+  AllowedSshCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to access SSH. Tighten immediately after bootstrap or use SSM.
+  InstanceType:
+    Type: String
+    Default: t4g.small
+    AllowedValues:
+      - t4g.small
+      - t4g.medium
+  RootVolumeSizeGiB:
+    Type: Number
+    Default: 30
+    MinValue: 16
+  DataVolumeSizeGiB:
+    Type: Number
+    Default: 30
+    MinValue: 20
+  UbuntuAmiParameter:
+    Type: String
+    Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+
+Resources:
+  BackendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/${EnvironmentName}/backend
+      ImageScanningConfiguration:
+        ScanOnPush: true
+
+  SharedDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-shared-dlq
+      MessageRetentionPeriod: 1209600
+
+  ArticlesEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-articles-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  AuthUsersEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-auth-users-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  AppUsersEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-app-users-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  CoffeesEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-coffees-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  DomainEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-domain-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  TicketEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-ticket-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  TicketVerificationRequestedQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-ticket-verification-requested
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub ${ProjectName}-${EnvironmentName} instance security group
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSshCidr
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-${EnvironmentName}-runtime
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource:
+                  - !GetAtt BackendRepository.Arn
+              - Effect: Allow
+                Action:
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:ChangeMessageVisibility
+                  - sqs:SendMessage
+                Resource:
+                  - !GetAtt SharedDeadLetterQueue.Arn
+                  - !GetAtt ArticlesEventsQueue.Arn
+                  - !GetAtt AuthUsersEventsQueue.Arn
+                  - !GetAtt AppUsersEventsQueue.Arn
+                  - !GetAtt CoffeesEventsQueue.Arn
+                  - !GetAtt DomainEventsQueue.Arn
+                  - !GetAtt TicketEventsQueue.Arn
+                  - !GetAtt TicketVerificationRequestedQueue.Arn
+
+  InstanceProfile:
+    Type: AWS::EC2::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  DataVolume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !GetAtt StagingInstance.AvailabilityZone
+      Encrypted: true
+      Size: !Ref DataVolumeSizeGiB
+      VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}-data
+
+  StagingInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Sub '{{resolve:ssm:${UbuntuAmiParameter}}}'
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RootVolumeSizeGiB
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+          apt-get update
+          apt-get install -y ca-certificates curl gnupg lsb-release jq unzip awscli
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          systemctl enable docker
+          systemctl start docker
+          usermod -aG docker ubuntu
+          mkfs -t ext4 /dev/nvme1n1 || true
+          mkdir -p /srv/fragments/staging
+          mkdir -p /srv/fragments-postgres
+          mount /dev/nvme1n1 /srv/fragments-postgres || true
+          grep -q "/srv/fragments-postgres" /etc/fstab || echo "/dev/nvme1n1 /srv/fragments-postgres ext4 defaults,nofail 0 2" >> /etc/fstab
+
+  DataVolumeAttachment:
+    Type: AWS::EC2::VolumeAttachment
+    Properties:
+      Device: /dev/sdf
+      InstanceId: !Ref StagingInstance
+      VolumeId: !Ref DataVolume
+
+  ElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      InstanceId: !Ref StagingInstance
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}-eip
+
+Outputs:
+  InstanceId:
+    Value: !Ref StagingInstance
+  InstancePublicIp:
+    Value: !Ref ElasticIp
+  InstancePublicDnsName:
+    Value: !GetAtt StagingInstance.PublicDnsName
+  EcrRepositoryUri:
+    Value: !GetAtt BackendRepository.RepositoryUri
+  ArticlesEventsQueueUrl:
+    Value: !Ref ArticlesEventsQueue
+  AuthUsersEventsQueueUrl:
+    Value: !Ref AuthUsersEventsQueue
+  AppUsersEventsQueueUrl:
+    Value: !Ref AppUsersEventsQueue
+  CoffeesEventsQueueUrl:
+    Value: !Ref CoffeesEventsQueue
+  DomainEventsQueueUrl:
+    Value: !Ref DomainEventsQueue
+  TicketEventsQueueUrl:
+    Value: !Ref TicketEventsQueue
+  TicketVerificationRequestedQueueUrl:
+    Value: !Ref TicketVerificationRequestedQueue
+  SharedDeadLetterQueueUrl:
+    Value: !Ref SharedDeadLetterQueue

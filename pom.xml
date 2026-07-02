@@ -52,6 +52,12 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Production health checks -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Data JPA (⚠️ SANS version : géré par le parent Boot 3.3.0) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
