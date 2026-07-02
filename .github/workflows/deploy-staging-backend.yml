@@ -17,6 +17,7 @@ on:
 env:
   AWS_REGION: eu-west-3
   ECR_REPOSITORY: ${{ secrets.STAGING_ECR_REPOSITORY }}
+  STAGING_SECURITY_GROUP_ID: ${{ secrets.STAGING_SECURITY_GROUP_ID }}
   STAGING_REMOTE_DIR: /srv/fragments/staging
 
 jobs:
@@ -55,6 +56,26 @@ jobs:
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Validate staging deployment secrets
+        run: |
+          test -n "${ECR_REPOSITORY}"
+          CLEAN_ECR_REPOSITORY="$(printf '%s' "${ECR_REPOSITORY}" | tr -d '[:space:]')"
+          if [ "${CLEAN_ECR_REPOSITORY}" != "${ECR_REPOSITORY}" ]; then
+            echo "::error::STAGING_ECR_REPOSITORY must not contain spaces or newlines."
+            exit 1
+          fi
+          case "${ECR_REPOSITORY}" in
+            http://*|https://*)
+              echo "::error::STAGING_ECR_REPOSITORY must be an ECR repository URI without protocol."
+              exit 1
+              ;;
+            *:*)
+              echo "::error::STAGING_ECR_REPOSITORY must not include an image tag."
+              exit 1
+              ;;
+          esac
+          echo "ECR_REPOSITORY=${ECR_REPOSITORY}" >> "${GITHUB_ENV}"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -74,6 +95,19 @@ jobs:
             . \
             --push
 
+      - name: Authorize runner SSH ingress
+        run: |
+          test -n "${STAGING_SECURITY_GROUP_ID}"
+          RUNNER_PUBLIC_IP="$(curl -fsSL https://checkip.amazonaws.com | tr -d '[:space:]')"
+          test -n "${RUNNER_PUBLIC_IP}"
+          echo "RUNNER_PUBLIC_IP=${RUNNER_PUBLIC_IP}" >> "${GITHUB_ENV}"
+          aws ec2 authorize-security-group-ingress \
+            --region "${AWS_REGION}" \
+            --group-id "${STAGING_SECURITY_GROUP_ID}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_PUBLIC_IP}/32" || true
+
       - name: Write SSH private key
         env:
           STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
@@ -81,7 +115,12 @@ jobs:
           install -m 700 -d ~/.ssh
           printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/staging_key
           chmod 600 ~/.ssh/staging_key
-          ssh-keyscan -H "${{ secrets.STAGING_EC2_HOST }}" >> ~/.ssh/known_hosts
+          for _ in $(seq 1 10); do
+            ssh-keyscan -T 10 -H "${{ secrets.STAGING_EC2_HOST }}" >> ~/.ssh/known_hosts && exit 0
+            sleep 5
+          done
+          echo "::error::Unable to scan staging SSH host key. Check Security Group port 22 and STAGING_EC2_HOST."
+          exit 1
 
       - name: Sync deployment files
         run: |
@@ -139,3 +178,15 @@ jobs:
           docker compose logs --tail=200 backend || true
           exit 1
           EOF
+
+      - name: Revoke runner SSH ingress
+        if: always()
+        run: |
+          if [ -n "${STAGING_SECURITY_GROUP_ID:-}" ] && [ -n "${RUNNER_PUBLIC_IP:-}" ]; then
+            aws ec2 revoke-security-group-ingress \
+              --region "${AWS_REGION}" \
+              --group-id "${STAGING_SECURITY_GROUP_ID}" \
+              --protocol tcp \
+              --port 22 \
+              --cidr "${RUNNER_PUBLIC_IP}/32" || true
+          fi

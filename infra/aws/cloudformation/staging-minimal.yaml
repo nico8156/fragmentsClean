@@ -38,6 +38,21 @@ Parameters:
   UbuntuAmiParameter:
     Type: String
     Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+  GitHubRepository:
+    Type: String
+    Default: nico8156/fragmentsClean
+    Description: GitHub repository allowed to assume the deploy role, formatted owner/repo.
+  GitHubBranch:
+    Type: String
+    Default: main
+    Description: GitHub branch allowed to assume the deploy role.
+  ExistingGitHubOidcProviderArn:
+    Type: String
+    Default: ''
+    Description: Existing token.actions.githubusercontent.com OIDC provider ARN. Leave empty in a fresh AWS account.
+
+Conditions:
+  CreateGitHubOidcProvider: !Equals [!Ref ExistingGitHubOidcProviderArn, '']
 
 Resources:
   BackendRepository:
@@ -232,10 +247,15 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -euxo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+
           apt-get update
-          apt-get install -y ca-certificates curl gnupg lsb-release jq unzip awscli
+          apt-get install -y ca-certificates curl gnupg lsb-release jq unzip
+
           install -m 0755 -d /etc/apt/keyrings
-          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          fi
           chmod a+r /etc/apt/keyrings/docker.gpg
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
           apt-get update
@@ -243,11 +263,34 @@ Resources:
           systemctl enable docker
           systemctl start docker
           usermod -aG docker ubuntu
-          mkfs -t ext4 /dev/nvme1n1 || true
+
+          if ! command -v aws >/dev/null 2>&1; then
+            cd /tmp
+            rm -rf aws awscliv2.zip
+            curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o awscliv2.zip
+            unzip -q awscliv2.zip
+            ./aws/install
+            rm -rf aws awscliv2.zip
+          fi
+
           mkdir -p /srv/fragments/staging
+          chown -R ubuntu:ubuntu /srv/fragments
+          chmod 750 /srv/fragments /srv/fragments/staging
+
+          for _ in $(seq 1 30); do
+            [ -b /dev/nvme1n1 ] && break
+            sleep 2
+          done
+          test -b /dev/nvme1n1
+
+          if ! blkid /dev/nvme1n1 >/dev/null 2>&1; then
+            mkfs.ext4 -F /dev/nvme1n1
+          fi
+
           mkdir -p /srv/fragments-postgres
-          mount /dev/nvme1n1 /srv/fragments-postgres || true
-          grep -q "/srv/fragments-postgres" /etc/fstab || echo "/dev/nvme1n1 /srv/fragments-postgres ext4 defaults,nofail 0 2" >> /etc/fstab
+          DATA_VOLUME_UUID=$(blkid -s UUID -o value /dev/nvme1n1)
+          grep -q "$DATA_VOLUME_UUID" /etc/fstab || echo "UUID=$DATA_VOLUME_UUID /srv/fragments-postgres ext4 defaults,nofail 0 2" >> /etc/fstab
+          mountpoint -q /srv/fragments-postgres || mount /srv/fragments-postgres
 
   DataVolumeAttachment:
     Type: AWS::EC2::VolumeAttachment
@@ -265,6 +308,71 @@ Resources:
         - Key: Name
           Value: !Sub ${ProjectName}-${EnvironmentName}-eip
 
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: CreateGitHubOidcProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  GitHubDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: !Sub GitHub Actions deploy role for ${ProjectName} ${EnvironmentName}.
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - CreateGitHubOidcProvider
+                - !Ref GitHubOidcProvider
+                - !Ref ExistingGitHubOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepository}:ref:refs/heads/${GitHubBranch}
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-${EnvironmentName}-backend-ecr-push
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: EcrAuthorizationToken
+                Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: '*'
+              - Sid: PushBackendImage
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:DescribeRepositories
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource:
+                  - !GetAtt BackendRepository.Arn
+              - Sid: DescribeSecurityGroupsForTemporarySsh
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSecurityGroups
+                Resource: '*'
+              - Sid: ManageTemporaryRunnerSshIngress
+                Effect: Allow
+                Action:
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupIngress
+                Resource:
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${InstanceSecurityGroup}
+
 Outputs:
   InstanceId:
     Value: !Ref StagingInstance
@@ -272,6 +380,8 @@ Outputs:
     Value: !Ref ElasticIp
   InstancePublicDnsName:
     Value: !GetAtt StagingInstance.PublicDnsName
+  InstanceSecurityGroupId:
+    Value: !Ref InstanceSecurityGroup
   EcrRepositoryUri:
     Value: !GetAtt BackendRepository.RepositoryUri
   ArticlesEventsQueueUrl:
@@ -290,3 +400,5 @@ Outputs:
     Value: !Ref TicketVerificationRequestedQueue
   SharedDeadLetterQueueUrl:
     Value: !Ref SharedDeadLetterQueue
+  GitHubDeployRoleArn:
+    Value: !GetAtt GitHubDeployRole.Arn
