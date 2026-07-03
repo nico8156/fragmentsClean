@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminCoffeesReadController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
@@ -34,12 +35,15 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGoo
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsConfiguration;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsProperties;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncController;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncDispatcher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class AdminTokenSecurityTest {
@@ -70,6 +74,20 @@ class AdminTokenSecurityTest {
 	void admin_coffees_without_token_returns_401() throws Exception {
 		mockMvc("admin-secret").perform(get("/api/admin/coffees"))
 				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void admin_sync_events_without_token_returns_401() throws Exception {
+		mockMvc("admin-secret").perform(get("/api/admin/sync/events"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void admin_sync_events_with_valid_token_opens_stream() throws Exception {
+		mockMvc("admin-secret").perform(get("/api/admin/sync/events")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isOk())
+				.andExpect(request().asyncStarted());
 	}
 
 	@Test
@@ -154,7 +172,10 @@ class AdminTokenSecurityTest {
 		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
 				.corsConfigurationSource(corsProperties());
 
-		return MockMvcBuilders.standaloneSetup(controller(), adminCoffeesController(queryHandler))
+		return MockMvcBuilders.standaloneSetup(
+						controller(),
+						adminCoffeesController(queryHandler),
+						projectionSyncController())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
 				.build();
 	}
@@ -197,6 +218,10 @@ class AdminTokenSecurityTest {
 				new FakeCoffeePhotoProjectionRepository(),
 				new FakeCoffeeOpeningHoursProjectionRepository()
 		);
+	}
+
+	private ProjectionSyncController projectionSyncController() {
+		return new ProjectionSyncController(new FakeProjectionSyncDispatcher());
 	}
 
 	private static class FakeGooglePlacesGateway implements GooglePlacesGateway {
@@ -258,6 +283,17 @@ class AdminTokenSecurityTest {
 							Instant.parse("2026-07-03T08:05:00Z")
 					)
 			);
+		}
+	}
+
+	private static class FakeProjectionSyncDispatcher extends ProjectionSyncDispatcher {
+		FakeProjectionSyncDispatcher() {
+			super(null, null, null, null);
+		}
+
+		@Override
+		public SseEmitter openStream(String lastEventId) {
+			return new SseEmitter(1_000L);
 		}
 	}
 
