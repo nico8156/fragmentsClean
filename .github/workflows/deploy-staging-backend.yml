@@ -214,6 +214,15 @@ jobs:
               printf '\n%s=%s\n' "\${key}" "\${value}" >> .env
             fi
           }
+          read_env_var() {
+            key="\$1"
+            value="\$(grep "^\${key}=" .env | tail -n 1 | cut -d= -f2-)"
+            if [ -z "\${value}" ]; then
+              echo "Required runtime .env variable \${key} is empty." >&2
+              exit 1
+            fi
+            printf '%s' "\${value}"
+          }
           upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
           upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
           upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
@@ -228,8 +237,10 @@ jobs:
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
           docker compose pull backend
           docker compose up -d postgres
+          POSTGRES_RUNTIME_USER="\$(read_env_var POSTGRES_USER)"
+          POSTGRES_RUNTIME_DB="\$(read_env_var POSTGRES_DB)"
           docker compose exec -T postgres \
-            psql -U "${POSTGRES_USER}" -d "${POSTGRES_DB}" \
+            psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
           docker compose up -d backend
           if grep -q '^COMPOSE_PROFILES=.*https' .env; then
