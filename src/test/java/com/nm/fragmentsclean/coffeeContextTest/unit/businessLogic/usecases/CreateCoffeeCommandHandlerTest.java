@@ -39,21 +39,7 @@ public class CreateCoffeeCommandHandlerTest {
 		// GIVEN
 		var clientAt = Instant.parse("2023-10-01T11:00:00Z");
 
-		var cmd = new CreateCoffeeCommand(
-				CMD_ID,
-				COFFEE_ID,
-				GOOGLE_PLACE_ID,
-				"Columbus Café & Co",
-				"Centre Commercial Grand Quartier",
-				"Saint-Grégoire",
-				"35760",
-				"FR",
-				48.1368282,
-				-1.6953883,
-				"02 99 54 25 82",
-				"https://www.columbuscafe.com/boutique/saint-gregoire-centre-commercial-grand-quartier/",
-				List.of("espresso", "chain"),
-				clientAt);
+		var cmd = command(CMD_ID, COFFEE_ID, GOOGLE_PLACE_ID, clientAt);
 
 		// WHEN
 		handler.execute(cmd);
@@ -106,5 +92,48 @@ public class CreateCoffeeCommandHandlerTest {
 		assertThat(evt.version()).isEqualTo(0);
 		assertThat(evt.occurredAt()).isEqualTo(dateTimeProvider.instantOfNow);
 		assertThat(evt.clientAt()).isEqualTo(clientAt);
+	}
+
+	@Test
+	void should_ignore_create_when_google_place_id_already_exists() {
+		// GIVEN
+		var clientAt = Instant.parse("2023-10-01T11:00:00Z");
+		handler.execute(command(CMD_ID, COFFEE_ID, GOOGLE_PLACE_ID, clientAt));
+
+		var duplicateCommand = command(
+				UUID.fromString("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+				UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+				GOOGLE_PLACE_ID,
+				clientAt
+		);
+
+		// WHEN
+		handler.execute(duplicateCommand);
+
+		// THEN
+		assertThat(coffeeRepository.allSnapshots()).hasSize(1);
+		assertThat(coffeeRepository.allSnapshots().getFirst().coffeeId()).isEqualTo(COFFEE_ID);
+		assertThat(domainEventPublisher.published).hasSize(1);
+	}
+
+	private CreateCoffeeCommand command(UUID commandId,
+										UUID coffeeId,
+										String googlePlaceId,
+										Instant clientAt) {
+		return new CreateCoffeeCommand(
+				commandId,
+				coffeeId,
+				googlePlaceId,
+				"Columbus Café & Co",
+				"Centre Commercial Grand Quartier",
+				"Saint-Grégoire",
+				"35760",
+				"FR",
+				48.1368282,
+				-1.6953883,
+				"02 99 54 25 82",
+				"https://www.columbuscafe.com/boutique/saint-gregoire-centre-commercial-grand-quartier/",
+				List.of("espresso", "chain"),
+				clientAt);
 	}
 }

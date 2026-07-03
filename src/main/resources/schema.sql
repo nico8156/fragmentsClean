@@ -29,11 +29,10 @@ CREATE TABLE IF NOT EXISTS coffees (
                          updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
--- -- Optionnel, mais bien pratique :
--- CREATE UNIQUE INDEX ux_coffees_google_place_id
---     ON coffees (google_place_id)
---     WHERE google_place_id IS NOT NULL;
---
+CREATE UNIQUE INDEX IF NOT EXISTS ux_coffees_google_place_id
+    ON coffees (google_place_id)
+    WHERE google_place_id IS NOT NULL;
+
 -- CREATE INDEX ix_coffees_city ON coffees (city);
 -- CREATE INDEX ix_coffees_lat_lon ON coffees (lat, lon);
 --

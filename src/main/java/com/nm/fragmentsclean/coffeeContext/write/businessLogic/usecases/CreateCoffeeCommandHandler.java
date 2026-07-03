@@ -33,6 +33,15 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
 
     @Override
     public void execute(CreateCoffeeCommand command) {
+        GooglePlaceId googlePlaceId = command.googlePlaceId() != null
+                ? new GooglePlaceId(command.googlePlaceId())
+                : null;
+
+        if (googlePlaceId != null && coffeeRepository.existsByGooglePlaceId(googlePlaceId)) {
+            log.info("Coffee with googlePlaceId={} already exists, create command ignored.", googlePlaceId);
+            return;
+        }
+
         Instant now = dateTimeProvider.now();
 
         // 1) Ids
@@ -41,16 +50,6 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
                         ? command.coffeeId()
                         : UUID.randomUUID()
         );
-
-        GooglePlaceId googlePlaceId = command.googlePlaceId() != null
-                ? new GooglePlaceId(command.googlePlaceId())
-                : null;
-
-        // (optionnel) check de doublon par GooglePlaceId
-        if (googlePlaceId != null && coffeeRepository.existsByGooglePlaceId(googlePlaceId)) {
-            // à toi de décider : exception métier ? no-op ?
-            log.warn("Coffee with googlePlaceId={} already exists, ignoring create.", googlePlaceId);
-        }
 
         // 2) Value Objects
         CoffeeName name = new CoffeeName(command.name());

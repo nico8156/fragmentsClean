@@ -10,12 +10,14 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.*;
 import com.nm.fragmentsclean.coffeeContextTest.integration.AbstractJpaIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class JpaCoffeeRepositoryIT extends AbstractJpaIntegrationTest {
 
@@ -126,5 +128,40 @@ public class JpaCoffeeRepositoryIT extends AbstractJpaIntegrationTest {
         assertThat(entity.getWebsite()).isEqualTo("https://new.example.com");
         assertThat(entity.getVersion()).isEqualTo(2);              // version++ via touch()
         assertThat(entity.getUpdatedAt()).isEqualTo(editedAt);     // mis à jour
+    }
+
+    @Test
+    void cannot_save_two_coffees_with_same_google_place_id() {
+        var now = Instant.parse("2024-01-01T10:00:00Z");
+
+        coffeeRepository.save(Coffee.createNew(
+                new CoffeeId(COFFEE_ID),
+                new GooglePlaceId(GOOGLE_PLACE_ID),
+                new CoffeeName("First Coffee"),
+                new Address("First address", "Rennes", "35000", "FR"),
+                new GeoPoint(48.0, -1.0),
+                null,
+                null,
+                Set.of(),
+                now
+        ));
+        springCoffeeRepository.flush();
+
+        var duplicate = Coffee.createNew(
+                new CoffeeId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+                new GooglePlaceId(GOOGLE_PLACE_ID),
+                new CoffeeName("Duplicate Coffee"),
+                new Address("Second address", "Rennes", "35000", "FR"),
+                new GeoPoint(48.1, -1.1),
+                null,
+                null,
+                Set.of(),
+                now
+        );
+
+        assertThatThrownBy(() -> {
+            coffeeRepository.save(duplicate);
+            springCoffeeRepository.flush();
+        }).isInstanceOf(DataIntegrityViolationException.class);
     }
 }
