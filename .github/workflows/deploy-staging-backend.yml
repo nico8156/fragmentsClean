@@ -60,23 +60,42 @@ jobs:
       - name: Resolve staging SQS queue URLs
         run: |
           set -euo pipefail
-          output_value() {
-            aws cloudformation describe-stacks \
-              --region "${AWS_REGION}" \
-              --stack-name "${STAGING_STACK_NAME}" \
-              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue | [0]" \
-              --output text
+          stack_outputs_json="$(aws cloudformation describe-stacks \
+            --region "${AWS_REGION}" \
+            --stack-name "${STAGING_STACK_NAME}" \
+            --query 'Stacks[0].Outputs' \
+            --output json)"
+
+          resolve_output() {
+            local output_key="$1"
+            local env_key="$2"
+            local value
+            value="$(STACK_OUTPUTS_JSON="${stack_outputs_json}" OUTPUT_KEY="${output_key}" python3 - <<'PY'
+          import json
+          import os
+
+          outputs = json.loads(os.environ["STACK_OUTPUTS_JSON"])
+          output_key = os.environ["OUTPUT_KEY"]
+          for output in outputs:
+              if output.get("OutputKey") == output_key:
+                  print(output.get("OutputValue", ""))
+                  break
+          PY
+          )"
+            if [ -z "${value}" ] || [ "${value}" = "None" ]; then
+              echo "::error::Missing CloudFormation output ${output_key} in stack ${STAGING_STACK_NAME}."
+              exit 1
+            fi
+            echo "${env_key}=${value}" >> "${GITHUB_ENV}"
           }
 
-          {
-            echo "SQS_ARTICLES_EVENTS_URL=$(output_value ArticlesEventsQueueUrl)"
-            echo "SQS_AUTH_USERS_EVENTS_URL=$(output_value AuthUsersEventsQueueUrl)"
-            echo "SQS_APP_USERS_EVENTS_URL=$(output_value AppUsersEventsQueueUrl)"
-            echo "SQS_COFFEES_EVENTS_URL=$(output_value CoffeesEventsQueueUrl)"
-            echo "SQS_DOMAIN_EVENTS_URL=$(output_value DomainEventsQueueUrl)"
-            echo "SQS_TICKET_EVENTS_URL=$(output_value TicketEventsQueueUrl)"
-            echo "SQS_TICKET_VERIFICATION_REQUESTED_URL=$(output_value TicketVerificationRequestedQueueUrl)"
-          } >> "${GITHUB_ENV}"
+          resolve_output ArticlesEventsQueueUrl SQS_ARTICLES_EVENTS_URL
+          resolve_output AuthUsersEventsQueueUrl SQS_AUTH_USERS_EVENTS_URL
+          resolve_output AppUsersEventsQueueUrl SQS_APP_USERS_EVENTS_URL
+          resolve_output CoffeesEventsQueueUrl SQS_COFFEES_EVENTS_URL
+          resolve_output DomainEventsQueueUrl SQS_DOMAIN_EVENTS_URL
+          resolve_output TicketEventsQueueUrl SQS_TICKET_EVENTS_URL
+          resolve_output TicketVerificationRequestedQueueUrl SQS_TICKET_VERIFICATION_REQUESTED_URL
 
       - name: Validate staging deployment secrets
         run: |
@@ -166,14 +185,21 @@ jobs:
           IMAGE_TAG: sha-${{ github.sha }}
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
-          test -n "${GOOGLE_PLACES_API_KEY}"
-          test -n "${SQS_ARTICLES_EVENTS_URL}"
-          test -n "${SQS_AUTH_USERS_EVENTS_URL}"
-          test -n "${SQS_APP_USERS_EVENTS_URL}"
-          test -n "${SQS_COFFEES_EVENTS_URL}"
-          test -n "${SQS_DOMAIN_EVENTS_URL}"
-          test -n "${SQS_TICKET_EVENTS_URL}"
-          test -n "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
+          require_env() {
+            key="$1"
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Required environment variable ${key} is empty."
+              exit 1
+            fi
+          }
+          require_env GOOGLE_PLACES_API_KEY
+          require_env SQS_ARTICLES_EVENTS_URL
+          require_env SQS_AUTH_USERS_EVENTS_URL
+          require_env SQS_APP_USERS_EVENTS_URL
+          require_env SQS_COFFEES_EVENTS_URL
+          require_env SQS_DOMAIN_EVENTS_URL
+          require_env SQS_TICKET_EVENTS_URL
+          require_env SQS_TICKET_VERIFICATION_REQUESTED_URL
           ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" <<EOF
           set -euo pipefail
           set +x

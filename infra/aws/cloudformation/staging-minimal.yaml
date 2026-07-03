@@ -365,6 +365,12 @@ Resources:
                 Action:
                   - ec2:DescribeSecurityGroups
                 Resource: '*'
+              - Sid: ReadStagingStackOutputs
+                Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                Resource:
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
               - Sid: ManageTemporaryRunnerSshIngress
                 Effect: Allow
                 Action:
