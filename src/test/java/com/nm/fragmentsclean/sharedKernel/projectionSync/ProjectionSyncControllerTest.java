@@ -52,7 +52,7 @@ class ProjectionSyncControllerTest {
 		private String lastEventId;
 
 		FakeProjectionSyncDispatcher() {
-			super(null, null, null);
+			super(null, null, null, null);
 		}
 
 		@Override

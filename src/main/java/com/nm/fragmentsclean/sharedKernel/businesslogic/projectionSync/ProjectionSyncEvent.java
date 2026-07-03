@@ -42,4 +42,38 @@ public record ProjectionSyncEvent(
 				List.of(),
 				null);
 	}
+
+	public static ProjectionSyncEvent projectionUpdated(
+			String projection,
+			String scope,
+			String entityId,
+			Long version,
+			Instant changedAt,
+			List<String> hints) {
+		return new ProjectionSyncEvent(
+				null,
+				"projection.updated",
+				1,
+				projection,
+				scope,
+				entityId,
+				version,
+				changedAt,
+				hints == null ? List.of() : List.copyOf(hints),
+				null);
+	}
+
+	public ProjectionSyncEvent withId(String id) {
+		return new ProjectionSyncEvent(
+				id,
+				eventName,
+				schemaVersion,
+				projection,
+				scope,
+				entityId,
+				version,
+				changedAt,
+				hints,
+				reason);
+	}
 }

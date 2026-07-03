@@ -400,3 +400,57 @@ Current invariant:
 - no projection-specific notification exists yet;
 - `Last-Event-ID` is accepted at the boundary but real replay starts in Sprint
   2 with the durable `projection_sync_events` log.
+
+## Sprint 2 Durable Replay
+
+Sprint 2 introduces the durable projection sync log:
+
+```sql
+projection_sync_events
+  id            BIGSERIAL PRIMARY KEY
+  event_name    VARCHAR(100) NOT NULL
+  projection    VARCHAR(100)
+  scope         VARCHAR(50)
+  entity_id     VARCHAR(100)
+  version       BIGINT
+  changed_at    TIMESTAMPTZ NOT NULL
+  payload_json  JSONB NOT NULL
+```
+
+Options considered:
+
+- In-memory emitter registry only:
+  simple, but loses events on restart and cannot implement reliable
+  `Last-Event-ID`.
+- Reusing domain outbox:
+  durable, but violates the boundary because SSE would read domain events.
+- Reusing SQS:
+  durable for backend consumers, but the client sync concern would become tied
+  to business propagation queues and fanout semantics.
+- Dedicated PostgreSQL projection sync log:
+  durable, ordered, cheap for the current monolith, and explicitly
+  projection-oriented.
+
+Decision: use dedicated PostgreSQL persistence. The dispatcher reads only
+`ProjectionSyncEvent` rows. It never reads domain events or outbox rows.
+
+Reconnect behavior in Sprint 2:
+
+- no `Last-Event-ID`: start at `currentOffset()` and receive only new events;
+- valid `Last-Event-ID`: replay `projection_sync_events.id > Last-Event-ID`;
+- malformed `Last-Event-ID`: start at `currentOffset()` for now. A future
+  hardening step may emit `sync.resync_required` explicitly.
+
+Runtime configuration:
+
+```properties
+fragments.sync.sse.poll-interval-ms=${FRAGMENTS_SYNC_SSE_POLL_INTERVAL_MS:1000}
+fragments.sync.sse.replay-batch-size=${FRAGMENTS_SYNC_SSE_REPLAY_BATCH_SIZE:100}
+```
+
+Testing status:
+
+- controller and dispatcher tests run without external infrastructure;
+- repository integration test uses PostgreSQL/Testcontainers;
+- if Docker is unavailable, that integration test cannot run locally but remains
+  the required verification in CI or a Docker-enabled workstation.

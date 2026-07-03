@@ -197,6 +197,20 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_destination_status
     ON inbox_messages (destination, status);
 
+CREATE TABLE IF NOT EXISTS projection_sync_events (
+    id            BIGSERIAL PRIMARY KEY,
+    event_name    VARCHAR(100) NOT NULL,
+    projection    VARCHAR(100),
+    scope         VARCHAR(50),
+    entity_id     VARCHAR(100),
+    version       BIGINT,
+    changed_at    TIMESTAMPTZ NOT NULL,
+    payload_json  JSONB NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_projection_sync_events_projection_id
+    ON projection_sync_events (projection, id);
+
 CREATE TABLE IF NOT EXISTS command_status (
     command_id      UUID PRIMARY KEY,
     status          VARCHAR(32) NOT NULL,
