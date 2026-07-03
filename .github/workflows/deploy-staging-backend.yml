@@ -142,14 +142,25 @@ jobs:
       - name: Deploy on staging host
         env:
           IMAGE_TAG: sha-${{ github.sha }}
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
+          test -n "${GOOGLE_PLACES_API_KEY}"
           ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" <<EOF
           set -euo pipefail
+          set +x
           cd "${STAGING_REMOTE_DIR}"
           test -f .env
-          grep -q '^BACKEND_IMAGE=' .env && \
-            sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${ECR_REPOSITORY}:${IMAGE_TAG}|" .env || \
-            echo "BACKEND_IMAGE=${ECR_REPOSITORY}:${IMAGE_TAG}" >> .env
+          upsert_env_var() {
+            key="\$1"
+            value="\$2"
+            if grep -q "^\${key}=" .env; then
+              sed -i "s|^\${key}=.*|\${key}=\${value}|" .env
+            else
+              printf '\n%s=%s\n' "\${key}" "\${value}" >> .env
+            fi
+          }
+          upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
+          upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
           docker compose pull backend
           docker compose up -d postgres backend
