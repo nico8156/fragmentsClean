@@ -19,6 +19,7 @@ env:
   ECR_REPOSITORY: ${{ secrets.STAGING_ECR_REPOSITORY }}
   STAGING_SECURITY_GROUP_ID: ${{ secrets.STAGING_SECURITY_GROUP_ID }}
   STAGING_REMOTE_DIR: /srv/fragments/staging
+  STAGING_STACK_NAME: fragments-staging-minimal
 
 jobs:
   deploy:
@@ -55,6 +56,27 @@ jobs:
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Resolve staging SQS queue URLs
+        run: |
+          set -euo pipefail
+          output_value() {
+            aws cloudformation describe-stacks \
+              --region "${AWS_REGION}" \
+              --stack-name "${STAGING_STACK_NAME}" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue | [0]" \
+              --output text
+          }
+
+          {
+            echo "SQS_ARTICLES_EVENTS_URL=$(output_value ArticlesEventsQueueUrl)"
+            echo "SQS_AUTH_USERS_EVENTS_URL=$(output_value AuthUsersEventsQueueUrl)"
+            echo "SQS_APP_USERS_EVENTS_URL=$(output_value AppUsersEventsQueueUrl)"
+            echo "SQS_COFFEES_EVENTS_URL=$(output_value CoffeesEventsQueueUrl)"
+            echo "SQS_DOMAIN_EVENTS_URL=$(output_value DomainEventsQueueUrl)"
+            echo "SQS_TICKET_EVENTS_URL=$(output_value TicketEventsQueueUrl)"
+            echo "SQS_TICKET_VERIFICATION_REQUESTED_URL=$(output_value TicketVerificationRequestedQueueUrl)"
+          } >> "${GITHUB_ENV}"
 
       - name: Validate staging deployment secrets
         run: |
@@ -145,6 +167,13 @@ jobs:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
           test -n "${GOOGLE_PLACES_API_KEY}"
+          test -n "${SQS_ARTICLES_EVENTS_URL}"
+          test -n "${SQS_AUTH_USERS_EVENTS_URL}"
+          test -n "${SQS_APP_USERS_EVENTS_URL}"
+          test -n "${SQS_COFFEES_EVENTS_URL}"
+          test -n "${SQS_DOMAIN_EVENTS_URL}"
+          test -n "${SQS_TICKET_EVENTS_URL}"
+          test -n "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
           ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" <<EOF
           set -euo pipefail
           set +x
@@ -161,6 +190,15 @@ jobs:
           }
           upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
           upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
+          upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
+          upsert_env_var "APP_MESSAGING_KAFKA_ENABLED" "false"
+          upsert_env_var "SQS_ARTICLES_EVENTS_URL" "${SQS_ARTICLES_EVENTS_URL}"
+          upsert_env_var "SQS_AUTH_USERS_EVENTS_URL" "${SQS_AUTH_USERS_EVENTS_URL}"
+          upsert_env_var "SQS_APP_USERS_EVENTS_URL" "${SQS_APP_USERS_EVENTS_URL}"
+          upsert_env_var "SQS_COFFEES_EVENTS_URL" "${SQS_COFFEES_EVENTS_URL}"
+          upsert_env_var "SQS_DOMAIN_EVENTS_URL" "${SQS_DOMAIN_EVENTS_URL}"
+          upsert_env_var "SQS_TICKET_EVENTS_URL" "${SQS_TICKET_EVENTS_URL}"
+          upsert_env_var "SQS_TICKET_VERIFICATION_REQUESTED_URL" "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
           docker compose pull backend
           docker compose up -d postgres backend

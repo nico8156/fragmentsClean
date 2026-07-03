@@ -18,6 +18,10 @@ import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImpor
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
@@ -77,7 +81,14 @@ class AdminTokenSecurityTest {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value("11111111-1111-1111-1111-111111111111"))
 				.andExpect(jsonPath("$[0].googleId").value("google-place-1"))
-				.andExpect(jsonPath("$[0].name").value("Fragments Cafe"));
+				.andExpect(jsonPath("$[0].name").value("Fragments Cafe"))
+				.andExpect(jsonPath("$[0].photos[0].id").value("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+				.andExpect(jsonPath("$[0].photos[0].photoUri").value("https://images.example/coffee-1.jpg"))
+				.andExpect(jsonPath("$[0].openingHours[0].id").value("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
+				.andExpect(jsonPath("$[0].openingHours[0].weekdayDescription").value("lundi: 08:00-18:00"))
+				.andExpect(jsonPath("$[1].id").value("22222222-2222-2222-2222-222222222222"))
+				.andExpect(jsonPath("$[1].photos").isEmpty())
+				.andExpect(jsonPath("$[1].openingHours").isEmpty());
 
 		org.assertj.core.api.Assertions.assertThat(queryHandler.calls.get()).isEqualTo(1);
 	}
@@ -181,7 +192,11 @@ class AdminTokenSecurityTest {
 	private AdminCoffeesReadController adminCoffeesController(CountingListCoffeesQueryHandler queryHandler) {
 		var queryBus = new QueryBus();
 		queryBus.registerQueryHandlers(List.of(queryHandler));
-		return new AdminCoffeesReadController(queryBus);
+		return new AdminCoffeesReadController(
+				queryBus,
+				new FakeCoffeePhotoProjectionRepository(),
+				new FakeCoffeeOpeningHoursProjectionRepository()
+		);
 	}
 
 	private static class FakeGooglePlacesGateway implements GooglePlacesGateway {
@@ -209,22 +224,80 @@ class AdminTokenSecurityTest {
 		@Override
 		public List<CoffeeSummaryView> handle(ListCoffeesQuery query) {
 			calls.incrementAndGet();
-			return List.of(new CoffeeSummaryView(
+			return List.of(
+					new CoffeeSummaryView(
+							UUID.fromString("11111111-1111-1111-1111-111111111111"),
+							"google-place-1",
+							"Fragments Cafe",
+							48.111,
+							-1.679,
+							"1 rue du Test",
+							"Rennes",
+							"35000",
+							"FR",
+							null,
+							"https://fragments.example",
+							java.util.Set.of("filter"),
+							1,
+							Instant.parse("2026-07-03T08:00:00Z")
+					),
+					new CoffeeSummaryView(
+							UUID.fromString("22222222-2222-2222-2222-222222222222"),
+							"google-place-2",
+							"Coffee Without Details",
+							48.112,
+							-1.680,
+							"2 rue du Test",
+							"Rennes",
+							"35000",
+							"FR",
+							null,
+							null,
+							java.util.Set.of(),
+							1,
+							Instant.parse("2026-07-03T08:05:00Z")
+					)
+			);
+		}
+	}
+
+	private static class FakeCoffeePhotoProjectionRepository implements CoffeePhotoProjectionRepository {
+		@Override
+		public void insertSeed(CoffeePhotoView view) {
+		}
+
+		@Override
+		public List<CoffeePhotoView> findAll() {
+			return List.of(new CoffeePhotoView(
+					UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 					UUID.fromString("11111111-1111-1111-1111-111111111111"),
-					"google-place-1",
-					"Fragments Cafe",
-					48.111,
-					-1.679,
-					"1 rue du Test",
-					"Rennes",
-					"35000",
-					"FR",
-					null,
-					"https://fragments.example",
-					java.util.Set.of("filter"),
-					1,
-					Instant.parse("2026-07-03T08:00:00Z")
+					"https://images.example/coffee-1.jpg"
 			));
+		}
+
+		@Override
+		public long count() {
+			return 1;
+		}
+	}
+
+	private static class FakeCoffeeOpeningHoursProjectionRepository implements CoffeeOpeningHoursProjectionRepository {
+		@Override
+		public void insertSeed(CoffeeOpeningHoursView view) {
+		}
+
+		@Override
+		public List<CoffeeOpeningHoursView> findAll() {
+			return List.of(new CoffeeOpeningHoursView(
+					UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+					UUID.fromString("11111111-1111-1111-1111-111111111111"),
+					"lundi: 08:00-18:00"
+			));
+		}
+
+		@Override
+		public long count() {
+			return 1;
 		}
 	}
 }

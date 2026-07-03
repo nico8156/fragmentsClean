@@ -1,27 +1,102 @@
 package com.nm.fragmentsclean.adminImportContext.adapters.primary.rest;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.controllers.CoffeeSummaryResponse;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 
 @RestController
 public class AdminCoffeesReadController {
 	private final QueryBus queryBus;
+	private final CoffeePhotoProjectionRepository photoProjectionRepository;
+	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
 
-	public AdminCoffeesReadController(QueryBus queryBus) {
+	public AdminCoffeesReadController(QueryBus queryBus,
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository) {
 		this.queryBus = queryBus;
+		this.photoProjectionRepository = photoProjectionRepository;
+		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
 	}
 
 	@GetMapping("/api/admin/coffees")
-	public List<CoffeeSummaryResponse> listCoffees() {
+	public List<AdminCoffeeResponse> listCoffees() {
+		Map<UUID, List<AdminCoffeePhotoResponse>> photosByCoffeeId = photoProjectionRepository.findAll().stream()
+				.collect(Collectors.groupingBy(
+						CoffeePhotoView::coffeeId,
+						Collectors.mapping(AdminCoffeePhotoResponse::from, Collectors.toList())
+				));
+		Map<UUID, List<AdminCoffeeOpeningHoursResponse>> openingHoursByCoffeeId =
+				openingHoursProjectionRepository.findAll().stream()
+						.collect(Collectors.groupingBy(
+								CoffeeOpeningHoursView::coffeeId,
+								Collectors.mapping(AdminCoffeeOpeningHoursResponse::from, Collectors.toList())
+						));
+
 		var views = queryBus.dispatch(new ListCoffeesQuery());
 		return views.stream()
 				.map(CoffeeSummaryResponse::from)
+				.map(summary -> AdminCoffeeResponse.from(
+						summary,
+						photosByCoffeeId.getOrDefault(summary.id(), List.of()),
+						openingHoursByCoffeeId.getOrDefault(summary.id(), List.of())
+				))
 				.toList();
+	}
+
+	public record AdminCoffeeResponse(
+			UUID id,
+			String googleId,
+			String name,
+			CoffeeSummaryResponse.Location location,
+			CoffeeSummaryResponse.Address address,
+			String phoneNumber,
+			String website,
+			java.util.Set<String> tags,
+			long version,
+			java.time.Instant updatedAt,
+			List<AdminCoffeePhotoResponse> photos,
+			List<AdminCoffeeOpeningHoursResponse> openingHours) {
+		static AdminCoffeeResponse from(CoffeeSummaryResponse summary,
+				List<AdminCoffeePhotoResponse> photos,
+				List<AdminCoffeeOpeningHoursResponse> openingHours) {
+			return new AdminCoffeeResponse(
+					summary.id(),
+					summary.googleId(),
+					summary.name(),
+					summary.location(),
+					summary.address(),
+					summary.phoneNumber(),
+					summary.website(),
+					summary.tags(),
+					summary.version(),
+					summary.updatedAt(),
+					photos,
+					openingHours
+			);
+		}
+	}
+
+	public record AdminCoffeePhotoResponse(UUID id, String photoUri) {
+		static AdminCoffeePhotoResponse from(CoffeePhotoView view) {
+			return new AdminCoffeePhotoResponse(view.id(), view.photoUri());
+		}
+	}
+
+	public record AdminCoffeeOpeningHoursResponse(UUID id, String weekdayDescription) {
+		static AdminCoffeeOpeningHoursResponse from(CoffeeOpeningHoursView view) {
+			return new AdminCoffeeOpeningHoursResponse(view.id(), view.weekdayDescription());
+		}
 	}
 }
