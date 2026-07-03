@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -49,8 +50,10 @@ public class AuthSecurityConfiguration {
 			JwtAuthenticationConverter jwtAuthConverter) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
+				.cors(Customizer.withDefaults())
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
+							.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/google/exchange").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
 							.requestMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()

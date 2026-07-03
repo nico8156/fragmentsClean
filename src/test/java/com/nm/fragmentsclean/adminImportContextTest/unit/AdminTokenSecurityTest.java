@@ -13,7 +13,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
-import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityConfiguration;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
@@ -24,6 +23,8 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlaces
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsConfiguration;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsProperties;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -71,7 +72,7 @@ class AdminTokenSecurityTest {
 						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
 				.andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
-				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,OPTIONS"));
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,PATCH,DELETE,OPTIONS"));
 	}
 
 	@Test
@@ -82,18 +83,50 @@ class AdminTokenSecurityTest {
 						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
 				.andExpect(status().isOk())
 				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://127.0.0.1:5173"))
-				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,OPTIONS"));
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,PATCH,DELETE,OPTIONS"));
+	}
+
+	@Test
+	void preflight_for_public_coffees_api_from_127_0_0_1_is_allowed() throws Exception {
+		mockMvc("admin-secret").perform(options("/api/coffees")
+						.header(HttpHeaders.ORIGIN, "http://127.0.0.1:5173")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Accept"))
+				.andExpect(status().isOk())
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://127.0.0.1:5173"))
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,PATCH,DELETE,OPTIONS"));
+	}
+
+	@Test
+	void preflight_from_unconfigured_origin_is_not_allowed() throws Exception {
+		mockMvc("admin-secret").perform(options("/api/admin/import/places")
+						.header(HttpHeaders.ORIGIN, "https://evil.example")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization"))
+				.andExpect(status().isForbidden())
+				.andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
 	}
 
 	private MockMvc mockMvc(String token) {
 		var properties = new AdminSecurityProperties();
 		properties.setToken(token);
-		CorsConfigurationSource corsConfigurationSource =
-				new AdminSecurityConfiguration().adminCorsConfigurationSource();
+		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
+				.corsConfigurationSource(corsProperties());
 
 		return MockMvcBuilders.standaloneSetup(controller())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
 				.build();
+	}
+
+	private FragmentsCorsProperties corsProperties() {
+		var properties = new FragmentsCorsProperties();
+		properties.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
+		properties.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		properties.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+		properties.setExposedHeaders(List.of("Location"));
+		properties.setAllowCredentials(false);
+		properties.setMaxAge(3600);
+		return properties;
 	}
 
 	private AdminImportPlacesController controller() {
