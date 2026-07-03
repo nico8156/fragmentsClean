@@ -75,6 +75,9 @@ public class ProjectionSyncDispatcher {
 	private void poll(SseEmitter emitter, AtomicLong cursor, AtomicReference<ScheduledFuture<?>> pollingTask) {
 		try {
 			replayAvailable(emitter, cursor);
+		} catch (ProjectionSyncDeliveryException error) {
+			cancel(pollingTask.get());
+			emitter.complete();
 		} catch (RuntimeException error) {
 			cancel(pollingTask.get());
 			emitter.completeWithError(error);
@@ -92,6 +95,9 @@ public class ProjectionSyncDispatcher {
 	private void sendHeartbeat(SseEmitter emitter, AtomicReference<ScheduledFuture<?>> heartbeatTask) {
 		try {
 			send(emitter, ProjectionSyncEvent.heartbeat(dateTimeProvider.now()));
+		} catch (ProjectionSyncDeliveryException error) {
+			cancel(heartbeatTask.get());
+			emitter.complete();
 		} catch (RuntimeException error) {
 			cancel(heartbeatTask.get());
 			emitter.completeWithError(error);
