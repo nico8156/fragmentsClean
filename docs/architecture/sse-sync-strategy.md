@@ -491,3 +491,48 @@ The projection update and sync append must happen in the same transaction. If
 the sync append fails, the projection handler fails and SQS retry/DLQ semantics
 apply to the backend message. This is intentional: clients must not be told that
 a projection is fresh unless the projection freshness marker is durable.
+
+## Sprint 4 Studio Redux Integration
+
+Fragments Studio owns no SSE logic in React components.
+
+Client flow:
+
+```text
+ProjectionSyncGateway
+-> projectionSyncEventReceived
+-> Projection Sync listener middleware
+-> existingCoffeesRefreshRequested
+-> ExistingCoffeesGateway GET /api/admin/coffees
+-> existingCoffeesLoaded
+-> selectors
+-> React
+```
+
+The listener never writes coffee data directly into the store. It only maps a
+generic sync notification to an existing read-model refresh.
+
+Initial Studio mapping:
+
+```text
+eventName == "projection.updated"
+projection == "coffees"
+-> existingCoffeesRefreshRequested()
+```
+
+Ignored by Studio:
+
+- `sync.connected`
+- `sync.heartbeat`
+- projections other than `coffees`
+
+Studio configuration:
+
+```properties
+VITE_PROJECTION_SYNC_GATEWAY=fake|http
+VITE_PROJECTION_SYNC_EVENTS_PATH=/api/sync/events
+VITE_PROJECTION_SYNC_BEARER_TOKEN=<optional-token>
+```
+
+The fake gateway remains the default. HTTP sync must be explicitly enabled per
+environment.
