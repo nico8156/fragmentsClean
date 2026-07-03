@@ -61,6 +61,7 @@ public class AuthSecurityConfiguration {
 							.requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
 							.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
 							.requestMatchers(HttpMethod.GET, "/commands/**").authenticated()
+							.requestMatchers(HttpMethod.GET, "/api/sync/events").authenticated()
 							.requestMatchers("/api/tickets/**").authenticated()
 						.requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
 						.requestMatchers(HttpMethod.POST, "/api/social/comments")

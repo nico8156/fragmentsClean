@@ -360,3 +360,43 @@ is already available to that client through a GET endpoint.
 The first production use should be `coffees`, because the import/admin Studio
 workflow already depends on projection freshness.
 
+## Sprint 1 Baseline
+
+Sprint 1 creates the transport plumbing only. It deliberately does not connect
+any business projection.
+
+Implemented contract:
+
+```http
+GET /api/sync/events
+Accept: text/event-stream
+Last-Event-ID: optional
+```
+
+Initial events:
+
+```text
+event: sync.connected
+data: { "schemaVersion": 1, "changedAt": "..." }
+```
+
+```text
+event: sync.heartbeat
+data: { "schemaVersion": 1, "changedAt": "..." }
+```
+
+Configuration:
+
+```properties
+fragments.sync.sse.timeout-ms=${FRAGMENTS_SYNC_SSE_TIMEOUT_MS:300000}
+fragments.sync.sse.heartbeat-interval-ms=${FRAGMENTS_SYNC_SSE_HEARTBEAT_INTERVAL_MS:25000}
+fragments.sync.sse.retry-ms=${FRAGMENTS_SYNC_SSE_RETRY_MS:5000}
+```
+
+Current invariant:
+
+- no domain event is read by the SSE controller;
+- no domain event is emitted to clients;
+- no projection-specific notification exists yet;
+- `Last-Event-ID` is accepted at the boundary but real replay starts in Sprint
+  2 with the durable `projection_sync_events` log.
