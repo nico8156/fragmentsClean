@@ -3,13 +3,13 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
-import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.JdbcCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.JpaCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -43,7 +43,9 @@ public class CoffeeContextDependenciesConfiguration {
 	}
 
 	@Bean
-	CoffeeCreatedEventHandler coffeeCreatedEventHandler(JdbcCoffeeProjectionRepository projectionRepository) {
-		return new CoffeeCreatedEventHandler(projectionRepository);
+	CoffeeCreatedEventHandler coffeeCreatedEventHandler(
+			CoffeeProjectionRepository projectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeeCreatedEventHandler(projectionRepository, projectionSyncPublisher);
 	}
 }

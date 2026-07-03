@@ -454,3 +454,40 @@ Testing status:
 - repository integration test uses PostgreSQL/Testcontainers;
 - if Docker is unavailable, that integration test cannot run locally but remains
   the required verification in CI or a Docker-enabled workstation.
+
+## Sprint 3 First Projection Hook
+
+Sprint 3 connects the first real projection: `coffees`.
+
+Internal backend flow:
+
+```text
+CoffeeCreatedEvent
+-> CoffeeCreatedEventHandler
+-> coffee_summaries_projection upsert
+-> ProjectionSyncPublisher
+-> projection_sync_events append
+```
+
+External SSE contract:
+
+```text
+event: projection.updated
+data: {
+  "schemaVersion": 1,
+  "projection": "coffees",
+  "scope": "entity",
+  "entityId": "<coffeeId>",
+  "version": <projectionVersion>,
+  "changedAt": "<eventOccurredAt>",
+  "hints": ["summary"]
+}
+```
+
+The `CoffeeCreatedEvent` class name, payload, and domain vocabulary remain
+backend-only. The sync event says only that the `coffees` read model changed.
+
+The projection update and sync append must happen in the same transaction. If
+the sync append fails, the projection handler fails and SQS retry/DLQ semantics
+apply to the backend message. This is intentional: clients must not be told that
+a projection is fresh unless the projection freshness marker is durable.
