@@ -15,8 +15,10 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.LogoutCommandHandler;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
@@ -55,6 +57,8 @@ public class SocialStartupEventListener {
 	private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
 	private final CreateCoffeeCommandHandler createCoffeeCommandHandler;
 	private final CoffeeCreatedEventHandler coffeeCreatedProjectionHandler;
+	private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
+	private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler;
 	private final ListCoffeesQueryHandler listCoffeesQueryHandler;
 	private final GoogleLoginCommandHandler googleLoginCommandHandler;
 	private final RefreshTokenCommandHandler refreshTokenCommandHandler;
@@ -82,6 +86,8 @@ public class SocialStartupEventListener {
 			GetArticleBySlugQueryHandler getArticleBySlugQueryHandler,
 			CreateCoffeeCommandHandler createCoffeeCommandHandler,
 			CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
+			ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
+			CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler,
 			ListCoffeesQueryHandler listCoffeesQueryHandler,
 			GoogleLoginCommandHandler googleLoginCommandHandler,
 			RefreshTokenCommandHandler refreshTokenCommandHandler,
@@ -108,6 +114,8 @@ public class SocialStartupEventListener {
 		this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
 		this.createCoffeeCommandHandler = createCoffeeCommandHandler;
 		this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
+		this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
+		this.coffeeOpeningHoursImportedEventHandler = coffeeOpeningHoursImportedEventHandler;
 		this.listCoffeesQueryHandler = listCoffeesQueryHandler;
 		this.googleLoginCommandHandler = googleLoginCommandHandler;
 		this.refreshTokenCommandHandler = refreshTokenCommandHandler;
@@ -154,6 +162,8 @@ public class SocialStartupEventListener {
 		List<EventHandler<?>> eventHandlers = List.of(
 				articleCreatedProjectionHandler,
 				coffeeCreatedProjectionHandler,
+				importGoogleOpeningHoursForCoffee,
+				coffeeOpeningHoursImportedEventHandler,
 				authUserCreatedEventHandler,
 				ticketVerificationCompletedEventHandler,
 				processTicketVerificationEventHandler);

@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCre
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -96,6 +97,11 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             } else if (event instanceof CoffeeCreatedEvent coffeeEvent) {
                 aggregateType = "Coffee";
                 aggregateId = coffeeEvent.coffeeId().toString();
+                streamKey = "coffee:" + aggregateId;
+
+            } else if (event instanceof CoffeeOpeningHoursImportedEvent openingHoursEvent) {
+                aggregateType = "Coffee";
+                aggregateId = openingHoursEvent.coffeeId().toString();
                 streamKey = "coffee:" + aggregateId;
 
             } else if (event instanceof AuthUserCreatedEvent createdEvent) {

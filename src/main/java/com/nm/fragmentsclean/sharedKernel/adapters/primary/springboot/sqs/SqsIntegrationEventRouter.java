@@ -5,7 +5,10 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventH
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.socialContext.read.projectors.UserSocialProjectionProjector;
@@ -38,6 +41,8 @@ public class SqsIntegrationEventRouter {
     private final InboxMessageRepository inbox;
     private final ArticleCreatedEventHandler articleCreatedHandler;
     private final CoffeeCreatedEventHandler coffeeCreatedHandler;
+    private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
+    private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler;
     private final AuthUserCreatedEventHandler authUserCreatedHandler;
     private final CommentCreatedEventHandler commentCreatedHandler;
     private final CommentUpdatedEventHandler commentUpdatedHandler;
@@ -52,6 +57,8 @@ public class SqsIntegrationEventRouter {
             InboxMessageRepository inbox,
             ArticleCreatedEventHandler articleCreatedHandler,
             CoffeeCreatedEventHandler coffeeCreatedHandler,
+            ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
+            CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler,
             AuthUserCreatedEventHandler authUserCreatedHandler,
             CommentCreatedEventHandler commentCreatedHandler,
             CommentUpdatedEventHandler commentUpdatedHandler,
@@ -65,6 +72,8 @@ public class SqsIntegrationEventRouter {
         this.inbox = inbox;
         this.articleCreatedHandler = articleCreatedHandler;
         this.coffeeCreatedHandler = coffeeCreatedHandler;
+        this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
+        this.coffeeOpeningHoursImportedHandler = coffeeOpeningHoursImportedHandler;
         this.authUserCreatedHandler = authUserCreatedHandler;
         this.commentCreatedHandler = commentCreatedHandler;
         this.commentUpdatedHandler = commentUpdatedHandler;
@@ -100,7 +109,13 @@ public class SqsIntegrationEventRouter {
             return;
         }
         if (COFFEES_EVENTS.equals(destination) && "coffee.created".equals(type)) {
-            coffeeCreatedHandler.handle(read(envelope, CoffeeCreatedEvent.class));
+            CoffeeCreatedEvent event = read(envelope, CoffeeCreatedEvent.class);
+            coffeeCreatedHandler.handle(event);
+            importGoogleOpeningHoursForCoffee.handle(event);
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.opening_hours_imported".equals(type)) {
+            coffeeOpeningHoursImportedHandler.handle(read(envelope, CoffeeOpeningHoursImportedEvent.class));
             return;
         }
         if (AUTH_USERS_EVENTS.equals(destination) && "auth.user.created".equals(type)) {

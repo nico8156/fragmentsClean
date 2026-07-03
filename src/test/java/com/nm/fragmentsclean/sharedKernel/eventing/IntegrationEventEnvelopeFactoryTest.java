@@ -54,4 +54,29 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
                 .containsExactly("ticket-events", "ticket-verification-requested");
     }
+
+    @Test
+    void routesCoffeeOpeningHoursImportedToCoffeeEventsWithStableType() {
+        var outbox = new OutboxEventJpaEntity(
+                "evt-3",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent",
+                "Coffee",
+                "coffee-1",
+                "coffee:coffee-1",
+                "{\"weekdayDescriptions\":[]}",
+                Instant.parse("2026-07-04T10:00:00Z"),
+                Instant.parse("2026-07-04T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
+                .containsExactly("coffees-events");
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
+
+        assertThat(envelope.eventType()).isEqualTo("coffee.opening_hours_imported");
+        assertThat(envelope.eventVersion()).isEqualTo(1);
+        assertThat(envelope.destination()).isEqualTo("coffees-events");
+    }
 }

@@ -9,6 +9,8 @@ public interface CoffeeOpeningHoursProjectionRepository {
 	// ✅ seed
 	void insertSeed(CoffeeOpeningHoursView view);
 
+	void replaceForCoffee(UUID coffeeId, List<CoffeeOpeningHoursView> openingHours);
+
 	List<CoffeeOpeningHoursView> findAll();
 
 	long count();

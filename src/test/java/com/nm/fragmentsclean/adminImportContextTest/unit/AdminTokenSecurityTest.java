@@ -332,6 +332,10 @@ class AdminTokenSecurityTest {
 		}
 
 		@Override
+		public void replaceForCoffee(UUID coffeeId, List<CoffeeOpeningHoursView> openingHours) {
+		}
+
+		@Override
 		public long count() {
 			return 1;
 		}
