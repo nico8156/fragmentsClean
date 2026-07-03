@@ -34,6 +34,17 @@ class ProjectionSyncControllerTest {
 	}
 
 	@Test
+	void opens_admin_sse_stream_with_same_contract() throws Exception {
+		var dispatcher = new FakeProjectionSyncDispatcher();
+		MvcResult result = mockMvc(dispatcher).perform(get("/api/admin/sync/events"))
+				.andExpect(status().isOk())
+				.andExpect(request().asyncStarted())
+				.andReturn();
+
+		assertThat(result.getResponse().getContentType()).startsWith("text/event-stream");
+	}
+
+	@Test
 	void forwards_last_event_id_to_dispatcher() throws Exception {
 		var dispatcher = new FakeProjectionSyncDispatcher();
 		mockMvc(dispatcher).perform(get("/api/sync/events")

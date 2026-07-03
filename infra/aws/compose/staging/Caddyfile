@@ -1,5 +1,17 @@
 {$APP_DOMAIN} {
-    encode gzip
+    @notSse {
+        not path /api/sync/events /api/admin/sync/events
+    }
+    encode @notSse gzip
 
-    reverse_proxy backend:8080
+    @sse path /api/sync/events /api/admin/sync/events
+    handle @sse {
+        reverse_proxy backend:8080 {
+            flush_interval -1
+        }
+    }
+
+    handle {
+        reverse_proxy backend:8080
+    }
 }

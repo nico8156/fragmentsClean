@@ -16,7 +16,7 @@ public class ProjectionSyncController {
 		this.dispatcher = dispatcher;
 	}
 
-	@GetMapping(path = "/api/sync/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+	@GetMapping(path = { "/api/sync/events", "/api/admin/sync/events" }, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public SseEmitter events(@RequestHeader(name = LAST_EVENT_ID_HEADER, required = false) String lastEventId) {
 		return dispatcher.openStream(lastEventId);
 	}

@@ -369,6 +369,7 @@ Implemented contract:
 
 ```http
 GET /api/sync/events
+GET /api/admin/sync/events
 Accept: text/event-stream
 Last-Event-ID: optional
 ```
@@ -530,7 +531,7 @@ Studio configuration:
 
 ```properties
 VITE_PROJECTION_SYNC_GATEWAY=fake|http
-VITE_PROJECTION_SYNC_EVENTS_PATH=/api/sync/events
+VITE_PROJECTION_SYNC_EVENTS_PATH=/api/admin/sync/events
 VITE_PROJECTION_SYNC_BEARER_TOKEN=<optional-token>
 ```
 
