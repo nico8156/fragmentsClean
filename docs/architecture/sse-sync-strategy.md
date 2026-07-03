@@ -536,3 +536,38 @@ VITE_PROJECTION_SYNC_BEARER_TOKEN=<optional-token>
 
 The fake gateway remains the default. HTTP sync must be explicitly enabled per
 environment.
+
+## Sprint 5 Automatic Coherence
+
+Sprint 5 removes direct/manual refresh from the import workflow.
+
+Final Studio flow:
+
+```text
+Import
+-> backend command
+-> domain decision
+-> outbox
+-> SQS
+-> projection
+-> projection_sync_events
+-> SSE projection.updated
+-> Redux Projection Sync listener
+-> existingCoffeesRefreshRequested
+-> GET /api/admin/coffees
+-> React renders read model
+```
+
+Removed:
+
+- `coffeeImportSucceeded -> existingCoffeesRefreshRequested`;
+- visible manual refresh button from the existing coffees panel.
+
+Kept:
+
+- initial read-model load when Studio opens;
+- explicit `existingCoffeesRefreshRequested` action as an internal Redux
+  command used by listeners.
+
+This preserves the rule that SSE never writes read-model data into Redux. It
+only invalidates a projection and triggers the normal read API.
