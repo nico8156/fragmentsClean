@@ -6,6 +6,7 @@ public record AdminImportPlacePhotoResponse(
 		String name,
 		Integer widthPx,
 		Integer heightPx,
+		String temporaryPhotoUri,
 		List<String> authorAttributions
 ) {
 }

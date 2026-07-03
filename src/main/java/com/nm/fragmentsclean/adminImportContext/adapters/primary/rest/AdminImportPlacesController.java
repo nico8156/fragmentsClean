@@ -50,9 +50,9 @@ public class AdminImportPlacesController {
 		var imported = importGooglePlaceCoffee.execute(googlePlaceId);
 		return ResponseEntity.status(HttpStatus.ACCEPTED)
 				.body(new AdminImportPlaceImportResponse(
-						imported.commandId(),
 						imported.coffeeId(),
-						imported.googlePlaceId()
+						imported.googlePlaceId(),
+						imported.status().name()
 				));
 	}
 
@@ -69,17 +69,20 @@ public class AdminImportPlacesController {
 	private AdminImportPlacePreviewResponse toPreviewResponse(GooglePlaceCoffeePreview preview) {
 		return new AdminImportPlacePreviewResponse(
 				preview.googlePlaceId(),
-				preview.name(),
-				preview.formattedAddress(),
-				preview.addressLine1(),
-				preview.city(),
-				preview.postalCode(),
-				preview.country(),
-				preview.latitude(),
-				preview.longitude(),
-				preview.phoneNumber(),
-				preview.website(),
-				preview.openingHours(),
+				new AdminImportPlaceInfoPreviewResponse(
+						preview.name(),
+						preview.formattedAddress(),
+						preview.latitude(),
+						preview.longitude(),
+						preview.phoneNumber(),
+						preview.website(),
+						null,
+						null
+				),
+				new AdminImportOpeningHoursPreviewResponse(
+						preview.openingHours(),
+						List.of()
+				),
 				preview.photos().stream().map(this::toPhotoResponse).toList()
 		);
 	}
@@ -89,6 +92,7 @@ public class AdminImportPlacesController {
 				photo.name(),
 				photo.widthPx(),
 				photo.heightPx(),
+				null,
 				photo.authorAttributions()
 		);
 	}

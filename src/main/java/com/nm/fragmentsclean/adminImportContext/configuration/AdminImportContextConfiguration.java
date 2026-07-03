@@ -14,6 +14,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerato
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
@@ -39,8 +40,9 @@ public class AdminImportContextConfiguration {
 	}
 
 	@Bean
-	CoffeeCreationPort coffeeCreationPort(CommandBus commandBus) {
-		return new CommandBusCoffeeCreationPort(commandBus);
+	CoffeeCreationPort coffeeCreationPort(CommandBus commandBus,
+			CoffeeGooglePlaceLookupPort coffeeGooglePlaceLookupPort) {
+		return new CommandBusCoffeeCreationPort(commandBus, coffeeGooglePlaceLookupPort);
 	}
 
 	@Bean

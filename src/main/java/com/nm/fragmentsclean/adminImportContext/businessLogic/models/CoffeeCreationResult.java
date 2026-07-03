@@ -2,8 +2,7 @@ package com.nm.fragmentsclean.adminImportContext.businessLogic.models;
 
 import java.util.UUID;
 
-public record ImportedGooglePlaceCoffee(
-		UUID commandId,
+public record CoffeeCreationResult(
 		UUID coffeeId,
 		String googlePlaceId,
 		GooglePlaceCoffeeImportStatus status

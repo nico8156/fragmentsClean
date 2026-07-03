@@ -49,8 +49,8 @@ public class ImportGooglePlaceCoffee {
 				now
 		);
 
-		coffeeCreationPort.createCoffee(command);
+		var result = coffeeCreationPort.createCoffee(command);
 
-		return new ImportedGooglePlaceCoffee(commandId, coffeeId, preview.googlePlaceId());
+		return new ImportedGooglePlaceCoffee(commandId, result.coffeeId(), result.googlePlaceId(), result.status());
 	}
 }

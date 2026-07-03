@@ -26,7 +26,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class CoffeeContextDependenciesConfiguration {
 
 	@Bean
-	public CoffeeRepository jpaCoffeeRepository(SpringCoffeeRepository springCoffeeRepository) {
+	public JpaCoffeeRepository jpaCoffeeRepository(SpringCoffeeRepository springCoffeeRepository) {
 		return new JpaCoffeeRepository(springCoffeeRepository);
 	}
 

@@ -7,7 +7,9 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
@@ -53,6 +55,7 @@ class ImportGooglePlaceCoffeeTest {
 		assertThat(result.commandId()).isEqualTo(COMMAND_ID);
 		assertThat(result.coffeeId()).isEqualTo(COFFEE_ID);
 		assertThat(result.googlePlaceId()).isEqualTo("ChIJ-google-place");
+		assertThat(result.status()).isEqualTo(GooglePlaceCoffeeImportStatus.IMPORTED);
 
 		CreateCoffeeCommand command = coffeeCreation.command;
 		assertThat(command.commandId()).isEqualTo(COMMAND_ID);
@@ -71,6 +74,40 @@ class ImportGooglePlaceCoffeeTest {
 		assertThat(command.clientAt()).isEqualTo(now);
 	}
 
+	@Test
+	void returns_already_imported_when_creation_port_reports_existing_google_place_id() {
+		var gateway = new FakeGooglePlacesGateway(new GooglePlaceCoffeePreview(
+				"ChIJ-google-place",
+				"Café du Centre",
+				"12 Rue de la Paix, 35000 Rennes, France",
+				"12 Rue de la Paix",
+				"Rennes",
+				"35000",
+				"FR",
+				48.111,
+				-1.679,
+				null,
+				null,
+				null,
+				null
+		));
+		var coffeeCreation = new CapturingCoffeeCreationPort(GooglePlaceCoffeeImportStatus.ALREADY_IMPORTED);
+
+		var useCase = new ImportGooglePlaceCoffee(
+				new PreviewGooglePlaceCoffee(gateway),
+				coffeeCreation,
+				new FixedUuidGenerator(COMMAND_ID, COFFEE_ID),
+				() -> Instant.parse("2026-07-03T09:00:00Z")
+		);
+
+		var result = useCase.execute("ChIJ-google-place");
+
+		assertThat(result.coffeeId()).isNull();
+		assertThat(result.googlePlaceId()).isEqualTo("ChIJ-google-place");
+		assertThat(result.status()).isEqualTo(GooglePlaceCoffeeImportStatus.ALREADY_IMPORTED);
+		assertThat(coffeeCreation.command).isNotNull();
+	}
+
 	private record FakeGooglePlacesGateway(GooglePlaceCoffeePreview preview) implements GooglePlacesGateway {
 		@Override
 		public java.util.List<com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceSearchResult> searchCoffeePlaces(String query) {
@@ -84,11 +121,25 @@ class ImportGooglePlaceCoffeeTest {
 	}
 
 	private static class CapturingCoffeeCreationPort implements CoffeeCreationPort {
+		private final GooglePlaceCoffeeImportStatus status;
 		private CreateCoffeeCommand command;
 
+		private CapturingCoffeeCreationPort() {
+			this(GooglePlaceCoffeeImportStatus.IMPORTED);
+		}
+
+		private CapturingCoffeeCreationPort(GooglePlaceCoffeeImportStatus status) {
+			this.status = status;
+		}
+
 		@Override
-		public void createCoffee(CreateCoffeeCommand command) {
+		public CoffeeCreationResult createCoffee(CreateCoffeeCommand command) {
 			this.command = command;
+			return new CoffeeCreationResult(
+					status == GooglePlaceCoffeeImportStatus.IMPORTED ? command.coffeeId() : null,
+					command.googlePlaceId(),
+					status
+			);
 		}
 	}
 

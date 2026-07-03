@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.re
 
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeJpaEntity;
 
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.*;
@@ -14,7 +15,7 @@ import java.util.Set;
 
 import java.util.stream.Collectors;
 
-public class JpaCoffeeRepository implements CoffeeRepository {
+public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceLookupPort {
 
     private final SpringCoffeeRepository springRepo;
 
@@ -37,6 +38,11 @@ public class JpaCoffeeRepository implements CoffeeRepository {
     @Override
     public boolean existsByGooglePlaceId(GooglePlaceId googlePlaceId) {
         return springRepo.existsByGooglePlaceId(googlePlaceId.value());
+    }
+
+    @Override
+    public boolean existsByGooglePlaceId(String googlePlaceId) {
+        return googlePlaceId != null && springRepo.existsByGooglePlaceId(googlePlaceId);
     }
 
     // ========= Mapping domain -> JPA =========
