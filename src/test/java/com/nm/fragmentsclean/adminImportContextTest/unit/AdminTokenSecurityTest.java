@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -12,9 +13,12 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminCoffeesReadController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
+import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
+import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
@@ -23,8 +27,10 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlaces
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsConfiguration;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsProperties;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -54,6 +60,26 @@ class AdminTokenSecurityTest {
 						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].googlePlaceId").value("ChIJ-google-place"));
+	}
+
+	@Test
+	void admin_coffees_without_token_returns_401() throws Exception {
+		mockMvc("admin-secret").perform(get("/api/admin/coffees"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void admin_coffees_with_valid_token_delegates_to_existing_read_query() throws Exception {
+		var queryHandler = new CountingListCoffeesQueryHandler();
+
+		mockMvc("admin-secret", queryHandler).perform(get("/api/admin/coffees")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value("11111111-1111-1111-1111-111111111111"))
+				.andExpect(jsonPath("$[0].googleId").value("google-place-1"))
+				.andExpect(jsonPath("$[0].name").value("Fragments Cafe"));
+
+		org.assertj.core.api.Assertions.assertThat(queryHandler.calls.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -108,12 +134,16 @@ class AdminTokenSecurityTest {
 	}
 
 	private MockMvc mockMvc(String token) {
+		return mockMvc(token, new CountingListCoffeesQueryHandler());
+	}
+
+	private MockMvc mockMvc(String token, CountingListCoffeesQueryHandler queryHandler) {
 		var properties = new AdminSecurityProperties();
 		properties.setToken(token);
 		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
 				.corsConfigurationSource(corsProperties());
 
-		return MockMvcBuilders.standaloneSetup(controller())
+		return MockMvcBuilders.standaloneSetup(controller(), adminCoffeesController(queryHandler))
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
 				.build();
 	}
@@ -148,6 +178,12 @@ class AdminTokenSecurityTest {
 		);
 	}
 
+	private AdminCoffeesReadController adminCoffeesController(CountingListCoffeesQueryHandler queryHandler) {
+		var queryBus = new QueryBus();
+		queryBus.registerQueryHandlers(List.of(queryHandler));
+		return new AdminCoffeesReadController(queryBus);
+	}
+
 	private static class FakeGooglePlacesGateway implements GooglePlacesGateway {
 		@Override
 		public List<GooglePlaceSearchResult> searchCoffeePlaces(String query) {
@@ -163,6 +199,32 @@ class AdminTokenSecurityTest {
 		@Override
 		public Optional<GooglePlaceCoffeePreview> findCoffeePreview(String googlePlaceId) {
 			return Optional.empty();
+		}
+	}
+
+	private static class CountingListCoffeesQueryHandler
+			implements QueryHandler<ListCoffeesQuery, List<CoffeeSummaryView>> {
+		private final AtomicInteger calls = new AtomicInteger();
+
+		@Override
+		public List<CoffeeSummaryView> handle(ListCoffeesQuery query) {
+			calls.incrementAndGet();
+			return List.of(new CoffeeSummaryView(
+					UUID.fromString("11111111-1111-1111-1111-111111111111"),
+					"google-place-1",
+					"Fragments Cafe",
+					48.111,
+					-1.679,
+					"1 rue du Test",
+					"Rennes",
+					"35000",
+					"FR",
+					null,
+					"https://fragments.example",
+					java.util.Set.of("filter"),
+					1,
+					Instant.parse("2026-07-03T08:00:00Z")
+			));
 		}
 	}
 }
