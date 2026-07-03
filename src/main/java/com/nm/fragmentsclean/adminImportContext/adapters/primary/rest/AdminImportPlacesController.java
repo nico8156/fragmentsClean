@@ -92,7 +92,7 @@ public class AdminImportPlacesController {
 				photo.name(),
 				photo.widthPx(),
 				photo.heightPx(),
-				null,
+				photo.temporaryPhotoUri(),
 				photo.authorAttributions()
 		);
 	}

@@ -11,7 +11,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.Photo;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.PhotoMedia;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.Place;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.SearchTextResponse;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
@@ -76,7 +79,26 @@ public class HttpGooglePlacesGateway implements GooglePlacesGateway {
 				+ "?languageCode=" + properties.getLanguageCode()
 				+ "&regionCode=" + properties.getRegionCode();
 		Place place = exchange(url, HttpMethod.GET, null, PREVIEW_FIELD_MASK, Place.class);
-		return Optional.ofNullable(place).map(mapper::toPreview);
+		return Optional.ofNullable(place)
+				.map(value -> mapper.toPreview(value, this::temporaryPhotoUri));
+	}
+
+	private String temporaryPhotoUri(Photo photo) {
+		if (photo.name() == null || photo.name().isBlank()) {
+			return null;
+		}
+
+		var url = UriComponentsBuilder
+				.fromHttpUrl(properties.getBaseUrl() + "/" + mediaResourceName(photo.name()))
+				.queryParam("maxWidthPx", properties.getPhotoMaxWidthPx())
+				.queryParam("skipHttpRedirect", true)
+				.toUriString();
+		PhotoMedia media = exchange(url, HttpMethod.GET, null, null, PhotoMedia.class);
+		return media != null ? media.photoUri() : null;
+	}
+
+	private String mediaResourceName(String photoName) {
+		return photoName.endsWith("/media") ? photoName : photoName + "/media";
 	}
 
 	private <T> T exchange(String url, HttpMethod method, Object body, String fieldMask, Class<T> responseType) {
@@ -84,7 +106,9 @@ public class HttpGooglePlacesGateway implements GooglePlacesGateway {
 			var headers = new HttpHeaders();
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.set("X-Goog-Api-Key", properties.getApiKey());
-			headers.set("X-Goog-FieldMask", fieldMask);
+			if (fieldMask != null && !fieldMask.isBlank()) {
+				headers.set("X-Goog-FieldMask", fieldMask);
+			}
 			var response = restTemplate.exchange(url, method, new HttpEntity<>(body, headers), responseType);
 			if (!response.getStatusCode().is2xxSuccessful()) {
 				throw new GooglePlacesGatewayException("Google Places request failed: " + response.getStatusCode());

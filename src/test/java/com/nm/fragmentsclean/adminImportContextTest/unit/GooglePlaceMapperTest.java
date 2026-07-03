@@ -61,6 +61,34 @@ class GooglePlaceMapperTest {
 		assertThat(preview.openingHours()).containsExactly("lundi: 08:00-18:00", "mardi: 08:00-18:00");
 		assertThat(preview.photos()).hasSize(1);
 		assertThat(preview.photos().getFirst().name()).isEqualTo("places/ChIJ-google-place/photos/photo-resource");
+		assertThat(preview.photos().getFirst().temporaryPhotoUri()).isNull();
 		assertThat(preview.photos().getFirst().authorAttributions()).containsExactly("Google User");
+	}
+
+	@Test
+	void maps_temporary_photo_uri_when_resolved_by_adapter() {
+		var place = new Place(
+				"ChIJ-google-place",
+				"places/ChIJ-google-place",
+				new DisplayName("Café du Centre", "fr"),
+				"12 Rue de la Paix, 35000 Rennes, France",
+				List.of(),
+				new Location(48.111, -1.679),
+				null,
+				null,
+				null,
+				null,
+				List.of(new Photo(
+						"places/ChIJ-google-place/photos/photo-resource",
+						1200,
+						800,
+						List.of()
+				))
+		);
+
+		var preview = mapper.toPreview(place, photo -> "https://temporary.googleusercontent.test/photo");
+
+		assertThat(preview.photos().getFirst().temporaryPhotoUri())
+				.isEqualTo("https://temporary.googleusercontent.test/photo");
 	}
 }

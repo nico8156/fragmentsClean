@@ -2,6 +2,8 @@ package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.goo
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.function.Function;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.AddressComponent;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlaceResponseModels.AuthorAttribution;
@@ -24,6 +26,10 @@ public class GooglePlaceMapper {
 	}
 
 	public GooglePlaceCoffeePreview toPreview(Place place) {
+		return toPreview(place, photo -> null);
+	}
+
+	public GooglePlaceCoffeePreview toPreview(Place place, Function<Photo, String> temporaryPhotoUriResolver) {
 		requireUsablePlace(place);
 		var address = addressParts(place);
 		return new GooglePlaceCoffeePreview(
@@ -39,7 +45,7 @@ public class GooglePlaceMapper {
 				firstNonBlank(place.nationalPhoneNumber(), place.internationalPhoneNumber()),
 				blankToNull(place.websiteUri()),
 				openingHours(place),
-				photos(place)
+				photos(place, temporaryPhotoUriResolver)
 		);
 	}
 
@@ -110,21 +116,22 @@ public class GooglePlaceMapper {
 				.toList();
 	}
 
-	private List<GooglePlacePhotoPreview> photos(Place place) {
+	private List<GooglePlacePhotoPreview> photos(Place place, Function<Photo, String> temporaryPhotoUriResolver) {
 		if (place.photos() == null) {
 			return List.of();
 		}
 		return place.photos().stream()
 				.filter(photo -> photo.name() != null && !photo.name().isBlank())
-				.map(this::photoPreview)
+				.map(photo -> photoPreview(photo, temporaryPhotoUriResolver))
 				.toList();
 	}
 
-	private GooglePlacePhotoPreview photoPreview(Photo photo) {
+	private GooglePlacePhotoPreview photoPreview(Photo photo, Function<Photo, String> temporaryPhotoUriResolver) {
 		return new GooglePlacePhotoPreview(
 				photo.name(),
 				photo.widthPx(),
 				photo.heightPx(),
+				blankToNull(temporaryPhotoUriResolver.apply(photo)),
 				photo.authorAttributions() == null
 						? List.of()
 						: photo.authorAttributions().stream()
@@ -147,7 +154,7 @@ public class GooglePlaceMapper {
 
 	private String joinNonBlank(String separator, String... values) {
 		var joined = String.join(separator,
-				List.of(values).stream()
+				Arrays.stream(values)
 						.map(this::blankToNull)
 						.filter(Objects::nonNull)
 						.toList());

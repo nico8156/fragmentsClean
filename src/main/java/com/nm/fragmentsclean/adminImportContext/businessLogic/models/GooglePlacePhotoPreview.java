@@ -6,6 +6,7 @@ public record GooglePlacePhotoPreview(
 		String name,
 		Integer widthPx,
 		Integer heightPx,
+		String temporaryPhotoUri,
 		List<String> authorAttributions
 ) {
 	public GooglePlacePhotoPreview {

@@ -39,6 +39,9 @@ public final class GooglePlaceResponseModels {
 	public record Photo(String name, Integer widthPx, Integer heightPx, List<AuthorAttribution> authorAttributions) {
 	}
 
+	public record PhotoMedia(String name, String photoUri) {
+	}
+
 	public record AuthorAttribution(String displayName, String uri, String photoUri) {
 	}
 }

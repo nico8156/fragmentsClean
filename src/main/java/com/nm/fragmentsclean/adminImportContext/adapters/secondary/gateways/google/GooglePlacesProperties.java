@@ -9,6 +9,7 @@ public class GooglePlacesProperties {
 	private String languageCode = "fr";
 	private String regionCode = "FR";
 	private int maxSearchResults = 10;
+	private int photoMaxWidthPx = 1200;
 
 	public String getApiKey() {
 		return apiKey;
@@ -48,5 +49,13 @@ public class GooglePlacesProperties {
 
 	public void setMaxSearchResults(int maxSearchResults) {
 		this.maxSearchResults = maxSearchResults;
+	}
+
+	public int getPhotoMaxWidthPx() {
+		return photoMaxWidthPx;
+	}
+
+	public void setPhotoMaxWidthPx(int photoMaxWidthPx) {
+		this.photoMaxWidthPx = photoMaxWidthPx;
 	}
 }
