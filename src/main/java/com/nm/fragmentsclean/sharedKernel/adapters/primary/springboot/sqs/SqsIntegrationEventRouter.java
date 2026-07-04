@@ -5,9 +5,11 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventH
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
@@ -44,6 +46,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     private final InboxMessageRepository inbox;
     private final ArticleCreatedEventHandler articleCreatedHandler;
     private final CoffeeCreatedEventHandler coffeeCreatedHandler;
+    private final CoffeeDeletedEventHandler coffeeDeletedHandler;
     private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
     private final ImportGooglePhotosForCoffee importGooglePhotosForCoffee;
     private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler;
@@ -62,6 +65,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             InboxMessageRepository inbox,
             ArticleCreatedEventHandler articleCreatedHandler,
             CoffeeCreatedEventHandler coffeeCreatedHandler,
+            CoffeeDeletedEventHandler coffeeDeletedHandler,
             ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
             ImportGooglePhotosForCoffee importGooglePhotosForCoffee,
             CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler,
@@ -79,6 +83,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
         this.inbox = inbox;
         this.articleCreatedHandler = articleCreatedHandler;
         this.coffeeCreatedHandler = coffeeCreatedHandler;
+        this.coffeeDeletedHandler = coffeeDeletedHandler;
         this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
         this.importGooglePhotosForCoffee = importGooglePhotosForCoffee;
         this.coffeeOpeningHoursImportedHandler = coffeeOpeningHoursImportedHandler;
@@ -123,6 +128,10 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             coffeeCreatedHandler.handle(event);
             importGoogleOpeningHoursForCoffee.handle(event);
             importGooglePhotosForCoffee.handle(event);
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.deleted".equals(type)) {
+            coffeeDeletedHandler.handle(read(envelope, CoffeeDeletedEvent.class));
             return;
         }
         if (COFFEES_EVENTS.equals(destination) && "coffee.opening_hours_imported".equals(type)) {

@@ -135,6 +135,7 @@ Le modèle parle le langage métier.
 ### Event
 
 * `CoffeeCreatedEvent`
+* `CoffeeDeletedEvent`
 * `CoffeeOpeningHoursImportedEvent`
 * `CoffeePhotosImportedEvent`
 
@@ -147,6 +148,8 @@ Les enrichissements Google sont des faits métier séparés : ils ne sont pas é
 
 * `CreateCoffeeCommand`
 * `CreateCoffeeCommandHandler`
+* `DeleteCoffeeCommand`
+* `DeleteCoffeeCommandHandler`
 * `ImportGoogleOpeningHoursForCoffee`
 * `ImportGooglePhotosForCoffee`
 
@@ -163,6 +166,31 @@ Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
 * `CoffeePhotoStorage`
 
 ➡️ Le domaine dépend d’abstractions.
+
+### Photos Google
+
+Le flux photo actuel est asynchrone :
+
+```text
+CoffeeCreatedEvent
+-> ImportGooglePhotosForCoffee
+-> GooglePlacePhotosGateway
+-> CoffeePhotoStorage
+-> CoffeePhotosImportedEvent
+-> CoffeePhotosImportedEventHandler
+-> coffee_photos_projection
+-> projection.updated hints:["photos"]
+```
+
+Le gateway Google récupère d'abord les `photos[].name` via Place Details, puis appelle Place Photos avec `skipHttpRedirect=true` pour obtenir un `photoUri` temporaire. L'image est téléchargée immédiatement et stockée via `CoffeePhotoStorage`.
+
+Adapter actuel :
+
+* `LocalCoffeePhotoStorage`
+* `COFFEE_PHOTOS_STORAGE_DIRECTORY`
+* `COFFEE_PHOTOS_PUBLIC_BASE_URL`
+
+Cet adapter est volontairement remplaçable. La cible long terme est un adapter S3, sur le même port `CoffeePhotoStorage`, sans modifier le use case ni les projections.
 
 ---
 
@@ -208,16 +236,40 @@ Elle consomme des **vues optimisées** :
 
 ➡️ Vue orientée affichage carte / liste.
 
+### Seed read model
+
+`CoffeeReadSeedRunner` est désactivé par défaut.
+
+Il ne doit pas alimenter staging/production : les projections doivent venir du flux normal `Domain Event -> Outbox -> SQS -> Projection`.
+Pour activer explicitement le seed local ou en test :
+
+```properties
+COFFEE_READ_SEED_ENABLED=true
+```
+
 ---
 
 ### Event handling
 
 * `CoffeeCreatedEventHandler`
+* `CoffeeDeletedEventHandler`
 * `CoffeeOpeningHoursImportedEventHandler`
 * `CoffeePhotosImportedEventHandler`
 
 ➡️ Synchronisation write → read par événements.
 Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
+
+La suppression admin d'un café suit le même chemin :
+
+```text
+DELETE /api/admin/coffees/{coffeeId}
+-> DeleteCoffeeCommand
+-> CoffeeDeletedEvent
+-> Outbox/SQS
+-> CoffeeDeletedEventHandler
+-> suppression summary/photos/openingHours projections
+-> projection.updated hints:["deleted","summary","photos","openingHours"]
+```
 
 ---
 

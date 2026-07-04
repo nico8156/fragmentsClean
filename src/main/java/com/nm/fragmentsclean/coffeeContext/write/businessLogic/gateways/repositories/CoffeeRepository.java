@@ -13,4 +13,6 @@ public interface CoffeeRepository {
     Optional<Coffee> findById(CoffeeId id);
 
     boolean existsByGooglePlaceId(GooglePlaceId googlePlaceId);
+
+    void deleteById(CoffeeId id);
 }

@@ -11,6 +11,8 @@ public interface CoffeePhotoProjectionRepository {
 
 	void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos);
 
+	void deleteForCoffee(UUID coffeeId);
+
 	List<CoffeePhotoView> findAll();
 
 	long count();

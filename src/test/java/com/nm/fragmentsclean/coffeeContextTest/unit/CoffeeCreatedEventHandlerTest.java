@@ -72,6 +72,10 @@ class CoffeeCreatedEventHandlerTest {
 		}
 
 		@Override
+		public void deleteByCoffeeId(UUID coffeeId) {
+		}
+
+		@Override
 		public List<CoffeeSummaryView> findAll() {
 			return List.of();
 		}

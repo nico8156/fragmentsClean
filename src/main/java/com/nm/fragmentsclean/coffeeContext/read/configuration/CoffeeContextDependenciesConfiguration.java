@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
@@ -15,6 +16,7 @@ import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.storage.CoffeePhotoStorageProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -50,6 +52,13 @@ public class CoffeeContextDependenciesConfiguration {
 	}
 
 	@Bean
+	DeleteCoffeeCommandHandler deleteCoffeeCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		return new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
 	ListCoffeesQueryHandler listCoffeesQueryHandler(CoffeeProjectionRepository coffeeProjectionRepository) {
 		return new ListCoffeesQueryHandler(coffeeProjectionRepository);
 	}
@@ -59,6 +68,19 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeCreatedEventHandler(projectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeeDeletedEventHandler coffeeDeletedEventHandler(
+			CoffeeProjectionRepository projectionRepository,
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeeDeletedEventHandler(
+				projectionRepository,
+				photoProjectionRepository,
+				openingHoursProjectionRepository,
+				projectionSyncPublisher);
 	}
 
 	@Bean

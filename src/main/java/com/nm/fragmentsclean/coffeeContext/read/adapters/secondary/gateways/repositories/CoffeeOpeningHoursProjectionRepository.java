@@ -11,6 +11,8 @@ public interface CoffeeOpeningHoursProjectionRepository {
 
 	void replaceForCoffee(UUID coffeeId, List<CoffeeOpeningHoursView> openingHours);
 
+	void deleteForCoffee(UUID coffeeId);
+
 	List<CoffeeOpeningHoursView> findAll();
 
 	long count();

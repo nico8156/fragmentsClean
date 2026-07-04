@@ -5,7 +5,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
@@ -14,17 +17,22 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repo
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 
 @RestController
 public class AdminCoffeesReadController {
+	private final CommandBus commandBus;
 	private final QueryBus queryBus;
 	private final CoffeePhotoProjectionRepository photoProjectionRepository;
 	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
 
-	public AdminCoffeesReadController(QueryBus queryBus,
+	public AdminCoffeesReadController(CommandBus commandBus,
+			QueryBus queryBus,
 			CoffeePhotoProjectionRepository photoProjectionRepository,
 			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository) {
+		this.commandBus = commandBus;
 		this.queryBus = queryBus;
 		this.photoProjectionRepository = photoProjectionRepository;
 		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
@@ -53,6 +61,12 @@ public class AdminCoffeesReadController {
 						openingHoursByCoffeeId.getOrDefault(summary.id(), List.of())
 				))
 				.toList();
+	}
+
+	@DeleteMapping("/api/admin/coffees/{coffeeId}")
+	public ResponseEntity<Void> deleteCoffee(@PathVariable UUID coffeeId) {
+		commandBus.dispatch(new DeleteCoffeeCommand(UUID.randomUUID(), coffeeId, java.time.Instant.now()));
+		return ResponseEntity.accepted().build();
 	}
 
 	public record AdminCoffeeResponse(

@@ -8,6 +8,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 
 @Component
+@ConditionalOnProperty(name = "coffee.read.seed.enabled", havingValue = "true")
 public class CoffeeReadSeedRunner implements CommandLineRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(CoffeeReadSeedRunner.class);
