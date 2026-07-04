@@ -1,8 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.storage;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -15,21 +13,16 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GoogleP
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 	private final CoffeePhotoStorageProperties properties;
 	private final S3Client s3Client;
-	private final S3Presigner s3Presigner;
 
 	public S3CoffeePhotoStorage(
 			CoffeePhotoStorageProperties properties,
-			S3Client s3Client,
-			S3Presigner s3Presigner) {
+			S3Client s3Client) {
 		this.properties = properties;
 		this.s3Client = s3Client;
-		this.s3Presigner = s3Presigner;
 	}
 
 	@Override
@@ -44,16 +37,7 @@ public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 						.contentType(photo.contentType())
 						.build(),
 				RequestBody.fromBytes(photo.bytes()));
-		return new ImportedCoffeePhoto(photoId, signedPhotoUri(bucket, key).toString());
-	}
-
-	private URI signedPhotoUri(String bucket, String key) {
-		Duration ttl = properties.getS3PresignTtl() == null ? Duration.ofMinutes(15) : properties.getS3PresignTtl();
-		var request = GetObjectPresignRequest.builder()
-				.signatureDuration(ttl)
-				.getObjectRequest(builder -> builder.bucket(bucket).key(key))
-				.build();
-		return URI.create(s3Presigner.presignGetObject(request).url().toString());
+		return new ImportedCoffeePhoto(photoId, "s3://" + bucket + "/" + key);
 	}
 
 	private String keyFor(CoffeeId coffeeId, UUID photoId, String extension) {

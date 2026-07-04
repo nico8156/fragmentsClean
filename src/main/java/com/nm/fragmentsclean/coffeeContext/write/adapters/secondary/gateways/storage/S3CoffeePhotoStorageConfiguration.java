@@ -42,9 +42,8 @@ public class S3CoffeePhotoStorageConfiguration {
 	@Bean
 	CoffeePhotoStorage s3CoffeePhotoStorage(
 			CoffeePhotoStorageProperties properties,
-			S3Client coffeePhotoS3Client,
-			S3Presigner coffeePhotoS3Presigner) {
-		return new S3CoffeePhotoStorage(properties, coffeePhotoS3Client, coffeePhotoS3Presigner);
+			S3Client coffeePhotoS3Client) {
+		return new S3CoffeePhotoStorage(properties, coffeePhotoS3Client);
 	}
 
 	private void configureCredentials(S3ClientBuilder builder, CoffeePhotoStorageProperties properties) {

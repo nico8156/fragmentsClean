@@ -3,8 +3,10 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.storage.DefaultCoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
@@ -25,10 +27,13 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableConfigurationProperties(CoffeePhotoStorageProperties.class)
@@ -112,5 +117,12 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeePhotoProjectionRepository photoProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeePhotosImportedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeePhotoUriResolver coffeePhotoUriResolver(
+			CoffeePhotoStorageProperties properties,
+			ObjectProvider<S3Presigner> s3Presigner) {
+		return new DefaultCoffeePhotoUriResolver(properties, s3Presigner.getIfAvailable());
 	}
 }
