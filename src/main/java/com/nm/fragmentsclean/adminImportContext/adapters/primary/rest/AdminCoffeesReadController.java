@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.controllers.CoffeeSummaryResponse;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
@@ -27,15 +28,18 @@ public class AdminCoffeesReadController {
 	private final QueryBus queryBus;
 	private final CoffeePhotoProjectionRepository photoProjectionRepository;
 	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
+	private final CoffeePhotoUriResolver photoUriResolver;
 
 	public AdminCoffeesReadController(CommandBus commandBus,
 			QueryBus queryBus,
 			CoffeePhotoProjectionRepository photoProjectionRepository,
-			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository) {
+			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
+			CoffeePhotoUriResolver photoUriResolver) {
 		this.commandBus = commandBus;
 		this.queryBus = queryBus;
 		this.photoProjectionRepository = photoProjectionRepository;
 		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
+		this.photoUriResolver = photoUriResolver;
 	}
 
 	@GetMapping("/api/admin/coffees")
@@ -43,7 +47,7 @@ public class AdminCoffeesReadController {
 		Map<UUID, List<AdminCoffeePhotoResponse>> photosByCoffeeId = photoProjectionRepository.findAll().stream()
 				.collect(Collectors.groupingBy(
 						CoffeePhotoView::coffeeId,
-						Collectors.mapping(AdminCoffeePhotoResponse::from, Collectors.toList())
+						Collectors.mapping(photo -> AdminCoffeePhotoResponse.from(photo, photoUriResolver), Collectors.toList())
 				));
 		Map<UUID, List<AdminCoffeeOpeningHoursResponse>> openingHoursByCoffeeId =
 				openingHoursProjectionRepository.findAll().stream()
@@ -103,8 +107,8 @@ public class AdminCoffeesReadController {
 	}
 
 	public record AdminCoffeePhotoResponse(UUID id, String photoUri) {
-		static AdminCoffeePhotoResponse from(CoffeePhotoView view) {
-			return new AdminCoffeePhotoResponse(view.id(), view.photoUri());
+		static AdminCoffeePhotoResponse from(CoffeePhotoView view, CoffeePhotoUriResolver photoUriResolver) {
+			return new AdminCoffeePhotoResponse(view.id(), photoUriResolver.resolve(view.photoUri()));
 		}
 	}
 

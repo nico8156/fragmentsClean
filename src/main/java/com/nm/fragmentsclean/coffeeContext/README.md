@@ -201,7 +201,7 @@ En staging, les photos Fragments réutilisent le bucket assets Anchor avec un pr
 s3://anchor-assets-prod-851725375299/fragments/staging/coffees/{coffeeId}/photos/{photoId}.jpg
 ```
 
-L'admin read reçoit une URL signée courte dans `photoUri`. Le frontend ne connaît pas S3 et continue à reconstruire ses vues après `projection.updated`.
+La projection conserve cette référence stable `s3://...`. Les controllers read résolvent ensuite `photoUri` en URL signée courte à chaque GET. Le frontend ne connaît pas S3 et continue à reconstruire ses vues après `projection.updated`.
 
 ---
 

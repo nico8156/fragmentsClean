@@ -105,7 +105,7 @@ class AdminTokenSecurityTest {
 				.andExpect(jsonPath("$[0].googleId").value("google-place-1"))
 				.andExpect(jsonPath("$[0].name").value("Fragments Cafe"))
 				.andExpect(jsonPath("$[0].photos[0].id").value("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
-				.andExpect(jsonPath("$[0].photos[0].photoUri").value("https://images.example/coffee-1.jpg"))
+				.andExpect(jsonPath("$[0].photos[0].photoUri").value("https://signed.fragments.test/coffee-1.jpg"))
 				.andExpect(jsonPath("$[0].openingHours[0].id").value("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
 				.andExpect(jsonPath("$[0].openingHours[0].weekdayDescription").value("lundi: 08:00-18:00"))
 				.andExpect(jsonPath("$[1].id").value("22222222-2222-2222-2222-222222222222"))
@@ -265,7 +265,10 @@ class AdminTokenSecurityTest {
 				commandBus,
 				queryBus,
 				new FakeCoffeePhotoProjectionRepository(),
-				new FakeCoffeeOpeningHoursProjectionRepository()
+				new FakeCoffeeOpeningHoursProjectionRepository(),
+				storedPhotoUri -> storedPhotoUri.startsWith("s3://")
+						? "https://signed.fragments.test/coffee-1.jpg"
+						: storedPhotoUri
 		);
 	}
 
@@ -373,7 +376,7 @@ class AdminTokenSecurityTest {
 			return List.of(new CoffeePhotoView(
 					UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 					UUID.fromString("11111111-1111-1111-1111-111111111111"),
-					"https://images.example/coffee-1.jpg"
+					"s3://anchor-assets-prod-851725375299/fragments/staging/coffees/11111111-1111-1111-1111-111111111111/photos/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.jpg"
 			));
 		}
 
