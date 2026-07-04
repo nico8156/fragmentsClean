@@ -18,11 +18,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.io.InputStream;
 
 @SpringBootTest
 @ActiveProfiles("database")
+@TestPropertySource(properties = "coffee.read.seed.enabled=true")
 class CoffeeReadSeedRunnerIT extends TestContainers {
 
 	@Autowired

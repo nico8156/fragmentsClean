@@ -208,6 +208,17 @@ Elle consomme des **vues optimisées** :
 
 ➡️ Vue orientée affichage carte / liste.
 
+### Seed read model
+
+`CoffeeReadSeedRunner` est désactivé par défaut.
+
+Il ne doit pas alimenter staging/production : les projections doivent venir du flux normal `Domain Event -> Outbox -> SQS -> Projection`.
+Pour activer explicitement le seed local ou en test :
+
+```properties
+COFFEE_READ_SEED_ENABLED=true
+```
+
 ---
 
 ### Event handling
