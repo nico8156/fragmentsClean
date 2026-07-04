@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
     private volatile ExecutorService executorService;
     private volatile boolean running;
 
+    @Autowired
     public SqsIntegrationEventConsumer(SqsClient sqsClient,
                                        SqsMessagingProperties properties,
                                        ObjectMapper objectMapper,
