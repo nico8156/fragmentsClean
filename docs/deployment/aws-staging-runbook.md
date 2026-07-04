@@ -63,12 +63,25 @@ aws cloudformation describe-stacks \
 
 ## Host Bootstrap
 
-SSH to the instance and create the deployment env:
+Read the current staging host from CloudFormation:
 
 ```bash
-ssh -i ~/.ssh/<key>.pem ubuntu@<instance-public-ip>
+aws cloudformation describe-stacks \
+  --region eu-west-3 \
+  --stack-name fragments-staging-minimal \
+  --query "Stacks[0].Outputs[?OutputKey=='InstancePublicIp'].OutputValue" \
+  --output text
+```
+
+SSH to the instance with the Ubuntu AMI user:
+
+```bash
+ssh -i ~/.ssh/anchor-staging-key.pem ubuntu@<instance-public-ip>
 cd /srv/fragments/staging
 ```
+
+If the key has another local filename, keep the same `ubuntu@<instance-public-ip>` target and replace only the `-i` path.
+The public IP can change if the EC2 instance is replaced, so prefer the CloudFormation output over a hardcoded address.
 
 Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 

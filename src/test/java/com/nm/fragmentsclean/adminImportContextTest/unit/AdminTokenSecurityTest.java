@@ -142,6 +142,19 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void preflight_for_admin_sse_allows_last_event_id_header() throws Exception {
+		mockMvc("admin-secret").perform(options("/api/admin/sync/events")
+						.header(HttpHeaders.ORIGIN, "http://127.0.0.1:5173")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "GET")
+						.header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Accept,Last-Event-ID"))
+				.andExpect(status().isOk())
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://127.0.0.1:5173"))
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, "GET,POST,PUT,PATCH,DELETE,OPTIONS"))
+				.andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS,
+						"Authorization, Accept, Last-Event-ID"));
+	}
+
+	@Test
 	void preflight_for_public_coffees_api_from_127_0_0_1_is_allowed() throws Exception {
 		mockMvc("admin-secret").perform(options("/api/coffees")
 						.header(HttpHeaders.ORIGIN, "http://127.0.0.1:5173")
@@ -184,7 +197,7 @@ class AdminTokenSecurityTest {
 		var properties = new FragmentsCorsProperties();
 		properties.setAllowedOrigins(List.of("http://localhost:5173", "http://127.0.0.1:5173"));
 		properties.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		properties.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
+		properties.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "Last-Event-ID"));
 		properties.setExposedHeaders(List.of("Location"));
 		properties.setAllowCredentials(false);
 		properties.setMaxAge(3600);
