@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 import static com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinations.*;
 
 @Component
-public class SqsIntegrationEventRouter {
+public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
 
     private static final Logger log = LoggerFactory.getLogger(SqsIntegrationEventRouter.class);
 
@@ -84,6 +84,7 @@ public class SqsIntegrationEventRouter {
         this.userSocialProjectionProjector = userSocialProjectionProjector;
     }
 
+    @Override
     public void route(IntegrationEventEnvelope envelope) {
         if (!inbox.claim(envelope)) {
             log.info("[sqs] duplicate suppressed eventId={} destination={}",

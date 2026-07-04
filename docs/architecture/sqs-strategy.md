@@ -40,3 +40,21 @@ Delete message only after successful business handling.
 
 If delete fails, redelivery must be safe because the inbox suppresses duplicate business work.
 
+## Runtime Polling Model
+
+The backend runs one long-poll worker per unique SQS queue URL.
+
+Rules:
+- deduplicate queue URLs before starting workers;
+- do not poll all queues sequentially from one global scheduler;
+- use SQS long-polling, default `APP_MESSAGING_SQS_WAIT_TIME=PT20S`;
+- keep `APP_MESSAGING_SQS_MAX_MESSAGES` bounded, default `5`;
+- delete each message only after the routed handler succeeds;
+- leave failed messages on the queue so SQS visibility timeout and DLQ policy can drive retry.
+
+Reason:
+- queue-to-queue latency must not grow with the number of configured queues;
+- a quiet queue must not delay a busy queue;
+- async chains such as `CoffeeCreatedEvent -> projection -> ProjectionSyncEvent -> SSE` need predictable propagation without bypassing the outbox/SQS architecture.
+
+The consumer is technical sharedKernel infrastructure. It routes stable integration event envelopes; it must not contain bounded-context business logic.
