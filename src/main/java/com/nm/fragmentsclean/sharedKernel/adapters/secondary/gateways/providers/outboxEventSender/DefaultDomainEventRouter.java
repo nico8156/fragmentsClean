@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.Au
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.EventRouting;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.DomainEventRouter;
@@ -53,6 +54,9 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
             return EventRouting.kafkaAndWebSocket();
         }
         if (event instanceof CoffeeOpeningHoursImportedEvent) {
+            return EventRouting.kafkaAndWebSocket();
+        }
+        if (event instanceof CoffeePhotosImportedEvent) {
             return EventRouting.kafkaAndWebSocket();
         }
 

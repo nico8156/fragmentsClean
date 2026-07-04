@@ -2,15 +2,20 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoStorage;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlacePhotosGateway;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlaceOpeningHoursGateway;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.JpaCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.SpringCoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
@@ -66,5 +71,21 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeOpeningHoursImportedEventHandler(openingHoursProjectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	ImportGooglePhotosForCoffee importGooglePhotosForCoffee(
+			GooglePlacePhotosGateway photosGateway,
+			CoffeePhotoStorage photoStorage,
+			DomainEventPublisher domainEventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		return new ImportGooglePhotosForCoffee(photosGateway, photoStorage, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
+	CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler(
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeePhotosImportedEventHandler(photoProjectionRepository, projectionSyncPublisher);
 	}
 }

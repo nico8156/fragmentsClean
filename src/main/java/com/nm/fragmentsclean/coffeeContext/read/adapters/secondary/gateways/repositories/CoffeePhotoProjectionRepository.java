@@ -9,6 +9,8 @@ public interface CoffeePhotoProjectionRepository {
 	// ✅ seed
 	void insertSeed(CoffeePhotoView view);
 
+	void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos);
+
 	List<CoffeePhotoView> findAll();
 
 	long count();
