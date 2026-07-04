@@ -48,6 +48,11 @@ public class JdbcCoffeeOpeningHoursProjectionRepository implements CoffeeOpening
 	}
 
 	@Override
+	public void deleteForCoffee(UUID coffeeId) {
+		jdbc.update("DELETE FROM coffee_openinghours_projection WHERE coffee_id = ?", coffeeId);
+	}
+
+	@Override
 	public List<CoffeeOpeningHoursView> findAll() {
 		return jdbc.query("""
 				    SELECT id, coffee_id, weekday_description

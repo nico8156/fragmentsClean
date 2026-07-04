@@ -45,6 +45,11 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
         return googlePlaceId != null && springRepo.existsByGooglePlaceId(googlePlaceId);
     }
 
+    @Override
+    public void deleteById(CoffeeId id) {
+        springRepo.deleteById(id.value());
+    }
+
     // ========= Mapping domain -> JPA =========
 
     private CoffeeJpaEntity mapToEntity(Coffee c) {

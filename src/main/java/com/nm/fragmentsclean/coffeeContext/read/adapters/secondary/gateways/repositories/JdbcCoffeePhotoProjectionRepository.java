@@ -45,6 +45,11 @@ public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectio
 	}
 
 	@Override
+	public void deleteForCoffee(UUID coffeeId) {
+		jdbc.update("DELETE FROM coffee_photos_projection WHERE coffee_id = ?", coffeeId);
+	}
+
+	@Override
 	public List<CoffeePhotoView> findAll() {
 		return jdbc.query("""
 				    SELECT id, coffee_id, photo_uri

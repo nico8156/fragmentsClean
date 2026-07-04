@@ -135,6 +135,7 @@ Le modèle parle le langage métier.
 ### Event
 
 * `CoffeeCreatedEvent`
+* `CoffeeDeletedEvent`
 * `CoffeeOpeningHoursImportedEvent`
 * `CoffeePhotosImportedEvent`
 
@@ -147,6 +148,8 @@ Les enrichissements Google sont des faits métier séparés : ils ne sont pas é
 
 * `CreateCoffeeCommand`
 * `CreateCoffeeCommandHandler`
+* `DeleteCoffeeCommand`
+* `DeleteCoffeeCommandHandler`
 * `ImportGoogleOpeningHoursForCoffee`
 * `ImportGooglePhotosForCoffee`
 
@@ -224,11 +227,24 @@ COFFEE_READ_SEED_ENABLED=true
 ### Event handling
 
 * `CoffeeCreatedEventHandler`
+* `CoffeeDeletedEventHandler`
 * `CoffeeOpeningHoursImportedEventHandler`
 * `CoffeePhotosImportedEventHandler`
 
 ➡️ Synchronisation write → read par événements.
 Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
+
+La suppression admin d'un café suit le même chemin :
+
+```text
+DELETE /api/admin/coffees/{coffeeId}
+-> DeleteCoffeeCommand
+-> CoffeeDeletedEvent
+-> Outbox/SQS
+-> CoffeeDeletedEventHandler
+-> suppression summary/photos/openingHours projections
+-> projection.updated hints:["deleted","summary","photos","openingHours"]
+```
 
 ---
 

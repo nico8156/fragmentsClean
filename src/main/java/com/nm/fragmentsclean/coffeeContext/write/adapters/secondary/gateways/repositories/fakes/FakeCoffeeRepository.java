@@ -61,6 +61,17 @@ public class FakeCoffeeRepository implements CoffeeRepository {
                 );
     }
 
+    @Override
+    public void deleteById(CoffeeId id) {
+        store.remove(id);
+        snapshots.clear();
+        snapshots.addAll(
+                store.values().stream()
+                        .map(this::toSnapshot)
+                        .collect(Collectors.toList())
+        );
+    }
+
     private CoffeeSnapshot toSnapshot(Coffee c) {
         var addr = c.address();
         var loc = c.location();

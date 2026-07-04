@@ -96,6 +96,10 @@ class CoffeeOpeningHoursImportedEventHandlerTest {
 		}
 
 		@Override
+		public void deleteForCoffee(UUID coffeeId) {
+		}
+
+		@Override
 		public long count() {
 			return 0;
 		}

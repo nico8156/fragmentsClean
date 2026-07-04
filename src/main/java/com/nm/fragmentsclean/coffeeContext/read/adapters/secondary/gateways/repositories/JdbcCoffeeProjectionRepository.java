@@ -47,6 +47,11 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 	}
 
 	@Override
+	public void deleteByCoffeeId(UUID coffeeId) {
+		jdbcTemplate.update("DELETE FROM coffee_summaries_projection WHERE id = ?", coffeeId);
+	}
+
+	@Override
 	public void insertSeed(CoffeeSummaryView view) {
 		upsert(
 				view.id(),

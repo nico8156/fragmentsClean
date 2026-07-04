@@ -24,6 +24,7 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repo
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
@@ -32,13 +33,16 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlaces
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsConfiguration;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsProperties;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncController;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncDispatcher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -112,6 +116,27 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void admin_delete_coffee_without_token_returns_401() throws Exception {
+		mockMvc("admin-secret").perform(delete("/api/admin/coffees/11111111-1111-1111-1111-111111111111"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void admin_delete_coffee_with_valid_token_dispatches_delete_command() throws Exception {
+		var queryHandler = new CountingListCoffeesQueryHandler();
+		var deleteHandler = new RecordingDeleteCoffeeCommandHandler();
+
+		mockMvc("admin-secret", queryHandler, deleteHandler)
+				.perform(delete("/api/admin/coffees/11111111-1111-1111-1111-111111111111")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isAccepted());
+
+		org.assertj.core.api.Assertions.assertThat(deleteHandler.commands).hasSize(1);
+		org.assertj.core.api.Assertions.assertThat(deleteHandler.commands.getFirst().coffeeId())
+				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+	}
+
+	@Test
 	void admin_route_with_missing_configured_token_stays_closed() throws Exception {
 		mockMvc("").perform(get("/api/admin/import/places")
 						.param("query", "cafe")
@@ -180,6 +205,12 @@ class AdminTokenSecurityTest {
 	}
 
 	private MockMvc mockMvc(String token, CountingListCoffeesQueryHandler queryHandler) {
+		return mockMvc(token, queryHandler, new RecordingDeleteCoffeeCommandHandler());
+	}
+
+	private MockMvc mockMvc(String token,
+			CountingListCoffeesQueryHandler queryHandler,
+			RecordingDeleteCoffeeCommandHandler deleteHandler) {
 		var properties = new AdminSecurityProperties();
 		properties.setToken(token);
 		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
@@ -187,7 +218,7 @@ class AdminTokenSecurityTest {
 
 		return MockMvcBuilders.standaloneSetup(
 						controller(),
-						adminCoffeesController(queryHandler),
+						adminCoffeesController(queryHandler, deleteHandler),
 						projectionSyncController())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
 				.build();
@@ -223,10 +254,15 @@ class AdminTokenSecurityTest {
 		);
 	}
 
-	private AdminCoffeesReadController adminCoffeesController(CountingListCoffeesQueryHandler queryHandler) {
+	private AdminCoffeesReadController adminCoffeesController(
+			CountingListCoffeesQueryHandler queryHandler,
+			RecordingDeleteCoffeeCommandHandler deleteHandler) {
 		var queryBus = new QueryBus();
 		queryBus.registerQueryHandlers(List.of(queryHandler));
+		var commandBus = new CommandBus();
+		commandBus.registerCommandHandlers(List.of(deleteHandler));
 		return new AdminCoffeesReadController(
+				commandBus,
 				queryBus,
 				new FakeCoffeePhotoProjectionRepository(),
 				new FakeCoffeeOpeningHoursProjectionRepository()
@@ -299,6 +335,15 @@ class AdminTokenSecurityTest {
 		}
 	}
 
+	private static class RecordingDeleteCoffeeCommandHandler implements CommandHandler<DeleteCoffeeCommand> {
+		private final List<DeleteCoffeeCommand> commands = new java.util.ArrayList<>();
+
+		@Override
+		public void execute(DeleteCoffeeCommand command) {
+			commands.add(command);
+		}
+	}
+
 	private static class FakeProjectionSyncDispatcher extends ProjectionSyncDispatcher {
 		FakeProjectionSyncDispatcher() {
 			super(null, null, null, null);
@@ -317,6 +362,10 @@ class AdminTokenSecurityTest {
 
 		@Override
 		public void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos) {
+		}
+
+		@Override
+		public void deleteForCoffee(UUID coffeeId) {
 		}
 
 		@Override
@@ -350,6 +399,10 @@ class AdminTokenSecurityTest {
 
 		@Override
 		public void replaceForCoffee(UUID coffeeId, List<CoffeeOpeningHoursView> openingHours) {
+		}
+
+		@Override
+		public void deleteForCoffee(UUID coffeeId) {
 		}
 
 		@Override
