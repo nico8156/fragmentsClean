@@ -32,6 +32,8 @@ services:
       TICKETVERIFY_BINARY_PATH: ${TICKETVERIFY_BINARY_PATH:-/app/bin/ticketverify}
     ports:
       - "127.0.0.1:8080:8080"
+    volumes:
+      - ./coffee-photos:/srv/fragments/coffee-photos
 
   caddy:
     image: caddy:2
