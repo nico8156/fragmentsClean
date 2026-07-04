@@ -135,8 +135,11 @@ Le modèle parle le langage métier.
 ### Event
 
 * `CoffeeCreatedEvent`
+* `CoffeeOpeningHoursImportedEvent`
+* `CoffeePhotosImportedEvent`
 
 ➡️ La création d’un lieu est un **fait métier structurant**.
+Les enrichissements Google sont des faits métier séparés : ils ne sont pas écrits directement par l’import admin.
 
 ---
 
@@ -144,14 +147,20 @@ Le modèle parle le langage métier.
 
 * `CreateCoffeeCommand`
 * `CreateCoffeeCommandHandler`
+* `ImportGoogleOpeningHoursForCoffee`
+* `ImportGooglePhotosForCoffee`
 
 ➡️ Un seul point d’entrée métier pour la création.
+Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
 
 ---
 
 ### Ports
 
 * `CoffeeRepository`
+* `GooglePlaceOpeningHoursGateway`
+* `GooglePlacePhotosGateway`
+* `CoffeePhotoStorage`
 
 ➡️ Le domaine dépend d’abstractions.
 
@@ -194,6 +203,8 @@ Elle consomme des **vues optimisées** :
 ### Projections
 
 * `CoffeeSummaryView`
+* `CoffeePhotoView`
+* `CoffeeOpeningHoursView`
 
 ➡️ Vue orientée affichage carte / liste.
 
@@ -202,8 +213,11 @@ Elle consomme des **vues optimisées** :
 ### Event handling
 
 * `CoffeeCreatedEventHandler`
+* `CoffeeOpeningHoursImportedEventHandler`
+* `CoffeePhotosImportedEventHandler`
 
 ➡️ Synchronisation write → read par événements.
+Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
 
 ---
 

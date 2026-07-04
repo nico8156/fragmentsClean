@@ -56,5 +56,6 @@ Reason:
 - queue-to-queue latency must not grow with the number of configured queues;
 - a quiet queue must not delay a busy queue;
 - async chains such as `CoffeeCreatedEvent -> projection -> ProjectionSyncEvent -> SSE` need predictable propagation without bypassing the outbox/SQS architecture.
+- enrichment chains such as `CoffeeCreatedEvent -> CoffeePhotosImportedEvent -> photo projection -> projection.updated` must stay on the same outbox/SQS path.
 
 The consumer is technical sharedKernel infrastructure. It routes stable integration event envelopes; it must not contain bounded-context business logic.

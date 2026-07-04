@@ -316,6 +316,10 @@ class AdminTokenSecurityTest {
 		}
 
 		@Override
+		public void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos) {
+		}
+
+		@Override
 		public List<CoffeePhotoView> findAll() {
 			return List.of(new CoffeePhotoView(
 					UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),

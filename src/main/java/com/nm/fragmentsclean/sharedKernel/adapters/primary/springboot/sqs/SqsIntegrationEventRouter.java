@@ -6,9 +6,12 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCre
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.socialContext.read.projectors.UserSocialProjectionProjector;
@@ -42,7 +45,9 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     private final ArticleCreatedEventHandler articleCreatedHandler;
     private final CoffeeCreatedEventHandler coffeeCreatedHandler;
     private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
+    private final ImportGooglePhotosForCoffee importGooglePhotosForCoffee;
     private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler;
+    private final CoffeePhotosImportedEventHandler coffeePhotosImportedHandler;
     private final AuthUserCreatedEventHandler authUserCreatedHandler;
     private final CommentCreatedEventHandler commentCreatedHandler;
     private final CommentUpdatedEventHandler commentUpdatedHandler;
@@ -58,7 +63,9 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             ArticleCreatedEventHandler articleCreatedHandler,
             CoffeeCreatedEventHandler coffeeCreatedHandler,
             ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
+            ImportGooglePhotosForCoffee importGooglePhotosForCoffee,
             CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler,
+            CoffeePhotosImportedEventHandler coffeePhotosImportedHandler,
             AuthUserCreatedEventHandler authUserCreatedHandler,
             CommentCreatedEventHandler commentCreatedHandler,
             CommentUpdatedEventHandler commentUpdatedHandler,
@@ -73,7 +80,9 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
         this.articleCreatedHandler = articleCreatedHandler;
         this.coffeeCreatedHandler = coffeeCreatedHandler;
         this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
+        this.importGooglePhotosForCoffee = importGooglePhotosForCoffee;
         this.coffeeOpeningHoursImportedHandler = coffeeOpeningHoursImportedHandler;
+        this.coffeePhotosImportedHandler = coffeePhotosImportedHandler;
         this.authUserCreatedHandler = authUserCreatedHandler;
         this.commentCreatedHandler = commentCreatedHandler;
         this.commentUpdatedHandler = commentUpdatedHandler;
@@ -113,10 +122,15 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             CoffeeCreatedEvent event = read(envelope, CoffeeCreatedEvent.class);
             coffeeCreatedHandler.handle(event);
             importGoogleOpeningHoursForCoffee.handle(event);
+            importGooglePhotosForCoffee.handle(event);
             return;
         }
         if (COFFEES_EVENTS.equals(destination) && "coffee.opening_hours_imported".equals(type)) {
             coffeeOpeningHoursImportedHandler.handle(read(envelope, CoffeeOpeningHoursImportedEvent.class));
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.photos_imported".equals(type)) {
+            coffeePhotosImportedHandler.handle(read(envelope, CoffeePhotosImportedEvent.class));
             return;
         }
         if (AUTH_USERS_EVENTS.equals(destination) && "auth.user.created".equals(type)) {

@@ -42,7 +42,7 @@ jobs:
       - name: Test backend deployment guard
         run: |
           ./mvnw -q \
-            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,CreateCoffeeCommandHandlerTest \
+            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest \
             test
 
       - name: Package backend
@@ -225,6 +225,10 @@ jobs:
           }
           upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
           upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
+          upsert_env_var "GOOGLE_PLACES_PHOTO_IMPORT_LIMIT" "3"
+          APP_RUNTIME_DOMAIN="\$(read_env_var APP_DOMAIN)"
+          upsert_env_var "COFFEE_PHOTOS_STORAGE_DIRECTORY" "/srv/fragments/coffee-photos"
+          upsert_env_var "COFFEE_PHOTOS_PUBLIC_BASE_URL" "https://\${APP_RUNTIME_DOMAIN}"
           upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
           upsert_env_var "APP_MESSAGING_KAFKA_ENABLED" "false"
           upsert_env_var "APP_MESSAGING_SQS_MAX_MESSAGES" "5"
@@ -239,6 +243,7 @@ jobs:
           upsert_env_var "SQS_DOMAIN_EVENTS_URL" "${SQS_DOMAIN_EVENTS_URL}"
           upsert_env_var "SQS_TICKET_EVENTS_URL" "${SQS_TICKET_EVENTS_URL}"
           upsert_env_var "SQS_TICKET_VERIFICATION_REQUESTED_URL" "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
+          mkdir -p coffee-photos
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
           docker compose pull backend
           docker compose up -d postgres

@@ -79,4 +79,29 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(envelope.eventVersion()).isEqualTo(1);
         assertThat(envelope.destination()).isEqualTo("coffees-events");
     }
+
+    @Test
+    void routesCoffeePhotosImportedToCoffeeEventsWithStableType() {
+        var outbox = new OutboxEventJpaEntity(
+                "evt-4",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent",
+                "Coffee",
+                "coffee-1",
+                "coffee:coffee-1",
+                "{\"photos\":[]}",
+                Instant.parse("2026-07-04T10:00:00Z"),
+                Instant.parse("2026-07-04T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
+                .containsExactly("coffees-events");
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
+
+        assertThat(envelope.eventType()).isEqualTo("coffee.photos_imported");
+        assertThat(envelope.eventVersion()).isEqualTo(1);
+        assertThat(envelope.destination()).isEqualTo("coffees-events");
+    }
 }

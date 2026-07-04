@@ -93,6 +93,9 @@ Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 - `GOOGLE_OAUTH_REDIRECT_URI`
 - `GOOGLE_PLACES_API_KEY`
+- `GOOGLE_PLACES_PHOTO_IMPORT_LIMIT`
+- `COFFEE_PHOTOS_STORAGE_DIRECTORY`
+- `COFFEE_PHOTOS_PUBLIC_BASE_URL`
 - `OPENAI_API_KEY`
 - `OPENAI_PROJECT_ID`
 - all `SQS_*_URL` values from CloudFormation outputs
@@ -108,6 +111,9 @@ APP_MESSAGING_SQS_MAX_MESSAGES=5
 APP_MESSAGING_SQS_WAIT_TIME=PT20S
 APP_MESSAGING_SQS_VISIBILITY_TIMEOUT=PT30S
 APP_MESSAGING_SQS_SHUTDOWN_TIMEOUT=PT5S
+GOOGLE_PLACES_PHOTO_IMPORT_LIMIT=3
+COFFEE_PHOTOS_STORAGE_DIRECTORY=/srv/fragments/coffee-photos
+COFFEE_PHOTOS_PUBLIC_BASE_URL=https://<APP_DOMAIN>
 ```
 
 ## GitHub Actions
@@ -135,7 +141,7 @@ The workflow:
 3. pushes immutable `sha-<commit>` and `staging-latest` tags to ECR;
 4. temporarily authorizes SSH only from the GitHub runner public IP;
 5. syncs Compose, Caddy, `schema.sql`, and `data.sql`;
-6. upserts `BACKEND_IMAGE`, Google Places, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
+6. upserts `BACKEND_IMAGE`, Google Places, coffee photo storage, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
 7. restarts `postgres` and `backend`;
 8. starts Caddy when `COMPOSE_PROFILES=https`;
 8. smoke-tests `GET /actuator/health`;

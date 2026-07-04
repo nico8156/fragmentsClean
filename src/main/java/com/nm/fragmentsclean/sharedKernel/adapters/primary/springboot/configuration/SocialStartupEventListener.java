@@ -16,9 +16,11 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
@@ -58,7 +60,9 @@ public class SocialStartupEventListener {
 	private final CreateCoffeeCommandHandler createCoffeeCommandHandler;
 	private final CoffeeCreatedEventHandler coffeeCreatedProjectionHandler;
 	private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
+	private final ImportGooglePhotosForCoffee importGooglePhotosForCoffee;
 	private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler;
+	private final CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler;
 	private final ListCoffeesQueryHandler listCoffeesQueryHandler;
 	private final GoogleLoginCommandHandler googleLoginCommandHandler;
 	private final RefreshTokenCommandHandler refreshTokenCommandHandler;
@@ -87,7 +91,9 @@ public class SocialStartupEventListener {
 			CreateCoffeeCommandHandler createCoffeeCommandHandler,
 			CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
 			ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
+			ImportGooglePhotosForCoffee importGooglePhotosForCoffee,
 			CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler,
+			CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler,
 			ListCoffeesQueryHandler listCoffeesQueryHandler,
 			GoogleLoginCommandHandler googleLoginCommandHandler,
 			RefreshTokenCommandHandler refreshTokenCommandHandler,
@@ -115,7 +121,9 @@ public class SocialStartupEventListener {
 		this.createCoffeeCommandHandler = createCoffeeCommandHandler;
 		this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
 		this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
+		this.importGooglePhotosForCoffee = importGooglePhotosForCoffee;
 		this.coffeeOpeningHoursImportedEventHandler = coffeeOpeningHoursImportedEventHandler;
+		this.coffeePhotosImportedEventHandler = coffeePhotosImportedEventHandler;
 		this.listCoffeesQueryHandler = listCoffeesQueryHandler;
 		this.googleLoginCommandHandler = googleLoginCommandHandler;
 		this.refreshTokenCommandHandler = refreshTokenCommandHandler;
@@ -163,7 +171,9 @@ public class SocialStartupEventListener {
 				articleCreatedProjectionHandler,
 				coffeeCreatedProjectionHandler,
 				importGoogleOpeningHoursForCoffee,
+				importGooglePhotosForCoffee,
 				coffeeOpeningHoursImportedEventHandler,
+				coffeePhotosImportedEventHandler,
 				authUserCreatedEventHandler,
 				ticketVerificationCompletedEventHandler,
 				processTicketVerificationEventHandler);
