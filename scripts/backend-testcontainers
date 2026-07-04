@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "docker is required to run backend Testcontainers tests." >&2
+  exit 1
+fi
+
+docker info >/dev/null
+
+if [[ -z "${DOCKER_HOST:-}" ]]; then
+  DOCKER_HOST="$(docker context inspect --format '{{.Endpoints.docker.Host}}' 2>/dev/null || true)"
+  if [[ -z "${DOCKER_HOST}" ]]; then
+    DOCKER_HOST="unix:///var/run/docker.sock"
+  fi
+  export DOCKER_HOST
+fi
+
+if [[ "${DOCKER_HOST}" == unix://* ]]; then
+  export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="${TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE:-/var/run/docker.sock}"
+fi
+
+echo "Using DOCKER_HOST=${DOCKER_HOST}"
+echo "Using TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=${TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE:-<unset>}"
+
+cd "${ROOT_DIR}"
+
+if [[ "$#" -eq 0 ]]; then
+  exec ./mvnw test
+fi
+
+exec ./mvnw "$@"

@@ -15,6 +15,7 @@ public class SqsMessagingProperties {
     private int maxMessages = 5;
     private Duration waitTime = Duration.ofSeconds(5);
     private Duration visibilityTimeout = Duration.ofSeconds(30);
+    private Duration shutdownTimeout = Duration.ofSeconds(5);
 
     public boolean isEnabled() {
         return enabled;
@@ -62,5 +63,13 @@ public class SqsMessagingProperties {
 
     public void setVisibilityTimeout(Duration visibilityTimeout) {
         this.visibilityTimeout = visibilityTimeout;
+    }
+
+    public Duration getShutdownTimeout() {
+        return shutdownTimeout;
+    }
+
+    public void setShutdownTimeout(Duration shutdownTimeout) {
+        this.shutdownTimeout = shutdownTimeout;
     }
 }

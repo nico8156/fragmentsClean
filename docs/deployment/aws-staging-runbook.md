@@ -104,6 +104,10 @@ SPRING_PROFILES_ACTIVE=prod
 APP_MESSAGING_KAFKA_ENABLED=false
 APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED=false
 APP_MESSAGING_SQS_ENABLED=true
+APP_MESSAGING_SQS_MAX_MESSAGES=5
+APP_MESSAGING_SQS_WAIT_TIME=PT20S
+APP_MESSAGING_SQS_VISIBILITY_TIMEOUT=PT30S
+APP_MESSAGING_SQS_SHUTDOWN_TIMEOUT=PT5S
 ```
 
 ## GitHub Actions
@@ -131,8 +135,9 @@ The workflow:
 3. pushes immutable `sha-<commit>` and `staging-latest` tags to ECR;
 4. temporarily authorizes SSH only from the GitHub runner public IP;
 5. syncs Compose, Caddy, `schema.sql`, and `data.sql`;
-6. restarts `postgres` and `backend`;
-7. starts Caddy when `COMPOSE_PROFILES=https`;
+6. upserts `BACKEND_IMAGE`, Google Places, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
+7. restarts `postgres` and `backend`;
+8. starts Caddy when `COMPOSE_PROFILES=https`;
 8. smoke-tests `GET /actuator/health`;
 9. revokes the temporary runner SSH rule.
 
