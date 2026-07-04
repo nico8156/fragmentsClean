@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.GooglePlac
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.ImportedCoffeePhoto;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 @Component
+@ConditionalOnProperty(prefix = "coffee.photos.storage", name = "backend", havingValue = "local", matchIfMissing = true)
 public class LocalCoffeePhotoStorage implements CoffeePhotoStorage {
 	private static final String PUBLIC_PATH = "/api/coffees/photo-assets/";
 

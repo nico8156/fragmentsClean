@@ -2,12 +2,28 @@ package com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.st
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.net.URI;
+import java.time.Duration;
 import java.nio.file.Path;
 
 @ConfigurationProperties(prefix = "coffee.photos.storage")
 public class CoffeePhotoStorageProperties {
+	private String backend = "local";
 	private Path directory = Path.of("/tmp/fragments-coffee-photos");
 	private String publicBaseUrl = "";
+	private String s3Bucket = "";
+	private String s3Prefix = "fragments/staging/coffees";
+	private String s3Region = "eu-west-3";
+	private URI s3EndpointOverride;
+	private Duration s3PresignTtl = Duration.ofMinutes(15);
+
+	public String getBackend() {
+		return backend;
+	}
+
+	public void setBackend(String backend) {
+		this.backend = backend;
+	}
 
 	public Path getDirectory() {
 		return directory;
@@ -23,5 +39,45 @@ public class CoffeePhotoStorageProperties {
 
 	public void setPublicBaseUrl(String publicBaseUrl) {
 		this.publicBaseUrl = publicBaseUrl;
+	}
+
+	public String getS3Bucket() {
+		return s3Bucket;
+	}
+
+	public void setS3Bucket(String s3Bucket) {
+		this.s3Bucket = s3Bucket;
+	}
+
+	public String getS3Prefix() {
+		return s3Prefix;
+	}
+
+	public void setS3Prefix(String s3Prefix) {
+		this.s3Prefix = s3Prefix;
+	}
+
+	public String getS3Region() {
+		return s3Region;
+	}
+
+	public void setS3Region(String s3Region) {
+		this.s3Region = s3Region;
+	}
+
+	public URI getS3EndpointOverride() {
+		return s3EndpointOverride;
+	}
+
+	public void setS3EndpointOverride(URI s3EndpointOverride) {
+		this.s3EndpointOverride = s3EndpointOverride;
+	}
+
+	public Duration getS3PresignTtl() {
+		return s3PresignTtl;
+	}
+
+	public void setS3PresignTtl(Duration s3PresignTtl) {
+		this.s3PresignTtl = s3PresignTtl;
 	}
 }

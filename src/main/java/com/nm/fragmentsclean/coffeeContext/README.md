@@ -186,11 +186,22 @@ Le gateway Google récupère d'abord les `photos[].name` via Place Details, puis
 
 Adapter actuel :
 
-* `LocalCoffeePhotoStorage`
+* `LocalCoffeePhotoStorage` par défaut en local/dev
+* `S3CoffeePhotoStorage` en staging lorsque `COFFEE_PHOTOS_STORAGE_BACKEND=s3`
 * `COFFEE_PHOTOS_STORAGE_DIRECTORY`
 * `COFFEE_PHOTOS_PUBLIC_BASE_URL`
+* `COFFEE_PHOTOS_S3_BUCKET`
+* `COFFEE_PHOTOS_S3_PREFIX`
+* `COFFEE_PHOTOS_S3_REGION`
+* `COFFEE_PHOTOS_S3_PRESIGN_TTL`
 
-Cet adapter est volontairement remplaçable. La cible long terme est un adapter S3, sur le même port `CoffeePhotoStorage`, sans modifier le use case ni les projections.
+En staging, les photos Fragments réutilisent le bucket assets Anchor avec un préfixe isolé :
+
+```text
+s3://anchor-assets-prod-851725375299/fragments/staging/coffees/{coffeeId}/photos/{photoId}.jpg
+```
+
+L'admin read reçoit une URL signée courte dans `photoUri`. Le frontend ne connaît pas S3 et continue à reconstruire ses vues après `projection.updated`.
 
 ---
 
