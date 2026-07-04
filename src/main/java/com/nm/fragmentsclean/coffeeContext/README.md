@@ -167,6 +167,31 @@ Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
 
 ➡️ Le domaine dépend d’abstractions.
 
+### Photos Google
+
+Le flux photo actuel est asynchrone :
+
+```text
+CoffeeCreatedEvent
+-> ImportGooglePhotosForCoffee
+-> GooglePlacePhotosGateway
+-> CoffeePhotoStorage
+-> CoffeePhotosImportedEvent
+-> CoffeePhotosImportedEventHandler
+-> coffee_photos_projection
+-> projection.updated hints:["photos"]
+```
+
+Le gateway Google récupère d'abord les `photos[].name` via Place Details, puis appelle Place Photos avec `skipHttpRedirect=true` pour obtenir un `photoUri` temporaire. L'image est téléchargée immédiatement et stockée via `CoffeePhotoStorage`.
+
+Adapter actuel :
+
+* `LocalCoffeePhotoStorage`
+* `COFFEE_PHOTOS_STORAGE_DIRECTORY`
+* `COFFEE_PHOTOS_PUBLIC_BASE_URL`
+
+Cet adapter est volontairement remplaçable. La cible long terme est un adapter S3, sur le même port `CoffeePhotoStorage`, sans modifier le use case ni les projections.
+
 ---
 
 ## 🔌 Adapters write

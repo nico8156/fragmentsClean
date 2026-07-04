@@ -43,9 +43,18 @@ class HttpGooglePlacePhotosGatewayTest {
 						}
 						""", MediaType.APPLICATION_JSON));
 
-		server.expect(requestTo("https://places.googleapis.com/v1/places/ChIJ-place/photos/photo-1/media?maxWidthPx=900"))
+		server.expect(requestTo("https://places.googleapis.com/v1/places/ChIJ-place/photos/photo-1/media?maxWidthPx=900&skipHttpRedirect=true"))
 				.andExpect(method(HttpMethod.GET))
 				.andExpect(header("X-Goog-Api-Key", "test-api-key"))
+				.andRespond(withSuccess("""
+						{
+						  "name": "places/ChIJ-place/photos/photo-1/media",
+						  "photoUri": "https://lh3.googleusercontent.com/photo-1"
+						}
+						""", MediaType.APPLICATION_JSON));
+
+		server.expect(requestTo("https://lh3.googleusercontent.com/photo-1"))
+				.andExpect(method(HttpMethod.GET))
 				.andRespond(withSuccess("jpeg-bytes".getBytes(), MediaType.IMAGE_JPEG));
 
 		var photos = gateway.findPhotos(new GooglePlaceId("ChIJ-place"));

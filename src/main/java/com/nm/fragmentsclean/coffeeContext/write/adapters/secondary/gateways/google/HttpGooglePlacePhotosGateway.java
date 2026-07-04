@@ -74,8 +74,13 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 		var url = UriComponentsBuilder
 				.fromHttpUrl(baseUrl + "/" + mediaResourceName(photoName))
 				.queryParam("maxWidthPx", maxWidthPx)
+				.queryParam("skipHttpRedirect", true)
 				.toUriString();
-		var response = exchangeWithMetadata(url, null, byte[].class);
+		var media = exchangeWithMetadata(url, null, PhotoMedia.class).body();
+		if (media == null || media.photoUri() == null || media.photoUri().isBlank()) {
+			throw new GooglePlacePhotosGatewayException("Google Places photo media response is missing photoUri");
+		}
+		var response = downloadPhotoBytes(media.photoUri());
 		var body = response == null ? null : response.body();
 		if (body == null || body.length == 0) {
 			throw new GooglePlacePhotosGatewayException("Google Places photo media response is empty");
@@ -86,6 +91,26 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 
 	private String mediaResourceName(String photoName) {
 		return photoName.endsWith("/media") ? photoName : photoName + "/media";
+	}
+
+	private GoogleResponse<byte[]> downloadPhotoBytes(String photoUri) {
+		try {
+			var response = restTemplate.exchange(
+					photoUri,
+					HttpMethod.GET,
+					new HttpEntity<>(null, new HttpHeaders()),
+					byte[].class);
+			if (!response.getStatusCode().is2xxSuccessful()) {
+				throw new GooglePlacePhotosGatewayException("Google Places photo bytes request failed: " + response.getStatusCode());
+			}
+			return new GoogleResponse<>(response.getBody(), response.getHeaders().getContentType());
+		} catch (HttpStatusCodeException e) {
+			throw new GooglePlacePhotosGatewayException("Google Places photo bytes request failed: " + e.getStatusCode(), e);
+		} catch (GooglePlacePhotosGatewayException e) {
+			throw e;
+		} catch (RuntimeException e) {
+			throw new GooglePlacePhotosGatewayException("Google Places photo bytes response is invalid", e);
+		}
 	}
 
 	private <T> T exchange(String url, String fieldMask, Class<T> responseType) {
@@ -131,5 +156,8 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 	}
 
 	private record Photo(String name) {
+	}
+
+	private record PhotoMedia(String name, String photoUri) {
 	}
 }
