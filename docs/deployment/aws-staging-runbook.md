@@ -96,6 +96,11 @@ Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 - `GOOGLE_PLACES_PHOTO_IMPORT_LIMIT`
 - `COFFEE_PHOTOS_STORAGE_DIRECTORY`
 - `COFFEE_PHOTOS_PUBLIC_BASE_URL`
+- `COFFEE_PHOTOS_STORAGE_BACKEND`
+- `COFFEE_PHOTOS_S3_BUCKET`
+- `COFFEE_PHOTOS_S3_PREFIX`
+- `COFFEE_PHOTOS_S3_REGION`
+- `COFFEE_PHOTOS_S3_PRESIGN_TTL`
 - `OPENAI_API_KEY`
 - `OPENAI_PROJECT_ID`
 - all `SQS_*_URL` values from CloudFormation outputs
@@ -114,7 +119,20 @@ APP_MESSAGING_SQS_SHUTDOWN_TIMEOUT=PT5S
 GOOGLE_PLACES_PHOTO_IMPORT_LIMIT=3
 COFFEE_PHOTOS_STORAGE_DIRECTORY=/srv/fragments/coffee-photos
 COFFEE_PHOTOS_PUBLIC_BASE_URL=https://<APP_DOMAIN>
+COFFEE_PHOTOS_STORAGE_BACKEND=s3
+COFFEE_PHOTOS_S3_BUCKET=anchor-assets-prod-851725375299
+COFFEE_PHOTOS_S3_PREFIX=fragments/staging/coffees
+COFFEE_PHOTOS_S3_REGION=eu-west-3
+COFFEE_PHOTOS_S3_PRESIGN_TTL=PT15M
 ```
+
+The staging backend reuses the Anchor asset bucket with an isolated Fragments prefix:
+
+```text
+s3://anchor-assets-prod-851725375299/fragments/staging/coffees/...
+```
+
+The EC2 runtime IAM role is limited to object operations under `fragments/staging/*`.
 
 ## GitHub Actions
 
@@ -141,7 +159,7 @@ The workflow:
 3. pushes immutable `sha-<commit>` and `staging-latest` tags to ECR;
 4. temporarily authorizes SSH only from the GitHub runner public IP;
 5. syncs Compose, Caddy, `schema.sql`, and `data.sql`;
-6. upserts `BACKEND_IMAGE`, Google Places, coffee photo storage, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
+6. upserts `BACKEND_IMAGE`, Google Places, coffee photo storage, S3 photo storage, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
 7. restarts `postgres` and `backend`;
 8. starts Caddy when `COMPOSE_PROFILES=https`;
 8. smoke-tests `GET /actuator/health`;

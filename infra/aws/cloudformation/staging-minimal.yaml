@@ -205,6 +205,13 @@ Resources:
                   - !GetAtt DomainEventsQueue.Arn
                   - !GetAtt TicketEventsQueue.Arn
                   - !GetAtt TicketVerificationRequestedQueue.Arn
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/*
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
