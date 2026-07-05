@@ -42,7 +42,7 @@ jobs:
       - name: Test backend deployment guard
         run: |
           ./mvnw -q \
-            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest \
+            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,SocialStartupEventListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
             test
 
       - name: Package backend
