@@ -143,7 +143,18 @@ Elle valide les prérequis et déclenche le traitement asynchrone.
 
 * `ProcessTicketVerificationEventHandler`
 
-➡️ Réagit à l’acceptation (ou au message Kafka) et exécute la vérification via un provider.
+➡️ Réagit à l’acceptation (SQS `ticket-verification-requested`, ou Kafka legacy si activé)
+et exécute la vérification via un provider.
+
+Règles de traitement :
+
+* le provider `ticketverify` reçoit uniquement du texte OCR ;
+* `imageRef` reste une référence de capture/image, utilisée par un flux OCR séparé ;
+* un résultat `ok` confirme le ticket ;
+* un résultat `partial` ne confirme jamais le ticket et devient un rejet métier explicite ;
+* un rejet métier produit un `TicketVerificationCompletedEvent` ;
+* une panne technique retryable ne produit pas d'event métier : elle remonte en exception pour laisser SQS redélivrer ;
+* les erreurs techniques ne doivent pas être transformées en succès de consommation.
 
 ---
 
@@ -176,6 +187,19 @@ Le provider est interchangeable :
 * `FakeTicketVerificationProvider` (tests)
 
 ➡️ Le domaine ne dépend d’aucun provider concret.
+
+Le provider C++ est un moteur texte :
+
+```text
+ocrText UTF-8
+-> ticketverify stdin
+-> JSON stdout
+-> TicketVerificationProvider.Result
+```
+
+Il ne lit pas l'image depuis `imageRef`. La vision native Apple ou tout autre OCR
+produit le texte en amont. Aucun dump OCR local ni log de payload OCR complet ne
+doit être produit par l'adapter.
 
 ---
 
@@ -222,6 +246,25 @@ Endpoint de lecture :
 
 1. on matérialise « la demande est acceptée »
 2. on matérialise « la vérification est terminée »
+
+Chaque handler publie ensuite un `ProjectionSyncEvent` uniquement après la mise
+à jour de `ticket_status_projection` :
+
+```text
+ticket_status_projection updated
+-> ProjectionSyncEvent(
+     eventName="projection.updated",
+     projection="tickets",
+     scope="entity",
+     entityId=ticketId,
+     hints=["status", "..."]
+   )
+-> SSE
+-> client GET /api/tickets/{ticketId}/status
+```
+
+Le frontend ne reçoit jamais `TicketVerifyAcceptedEvent` ni
+`TicketVerificationCompletedEvent`.
 
 ---
 

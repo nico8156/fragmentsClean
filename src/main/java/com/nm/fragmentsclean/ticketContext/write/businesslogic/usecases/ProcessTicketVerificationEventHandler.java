@@ -111,24 +111,10 @@ public class ProcessTicketVerificationEventHandler implements EventHandler<Ticke
 			}
 
 			case TicketVerificationProvider.FailedRetryable fail -> {
-				// Ici: tu peux laisser le ticket en ANALYZING, ou poser un statut "FAILED" plus
-				// tard
-				// Pour rester simple: on n'altère pas le ticket, on push juste un completed
-				// “FAILED_RETRYABLE”
-				yield new TicketVerificationCompletedEvent(
-						UUID.randomUUID(),
-						evt.commandId(),
-						evt.ticketId(),
-						evt.userId(),
-						TicketVerificationCompletedEvent.Outcome.FAILED_RETRYABLE,
-						ticket.toSnapshot().version(),
-						now,
-						evt.clientAt(),
-						null,
-						new TicketVerificationCompletedEvent.Rejected("FAILED_RETRYABLE",
-								fail.message()),
-						"ticketEngine",
-						fail.providerTraceId());
+				throw new TicketVerificationRetryableException(
+						"ticket verification retryable failure for ticketId=" + evt.ticketId()
+								+ " traceId=" + fail.providerTraceId(),
+						fail);
 			}
 
 			case TicketVerificationProvider.FailedFinal fail -> {
@@ -159,5 +145,11 @@ public class ProcessTicketVerificationEventHandler implements EventHandler<Ticke
 		return items.stream()
 				.map(i -> new Ticket.TicketLineItem(i.label(), i.quantity(), i.amountCents()))
 				.toList();
+	}
+
+	public static class TicketVerificationRetryableException extends RuntimeException {
+		public TicketVerificationRetryableException(String message, TicketVerificationProvider.FailedRetryable failure) {
+			super(message);
+		}
 	}
 }

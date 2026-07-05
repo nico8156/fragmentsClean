@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.ticketContext.write.adapters.primary.springboot.co
 import java.time.Instant;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +21,7 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTi
 @RestController
 @RequestMapping("/api/tickets")
 public class WriteTicketController {
+	private static final Logger log = LoggerFactory.getLogger(WriteTicketController.class);
 
 	private final CommandBus commandBus;
 
@@ -58,7 +61,8 @@ public class WriteTicketController {
 			commandBus.dispatch(command);
 			return ResponseEntity.accepted().build();
 		} catch (Exception e) {
-			e.printStackTrace(); // TEMP DEBUG
+			log.warn("Ticket verify command rejected commandId={} ticketId={} error={}",
+					body.commandId(), body.ticketId(), e.getClass().getSimpleName());
 			return ResponseEntity.badRequest().build();
 		}
 	}

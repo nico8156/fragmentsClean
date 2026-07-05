@@ -6,10 +6,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,7 +34,7 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 
 	@Override
 	public Result verify(String ocrText, String imageRef) {
-		// MVP: on se base sur ocrText; imageRef ignoré côté CLI (pour l’instant)
+		// ticketverify is a text-only engine. imageRef belongs to the capture/OCR flow.
 		String input = (ocrText == null) ? "" : ocrText;
 		if (!input.endsWith("\n"))
 			input += "\n"; // utile
@@ -50,12 +46,9 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 
 		Process process = null;
 		List<String> cmd = new ArrayList<>(command);
-		log.info("[ticketverify] cmd={}", cmd);
-		log.info("[ticketverify] binary={}", cmd.get(0));
+		log.debug("[ticketverify] binary={}", cmd.get(0));
 
 		cmd.addAll(List.of("--schema", "v1", "--format", "json"));
-		// check what text is sent !
-		debugDumpInput(input, traceId);
 
 		try {
 			ProcessBuilder pb = new ProcessBuilder(
@@ -111,18 +104,19 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 			}
 
 			if (exit == 2) {
-				// validation/input/args : côté métier -> Rejected explicable
+				// Input validation errors are explicit business rejections for this command.
 				return mapErrorAsRejected(root, traceId);
 			}
 			if (exit != 0) {
-				log.info("[ticketverify] exit={} stdout={} stderr={}", exit, stdout, stderr);
+				log.warn("[ticketverify] failed exit={} stdoutLength={} stderrLength={} traceId={}",
+						exit, stdout.length(), stderr.length(), traceId);
 				return new FailedRetryable(
 						"ticketverify failed (exit=" + exit + ") stderr="
-								+ stderr,
+								+ truncate(stderr),
 						traceId);
 			}
 
-			// exit 3 ou autre : interne => retryable par défaut
+			// Defensive fallback. Non-zero technical exits normally return above.
 			String errMsg = null;
 			JsonNode errNode = root.path("error");
 			if (!errNode.isMissingNode()) {
@@ -182,10 +176,9 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 		JsonNode result = root.path("result");
 		String status = result.path("status").asText(null);
 
-		// Si pas de status, on considère interne
-		if (status == null) {
-			return new FailedRetryable("ticketverify missing result.status", traceId);
-		}
+			if (status == null) {
+				return new FailedRetryable("ticketverify missing result.status", traceId);
+			}
 
 		if ("reject".equalsIgnoreCase(status)) {
 			String reasonCode = "REJECT";
@@ -195,7 +188,15 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 			return new Rejected(reasonCode, message, traceId);
 		}
 
-		// ok ou partial => Approved minimal
+		if ("partial".equalsIgnoreCase(status)) {
+			return new Rejected("PARTIAL_VERIFICATION", "ticketverify returned a partial result", traceId);
+		}
+
+		if (!"ok".equalsIgnoreCase(status)) {
+			return new FailedRetryable("ticketverify returned unsupported status: " + status, traceId);
+		}
+
+		// ok => Approved minimal
 		JsonNode fields = result.path("fields");
 
 		// TOTAL
@@ -222,9 +223,10 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 		Instant ticketDate = null;
 		// Si un jour tu sors un ISO 8601 strict côté engine, tu pourras activer ça :
 		// String datetimeIso = fields.path("datetime").path("value").asText(null);
-		// if (datetimeIso != null && !datetimeIso.isBlank()) ticketDate =
-		// Instant.parse(datetimeIso);
-		log.info("[ticketverify] parsed total={} {} merchant={}", value, currency, merchantName);
+			// if (datetimeIso != null && !datetimeIso.isBlank()) ticketDate =
+			// Instant.parse(datetimeIso);
+			log.debug("[ticketverify] parsed result traceId={} hasTotal={} hasMerchant={}",
+					traceId, value != null, merchantName != null);
 
 		return new Approved(
 				amountCents,
@@ -260,6 +262,13 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 		return (s == null || s.isBlank()) ? null : s;
 	}
 
+	private String truncate(String value) {
+		if (value == null || value.length() <= 200) {
+			return value;
+		}
+		return value.substring(0, 200) + "...";
+	}
+
 	private static class StreamCollector implements Runnable {
 		private final InputStream is;
 		private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -285,37 +294,4 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 		}
 	}
 
-	private void debugDumpInput(String input, String traceId) {
-		try {
-			byte[] bytes = input.getBytes(StandardCharsets.UTF_8);
-
-			// 1) écrit le fichier brut
-			Path p = Paths.get("/tmp/ticketverify-" + traceId + ".txt");
-			Files.write(p, bytes);
-
-			// 2) hash pour comparer
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
-			byte[] h = md.digest(bytes);
-			StringBuilder sb = new StringBuilder();
-			for (byte b : h)
-				sb.append(String.format("%02x", b));
-
-			// 3) détecte caractères de contrôle suspects
-			int ctrl = 0;
-			for (int i = 0; i < input.length(); i++) {
-				char c = input.charAt(i);
-				if (c < 0x20 && c != '\n' && c != '\r' && c != '\t')
-					ctrl++;
-				if (Character.isSurrogate(c))
-					ctrl++; // surrogates = suspect
-				if (c == 0)
-					ctrl++; // NUL
-			}
-
-			log.info("[ticketverify][dump] traceId={} bytes={} sha256={} suspiciousCount={} path={}",
-					traceId, bytes.length, sb.toString(), ctrl, p);
-		} catch (Exception e) {
-			log.warn("[ticketverify][dump] failed {}", e.toString());
-		}
-	}
 }
