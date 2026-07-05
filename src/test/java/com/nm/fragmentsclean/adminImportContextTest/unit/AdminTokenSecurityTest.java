@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminCoffeesReadController;
@@ -154,6 +155,18 @@ class AdminTokenSecurityTest {
 				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 		org.assertj.core.api.Assertions.assertThat(handlers.addPhoto.commands.getFirst().bytes())
 				.isEqualTo("jpeg-bytes".getBytes());
+	}
+
+	@Test
+	void admin_add_coffee_photo_payload_too_large_returns_413() throws Exception {
+		var handlers = new RecordingCoffeeCommandHandlers();
+		handlers.addPhoto.exception = new MaxUploadSizeExceededException(1024);
+
+		mockMvc("admin-secret", new CountingListCoffeesQueryHandler(), handlers)
+				.perform(multipart("/api/admin/coffees/11111111-1111-1111-1111-111111111111/photos")
+						.file("photo", "jpeg-bytes".getBytes())
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isPayloadTooLarge());
 	}
 
 	@Test
@@ -391,9 +404,13 @@ class AdminTokenSecurityTest {
 
 	private static class RecordingAddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePhotoCommand> {
 		private final List<AddCoffeePhotoCommand> commands = new java.util.ArrayList<>();
+		private RuntimeException exception;
 
 		@Override
 		public void execute(AddCoffeePhotoCommand command) {
+			if (exception != null) {
+				throw exception;
+			}
 			commands.add(command);
 		}
 	}

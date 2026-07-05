@@ -234,6 +234,8 @@ jobs:
           upsert_env_var "COFFEE_PHOTOS_S3_PREFIX" "fragments/staging/coffees"
           upsert_env_var "COFFEE_PHOTOS_S3_REGION" "${AWS_REGION}"
           upsert_env_var "COFFEE_PHOTOS_S3_PRESIGN_TTL" "PT15M"
+          upsert_env_var "FRAGMENTS_MULTIPART_MAX_FILE_SIZE" "10MB"
+          upsert_env_var "FRAGMENTS_MULTIPART_MAX_REQUEST_SIZE" "10MB"
           upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
           upsert_env_var "APP_MESSAGING_KAFKA_ENABLED" "false"
           upsert_env_var "APP_MESSAGING_SQS_MAX_MESSAGES" "5"
