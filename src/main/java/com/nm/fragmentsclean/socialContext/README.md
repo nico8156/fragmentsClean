@@ -188,6 +188,9 @@ L’UI a besoin de réponses comme :
 * `LikeStatusView`
 * `CommentsListView`, `CommentItemView`, `CommentView`
 
+Les likes sont lus depuis `social_likes_projection`.
+Le read side ne lit pas le repository JPA write `likes`.
+
 ---
 
 ### Queries
@@ -200,11 +203,26 @@ L’UI a besoin de réponses comme :
 
 ### Projection par événements
 
+* `LikeSetEventHandler`
 * `CommentCreatedEventHandler`
 * `CommentUpdatedEventHandler`
 * `CommentDeletedEventHandler`
 
 ➡️ Le read model est reconstruit en réaction aux events, pas en lisant le write model.
+
+Pour les likes :
+
+```text
+LikeSetEvent
+-> social_likes_projection
+-> ProjectionSyncEvent(projection="likes", scope="target", entityId=targetId)
+-> SSE
+-> client GET /api/social/targets/{targetId}/likes
+-> snapshot reducer
+```
+
+Le frontend ne reçoit pas `LikeSetEvent`. Il reçoit seulement la fraîcheur de la
+projection puis relit le snapshot.
 
 ---
 
@@ -265,4 +283,3 @@ Il démontre un pattern réutilisable pour d’autres interactions utilisateur.
 ---
 
 > "Likes et commentaires ne sont pas des features simples : ce sont des features qui testent la robustesse d’un système."
-
