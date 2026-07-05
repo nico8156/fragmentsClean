@@ -222,6 +222,12 @@ Rules:
 - no business invariant may depend on socket delivery
 - production deployment must tolerate socket reconnects and missed ACKs
 
+New mobile freshness work must prefer Projection Sync SSE over WebSocket/STOMP.
+SSE payloads must be projection-oriented (`projection.updated`) and must never
+expose domain events to clients. Redux listeners may react to SSE only by
+dispatching read-model retrieval actions; they must not mutate read stores
+directly from SSE payloads.
+
 ## Command Status Policy
 
 `/commands/{commandId}` is the canonical command status endpoint.
@@ -294,4 +300,3 @@ If a requested feature cannot be implemented without violating this doctrine:
 - propose a compliant alternative
 
 Architecture correctness is part of delivery, not a cleanup task.
-
