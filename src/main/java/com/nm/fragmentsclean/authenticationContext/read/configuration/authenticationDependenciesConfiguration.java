@@ -25,7 +25,6 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 
 @Configuration
 @EntityScan(basePackages = "com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.repositories.jpa.entities")
