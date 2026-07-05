@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcTicketStatusProjectionRepository;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.JpaTicketRepository;
@@ -48,8 +49,9 @@ public class TicketWriteDependenciesConfiguration {
 
 	@Bean
 	TicketVerificationCompletedEventHandler ticketVerificationCompletedEventHandler(
-			JdbcTicketStatusProjectionRepository jdbcTicketStatusProjectionRepository) {
-		return new TicketVerificationCompletedEventHandler(jdbcTicketStatusProjectionRepository);
+			JdbcTicketStatusProjectionRepository jdbcTicketStatusProjectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new TicketVerificationCompletedEventHandler(jdbcTicketStatusProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean

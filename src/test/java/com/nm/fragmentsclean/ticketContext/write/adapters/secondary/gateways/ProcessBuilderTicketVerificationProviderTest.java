@@ -43,13 +43,13 @@ class ProcessBuilderTicketVerificationProviderTest {
 	}
 
 	@Test
-	void empty_input_exit2_json_error_becomes_rejected() throws Exception {
+	void blank_ocr_text_is_rejected_without_calling_ticketverify() throws Exception {
 		Path fake = createFakeCli("""
 				#!/usr/bin/env bash
 				set -euo pipefail
 				cat >/dev/null
-				echo '{"ok":false,"error":{"code":"INPUT_EMPTY","message":"stdin is empty"}}'
-				exit 2
+				echo '{"schema":"ticketverify.v1","result":{"status":"ok","fields":{"total":{"value":4.0,"currency":"EUR"}}}}'
+				exit 0
 				""");
 
 		var provider = new ProcessBuilderTicketVerificationProvider(
@@ -62,8 +62,31 @@ class ProcessBuilderTicketVerificationProviderTest {
 
 		assertThat(res).isInstanceOf(TicketVerificationProvider.Rejected.class);
 		var r = (TicketVerificationProvider.Rejected) res;
-		assertThat(r.reasonCode()).isEqualTo("INPUT_EMPTY");
-		assertThat(r.message()).contains("empty");
+		assertThat(r.reasonCode()).isEqualTo("OCR_TEXT_MISSING");
+		assertThat(r.message()).contains("ocrText");
+	}
+
+	@Test
+	void ticketverify_partial_result_is_rejected() throws Exception {
+		Path fake = createFakeCli(
+				"""
+						#!/usr/bin/env bash
+						set -euo pipefail
+						cat >/dev/null
+						echo '{"schema":"ticketverify.v1","result":{"status":"partial","fields":{"total":{"value":4.0,"currency":"EUR"}}}}'
+						exit 0
+						""");
+
+		var provider = new ProcessBuilderTicketVerificationProvider(
+				new ObjectMapper(),
+				List.of("/usr/bin/env", "bash", fake.toAbsolutePath().toString()),
+				Duration.ofMillis(500));
+
+		TicketVerificationProvider.Result res = provider.verify("TOTAL 4,00", null);
+
+		assertThat(res).isInstanceOf(TicketVerificationProvider.Rejected.class);
+		var rejected = (TicketVerificationProvider.Rejected) res;
+		assertThat(rejected.reasonCode()).isEqualTo("PARTIAL_VERIFICATION");
 	}
 
 	@Test
