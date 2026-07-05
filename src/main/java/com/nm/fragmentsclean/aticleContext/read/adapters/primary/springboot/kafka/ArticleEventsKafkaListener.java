@@ -35,7 +35,8 @@ public class ArticleEventsKafkaListener {
 
 			// Guard simple: on ne traite que les events article
 			if (!root.has("articleId")) {
-				log.debug("[article-read] ignore non-article event on articles-events: {}", payload);
+				log.debug("[article-read] ignore non-article event on articles-events key={} payloadLength={}",
+						record.key(), payloadLength(payload));
 				return;
 			}
 
@@ -44,7 +45,12 @@ public class ArticleEventsKafkaListener {
 			createdHandler.handle(evt);
 
 		} catch (Exception e) {
-			log.error("[article-read] failed to handle articles-events payload={}", payload, e);
+			log.error("[article-read] failed to handle articles-events key={} payloadLength={}",
+					record.key(), payloadLength(payload), e);
 		}
+	}
+
+	private int payloadLength(String payload) {
+		return payload == null ? 0 : payload.length();
 	}
 }

@@ -12,11 +12,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 
 @Component
 public class JwtStompChannelInterceptor implements ChannelInterceptor {
+    private static final Logger log = LoggerFactory.getLogger(JwtStompChannelInterceptor.class);
 
     private final JwtDecoder jwtDecoder;
 
@@ -40,7 +43,7 @@ public class JwtStompChannelInterceptor implements ChannelInterceptor {
 
             Jwt jwt = jwtDecoder.decode(token);
             String userId = jwt.getSubject(); // ✅ UUID string
-            System.out.println("[WS] CONNECT user=" + userId);
+            log.debug("[WS] CONNECT user={}", userId);
 
             Authentication auth = new UsernamePasswordAuthenticationToken(
                     userId,

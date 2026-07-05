@@ -46,7 +46,8 @@ public class SocialEventsKafkaListener {
             // ✅ GUARD: ignore tout ce qui n'est pas un event Comment
             // (ex: LikeSetEvent contient likeId, etc.)
             if (!root.has("commentId")) {
-                log.debug("[social-read] ignore non-comment event on domain-events: {}", payload);
+                log.debug("[social-read] ignore non-comment event on domain-events key={} payloadLength={}",
+                        record.key(), payloadLength(payload));
                 return;
             }
 
@@ -69,8 +70,12 @@ public class SocialEventsKafkaListener {
             updatedHandler.handle(evt);
 
         } catch (Exception e) {
-            log.error("[social-read] failed to handle domain-events payload={}", payload, e);
+            log.error("[social-read] failed to handle domain-events key={} payloadLength={}",
+                    record.key(), payloadLength(payload), e);
         }
     }
 
+    private int payloadLength(String payload) {
+        return payload == null ? 0 : payload.length();
+    }
 }

@@ -13,10 +13,16 @@ public class LoggingOutboxEventSender implements OutboxEventSender {
 
     @Override
     public void send(OutboxEventJpaEntity event) throws Exception {
-        log.info("Sending outbox event id={} type={} streamKey={} payload={}",
+        log.info("Sending outbox event id={} type={} streamKey={} aggregateType={} aggregateId={} payloadLength={}",
                 event.getId(),
                 event.getEventType(),
                 event.getStreamKey(),
-                event.getPayloadJson());
+                event.getAggregateType(),
+                event.getAggregateId(),
+                payloadLength(event));
+    }
+
+    private int payloadLength(OutboxEventJpaEntity event) {
+        return event.getPayloadJson() == null ? 0 : event.getPayloadJson().length();
     }
 }

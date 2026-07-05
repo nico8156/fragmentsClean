@@ -35,7 +35,8 @@ public class CoffeeEventsKafkaListener {
 
 			// Guard ultra simple: ignorer ce qui n'est pas un event coffee
 			if (!root.has("coffeeId")) {
-				log.debug("[coffee-read] ignore non-coffee event on coffees-events: {}", payload);
+				log.debug("[coffee-read] ignore non-coffee event on coffees-events key={} payloadLength={}",
+						record.key(), payloadLength(payload));
 				return;
 			}
 
@@ -44,7 +45,12 @@ public class CoffeeEventsKafkaListener {
 			createdHandler.handle(evt);
 
 		} catch (Exception e) {
-			log.error("[coffee-read] failed to handle coffees-events payload={}", payload, e);
+			log.error("[coffee-read] failed to handle coffees-events key={} payloadLength={}",
+					record.key(), payloadLength(payload), e);
 		}
+	}
+
+	private int payloadLength(String payload) {
+		return payload == null ? 0 : payload.length();
 	}
 }

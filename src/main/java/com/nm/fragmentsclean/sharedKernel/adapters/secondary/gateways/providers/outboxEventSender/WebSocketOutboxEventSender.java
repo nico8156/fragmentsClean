@@ -9,11 +9,14 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpd
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WebSocketOutboxEventSender implements OutboxEventSender {
+    private static final Logger log = LoggerFactory.getLogger(WebSocketOutboxEventSender.class);
 
     private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
@@ -36,12 +39,14 @@ public class WebSocketOutboxEventSender implements OutboxEventSender {
         if (isUserQueue) {
             // ✅ client subscribe "/user/queue/acks"
             messagingTemplate.convertAndSendToUser(userId, "/queue/acks", json);
-            System.out.println("[WS] SEND to user " + userId + " payload=" + json);
+            log.debug("[WS] sent outbox event id={} type={} to user={}",
+                    outboxEvent.getId(), outboxEvent.getEventType(), userId);
         } else {
             // fallback : broadcast
             String destination = "/topic/" + streamKey;
             messagingTemplate.convertAndSend(destination, json);
-            System.out.println("[WS] SEND to topic " + destination + " payload=" + json);
+            log.debug("[WS] sent outbox event id={} type={} to destination={}",
+                    outboxEvent.getId(), outboxEvent.getEventType(), destination);
         }
     }
 
