@@ -39,7 +39,6 @@ public class WriteCommentController {
                 body.body(),
                 Instant.parse(body.at())
         );
-        System.out.println("[FROM COMMENT CONTROLLER COMMAND : ]"+command);
 
         try {
             commandBus.dispatch(command);
@@ -92,4 +91,3 @@ public class WriteCommentController {
         }
     }
 }
-

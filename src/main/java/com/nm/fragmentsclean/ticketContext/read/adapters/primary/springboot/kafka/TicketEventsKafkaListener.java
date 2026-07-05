@@ -42,7 +42,8 @@ public class TicketEventsKafkaListener {
 
             // Guard: ticket events only
             if (!root.has("ticketId") || !root.has("userId")) {
-                log.debug("[ticket-read] ignore non-ticket event: {}", payload);
+                log.debug("[ticket-read] ignore non-ticket event key={} payloadLength={}",
+                        record.key(), payloadLength(payload));
                 return;
             }
 
@@ -62,10 +63,16 @@ public class TicketEventsKafkaListener {
                 return;
             }
 
-            log.debug("[ticket-read] ignore unknown ticket payload: {}", payload);
+            log.debug("[ticket-read] ignore unknown ticket payload key={} payloadLength={}",
+                    record.key(), payloadLength(payload));
 
         } catch (Exception e) {
-            log.error("[ticket-read] failed to handle ticket-events payload={}", payload, e);
+            log.error("[ticket-read] failed to handle ticket-events key={} payloadLength={}",
+                    record.key(), payloadLength(payload), e);
         }
+    }
+
+    private int payloadLength(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 }

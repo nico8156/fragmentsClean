@@ -129,15 +129,14 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 				errMsg = errNode.path("message").asText(null);
 			}
 			if (errMsg == null) {
-				// parfois c’est sous result/warnings etc., mais au moins on log stdout brut
-				errMsg = "stdout=" + stdout;
+				errMsg = "ticketverify returned no structured error (stdoutLength=" + stdout.length() + ")";
 			}
 
 			return new FailedRetryable("ticketverify failed (exit=" + exit + ") " + errMsg, traceId);
 		} catch (Exception e) {
 			return new FailedRetryable("ticketverify exception: " + e.getMessage(), traceId);
 		} finally {
-			System.out.println("[ticket_engine]:ended process... ");
+			log.debug("[ticketverify] process ended traceId={}", traceId);
 		}
 	}
 

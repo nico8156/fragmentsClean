@@ -29,7 +29,8 @@ public class AppUsersEventsKafkaListener {
     @KafkaListener(topics = {"app-users-events"}, groupId = "social-context-read")
     public void onMessage(ConsumerRecord<String, String> record) {
         String payload = record.value();
-        log.info("[social-read] received on app-users-events: key={} value={}", record.key(), payload);
+        log.info("[social-read] received on app-users-events key={} payloadLength={}",
+                record.key(), payloadLength(payload));
 
         try {
             AppUserCreatedEvent evt = objectMapper.readValue(payload, AppUserCreatedEvent.class);
@@ -37,7 +38,8 @@ public class AppUsersEventsKafkaListener {
             log.info("[social-read] upsert user_social_projection userId={} v={}", evt.userId(), evt.version());
             return;
         } catch (Exception e) {
-            log.warn("[social-read] not AppUserCreatedEvent (or failed). payload={}", payload, e);
+            log.warn("[social-read] not AppUserCreatedEvent (or failed) key={} payloadLength={}",
+                    record.key(), payloadLength(payload), e);
         }
 
         try {
@@ -45,7 +47,12 @@ public class AppUsersEventsKafkaListener {
             projector.upsert(evt.userId(), evt.displayName(), evt.avatarUrl(), evt.version(), evt.occurredAt());
             log.info("[social-read] upsert user_social_projection userId={} v={}", evt.userId(), evt.version());
         } catch (Exception e) {
-            log.error("[social-read] failed to handle app-users-events payload={}", payload, e);
+            log.error("[social-read] failed to handle app-users-events key={} payloadLength={}",
+                    record.key(), payloadLength(payload), e);
         }
+    }
+
+    private int payloadLength(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 }

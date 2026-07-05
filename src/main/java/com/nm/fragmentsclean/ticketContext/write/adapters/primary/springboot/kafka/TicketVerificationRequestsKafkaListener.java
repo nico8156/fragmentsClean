@@ -35,7 +35,8 @@ public class TicketVerificationRequestsKafkaListener {
 
 			// Guard minimal: c'est un event ticket verify request ?
 			if (!root.has("ticketId") || !root.has("userId")) {
-				log.debug("[ticket-write] ignore non-ticket event: {}", payload);
+				log.debug("[ticket-write] ignore non-ticket event key={} payloadLength={}",
+						record.key(), payloadLength(payload));
 				return;
 			}
 
@@ -48,9 +49,13 @@ public class TicketVerificationRequestsKafkaListener {
 			handler.handle(evt);
 
 		} catch (Exception e) {
-			log.error("[ticket-write] failed to handle ticket-verification-requested payload={}", payload,
-					e);
+			log.error("[ticket-write] failed to handle ticket-verification-requested key={} payloadLength={}",
+					record.key(), payloadLength(payload), e);
 			throw new RuntimeException(e);
 		}
+	}
+
+	private int payloadLength(String payload) {
+		return payload == null ? 0 : payload.length();
 	}
 }

@@ -28,12 +28,16 @@ public class DebugAuthUsersEventsKafkaListener {
     )
     public void onMessage(ConsumerRecord<String, String> record) {
         log.info(
-                "[DEBUG-KAFKA] topic={} partition={} offset={} key={} value={}",
+                "[DEBUG-KAFKA] topic={} partition={} offset={} key={} payloadLength={}",
                 record.topic(),
                 record.partition(),
                 record.offset(),
                 record.key(),
-                record.value()
+                payloadLength(record.value())
         );
+    }
+
+    private int payloadLength(String payload) {
+        return payload == null ? 0 : payload.length();
     }
 }

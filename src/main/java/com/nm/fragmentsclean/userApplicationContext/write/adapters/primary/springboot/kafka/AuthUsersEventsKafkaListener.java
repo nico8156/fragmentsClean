@@ -34,8 +34,8 @@ public class AuthUsersEventsKafkaListener {
 	public void onMessage(ConsumerRecord<String, String> record) {
 		String payload = record.value();
 
-		log.info("Kafka listener received raw record on auth-users-events: key={}, value={}",
-				record.key(), payload);
+		log.info("Kafka listener received record on auth-users-events key={} payloadLength={}",
+				record.key(), payloadLength(payload));
 
 		String typeHeader = readHeaderAsString(record, "type");
 
@@ -60,7 +60,8 @@ public class AuthUsersEventsKafkaListener {
 					return;
 				}
 			} catch (Exception e) {
-				log.error("Failed to inspect payload JSON, skipping. payload={}", payload, e);
+				log.error("Failed to inspect payload JSON, skipping key={} payloadLength={}",
+						record.key(), payloadLength(payload), e);
 				return;
 			}
 		}
@@ -75,8 +76,13 @@ public class AuthUsersEventsKafkaListener {
 			handler.handle(event);
 
 		} catch (JsonProcessingException e) {
-			log.error("Failed to deserialize AuthUserCreatedEvent from payload={}", payload, e);
+			log.error("Failed to deserialize AuthUserCreatedEvent key={} payloadLength={}",
+					record.key(), payloadLength(payload), e);
 		}
+	}
+
+	private int payloadLength(String payload) {
+		return payload == null ? 0 : payload.length();
 	}
 
 	private static String readHeaderAsString(ConsumerRecord<String, String> record, String key) {
