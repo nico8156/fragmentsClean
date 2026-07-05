@@ -1,10 +1,10 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.eventing;
+package com.nm.fragmentsclean.platform.eventing;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.util.List;
 
-import static com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinations.*;
+import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.*;
 
 public class IntegrationEventDestinationResolver {
 

@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.platform.eventing.DefaultOutboxEventMetadataResolver;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.JpaTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.SpringTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
@@ -38,7 +39,11 @@ public class TicketOutboxJpaIntegrationTestConfiguration {
     public DomainEventPublisher testOutboxDomainEventPublisher(SpringOutboxEventRepository outboxRepository,
                                                      ObjectMapper objectMapper,
                                                      DateTimeProvider dateTimeProvider) {
-        return new OutboxDomainEventPublisher(outboxRepository, objectMapper, dateTimeProvider);
+        return new OutboxDomainEventPublisher(
+                outboxRepository,
+                objectMapper,
+                dateTimeProvider,
+                new DefaultOutboxEventMetadataResolver());
     }
 
     @Bean

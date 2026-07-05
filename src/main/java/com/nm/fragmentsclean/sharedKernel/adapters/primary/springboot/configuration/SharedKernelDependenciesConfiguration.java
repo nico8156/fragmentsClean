@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadataResolver;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -35,8 +36,9 @@ public class SharedKernelDependenciesConfiguration {
     @Bean
     public DomainEventPublisher domainEventPublisher(SpringOutboxEventRepository outboxRepo,
                                                      ObjectMapper objectMapper,
-                                                     DateTimeProvider dateTimeProvider) {
-        return new OutboxDomainEventPublisher(outboxRepo, objectMapper, dateTimeProvider);
+                                                     DateTimeProvider dateTimeProvider,
+                                                     OutboxEventMetadataResolver metadataResolver) {
+        return new OutboxDomainEventPublisher(outboxRepo, objectMapper, dateTimeProvider, metadataResolver);
     }
 
     @Bean

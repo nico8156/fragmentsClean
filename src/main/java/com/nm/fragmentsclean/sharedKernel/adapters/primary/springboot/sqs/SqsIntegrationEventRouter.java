@@ -41,7 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import static com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinations.*;
+import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.*;
 
 @Component
 public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {

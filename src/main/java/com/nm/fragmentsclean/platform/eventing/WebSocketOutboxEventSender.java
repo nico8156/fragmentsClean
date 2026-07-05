@@ -1,8 +1,8 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender;
+package com.nm.fragmentsclean.platform.eventing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.ClientAckOutboxEventSender;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
@@ -15,7 +15,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-public class WebSocketOutboxEventSender implements OutboxEventSender {
+public class WebSocketOutboxEventSender implements ClientAckOutboxEventSender {
     private static final Logger log = LoggerFactory.getLogger(WebSocketOutboxEventSender.class);
 
     private final SimpMessagingTemplate messagingTemplate;

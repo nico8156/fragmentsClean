@@ -1,9 +1,9 @@
 package com.nm.fragmentsclean.sharedKernel.eventing;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinationResolver;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelopeFactory;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinations;
+import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinationResolver;
+import com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory;
+import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.junit.jupiter.api.Test;
 
