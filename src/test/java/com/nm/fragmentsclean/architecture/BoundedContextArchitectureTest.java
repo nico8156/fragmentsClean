@@ -85,8 +85,7 @@ class BoundedContextArchitectureTest {
     }
 
     private static boolean isTransportConsumer(String sourcePath) {
-        return sourcePath.contains("/adapters/primary/springboot/sqs/")
-                || sourcePath.contains("/adapters/primary/springboot/kafka/");
+        return sourcePath.contains("/adapters/primary/springboot/sqs/");
     }
 
     private static List<Path> javaFiles(Path root) throws IOException {

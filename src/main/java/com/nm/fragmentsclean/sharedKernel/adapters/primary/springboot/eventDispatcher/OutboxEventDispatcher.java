@@ -21,7 +21,7 @@ public class OutboxEventDispatcher {
     private static final int MAX_RETRY = 10;
 
     private final SpringOutboxEventRepository outboxRepository;
-    private final OutboxEventSender outboxEventSender; // CompositeOutboxEventSender en pratique
+    private final OutboxEventSender outboxEventSender;
     private final CommandStatusRepository commandStatusRepository;
 
     public OutboxEventDispatcher(
@@ -51,7 +51,6 @@ public class OutboxEventDispatcher {
 
         for (OutboxEventJpaEntity event : pending) {
             try {
-                // Délégation à l'adapter (CompositeOutboxEventSender)
                 outboxEventSender.send(event);
 
                 event.setStatus(OutboxStatus.SENT);

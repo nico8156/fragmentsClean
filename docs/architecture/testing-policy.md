@@ -12,7 +12,7 @@ Use Testcontainers when:
 - SQL mapping matters
 - transaction/outbox behavior matters
 - repository behavior matters
-- integration flow requires Postgres/Kafka legacy/dev infra
+- integration flow requires Postgres/SQS or object storage infrastructure
 
 Use MockMvc when:
 - HTTP status/body/auth contract matters
@@ -38,4 +38,3 @@ Mock native modules only when they are technical boundaries.
 - `REJECTED` -> rollback
 - network error -> no rollback, retry
 - no socket ACK -> polling reconciles
-

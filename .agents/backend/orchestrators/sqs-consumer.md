@@ -17,7 +17,7 @@ Use this when adding or migrating an asynchronous event consumer to SQS.
 3. Add destination routing in the outbox sender configuration.
 4. Implement a thin SQS wrapper that delegates to a BC-local handler.
 5. Add inbox duplicate suppression.
-6. Disable any equivalent Kafka/DB poller route when SQS is active.
+6. Ensure no equivalent legacy transport route exists for the same message.
 7. Test successful handling.
 8. Test duplicate delivery.
 9. Test handler failure does not delete message.
@@ -26,7 +26,7 @@ Use this when adding or migrating an asynchronous event consumer to SQS.
 ## Pitfalls
 
 - BC-specific logic in sharedKernel
-- running Kafka/DB poller and SQS consumer for the same route in prod
+- running another transport consumer and SQS consumer for the same route in prod
 - keying idempotence on technical database PKs
 - deleting inbox rows as a retry shortcut
 - acknowledging SQS before business success
@@ -37,4 +37,3 @@ Use this when adding or migrating an asynchronous event consumer to SQS.
 - unknown event type/version is logged and handled deliberately
 - delete-after-success behavior is explicit
 - queue can be observed through logs/CloudWatch
-

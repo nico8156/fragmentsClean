@@ -325,8 +325,12 @@ CREATE TABLE IF NOT EXISTS auth_users (
                                           provider_user_id VARCHAR(255)     NOT NULL, -- Google sub
                                           email            VARCHAR(255)     NOT NULL,
                                           email_verified   BOOLEAN          NOT NULL,
+                                          display_name     VARCHAR(255),
+                                          avatar_url       VARCHAR(512),
                                           last_login_at    TIMESTAMPTZ      NOT NULL
 );
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(512);
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_auth_users_provider_user
     ON auth_users (provider, provider_user_id);

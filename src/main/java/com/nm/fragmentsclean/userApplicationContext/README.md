@@ -92,10 +92,9 @@ Le `userApplicationContext` réagit :
 
 ## 🔌 Adapters
 
-### Kafka listener (entrée)
+### SQS handler (entrée)
 
-* `AuthUsersEventsKafkaListener`
-* `DebugAuthUsersEventsKafkaListener`
+* `AuthUserCreatedSqsIntegrationEventHandler`
 
 ➡️ Le context consomme les événements d’identité.
 
@@ -121,7 +120,7 @@ userApplicationContext/
 │   │   ├── usecases/
 │   │   └── gateways/
 │   └── adapters/
-│       ├── primary/springboot/kafka/
+│       ├── primary/springboot/sqs/
 │       └── secondary/gateways/repositories/jpa/
 └── read/
     ├── projections/
@@ -134,7 +133,7 @@ userApplicationContext/
 
 * domaine pur (models/usecases)
 * port `AppUserRepository` mockable
-* listener Kafka testable
+* handler SQS testable
 
 ---
 
@@ -150,4 +149,3 @@ Et que ces deux mondes peuvent évoluer séparément.
 ---
 
 > "Un user authentifié n’est pas encore un user produit. Le user produit est matérialisé par l’application."
-

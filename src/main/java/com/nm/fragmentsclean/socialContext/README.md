@@ -109,7 +109,7 @@ socialContext/
 └── read/                          # read model (CQRS)
     ├── projections/               # vues + handlers d’événements
     ├── projectors/                # projectors transverses (users)
-    ├── adapters/                  # REST + Kafka listeners
+    ├── adapters/                  # REST + SQS handlers
     └── configuration/             # wiring
 ```
 
@@ -226,10 +226,9 @@ projection puis relit le snapshot.
 
 ---
 
-### Kafka listeners
+### SQS handlers
 
-* `SocialEventsKafkaListener`
-* `AppUsersEventsKafkaListener`
+* `SocialSqsIntegrationEventHandlers`
 
 ➡️ Le socialContext consomme :
 
@@ -264,7 +263,7 @@ Les vues read intègrent généralement des informations utiles à l’UI :
 * ports mockables
 * fakes de repositories
 * projections testables
-* listeners Kafka testables
+* handlers SQS testables
 
 ➡️ Tests unitaires rapides + E2E possibles.
 

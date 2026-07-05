@@ -74,7 +74,7 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 					return created;
 				});
 
-		// 3) Publish only AuthUser events (outbox -> kafka)
+		// 3) Publish only AuthUser events (outbox -> SQS integration messaging)
 		authUser.domainEvents().forEach(domainEventPublisher::publish);
 		authUser.clearDomainEvents();
 

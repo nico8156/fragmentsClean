@@ -18,8 +18,6 @@ SPRING_PROFILES_ACTIVE=demo mvn spring-boot:run
 ➡️ Lance :
 
 * PostgreSQL
-* Kafka
-* Zookeeper
 * Backend Spring Boot (profil demo)
 
 ---

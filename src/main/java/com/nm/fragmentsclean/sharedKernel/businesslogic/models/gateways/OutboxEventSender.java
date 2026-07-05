@@ -5,8 +5,8 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
 
 /**
  * Port d'envoi d'un événement de l'outbox vers l'extérieur :
- * - Kafka ====> KafkaOutboxEventSender
- * - WebSocket ====> WebSocketOutboxEventSender
+ * - integration messaging ====> stable envelopes through IntegrationMessagePublisher
+ * - WebSocket ====> opportunistic client ACK sender
  * - SSE
  * - autre...
  */

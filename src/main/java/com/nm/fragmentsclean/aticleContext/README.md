@@ -77,7 +77,7 @@ articleContext/
 ├── read/                  # read model (CQRS)
 │   ├── projections/       # vues matérialisées
 │   ├── configuration/     # wiring
-│   ├── adapters/          # REST + Kafka
+│   ├── adapters/          # REST + SQS
 │   └── queries/           # query handlers
 ```
 
@@ -94,7 +94,7 @@ articleContext/
 
 ➡️ Le domaine est **expressif**, pas technique.
 
-Pas de JPA. Pas de Spring. Pas de Kafka.
+Pas de JPA. Pas de Spring. Pas de transport SQS dans le domaine.
 Seulement des concepts métier.
 
 ---
@@ -181,9 +181,9 @@ Parce que la lecture n’est pas un besoin métier, mais un besoin **produit/API
 
 ---
 
-### Kafka
+### SQS
 
-* `ArticleEventsKafkaListener`
+* `ArticleCreatedSqsIntegrationEventHandler`
 
 ➡️ Le read model se reconstruit uniquement à partir des événements.
 
