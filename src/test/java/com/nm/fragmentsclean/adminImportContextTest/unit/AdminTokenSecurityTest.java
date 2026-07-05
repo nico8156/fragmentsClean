@@ -15,11 +15,12 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminCoffeesReadController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.admin.AdminCoffeeManagementExceptionHandler;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.admin.AdminCoffeesReadController;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
@@ -276,6 +277,7 @@ class AdminTokenSecurityTest {
 						adminCoffeesController(queryHandler, handlers),
 						projectionSyncController())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
+				.setControllerAdvice(new AdminCoffeeManagementExceptionHandler())
 				.build();
 	}
 

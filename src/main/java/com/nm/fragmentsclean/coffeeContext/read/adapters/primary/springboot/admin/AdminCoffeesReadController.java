@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.adminImportContext.adapters.primary.rest;
+package com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.admin;
 
 import java.util.List;
 import java.util.Map;
