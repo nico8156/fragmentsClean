@@ -7,8 +7,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesGatewayException;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GooglePlaceNotFoundException;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CoffeePhotoCommandException;
 
-@RestControllerAdvice(assignableTypes = AdminImportPlacesController.class)
+@RestControllerAdvice(assignableTypes = {
+		AdminImportPlacesController.class,
+		AdminCoffeesReadController.class
+})
 public class AdminImportExceptionHandler {
 	@ExceptionHandler(IllegalArgumentException.class)
 	ResponseEntity<AdminImportErrorResponse> badRequest(IllegalArgumentException exception) {
@@ -17,6 +21,11 @@ public class AdminImportExceptionHandler {
 
 	@ExceptionHandler(GooglePlaceNotFoundException.class)
 	ResponseEntity<AdminImportErrorResponse> notFound(GooglePlaceNotFoundException exception) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AdminImportErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(CoffeePhotoCommandException.class)
+	ResponseEntity<AdminImportErrorResponse> coffeePhotoCommandError(CoffeePhotoCommandException exception) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new AdminImportErrorResponse(exception.getMessage()));
 	}
 

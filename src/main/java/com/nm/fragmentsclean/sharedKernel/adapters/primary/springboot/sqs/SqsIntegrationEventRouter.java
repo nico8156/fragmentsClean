@@ -7,10 +7,14 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.Au
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
@@ -51,6 +55,8 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     private final ImportGooglePhotosForCoffee importGooglePhotosForCoffee;
     private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler;
     private final CoffeePhotosImportedEventHandler coffeePhotosImportedHandler;
+    private final CoffeePhotoAddedEventHandler coffeePhotoAddedHandler;
+    private final CoffeePhotoDeletedEventHandler coffeePhotoDeletedHandler;
     private final AuthUserCreatedEventHandler authUserCreatedHandler;
     private final CommentCreatedEventHandler commentCreatedHandler;
     private final CommentUpdatedEventHandler commentUpdatedHandler;
@@ -70,6 +76,8 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             ImportGooglePhotosForCoffee importGooglePhotosForCoffee,
             CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedHandler,
             CoffeePhotosImportedEventHandler coffeePhotosImportedHandler,
+            CoffeePhotoAddedEventHandler coffeePhotoAddedHandler,
+            CoffeePhotoDeletedEventHandler coffeePhotoDeletedHandler,
             AuthUserCreatedEventHandler authUserCreatedHandler,
             CommentCreatedEventHandler commentCreatedHandler,
             CommentUpdatedEventHandler commentUpdatedHandler,
@@ -88,6 +96,8 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
         this.importGooglePhotosForCoffee = importGooglePhotosForCoffee;
         this.coffeeOpeningHoursImportedHandler = coffeeOpeningHoursImportedHandler;
         this.coffeePhotosImportedHandler = coffeePhotosImportedHandler;
+        this.coffeePhotoAddedHandler = coffeePhotoAddedHandler;
+        this.coffeePhotoDeletedHandler = coffeePhotoDeletedHandler;
         this.authUserCreatedHandler = authUserCreatedHandler;
         this.commentCreatedHandler = commentCreatedHandler;
         this.commentUpdatedHandler = commentUpdatedHandler;
@@ -140,6 +150,14 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
         }
         if (COFFEES_EVENTS.equals(destination) && "coffee.photos_imported".equals(type)) {
             coffeePhotosImportedHandler.handle(read(envelope, CoffeePhotosImportedEvent.class));
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.photo_added".equals(type)) {
+            coffeePhotoAddedHandler.handle(read(envelope, CoffeePhotoAddedEvent.class));
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.photo_deleted".equals(type)) {
+            coffeePhotoDeletedHandler.handle(read(envelope, CoffeePhotoDeletedEvent.class));
             return;
         }
         if (AUTH_USERS_EVENTS.equals(destination) && "auth.user.created".equals(type)) {
