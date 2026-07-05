@@ -257,7 +257,13 @@ jobs:
           docker compose exec -T postgres \
             psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
-          docker compose up -d backend
+          docker compose up -d --force-recreate backend
+          RUNNING_BACKEND_IMAGE="$(docker inspect "$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
+          EXPECTED_BACKEND_IMAGE="$(read_env_var BACKEND_IMAGE)"
+          if [ "${RUNNING_BACKEND_IMAGE}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Backend container image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got ${RUNNING_BACKEND_IMAGE}." >&2
+            exit 1
+          fi
           if grep -q '^COMPOSE_PROFILES=.*https' .env; then
             docker compose --profile https up -d caddy
           fi
