@@ -114,6 +114,51 @@ Allowed projection names are platform contracts, for example:
 Do not use Java class names, aggregate names, command names, event names, queue
 names, or internal table names in SSE payloads.
 
+## Mobile Migration Pilot: Comments
+
+Comments are the first mobile domain migrated from STOMP ACK freshness to
+projection sync.
+
+Backend publication:
+
+```text
+CommentCreatedEvent / CommentUpdatedEvent / CommentDeletedEvent
+-> comments projection handler
+-> social_comments_projection update
+-> projection_sync_events insert
+```
+
+The SSE payload is projection-oriented:
+
+```json
+{
+  "eventName": "projection.updated",
+  "projection": "comments",
+  "scope": "target",
+  "entityId": "<targetId>",
+  "hints": ["created"]
+}
+```
+
+Allowed hints for the pilot are:
+
+- `created`
+- `updated`
+- `deleted`
+
+Mobile behavior:
+
+```text
+projection.updated comments/target
+-> commentRetrieval({ targetId, op: refresh })
+-> GET comments read model
+-> reducer snapshot for target, preserving local optimistic comments
+```
+
+The mobile listener must not dispatch comment read-model mutations directly.
+The command outbox remains responsible for retry and command-status based
+reconciliation.
+
 ## Granularity
 
 Use the smallest notification that lets the client avoid unnecessary work, but

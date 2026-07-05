@@ -4,9 +4,12 @@ WebSocket is an opportunistic UX accelerator.
 
 It exists to reduce visible latency for:
 - like ACKs
-- comment ACKs
 - ticket verification ACKs
 - future lightweight user-facing acknowledgements
+
+Comment ACKs are being removed domain by domain from the mobile runtime. The
+comments pilot now uses Projection Sync SSE for read-model freshness and command
+status polling for command reconciliation.
 
 ## Rules
 
@@ -28,4 +31,3 @@ The system must remain correct if:
 - the mobile app is backgrounded
 
 Correctness comes from command status, not socket delivery.
-
