@@ -33,8 +33,36 @@ public class InboxMessageRepository {
                     Timestamp.from(Instant.now()));
             return true;
         } catch (DuplicateKeyException duplicate) {
-            return false;
+            String status = statusFor(envelope);
+            if ("PROCESSED".equals(status)) {
+                return false;
+            }
+            jdbcTemplate.update("""
+                    UPDATE inbox_messages
+                    SET status = 'RECEIVED',
+                        received_at = ?,
+                        processed_at = NULL,
+                        error_message = NULL
+                    WHERE destination = ?
+                      AND event_id = ?
+                    """,
+                    Timestamp.from(Instant.now()),
+                    envelope.destination(),
+                    envelope.eventId());
+            return true;
         }
+    }
+
+    private String statusFor(IntegrationEventEnvelope envelope) {
+        return jdbcTemplate.queryForObject("""
+                SELECT status
+                FROM inbox_messages
+                WHERE destination = ?
+                  AND event_id = ?
+                """,
+                String.class,
+                envelope.destination(),
+                envelope.eventId());
     }
 
     public void markProcessed(IntegrationEventEnvelope envelope) {
