@@ -195,8 +195,9 @@ Production MVP target:
 - duplicate-safe handlers
 - command status records
 
-Kafka is not the production MVP transport.
-If Kafka remains in dev/legacy code, it must be behind an explicit property and disabled in prod.
+Kafka is not a Fragments backend transport.
+Do not add Kafka senders, Kafka listeners, EmbeddedKafka tests, or Kafka dependencies.
+Backend propagation uses outbox + stable envelopes + SQS.
 
 Event contracts:
 - use primitives: `UUID`, `String`, `Instant`, numbers, booleans, arrays of primitives

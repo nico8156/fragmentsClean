@@ -2,7 +2,12 @@
 
 ## Decision
 
-Fragments production MVP targets AWS SQS instead of Kafka.
+Fragments backend propagation uses AWS SQS.
+
+Kafka is not part of the Fragments backend architecture: do not add Kafka
+senders, listeners, dependencies, EmbeddedKafka tests, or runtime properties.
+Tests that exercise transport behavior must use fakes for unit scope or
+LocalStack/Testcontainers for SQS adapter scope.
 
 Reason:
 - lower operational complexity

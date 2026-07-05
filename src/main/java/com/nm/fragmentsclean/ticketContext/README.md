@@ -93,13 +93,13 @@ ticketContext/
 │   │   ├── usecases/                    # commands + event handlers
 │   │   └── gateways/                    # ports
 │   ├── adapters/
-│   │   ├── primary/springboot/          # controllers + kafka listener
+│   │   ├── primary/springboot/          # controllers + SQS handlers
 │   │   └── secondary/gateways/          # JPA + providers (C++/OpenAI/fakes)
 │   └── configuration/
 │
 └── read/                                # read model (CQRS)
     ├── projections/                     # TicketStatusView + handlers
-    ├── adapters/                        # REST + Kafka listener
+    ├── adapters/                        # REST + SQS handlers
     └── repositories/                    # JDBC projection repository
 ```
 
@@ -143,7 +143,7 @@ Elle valide les prérequis et déclenche le traitement asynchrone.
 
 * `ProcessTicketVerificationEventHandler`
 
-➡️ Réagit à l’acceptation (SQS `ticket-verification-requested`, ou Kafka legacy si activé)
+➡️ Réagit à l’acceptation via SQS `ticket-verification-requested`
 et exécute la vérification via un provider.
 
 Règles de traitement :
@@ -203,9 +203,9 @@ doit être produit par l'adapter.
 
 ---
 
-### Kafka
+### SQS
 
-* `TicketVerificationRequestsKafkaListener`
+* `TicketSqsIntegrationEventHandlers`
 
 ➡️ Permet d’intégrer le traitement dans une pipeline event-driven.
 
@@ -277,9 +277,9 @@ Le frontend ne reçoit jamais `TicketVerifyAcceptedEvent` ni
 
 ---
 
-### Kafka listener
+### SQS handler
 
-* `TicketEventsKafkaListener`
+* `TicketSqsIntegrationEventHandlers`
 
 ➡️ Le read model se reconstruit à partir des événements.
 

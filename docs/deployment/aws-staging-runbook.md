@@ -109,7 +109,6 @@ Production runtime must keep:
 
 ```properties
 SPRING_PROFILES_ACTIVE=prod
-APP_MESSAGING_KAFKA_ENABLED=false
 APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED=false
 APP_MESSAGING_SQS_ENABLED=true
 APP_MESSAGING_SQS_MAX_MESSAGES=5
@@ -222,7 +221,7 @@ curl -i http://127.0.0.1:8080/actuator/health
 
 - Do not expose backend port `8080` publicly; Compose binds it to `127.0.0.1`.
 - Do not leave SSH `0.0.0.0/0` open. Use the workflow's temporary runner `/32` rule or SSM.
-- Do not enable Kafka in staging/prod.
+- Do not add Kafka/MSK to staging/prod. SQS is the backend propagation transport.
 - Do not add Redis unless a critical runtime need is documented.
 - Do not commit `.env` or mobile secrets.
 - Treat the local backend `.env` as sensitive if it contains real OAuth credentials.

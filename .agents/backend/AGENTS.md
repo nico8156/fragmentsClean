@@ -29,7 +29,7 @@ Use the matching orchestrator in `.agents/backend/orchestrators`.
 - Write side must not read projection tables for decisions.
 - Read side must not call command handlers.
 - New cross-BC behavior must use events and local projections.
-- New prod async transport is SQS, not Kafka.
+- Async transport is SQS, not Kafka. Do not add Kafka senders, listeners, dependencies, or EmbeddedKafka tests.
 - Consumers must use inbox idempotence.
 - Event contracts must stay stable and primitive-only.
 - WebSocket ACK is best-effort only.
@@ -108,4 +108,3 @@ Before declaring a backend task complete, verify:
 - inbox/idempotence exists for event consumers
 - SQS route does not run in parallel with the same legacy DB poller route
 - command status behavior is compatible with mobile offline-first
-

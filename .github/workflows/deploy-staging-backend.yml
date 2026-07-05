@@ -42,7 +42,7 @@ jobs:
       - name: Test backend deployment guard
         run: |
           ./mvnw -q \
-            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,SocialEventRoutingTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,BusHandlerRegistrationListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
+            -Dtest=CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,IntegrationEventDestinationResolverTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,BusHandlerRegistrationListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
             test
 
       - name: Package backend
@@ -237,7 +237,6 @@ jobs:
           upsert_env_var "FRAGMENTS_MULTIPART_MAX_FILE_SIZE" "10MB"
           upsert_env_var "FRAGMENTS_MULTIPART_MAX_REQUEST_SIZE" "10MB"
           upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
-          upsert_env_var "APP_MESSAGING_KAFKA_ENABLED" "false"
           upsert_env_var "APP_MESSAGING_SQS_MAX_MESSAGES" "5"
           upsert_env_var "APP_MESSAGING_SQS_WAIT_TIME" "PT20S"
           upsert_env_var "APP_MESSAGING_SQS_VISIBILITY_TIMEOUT" "PT30S"

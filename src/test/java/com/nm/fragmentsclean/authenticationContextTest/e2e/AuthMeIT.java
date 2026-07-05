@@ -62,7 +62,7 @@ public class AuthMeIT extends AbstractBaseE2E {
 		String accessToken = loginJson.path("accessToken").asText();
 		String appUserId = loginJson.path("user").path("id").asText();
 
-		// WHEN : outbox -> Kafka (déclenche le listener userContext qui crée app_users)
+		// WHEN : outbox -> integration messaging
 		outboxEventDispatcher.dispatchPending();
 
 		// THEN : attendre que app_users soit créé (pipeline async)

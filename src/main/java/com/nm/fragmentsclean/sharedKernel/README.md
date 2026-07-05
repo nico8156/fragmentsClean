@@ -1,6 +1,6 @@
 # sharedKernel
 
-> Le **sharedKernel** fournit les briques transverses nécessaires pour faire vivre l’architecture : **CQRS**, **event-driven**, **outbox**, **websocket ACK**, et des abstractions DDD communes.
+> Le **sharedKernel** fournit les briques transverses nécessaires pour faire vivre l’architecture : **CQRS**, **event-driven**, **outbox**, **SQS**, **websocket ACK**, et des abstractions DDD communes.
 >
 > Il n’est pas un « utilitaire fourre-tout » : c’est un **contrat d’architecture** partagé, volontairement minimal, qui permet aux bounded contexts d’évoluer sans dupliquer la plomberie.
 
@@ -13,7 +13,7 @@ Le sharedKernel sert à :
 * standardiser la façon de traiter **commands / queries / events**
 * centraliser le **pipeline outbox** (fiabilité des événements)
 * fournir des interfaces DDD communes (AggregateRoot, Entity, DomainEvent)
-* offrir une base d’infrastructure (Kafka, WebSocket) via adapters
+* offrir une base d’infrastructure (SQS, WebSocket) via adapters
 
 👉 Chaque bounded context vient « brancher » sa logique métier sur ces mécanismes.
 
@@ -61,7 +61,7 @@ Le sharedKernel vise un **juste milieu** :
 * `EventHandler`
 * `EventBus`
 
-➡️ Objectif : publier des faits métier sans dépendre de Kafka/Spring.
+➡️ Objectif : publier des faits métier sans dépendre de SQS/Spring.
 
 ---
 
@@ -75,23 +75,18 @@ Le sharedKernel vise un **juste milieu** :
 
 ➡️ Objectif : garantir que les événements ne sont jamais perdus, même en cas de crash.
 
-Le write model publie des events → l’outbox persiste → un dispatcher envoie (Kafka / WS / logs).
+Le write model publie des events → l’outbox persiste → un dispatcher envoie des enveloppes stables vers SQS, les ACK WebSocket opportunistes et les logs.
 
 ---
 
-### 4) Routing des événements
+### 4) Enveloppes d'intégration
 
-* `DomainEventRouter`
-* `DomainEventRouter`
-* `RoutingOutboxEventSender`
+* `IntegrationEventEnvelope`
+* `IntegrationEventDestinationResolver`
+* `StableEnvelopeOutboxEventSender`
+* `SqsIntegrationEventRouter`
 
-➡️ Objectif : centraliser la décision « où envoyer quel event ».
-
-Exemple :
-
-* certains events vont à Kafka
-* certains events vont aussi à WebSocket (ACK)
-* certains events sont loggés
+➡️ Objectif : publier des événements transport-neutral vers des destinations SQS stables.
 
 ---
 
@@ -104,7 +99,7 @@ Exemple :
 
 ➡️ Objectif : un retour utilisateur immédiat et fiable.
 
-Même logique que Kafka : on n’envoie pas directement depuis le domaine.
+Même logique que SQS : on n’envoie pas directement depuis le domaine.
 On passe par l’outbox.
 
 ---
@@ -157,7 +152,7 @@ Chaque bounded context :
 * implémente ses **use cases** (handlers)
 * émet des **DomainEvents**
 * utilise le `DomainEventPublisher` → outbox
-* consomme des events via listeners Kafka/WS
+* consomme des events via handlers SQS
 * expose son read model via queries
 
 ➡️ Le sharedKernel fournit la mécanique, les contexts fournissent le sens.

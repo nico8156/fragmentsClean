@@ -318,9 +318,9 @@ DELETE /api/admin/coffees/{coffeeId}
 
 ---
 
-### Kafka
+### SQS
 
-* `CoffeeEventsKafkaListener`
+* `CoffeeSqsIntegrationEventHandlers`
 
 ➡️ Le read model est reconstruit depuis le flux d’événements.
 
