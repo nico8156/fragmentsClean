@@ -77,7 +77,8 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
                 c.website() != null ? c.website().value() : null,
                 tagsCsv,
                 c.version(),
-                c.updatedAt() != null ? c.updatedAt() : Instant.now()
+                c.updatedAt() != null ? c.updatedAt() : Instant.now(),
+                c.archivedAt().orElse(null)
         );
     }
 
@@ -130,7 +131,8 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
                 /* photos */ null,
                 /* openingHours */ null,
                 e.getVersion(),
-                e.getUpdatedAt()
+                e.getUpdatedAt(),
+                e.getArchivedAt()
         );
     }
 }

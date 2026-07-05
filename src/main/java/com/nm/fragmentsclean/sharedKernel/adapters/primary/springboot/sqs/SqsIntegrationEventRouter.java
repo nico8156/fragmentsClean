@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
@@ -49,6 +51,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     private final ObjectMapper objectMapper;
     private final InboxMessageRepository inbox;
     private final ArticleCreatedEventHandler articleCreatedHandler;
+    private final CoffeeArchivedEventHandler coffeeArchivedHandler;
     private final CoffeeCreatedEventHandler coffeeCreatedHandler;
     private final CoffeeDeletedEventHandler coffeeDeletedHandler;
     private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
@@ -70,6 +73,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             ObjectMapper objectMapper,
             InboxMessageRepository inbox,
             ArticleCreatedEventHandler articleCreatedHandler,
+            CoffeeArchivedEventHandler coffeeArchivedHandler,
             CoffeeCreatedEventHandler coffeeCreatedHandler,
             CoffeeDeletedEventHandler coffeeDeletedHandler,
             ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
@@ -90,6 +94,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
         this.objectMapper = objectMapper;
         this.inbox = inbox;
         this.articleCreatedHandler = articleCreatedHandler;
+        this.coffeeArchivedHandler = coffeeArchivedHandler;
         this.coffeeCreatedHandler = coffeeCreatedHandler;
         this.coffeeDeletedHandler = coffeeDeletedHandler;
         this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
@@ -138,6 +143,10 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
             coffeeCreatedHandler.handle(event);
             importGoogleOpeningHoursForCoffee.handle(event);
             importGooglePhotosForCoffee.handle(event);
+            return;
+        }
+        if (COFFEES_EVENTS.equals(destination) && "coffee.archived".equals(type)) {
+            coffeeArchivedHandler.handle(read(envelope, CoffeeArchivedEvent.class));
             return;
         }
         if (COFFEES_EVENTS.equals(destination) && "coffee.deleted".equals(type)) {

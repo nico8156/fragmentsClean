@@ -53,6 +53,9 @@ public class CoffeeJpaEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "archived_at")
+    private Instant archivedAt;
+
     protected CoffeeJpaEntity() {
         // for JPA
     }
@@ -70,7 +73,8 @@ public class CoffeeJpaEntity {
                            String website,
                            String tagsCsv,
                            int version,
-                           Instant updatedAt) {
+                           Instant updatedAt,
+                           Instant archivedAt) {
         this.id = id;
         this.googlePlaceId = googlePlaceId;
         this.name = name;
@@ -85,6 +89,7 @@ public class CoffeeJpaEntity {
         this.tagsCsv = tagsCsv;
         this.version = version;
         this.updatedAt = updatedAt;
+        this.archivedAt = archivedAt;
     }
 
     public UUID getId() {
@@ -143,11 +148,19 @@ public class CoffeeJpaEntity {
         return updatedAt;
     }
 
+    public Instant getArchivedAt() {
+        return archivedAt;
+    }
+
     public void setVersion(int version) {
         this.version = version;
     }
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setArchivedAt(Instant archivedAt) {
+        this.archivedAt = archivedAt;
     }
 }

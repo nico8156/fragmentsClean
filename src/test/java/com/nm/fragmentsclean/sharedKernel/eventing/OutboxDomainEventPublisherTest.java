@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
@@ -52,6 +53,31 @@ class OutboxDomainEventPublisherTest {
 		assertThat(saved.get().getAggregateId()).isEqualTo("11111111-1111-1111-1111-111111111111");
 		assertThat(saved.get().getStreamKey()).isEqualTo("coffee:11111111-1111-1111-1111-111111111111");
 		assertThat(saved.get().getEventType()).endsWith("CoffeePhotosImportedEvent");
+	}
+
+	@Test
+	void persists_coffee_archived_as_coffee_aggregate() {
+		var saved = new AtomicReference<OutboxEventJpaEntity>();
+		var repository = outboxRepositoryCapturing(saved);
+		var publisher = new OutboxDomainEventPublisher(
+				repository,
+				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
+				() -> Instant.parse("2026-07-04T11:00:00Z"));
+		var event = new CoffeeArchivedEvent(
+				UUID.fromString("99999999-9999-9999-9999-999999999999"),
+				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+				new CoffeeId(UUID.fromString("11111111-1111-1111-1111-111111111111")),
+				13,
+				Instant.parse("2026-07-04T10:59:00Z"),
+				Instant.parse("2026-07-04T10:58:59Z"));
+
+		publisher.publish(event);
+
+		assertThat(saved.get()).isNotNull();
+		assertThat(saved.get().getAggregateType()).isEqualTo("Coffee");
+		assertThat(saved.get().getAggregateId()).isEqualTo("11111111-1111-1111-1111-111111111111");
+		assertThat(saved.get().getStreamKey()).isEqualTo("coffee:11111111-1111-1111-1111-111111111111");
+		assertThat(saved.get().getEventType()).endsWith("CoffeeArchivedEvent");
 	}
 
 	@Test

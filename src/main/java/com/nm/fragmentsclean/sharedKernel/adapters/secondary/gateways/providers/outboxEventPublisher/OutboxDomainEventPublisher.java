@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
@@ -101,6 +102,11 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             } else if (event instanceof CoffeeCreatedEvent coffeeEvent) {
                 aggregateType = "Coffee";
                 aggregateId = coffeeEvent.coffeeId().toString();
+                streamKey = "coffee:" + aggregateId;
+
+            } else if (event instanceof CoffeeArchivedEvent coffeeArchivedEvent) {
+                aggregateType = "Coffee";
+                aggregateId = coffeeArchivedEvent.coffeeId().toString();
                 streamKey = "coffee:" + aggregateId;
 
             } else if (event instanceof CoffeeDeletedEvent coffeeDeletedEvent) {
