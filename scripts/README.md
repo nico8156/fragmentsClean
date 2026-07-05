@@ -1,4 +1,4 @@
-# Demo Scripts
+# Scripts
 
 Ces scripts permettent de lancer une **démo E2E locale** du projet.
 
@@ -54,3 +54,22 @@ Ces scripts servent uniquement à la **vitrine projet** :
 Ils ne sont pas des outils de production.
 
 ---
+
+## Tests backend
+
+Les scripts suivants donnent des points d'entrée stables pour les suites Maven :
+
+```bash
+./scripts/test-unit.sh
+./scripts/test-integration.sh
+./scripts/test-all.sh
+./scripts/testcontainers-check.sh
+```
+
+`test-unit.sh` lance les tests rapides en excluant les classes `*IT`, `*IntegrationTest` et `*LocalStackTest`.
+
+`test-integration.sh` vérifie Docker puis passe par `scripts/backend-testcontainers`, qui configure `DOCKER_HOST` et `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` pour Testcontainers.
+
+`test-all.sh` chaîne unit puis integration.
+
+`testcontainers-check.sh` valide uniquement l'accès Docker/Testcontainers attendu.
