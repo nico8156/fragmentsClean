@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender;
+package com.nm.fragmentsclean.platform.eventing;
 
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;

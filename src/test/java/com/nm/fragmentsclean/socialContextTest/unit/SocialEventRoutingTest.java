@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.DefaultDomainEventRouter;
+import com.nm.fragmentsclean.platform.eventing.DefaultDomainEventRouter;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.EventRouting;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;

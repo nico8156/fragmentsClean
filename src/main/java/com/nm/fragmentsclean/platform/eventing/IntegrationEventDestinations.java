@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.eventing;
+package com.nm.fragmentsclean.platform.eventing;
 
 public final class IntegrationEventDestinations {
 

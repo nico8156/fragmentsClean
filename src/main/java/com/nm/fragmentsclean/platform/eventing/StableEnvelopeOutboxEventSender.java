@@ -1,9 +1,9 @@
-package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender;
+package com.nm.fragmentsclean.platform.eventing;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventDestinationResolver;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelopeFactory;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.EventBusOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationMessagePublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.ClientAckOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +20,7 @@ public class StableEnvelopeOutboxEventSender implements OutboxEventSender {
     private static final Logger log = LoggerFactory.getLogger(StableEnvelopeOutboxEventSender.class);
 
     private final EventBusOutboxEventSender eventBusSender;
-    private final WebSocketOutboxEventSender webSocketSender;
+    private final ClientAckOutboxEventSender webSocketSender;
     private final List<IntegrationMessagePublisher> publishers;
     private final IntegrationEventDestinationResolver destinationResolver;
     private final IntegrationEventEnvelopeFactory envelopeFactory;
@@ -28,7 +28,7 @@ public class StableEnvelopeOutboxEventSender implements OutboxEventSender {
 
     public StableEnvelopeOutboxEventSender(
             EventBusOutboxEventSender eventBusSender,
-            WebSocketOutboxEventSender webSocketSender,
+            ClientAckOutboxEventSender webSocketSender,
             List<IntegrationMessagePublisher> publishers,
             @Value("${app.messaging.local-event-bus.enabled:true}") boolean localEventBusEnabled
     ) {

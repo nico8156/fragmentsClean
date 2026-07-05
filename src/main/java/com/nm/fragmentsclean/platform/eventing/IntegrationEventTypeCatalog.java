@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.eventing;
+package com.nm.fragmentsclean.platform.eventing;
 
 import java.util.Map;
 

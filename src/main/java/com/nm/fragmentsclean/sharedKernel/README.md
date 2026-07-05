@@ -82,7 +82,7 @@ Le write model publie des events → l’outbox persiste → un dispatcher envoi
 ### 4) Routing des événements
 
 * `DomainEventRouter`
-* `DefaultDomainEventRouter`
+* `DomainEventRouter`
 * `RoutingOutboxEventSender`
 
 ➡️ Objectif : centraliser la décision « où envoyer quel event ».
@@ -204,4 +204,3 @@ Tout en gardant le domaine au centre.
 ---
 
 > "Les bounded contexts évoluent. Le sharedKernel garantit la grammaire."
-

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.EventRouting;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.ClientAckOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.DomainEventRouter;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ public class RoutingOutboxEventSender implements OutboxEventSender {
     private final KafkaOutboxEventSender kafkaSender;
     private final LoggingOutboxEventSender loggingSender;
     private final ObjectMapper objectMapper;
-    private final WebSocketOutboxEventSender webSocketSender;
+    private final ClientAckOutboxEventSender webSocketSender;
 
 
     public RoutingOutboxEventSender(
@@ -30,7 +31,7 @@ public class RoutingOutboxEventSender implements OutboxEventSender {
             EventBusOutboxEventSender eventBusSender,
             KafkaOutboxEventSender kafkaSender,
             LoggingOutboxEventSender loggingSender,
-            WebSocketOutboxEventSender webSocketSender,
+            ClientAckOutboxEventSender webSocketSender,
             ObjectMapper objectMapper
     ) {
         this.router = router;

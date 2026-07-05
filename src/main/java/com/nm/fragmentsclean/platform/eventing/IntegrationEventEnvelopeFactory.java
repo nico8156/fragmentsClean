@@ -1,4 +1,6 @@
-package com.nm.fragmentsclean.sharedKernel.businesslogic.eventing;
+package com.nm.fragmentsclean.platform.eventing;
+
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 

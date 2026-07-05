@@ -1,29 +1,30 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.WebSocketOutboxEventSender;
+import com.nm.fragmentsclean.platform.eventing.WebSocketOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
-@SpringBootTest
 class WebSocketOutboxEventSenderTest {
 
 	@Test
 	void sends_like_ack_envelope_to_topic_with_streamKey() throws Exception {
 		// GIVEN
-		SimpMessagingTemplate messagingTemplate = mock(SimpMessagingTemplate.class);
+		var channel = new RecordingMessageChannel();
+		SimpMessagingTemplate messagingTemplate = new SimpMessagingTemplate(channel);
 		ObjectMapper om = new ObjectMapper()
 				.registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
@@ -72,11 +73,13 @@ class WebSocketOutboxEventSenderTest {
 		sender.send(outboxEvent);
 
 		// THEN: destination OK
-		ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
-		verify(messagingTemplate).convertAndSend(eq("/topic/" + streamKey), jsonCaptor.capture());
+		assertThat(channel.messages).hasSize(1);
+		Message<?> message = channel.messages.getFirst();
+		assertThat(message.getHeaders().get(SimpMessageHeaderAccessor.DESTINATION_HEADER))
+				.isEqualTo("/topic/" + streamKey);
 
 		// THEN: envelope JSON OK (on parse la réponse)
-		WebSocketOutboxEventSender.WsLikeAckEnvelope env = om.readValue(jsonCaptor.getValue(),
+		WebSocketOutboxEventSender.WsLikeAckEnvelope env = om.readValue((String) message.getPayload(),
 				WebSocketOutboxEventSender.WsLikeAckEnvelope.class);
 
 		assertThat(env.type()).isEqualTo("social.like.added_ack");
@@ -86,5 +89,20 @@ class WebSocketOutboxEventSenderTest {
 		assertThat(env.me()).isTrue();
 		assertThat(env.version()).isEqualTo(1);
 		assertThat(env.updatedAt()).isEqualTo("2024-01-01T10:00:00Z");
+	}
+
+	private static class RecordingMessageChannel implements MessageChannel {
+		private final List<Message<?>> messages = new ArrayList<>();
+
+		@Override
+		public boolean send(Message<?> message) {
+			messages.add(message);
+			return true;
+		}
+
+		@Override
+		public boolean send(Message<?> message, long timeout) {
+			return send(message);
+		}
 	}
 }
