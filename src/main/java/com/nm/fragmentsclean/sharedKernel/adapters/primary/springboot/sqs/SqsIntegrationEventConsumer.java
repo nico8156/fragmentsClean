@@ -44,7 +44,7 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
     public SqsIntegrationEventConsumer(SqsClient sqsClient,
                                        SqsMessagingProperties properties,
                                        ObjectMapper objectMapper,
-                                       SqsIntegrationEventRouter router) {
+                                       SqsIntegrationEventRouting router) {
         this(
                 sqsClient,
                 properties,

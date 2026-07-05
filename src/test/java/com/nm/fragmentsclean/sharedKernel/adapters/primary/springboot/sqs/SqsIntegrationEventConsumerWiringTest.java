@@ -21,7 +21,7 @@ class SqsIntegrationEventConsumerWiringTest {
 						SqsClient.class,
 						SqsMessagingProperties.class,
 						ObjectMapper.class,
-						SqsIntegrationEventRouter.class);
+						SqsIntegrationEventRouting.class);
 
 		assertThat(constructor).isNotNull();
 		assertThat(constructor.getAnnotation(Autowired.class)).isNotNull();
