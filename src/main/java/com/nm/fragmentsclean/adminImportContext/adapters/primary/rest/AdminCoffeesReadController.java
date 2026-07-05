@@ -6,10 +6,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
@@ -19,6 +23,8 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repo
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 
@@ -70,6 +76,29 @@ public class AdminCoffeesReadController {
 	@DeleteMapping("/api/admin/coffees/{coffeeId}")
 	public ResponseEntity<Void> deleteCoffee(@PathVariable UUID coffeeId) {
 		commandBus.dispatch(new DeleteCoffeeCommand(UUID.randomUUID(), coffeeId, java.time.Instant.now()));
+		return ResponseEntity.accepted().build();
+	}
+
+	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public ResponseEntity<Void> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo)
+			throws java.io.IOException {
+		commandBus.dispatch(new AddCoffeePhotoCommand(
+				UUID.randomUUID(),
+				coffeeId,
+				photo.getOriginalFilename(),
+				photo.getContentType(),
+				photo.getBytes(),
+				java.time.Instant.now()));
+		return ResponseEntity.accepted().build();
+	}
+
+	@DeleteMapping("/api/admin/coffees/{coffeeId}/photos/{photoId}")
+	public ResponseEntity<Void> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId) {
+		commandBus.dispatch(new DeleteCoffeePhotoCommand(
+				UUID.randomUUID(),
+				coffeeId,
+				photoId,
+				java.time.Instant.now()));
 		return ResponseEntity.accepted().build();
 	}
 

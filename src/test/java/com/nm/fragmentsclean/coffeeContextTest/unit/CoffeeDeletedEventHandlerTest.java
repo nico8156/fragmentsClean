@@ -101,6 +101,14 @@ class CoffeeDeletedEventHandlerTest {
 		}
 
 		@Override
+		public void append(CoffeePhotoView photo) {
+		}
+
+		@Override
+		public void deletePhoto(UUID coffeeId, UUID photoId) {
+		}
+
+		@Override
 		public void deleteForCoffee(UUID coffeeId) {
 			deletedCoffeeIds.add(coffeeId);
 		}

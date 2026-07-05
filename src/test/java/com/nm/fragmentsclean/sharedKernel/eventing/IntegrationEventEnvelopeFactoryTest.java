@@ -129,4 +129,41 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(envelope.eventVersion()).isEqualTo(1);
         assertThat(envelope.destination()).isEqualTo("coffees-events");
     }
+
+    @Test
+    void routesCoffeePhotoManagementEventsToCoffeeEventsWithStableTypes() {
+        var added = new OutboxEventJpaEntity(
+                "evt-6",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent",
+                "Coffee",
+                "coffee-1",
+                "coffee:coffee-1",
+                "{\"photo\":{}}",
+                Instant.parse("2026-07-05T10:00:00Z"),
+                Instant.parse("2026-07-05T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+        var deleted = new OutboxEventJpaEntity(
+                "evt-7",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent",
+                "Coffee",
+                "coffee-1",
+                "coffee:coffee-1",
+                "{\"photoId\":{\"value\":\"22222222-2222-2222-2222-222222222222\"}}",
+                Instant.parse("2026-07-05T10:00:00Z"),
+                Instant.parse("2026-07-05T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(added))
+                .containsExactly("coffees-events");
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(deleted))
+                .containsExactly("coffees-events");
+
+        var factory = new IntegrationEventEnvelopeFactory();
+        assertThat(factory.from(added, IntegrationEventDestinations.COFFEES_EVENTS).eventType())
+                .isEqualTo("coffee.photo_added");
+        assertThat(factory.from(deleted, IntegrationEventDestinations.COFFEES_EVENTS).eventType())
+                .isEqualTo("coffee.photo_deleted");
+    }
 }

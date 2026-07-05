@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
@@ -19,6 +21,8 @@ import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.sto
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -61,6 +65,25 @@ public class CoffeeContextDependenciesConfiguration {
 			DomainEventPublisher domainEventPublisher,
 			DateTimeProvider dateTimeProvider) {
 		return new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
+	AddCoffeePhotoCommandHandler addCoffeePhotoCommandHandler(CoffeeRepository coffeeRepository,
+			CoffeePhotoStorage coffeePhotoStorage,
+			DomainEventPublisher domainEventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		return new AddCoffeePhotoCommandHandler(
+				coffeeRepository,
+				coffeePhotoStorage,
+				domainEventPublisher,
+				dateTimeProvider);
+	}
+
+	@Bean
+	DeleteCoffeePhotoCommandHandler deleteCoffeePhotoCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher,
+			DateTimeProvider dateTimeProvider) {
+		return new DeleteCoffeePhotoCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
 	}
 
 	@Bean
@@ -117,6 +140,20 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeePhotoProjectionRepository photoProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeePhotosImportedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeePhotoAddedEventHandler coffeePhotoAddedEventHandler(
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeePhotoAddedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeePhotoDeletedEventHandler coffeePhotoDeletedEventHandler(
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeePhotoDeletedEventHandler(photoProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean

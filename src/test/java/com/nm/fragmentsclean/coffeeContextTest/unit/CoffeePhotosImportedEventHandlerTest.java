@@ -84,6 +84,16 @@ class CoffeePhotosImportedEventHandlerTest {
 		}
 
 		@Override
+		public void append(CoffeePhotoView photo) {
+			throw new UnsupportedOperationException("not used");
+		}
+
+		@Override
+		public void deletePhoto(UUID coffeeId, UUID photoId) {
+			throw new UnsupportedOperationException("not used");
+		}
+
+		@Override
 		public void deleteForCoffee(UUID coffeeId) {
 			throw new UnsupportedOperationException("not used");
 		}

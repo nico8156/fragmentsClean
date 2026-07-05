@@ -45,6 +45,16 @@ public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectio
 	}
 
 	@Override
+	public void append(CoffeePhotoView photo) {
+		insertSeed(photo);
+	}
+
+	@Override
+	public void deletePhoto(UUID coffeeId, UUID photoId) {
+		jdbc.update("DELETE FROM coffee_photos_projection WHERE coffee_id = ? AND id = ?", coffeeId, photoId);
+	}
+
+	@Override
 	public void deleteForCoffee(UUID coffeeId) {
 		jdbc.update("DELETE FROM coffee_photos_projection WHERE coffee_id = ?", coffeeId);
 	}

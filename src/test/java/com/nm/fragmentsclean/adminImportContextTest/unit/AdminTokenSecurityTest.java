@@ -25,6 +25,8 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursVi
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
@@ -44,6 +46,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandle
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -137,6 +140,39 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void admin_add_coffee_photo_with_valid_token_dispatches_add_photo_command() throws Exception {
+		var handlers = new RecordingCoffeeCommandHandlers();
+
+		mockMvc("admin-secret", new CountingListCoffeesQueryHandler(), handlers)
+				.perform(multipart("/api/admin/coffees/11111111-1111-1111-1111-111111111111/photos")
+						.file("photo", "jpeg-bytes".getBytes())
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isAccepted());
+
+		org.assertj.core.api.Assertions.assertThat(handlers.addPhoto.commands).hasSize(1);
+		org.assertj.core.api.Assertions.assertThat(handlers.addPhoto.commands.getFirst().coffeeId())
+				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+		org.assertj.core.api.Assertions.assertThat(handlers.addPhoto.commands.getFirst().bytes())
+				.isEqualTo("jpeg-bytes".getBytes());
+	}
+
+	@Test
+	void admin_delete_coffee_photo_with_valid_token_dispatches_delete_photo_command() throws Exception {
+		var handlers = new RecordingCoffeeCommandHandlers();
+
+		mockMvc("admin-secret", new CountingListCoffeesQueryHandler(), handlers)
+				.perform(delete("/api/admin/coffees/11111111-1111-1111-1111-111111111111/photos/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isAccepted());
+
+		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands).hasSize(1);
+		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands.getFirst().coffeeId())
+				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
+		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands.getFirst().photoId())
+				.isEqualTo(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+	}
+
+	@Test
 	void admin_route_with_missing_configured_token_stays_closed() throws Exception {
 		mockMvc("").perform(get("/api/admin/import/places")
 						.param("query", "cafe")
@@ -205,12 +241,18 @@ class AdminTokenSecurityTest {
 	}
 
 	private MockMvc mockMvc(String token, CountingListCoffeesQueryHandler queryHandler) {
-		return mockMvc(token, queryHandler, new RecordingDeleteCoffeeCommandHandler());
+		return mockMvc(token, queryHandler, new RecordingCoffeeCommandHandlers());
 	}
 
 	private MockMvc mockMvc(String token,
 			CountingListCoffeesQueryHandler queryHandler,
 			RecordingDeleteCoffeeCommandHandler deleteHandler) {
+		return mockMvc(token, queryHandler, new RecordingCoffeeCommandHandlers(deleteHandler));
+	}
+
+	private MockMvc mockMvc(String token,
+			CountingListCoffeesQueryHandler queryHandler,
+			RecordingCoffeeCommandHandlers handlers) {
 		var properties = new AdminSecurityProperties();
 		properties.setToken(token);
 		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
@@ -218,7 +260,7 @@ class AdminTokenSecurityTest {
 
 		return MockMvcBuilders.standaloneSetup(
 						controller(),
-						adminCoffeesController(queryHandler, deleteHandler),
+						adminCoffeesController(queryHandler, handlers),
 						projectionSyncController())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
 				.build();
@@ -256,11 +298,11 @@ class AdminTokenSecurityTest {
 
 	private AdminCoffeesReadController adminCoffeesController(
 			CountingListCoffeesQueryHandler queryHandler,
-			RecordingDeleteCoffeeCommandHandler deleteHandler) {
+			RecordingCoffeeCommandHandlers handlers) {
 		var queryBus = new QueryBus();
 		queryBus.registerQueryHandlers(List.of(queryHandler));
 		var commandBus = new CommandBus();
-		commandBus.registerCommandHandlers(List.of(deleteHandler));
+		commandBus.registerCommandHandlers(List.of(handlers.deleteCoffee, handlers.addPhoto, handlers.deletePhoto));
 		return new AdminCoffeesReadController(
 				commandBus,
 				queryBus,
@@ -347,6 +389,38 @@ class AdminTokenSecurityTest {
 		}
 	}
 
+	private static class RecordingAddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePhotoCommand> {
+		private final List<AddCoffeePhotoCommand> commands = new java.util.ArrayList<>();
+
+		@Override
+		public void execute(AddCoffeePhotoCommand command) {
+			commands.add(command);
+		}
+	}
+
+	private static class RecordingDeleteCoffeePhotoCommandHandler implements CommandHandler<DeleteCoffeePhotoCommand> {
+		private final List<DeleteCoffeePhotoCommand> commands = new java.util.ArrayList<>();
+
+		@Override
+		public void execute(DeleteCoffeePhotoCommand command) {
+			commands.add(command);
+		}
+	}
+
+	private static class RecordingCoffeeCommandHandlers {
+		private final RecordingDeleteCoffeeCommandHandler deleteCoffee;
+		private final RecordingAddCoffeePhotoCommandHandler addPhoto = new RecordingAddCoffeePhotoCommandHandler();
+		private final RecordingDeleteCoffeePhotoCommandHandler deletePhoto = new RecordingDeleteCoffeePhotoCommandHandler();
+
+		private RecordingCoffeeCommandHandlers() {
+			this(new RecordingDeleteCoffeeCommandHandler());
+		}
+
+		private RecordingCoffeeCommandHandlers(RecordingDeleteCoffeeCommandHandler deleteCoffee) {
+			this.deleteCoffee = deleteCoffee;
+		}
+	}
+
 	private static class FakeProjectionSyncDispatcher extends ProjectionSyncDispatcher {
 		FakeProjectionSyncDispatcher() {
 			super(null, null, null, null);
@@ -365,6 +439,14 @@ class AdminTokenSecurityTest {
 
 		@Override
 		public void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos) {
+		}
+
+		@Override
+		public void append(CoffeePhotoView photo) {
+		}
+
+		@Override
+		public void deletePhoto(UUID coffeeId, UUID photoId) {
 		}
 
 		@Override
