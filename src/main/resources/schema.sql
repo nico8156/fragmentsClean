@@ -100,6 +100,22 @@ CREATE INDEX IF NOT EXISTS idx_likes_target_active
 CREATE INDEX IF NOT EXISTS idx_likes_user_target
     ON likes (user_id, target_id);
 
+-- Likes projection (read model)
+CREATE TABLE IF NOT EXISTS social_likes_projection (
+    like_id    UUID PRIMARY KEY,
+    user_id    UUID        NOT NULL,
+    target_id  UUID        NOT NULL,
+    active     BOOLEAN     NOT NULL,
+    version    BIGINT      NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_likes_projection_user_target
+    ON social_likes_projection (user_id, target_id);
+
+CREATE INDEX IF NOT EXISTS idx_social_likes_projection_target_active
+    ON social_likes_projection (target_id, active);
+
 -- Comments (write model)
 CREATE TABLE IF NOT EXISTS comments (
                                         comment_id   UUID          NOT NULL PRIMARY KEY,

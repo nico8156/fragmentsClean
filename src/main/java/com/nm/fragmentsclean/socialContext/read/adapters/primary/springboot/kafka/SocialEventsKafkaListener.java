@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCreatedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentDeletedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentUpdatedEventHandler;
+import com.nm.fragmentsclean.socialContext.read.projections.LikeSetEventHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,15 +27,18 @@ public class SocialEventsKafkaListener {
     private final CommentCreatedEventHandler createdHandler;
     private final CommentUpdatedEventHandler updatedHandler;
     private final CommentDeletedEventHandler deletedHandler;
+    private final LikeSetEventHandler likeSetHandler;
 
     public SocialEventsKafkaListener(ObjectMapper objectMapper,
                                      CommentCreatedEventHandler createdHandler,
                                      CommentUpdatedEventHandler updatedHandler,
-                                     CommentDeletedEventHandler deletedHandler) {
+                                     CommentDeletedEventHandler deletedHandler,
+                                     LikeSetEventHandler likeSetHandler) {
         this.objectMapper = objectMapper;
         this.createdHandler = createdHandler;
         this.updatedHandler = updatedHandler;
         this.deletedHandler = deletedHandler;
+        this.likeSetHandler = likeSetHandler;
     }
 
     @KafkaListener(topics = {"domain-events"}, groupId = "social-context-read")
@@ -43,8 +48,13 @@ public class SocialEventsKafkaListener {
         try {
             JsonNode root = objectMapper.readTree(payload);
 
-            // ✅ GUARD: ignore tout ce qui n'est pas un event Comment
-            // (ex: LikeSetEvent contient likeId, etc.)
+            if (root.has("likeId")) {
+                LikeSetEvent evt = objectMapper.treeToValue(root, LikeSetEvent.class);
+                likeSetHandler.handle(evt);
+                return;
+            }
+
+            // Guard: ignore anything that is not a social read event handled here.
             if (!root.has("commentId")) {
                 log.debug("[social-read] ignore non-comment event on domain-events key={} payloadLength={}",
                         record.key(), payloadLength(payload));

@@ -11,9 +11,11 @@ import com.nm.fragmentsclean.socialContext.read.projectors.UserSocialProjectionP
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCreatedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentDeletedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentUpdatedEventHandler;
+import com.nm.fragmentsclean.socialContext.read.projections.LikeSetEventHandler;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +46,12 @@ public class SocialSqsIntegrationEventHandlers {
     SqsIntegrationEventHandler socialCommentDeletedSqsIntegrationEventHandler(CommentDeletedEventHandler handler) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.deleted",
                 envelope -> handler.handle(payloadReader.read(envelope, CommentDeletedEvent.class)));
+    }
+
+    @Bean
+    SqsIntegrationEventHandler socialLikeSetSqsIntegrationEventHandler(LikeSetEventHandler handler) {
+        return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.like.set",
+                envelope -> handler.handle(payloadReader.read(envelope, LikeSetEvent.class)));
     }
 
     @Bean

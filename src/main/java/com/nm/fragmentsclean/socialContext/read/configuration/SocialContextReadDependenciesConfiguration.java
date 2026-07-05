@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.socialContext.read.configuration;
 
 import com.nm.fragmentsclean.socialContext.read.GetLikeSummaryQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.ListCommentsQueryHandler;
+import com.nm.fragmentsclean.socialContext.read.adapters.secondary.repositories.JdbcLikeProjectionRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringCommentRepository;
@@ -18,9 +19,9 @@ public class SocialContextReadDependenciesConfiguration {
 
     @Bean
     GetLikeSummaryQueryHandler getLikeSummaryQueryHandler(
-            JdbcTemplate jdbcTemplate
+            JdbcLikeProjectionRepository projectionRepository
     ){
-        return new GetLikeSummaryQueryHandler(jdbcTemplate);
+        return new GetLikeSummaryQueryHandler(projectionRepository);
     }
 
     @Bean
