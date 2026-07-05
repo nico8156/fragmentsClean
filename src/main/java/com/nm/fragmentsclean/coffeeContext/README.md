@@ -134,6 +134,7 @@ Le modèle parle le langage métier.
 
 ### Event
 
+* `CoffeeArchivedEvent`
 * `CoffeeCreatedEvent`
 * `CoffeeDeletedEvent`
 * `CoffeeOpeningHoursImportedEvent`
@@ -146,15 +147,16 @@ Les enrichissements Google sont des faits métier séparés : ils ne sont pas é
 
 ### Use case
 
+* `ArchiveCoffeeCommand`
+* `ArchiveCoffeeCommandHandler`
 * `CreateCoffeeCommand`
 * `CreateCoffeeCommandHandler`
-* `DeleteCoffeeCommand`
-* `DeleteCoffeeCommandHandler`
 * `ImportGoogleOpeningHoursForCoffee`
 * `ImportGooglePhotosForCoffee`
 
 ➡️ Un seul point d’entrée métier pour la création.
 Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
+L'action produit de retrait du catalogue est `ArchiveCoffeeCommand`. Le hard delete reste une capacité technique non exposée comme comportement produit par défaut.
 
 ---
 
@@ -290,6 +292,7 @@ COFFEE_READ_SEED_ENABLED=true
 ### Event handling
 
 * `CoffeeCreatedEventHandler`
+* `CoffeeArchivedEventHandler`
 * `CoffeeDeletedEventHandler`
 * `CoffeePhotoAddedEventHandler`
 * `CoffeePhotoDeletedEventHandler`
@@ -299,17 +302,19 @@ COFFEE_READ_SEED_ENABLED=true
 ➡️ Synchronisation write → read par événements.
 Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
 
-La suppression admin d'un café suit le même chemin :
+La suppression admin visible dans Fragments Studio archive le café. Elle ne supprime pas physiquement le write model.
 
 ```text
 DELETE /api/admin/coffees/{coffeeId}
--> DeleteCoffeeCommand
--> CoffeeDeletedEvent
+-> ArchiveCoffeeCommand
+-> CoffeeArchivedEvent
 -> Outbox/SQS
--> CoffeeDeletedEventHandler
--> suppression summary/photos/openingHours projections
--> projection.updated hints:["deleted","summary","photos","openingHours"]
+-> CoffeeArchivedEventHandler
+-> retrait summary/photos/openingHours projections
+-> projection.updated hints:["archived","summary","photos","openingHours"]
 ```
+
+`DeleteCoffeeCommand` / `CoffeeDeletedEvent` reste réservé à un hard delete technique explicite. Pour le catalogue mobile, le comportement produit par défaut est l'archive.
 
 ---
 

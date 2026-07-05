@@ -106,6 +106,31 @@ class IntegrationEventEnvelopeFactoryTest {
     }
 
     @Test
+    void routesCoffeeArchivedToCoffeeEventsWithStableType() {
+        var outbox = new OutboxEventJpaEntity(
+                "evt-archived",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent",
+                "Coffee",
+                "coffee-1",
+                "coffee:coffee-1",
+                "{\"coffeeId\":{\"value\":\"11111111-1111-1111-1111-111111111111\"}}",
+                Instant.parse("2026-07-04T10:00:00Z"),
+                Instant.parse("2026-07-04T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
+                .containsExactly("coffees-events");
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
+
+        assertThat(envelope.eventType()).isEqualTo("coffee.archived");
+        assertThat(envelope.eventVersion()).isEqualTo(1);
+        assertThat(envelope.destination()).isEqualTo("coffees-events");
+    }
+
+    @Test
     void routesCoffeeDeletedToCoffeeEventsWithStableType() {
         var outbox = new OutboxEventJpaEntity(
                 "evt-5",

@@ -25,7 +25,7 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repo
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreationResult;
@@ -126,17 +126,17 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
-	void admin_delete_coffee_with_valid_token_dispatches_delete_command() throws Exception {
+	void admin_delete_coffee_with_valid_token_dispatches_archive_command() throws Exception {
 		var queryHandler = new CountingListCoffeesQueryHandler();
-		var deleteHandler = new RecordingDeleteCoffeeCommandHandler();
+		var archiveHandler = new RecordingArchiveCoffeeCommandHandler();
 
-		mockMvc("admin-secret", queryHandler, deleteHandler)
+		mockMvc("admin-secret", queryHandler, archiveHandler)
 				.perform(delete("/api/admin/coffees/11111111-1111-1111-1111-111111111111")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
 				.andExpect(status().isAccepted());
 
-		org.assertj.core.api.Assertions.assertThat(deleteHandler.commands).hasSize(1);
-		org.assertj.core.api.Assertions.assertThat(deleteHandler.commands.getFirst().coffeeId())
+		org.assertj.core.api.Assertions.assertThat(archiveHandler.commands).hasSize(1);
+		org.assertj.core.api.Assertions.assertThat(archiveHandler.commands.getFirst().coffeeId())
 				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
 	}
 
@@ -259,8 +259,8 @@ class AdminTokenSecurityTest {
 
 	private MockMvc mockMvc(String token,
 			CountingListCoffeesQueryHandler queryHandler,
-			RecordingDeleteCoffeeCommandHandler deleteHandler) {
-		return mockMvc(token, queryHandler, new RecordingCoffeeCommandHandlers(deleteHandler));
+			RecordingArchiveCoffeeCommandHandler archiveHandler) {
+		return mockMvc(token, queryHandler, new RecordingCoffeeCommandHandlers(archiveHandler));
 	}
 
 	private MockMvc mockMvc(String token,
@@ -315,7 +315,7 @@ class AdminTokenSecurityTest {
 		var queryBus = new QueryBus();
 		queryBus.registerQueryHandlers(List.of(queryHandler));
 		var commandBus = new CommandBus();
-		commandBus.registerCommandHandlers(List.of(handlers.deleteCoffee, handlers.addPhoto, handlers.deletePhoto));
+		commandBus.registerCommandHandlers(List.of(handlers.archiveCoffee, handlers.addPhoto, handlers.deletePhoto));
 		return new AdminCoffeesReadController(
 				commandBus,
 				queryBus,
@@ -393,11 +393,11 @@ class AdminTokenSecurityTest {
 		}
 	}
 
-	private static class RecordingDeleteCoffeeCommandHandler implements CommandHandler<DeleteCoffeeCommand> {
-		private final List<DeleteCoffeeCommand> commands = new java.util.ArrayList<>();
+	private static class RecordingArchiveCoffeeCommandHandler implements CommandHandler<ArchiveCoffeeCommand> {
+		private final List<ArchiveCoffeeCommand> commands = new java.util.ArrayList<>();
 
 		@Override
-		public void execute(DeleteCoffeeCommand command) {
+		public void execute(ArchiveCoffeeCommand command) {
 			commands.add(command);
 		}
 	}
@@ -425,16 +425,16 @@ class AdminTokenSecurityTest {
 	}
 
 	private static class RecordingCoffeeCommandHandlers {
-		private final RecordingDeleteCoffeeCommandHandler deleteCoffee;
+		private final RecordingArchiveCoffeeCommandHandler archiveCoffee;
 		private final RecordingAddCoffeePhotoCommandHandler addPhoto = new RecordingAddCoffeePhotoCommandHandler();
 		private final RecordingDeleteCoffeePhotoCommandHandler deletePhoto = new RecordingDeleteCoffeePhotoCommandHandler();
 
 		private RecordingCoffeeCommandHandlers() {
-			this(new RecordingDeleteCoffeeCommandHandler());
+			this(new RecordingArchiveCoffeeCommandHandler());
 		}
 
-		private RecordingCoffeeCommandHandlers(RecordingDeleteCoffeeCommandHandler deleteCoffee) {
-			this.deleteCoffee = deleteCoffee;
+		private RecordingCoffeeCommandHandlers(RecordingArchiveCoffeeCommandHandler archiveCoffee) {
+			this.archiveCoffee = archiveCoffee;
 		}
 	}
 

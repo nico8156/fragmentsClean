@@ -29,7 +29,8 @@ public class FakeCoffeeRepository implements CoffeeRepository {
             String website,
             Set<String> tags,
             int version,
-            Instant updatedAt
+            Instant updatedAt,
+            Instant archivedAt
     ) {}
 
     private final Map<CoffeeId, Coffee> store = new HashMap<>();
@@ -90,7 +91,8 @@ public class FakeCoffeeRepository implements CoffeeRepository {
                 c.website() != null ? c.website().value() : null,
                 c.tags().stream().map(Tag::value).collect(Collectors.toSet()),
                 c.version(),
-                c.updatedAt()
+                c.updatedAt(),
+                c.archivedAt().orElse(null)
         );
     }
 

@@ -8,6 +8,7 @@ public final class IntegrationEventTypeCatalog {
             Map.entry("ArticleCreatedEvent", "article.created"),
             Map.entry("AuthUserCreatedEvent", "auth.user.created"),
             Map.entry("AuthUserLoggedInEvent", "auth.user.logged_in"),
+            Map.entry("CoffeeArchivedEvent", "coffee.archived"),
             Map.entry("CoffeeCreatedEvent", "coffee.created"),
             Map.entry("CoffeeDeletedEvent", "coffee.deleted"),
             Map.entry("CoffeePhotoAddedEvent", "coffee.photo_added"),

@@ -26,8 +26,12 @@ CREATE TABLE IF NOT EXISTS coffees (
                          website         VARCHAR(512),
                          tags_csv        TEXT,
                          version         INTEGER NOT NULL,
-                         updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
+                         updated_at      TIMESTAMP WITH TIME ZONE NOT NULL,
+                         archived_at     TIMESTAMP WITH TIME ZONE
 );
+
+ALTER TABLE IF EXISTS coffees
+    ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_coffees_google_place_id
     ON coffees (google_place_id)

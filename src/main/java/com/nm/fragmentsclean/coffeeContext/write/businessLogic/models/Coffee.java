@@ -24,6 +24,7 @@ public final class Coffee extends AggregateRoot {
 
 	private int version;
 	private Instant updatedAt;
+	private Instant archivedAt;
 
 	// ========= CTOR privé "complet" =========
 
@@ -38,7 +39,8 @@ public final class Coffee extends AggregateRoot {
 			List<Photo> photos,
 			OpeningHours openingHours,
 			int version,
-			Instant updatedAt) {
+			Instant updatedAt,
+			Instant archivedAt) {
 
 		super(coffeeId.value()); // <-- on remonte l'UUID brut à AggregateRoot
 		this.coffeeId = Objects.requireNonNull(coffeeId, "coffee id required");
@@ -55,6 +57,7 @@ public final class Coffee extends AggregateRoot {
 		this.openingHours = openingHours != null ? openingHours : OpeningHours.empty();
 		this.version = version;
 		this.updatedAt = updatedAt != null ? updatedAt : Instant.now();
+		this.archivedAt = archivedAt;
 	}
 
 	// ========= Factory "createNew" (pour les commands) =========
@@ -81,7 +84,8 @@ public final class Coffee extends AggregateRoot {
 				/* photos */ List.of(),
 				/* openingHours */ OpeningHours.empty(),
 				/* version */ 0,
-				now);
+				now,
+				null);
 	}
 
 	// ========= Factory "rehydrate" (pour les repos JPA) =========
@@ -98,7 +102,8 @@ public final class Coffee extends AggregateRoot {
 			List<Photo> photos,
 			OpeningHours openingHours,
 			int version,
-			Instant updatedAt) {
+			Instant updatedAt,
+			Instant archivedAt) {
 		return new Coffee(
 				coffeeId,
 				googleId,
@@ -111,7 +116,8 @@ public final class Coffee extends AggregateRoot {
 				photos,
 				openingHours,
 				version,
-				updatedAt);
+				updatedAt,
+				archivedAt);
 	}
 
 	// ========= Getters domaine =========
@@ -164,6 +170,14 @@ public final class Coffee extends AggregateRoot {
 		return updatedAt;
 	}
 
+	public Optional<Instant> archivedAt() {
+		return Optional.ofNullable(archivedAt);
+	}
+
+	public boolean isArchived() {
+		return archivedAt != null;
+	}
+
 	// ========= Behavior =========
 
 	public void rename(CoffeeName newName, Instant now) {
@@ -200,6 +214,14 @@ public final class Coffee extends AggregateRoot {
 	public void setOpeningHours(OpeningHours newOpeningHours, Instant now) {
 		this.openingHours = Objects.requireNonNull(newOpeningHours);
 		touch(now);
+	}
+
+	public void archive(Instant now) {
+		if (isArchived()) {
+			return;
+		}
+		touch(now);
+		this.archivedAt = this.updatedAt;
 	}
 
 	private void touch(Instant now) {

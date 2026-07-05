@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
@@ -54,6 +55,9 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
             return EventRouting.kafkaAndWebSocket();
         }
         if (event instanceof CoffeeCreatedEvent) {
+            return EventRouting.kafkaAndWebSocket();
+        }
+        if (event instanceof CoffeeArchivedEvent) {
             return EventRouting.kafkaAndWebSocket();
         }
         if (event instanceof CoffeeDeletedEvent) {

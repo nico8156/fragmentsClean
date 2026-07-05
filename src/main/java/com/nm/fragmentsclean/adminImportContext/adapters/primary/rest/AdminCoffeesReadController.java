@@ -22,7 +22,7 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repo
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -74,8 +74,8 @@ public class AdminCoffeesReadController {
 	}
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}")
-	public ResponseEntity<Void> deleteCoffee(@PathVariable UUID coffeeId) {
-		commandBus.dispatch(new DeleteCoffeeCommand(UUID.randomUUID(), coffeeId, java.time.Instant.now()));
+	public ResponseEntity<Void> archiveCoffee(@PathVariable UUID coffeeId) {
+		commandBus.dispatch(new ArchiveCoffeeCommand(UUID.randomUUID(), coffeeId, java.time.Instant.now()));
 		return ResponseEntity.accepted().build();
 	}
 
