@@ -6,23 +6,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.nm.fragmentsclean.aticleContext.read.GetArticleBySlugQueryHandler;
-import com.nm.fragmentsclean.aticleContext.read.ListArticlesQueryHandler;
-import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
-import com.nm.fragmentsclean.authenticationContext.read.GetMeQueryHandler;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommandHandler;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.LogoutCommandHandler;
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
-import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommandHandler;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
@@ -30,163 +13,38 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWit
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
-import com.nm.fragmentsclean.socialContext.read.GetLikeStatusQueryHandler;
-import com.nm.fragmentsclean.socialContext.read.GetLikeSummaryQueryHandler;
-import com.nm.fragmentsclean.socialContext.read.ListCommentsQueryHandler;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.CreateCommentCommandHandler;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.DeleteCommentCommandHandler;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.MakeLikeCommandHandler;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.UpdateCommentCommandHandler;
-import com.nm.fragmentsclean.ticketContext.read.GetTicketStatusQueryHandler;
-import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.AuthUserCreatedEventHandler;
 
 @Component
 public class SocialStartupEventListener {
 	private final CommandBus commandBus;
 	private final QueryBus querryBus;
 	private final EventBus eventBus;
-	private final MakeLikeCommandHandler makeLikeCommandHandler;
-	private final CreateCommentCommandHandler createCommentCommandHandler;
-	private final UpdateCommentCommandHandler updateCommentCommandHandler;
-	private final DeleteCommentCommandHandler deleteCommentCommandHandler;
-	private final GetLikeSummaryQueryHandler getLikeSummaryQueryHandler;
-	private final GetLikeStatusQueryHandler getLikeStatusQueryHandler;
-	private final ListCommentsQueryHandler listCommentsQueryHandler;
-	private final ListArticlesQueryHandler listArticlesQueryHandler;
-	private final CreateArticleCommandHandler createArticleCommandHandler;
-	private final ArticleCreatedEventHandler articleCreatedProjectionHandler;
-	private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
-	private final CreateCoffeeCommandHandler createCoffeeCommandHandler;
-	private final DeleteCoffeeCommandHandler deleteCoffeeCommandHandler;
-	private final CoffeeCreatedEventHandler coffeeCreatedProjectionHandler;
-	private final CoffeeDeletedEventHandler coffeeDeletedEventHandler;
-	private final ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee;
-	private final ImportGooglePhotosForCoffee importGooglePhotosForCoffee;
-	private final CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler;
-	private final CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler;
-	private final ListCoffeesQueryHandler listCoffeesQueryHandler;
-	private final GoogleLoginCommandHandler googleLoginCommandHandler;
-	private final RefreshTokenCommandHandler refreshTokenCommandHandler;
-	private final GetMeQueryHandler getMeQueryHandler;
-	private final LogoutCommandHandler logoutCommandHandler;
-	private final AuthUserCreatedEventHandler authUserCreatedEventHandler;
-	private final VerifyTicketCommandHandler verifyTicketCommandHandler;
-	private final TicketVerificationCompletedEventHandler ticketVerificationCompletedEventHandler;
-	private final ProcessTicketVerificationEventHandler processTicketVerificationEventHandler;
-	private final GetTicketStatusQueryHandler getTicketStatusQueryHandler;
+	private final List<CommandHandler<?>> commandHandlers;
+	private final List<CommandHandlerWithResult<?, ?>> commandHandlersWithResult;
+	private final List<QueryHandler<?, ?>> queryHandlers;
+	private final List<EventHandler<?>> eventHandlers;
 
 	public SocialStartupEventListener(CommandBus commandBus,
 			QueryBus querryBus,
 			EventBus eventBus,
-			MakeLikeCommandHandler makeLikeCommandHandler,
-			CreateCommentCommandHandler createCommentCommandHandler,
-			UpdateCommentCommandHandler updateCommentCommandHandler,
-			DeleteCommentCommandHandler deleteCommentCommandHandler,
-			GetLikeSummaryQueryHandler getLikeSummaryQueryHandler,
-			GetLikeStatusQueryHandler getLikeStatusQueryHandler,
-			ListCommentsQueryHandler listCommentsQueryHandler,
-			ListArticlesQueryHandler listArticlesQueryHandler,
-			CreateArticleCommandHandler createArticleCommandHandler,
-			ArticleCreatedEventHandler articleCreatedProjectionHandler,
-			GetArticleBySlugQueryHandler getArticleBySlugQueryHandler,
-			CreateCoffeeCommandHandler createCoffeeCommandHandler,
-			DeleteCoffeeCommandHandler deleteCoffeeCommandHandler,
-			CoffeeCreatedEventHandler coffeeCreatedProjectionHandler,
-			CoffeeDeletedEventHandler coffeeDeletedEventHandler,
-			ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
-			ImportGooglePhotosForCoffee importGooglePhotosForCoffee,
-			CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler,
-			CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler,
-			ListCoffeesQueryHandler listCoffeesQueryHandler,
-			GoogleLoginCommandHandler googleLoginCommandHandler,
-			RefreshTokenCommandHandler refreshTokenCommandHandler,
-			GetMeQueryHandler getMeQueryHandler,
-			LogoutCommandHandler logoutCommandHandler,
-			AuthUserCreatedEventHandler authUserCreatedEventHandler,
-			VerifyTicketCommandHandler verifyTicketCommandHandler,
-			TicketVerificationCompletedEventHandler ticketVerificationCompletedEventHandler,
-			ProcessTicketVerificationEventHandler processTicketVerificationEventHandler,
-			GetTicketStatusQueryHandler getTicketStatusQueryHandler) {
+			List<CommandHandler<?>> commandHandlers,
+			List<CommandHandlerWithResult<?, ?>> commandHandlersWithResult,
+			List<QueryHandler<?, ?>> queryHandlers,
+			List<EventHandler<?>> eventHandlers) {
 		this.commandBus = commandBus;
 		this.querryBus = querryBus;
 		this.eventBus = eventBus;
-		this.makeLikeCommandHandler = makeLikeCommandHandler;
-		this.createCommentCommandHandler = createCommentCommandHandler;
-		this.updateCommentCommandHandler = updateCommentCommandHandler;
-		this.deleteCommentCommandHandler = deleteCommentCommandHandler;
-		this.getLikeSummaryQueryHandler = getLikeSummaryQueryHandler;
-		this.getLikeStatusQueryHandler = getLikeStatusQueryHandler;
-		this.listCommentsQueryHandler = listCommentsQueryHandler;
-		this.listArticlesQueryHandler = listArticlesQueryHandler;
-		this.createArticleCommandHandler = createArticleCommandHandler;
-		this.articleCreatedProjectionHandler = articleCreatedProjectionHandler;
-		this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
-		this.createCoffeeCommandHandler = createCoffeeCommandHandler;
-		this.deleteCoffeeCommandHandler = deleteCoffeeCommandHandler;
-		this.coffeeCreatedProjectionHandler = coffeeCreatedProjectionHandler;
-		this.coffeeDeletedEventHandler = coffeeDeletedEventHandler;
-		this.importGoogleOpeningHoursForCoffee = importGoogleOpeningHoursForCoffee;
-		this.importGooglePhotosForCoffee = importGooglePhotosForCoffee;
-		this.coffeeOpeningHoursImportedEventHandler = coffeeOpeningHoursImportedEventHandler;
-		this.coffeePhotosImportedEventHandler = coffeePhotosImportedEventHandler;
-		this.listCoffeesQueryHandler = listCoffeesQueryHandler;
-		this.googleLoginCommandHandler = googleLoginCommandHandler;
-		this.refreshTokenCommandHandler = refreshTokenCommandHandler;
-		this.getMeQueryHandler = getMeQueryHandler;
-		this.logoutCommandHandler = logoutCommandHandler;
-		this.authUserCreatedEventHandler = authUserCreatedEventHandler;
-		this.verifyTicketCommandHandler = verifyTicketCommandHandler;
-		this.ticketVerificationCompletedEventHandler = ticketVerificationCompletedEventHandler;
-		this.processTicketVerificationEventHandler = processTicketVerificationEventHandler;
-		this.getTicketStatusQueryHandler = getTicketStatusQueryHandler;
+		this.commandHandlers = commandHandlers;
+		this.commandHandlersWithResult = commandHandlersWithResult;
+		this.queryHandlers = queryHandlers;
+		this.eventHandlers = eventHandlers;
 	}
 
 	@EventListener
 	public void onApplicationReady(ApplicationReadyEvent event) {
-		List<CommandHandler<?>> handlers = List.of(
-				makeLikeCommandHandler,
-				createCommentCommandHandler,
-				updateCommentCommandHandler,
-				deleteCommentCommandHandler,
-				createArticleCommandHandler,
-				createCoffeeCommandHandler,
-				deleteCoffeeCommandHandler,
-				logoutCommandHandler,
-				verifyTicketCommandHandler
-
-		);
-		commandBus.registerCommandHandlers(handlers);
-
-		List<CommandHandlerWithResult<?, ?>> handlersWithResult = List.of(
-				googleLoginCommandHandler,
-				refreshTokenCommandHandler);
-		commandBus.registerCommandHandlersWithResult(handlersWithResult);
-
-		List<QueryHandler<?, ?>> queryHandlers = List.of(
-				getLikeSummaryQueryHandler,
-				listCommentsQueryHandler,
-				getLikeStatusQueryHandler,
-				listArticlesQueryHandler,
-				getArticleBySlugQueryHandler,
-				listCoffeesQueryHandler,
-				getMeQueryHandler,
-				getTicketStatusQueryHandler);
+		commandBus.registerCommandHandlers(commandHandlers);
+		commandBus.registerCommandHandlersWithResult(commandHandlersWithResult);
 		querryBus.registerQueryHandlers(queryHandlers);
-
-		List<EventHandler<?>> eventHandlers = List.of(
-				articleCreatedProjectionHandler,
-				coffeeCreatedProjectionHandler,
-				coffeeDeletedEventHandler,
-				importGoogleOpeningHoursForCoffee,
-				importGooglePhotosForCoffee,
-				coffeeOpeningHoursImportedEventHandler,
-				coffeePhotosImportedEventHandler,
-				authUserCreatedEventHandler,
-				ticketVerificationCompletedEventHandler,
-				processTicketVerificationEventHandler);
 		eventBus.registerEventHandlers(eventHandlers);
 	}
 }
