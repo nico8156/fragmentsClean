@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.SocialStartupEventListener;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.BusHandlerRegistrationListener;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
@@ -21,7 +21,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandle
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class SocialStartupEventListenerTest {
+class BusHandlerRegistrationListenerTest {
 	@Test
 	void registers_all_injected_handlers_on_application_ready() {
 		var commandBus = new CommandBus();
@@ -32,7 +32,7 @@ class SocialStartupEventListenerTest {
 		var queryHandler = new RecordingQueryHandler();
 		var eventHandler = new RecordingEventHandler();
 
-		new SocialStartupEventListener(
+		new BusHandlerRegistrationListener(
 				commandBus,
 				queryBus,
 				eventBus,

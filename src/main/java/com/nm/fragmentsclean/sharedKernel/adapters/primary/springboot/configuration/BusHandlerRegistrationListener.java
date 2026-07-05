@@ -15,7 +15,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandle
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
 @Component
-public class SocialStartupEventListener {
+public class BusHandlerRegistrationListener {
 	private final CommandBus commandBus;
 	private final QueryBus querryBus;
 	private final EventBus eventBus;
@@ -24,7 +24,7 @@ public class SocialStartupEventListener {
 	private final List<QueryHandler<?, ?>> queryHandlers;
 	private final List<EventHandler<?>> eventHandlers;
 
-	public SocialStartupEventListener(CommandBus commandBus,
+	public BusHandlerRegistrationListener(CommandBus commandBus,
 			QueryBus querryBus,
 			EventBus eventBus,
 			List<CommandHandler<?>> commandHandlers,
