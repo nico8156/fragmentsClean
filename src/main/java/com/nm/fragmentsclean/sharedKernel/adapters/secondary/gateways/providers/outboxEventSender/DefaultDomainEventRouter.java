@@ -6,6 +6,8 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCre
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.EventRouting;
@@ -61,6 +63,12 @@ public class DefaultDomainEventRouter implements DomainEventRouter {
             return EventRouting.kafkaAndWebSocket();
         }
         if (event instanceof CoffeePhotosImportedEvent) {
+            return EventRouting.kafkaAndWebSocket();
+        }
+        if (event instanceof CoffeePhotoAddedEvent) {
+            return EventRouting.kafkaAndWebSocket();
+        }
+        if (event instanceof CoffeePhotoDeletedEvent) {
             return EventRouting.kafkaAndWebSocket();
         }
 

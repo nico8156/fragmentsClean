@@ -11,6 +11,8 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.Au
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -114,6 +116,16 @@ public class OutboxDomainEventPublisher implements DomainEventPublisher {
             } else if (event instanceof CoffeePhotosImportedEvent photosImportedEvent) {
                 aggregateType = "Coffee";
                 aggregateId = photosImportedEvent.coffeeId().toString();
+                streamKey = "coffee:" + aggregateId;
+
+            } else if (event instanceof CoffeePhotoAddedEvent photoAddedEvent) {
+                aggregateType = "Coffee";
+                aggregateId = photoAddedEvent.coffeeId().toString();
+                streamKey = "coffee:" + aggregateId;
+
+            } else if (event instanceof CoffeePhotoDeletedEvent photoDeletedEvent) {
+                aggregateType = "Coffee";
+                aggregateId = photoDeletedEvent.coffeeId().toString();
                 streamKey = "coffee:" + aggregateId;
 
             } else if (event instanceof AuthUserCreatedEvent createdEvent) {
