@@ -18,6 +18,16 @@ public class GoogleOAuthProperties {
     private String clientSecret;
 
     /**
+     * Client ID public iOS utilisé par le flow mobile Authorization Code + PKCE.
+     */
+    private String mobileIosClientId;
+
+    /**
+     * Redirect URI mobile iOS autorisée. La requête mobile doit matcher exactement cette valeur.
+     */
+    private String mobileIosRedirectUri;
+
+    /**
      * redirect_uri utilisée pour l’échange du code.
      * Pour un serverAuthCode depuis mobile, Google accepte souvent "" (empty string),
      * mais ça doit matcher ce que tu as configuré côté console.
@@ -41,6 +51,12 @@ public class GoogleOAuthProperties {
 
     public String getClientSecret() { return clientSecret; }
     public void setClientSecret(String clientSecret) { this.clientSecret = clientSecret; }
+
+    public String getMobileIosClientId() { return mobileIosClientId; }
+    public void setMobileIosClientId(String mobileIosClientId) { this.mobileIosClientId = mobileIosClientId; }
+
+    public String getMobileIosRedirectUri() { return mobileIosRedirectUri; }
+    public void setMobileIosRedirectUri(String mobileIosRedirectUri) { this.mobileIosRedirectUri = mobileIosRedirectUri; }
 
     public String getRedirectUri() { return redirectUri; }
     public void setRedirectUri(String redirectUri) { this.redirectUri = redirectUri; }

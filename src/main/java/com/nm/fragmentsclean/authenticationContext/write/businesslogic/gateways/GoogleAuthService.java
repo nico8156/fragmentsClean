@@ -4,6 +4,10 @@ public interface GoogleAuthService {
 
     GoogleUserInfo exchangeCodeForUser(String authorizationCode);
 
+    GoogleUserInfo exchangeMobileAuthorizationCodeForUser(
+            String authorizationCode,
+            String codeVerifier,
+            String redirectUri);
 
     record GoogleUserInfo(
             String sub,
