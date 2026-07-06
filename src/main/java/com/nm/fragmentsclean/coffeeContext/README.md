@@ -153,6 +153,7 @@ Les enrichissements Google sont des faits métier séparés : ils ne sont pas é
 * `CreateCoffeeCommandHandler`
 * `ImportGoogleOpeningHoursForCoffee`
 * `ImportGooglePhotosForCoffee`
+* `CoffeeCreatedProcessManager`
 
 ➡️ Un seul point d’entrée métier pour la création.
 Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
@@ -175,6 +176,7 @@ Le flux photo actuel est asynchrone :
 
 ```text
 CoffeeCreatedEvent
+-> CoffeeCreatedProcessManager
 -> ImportGooglePhotosForCoffee
 -> GooglePlacePhotosGateway
 -> CoffeePhotoStorage

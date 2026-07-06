@@ -11,7 +11,7 @@ import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCo
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerifyAcceptedEventHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -40,7 +40,7 @@ public class TicketSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler ticketVerificationRequestedSqsIntegrationEventHandler(
-            ProcessTicketVerificationEventHandler handler) {
+            TicketVerificationProcessManager handler) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_VERIFICATION_REQUESTED, "ticket.verify.accepted",
                 envelope -> handler.handle(payloadReader.read(envelope, TicketVerifyAcceptedEvent.class)));
     }

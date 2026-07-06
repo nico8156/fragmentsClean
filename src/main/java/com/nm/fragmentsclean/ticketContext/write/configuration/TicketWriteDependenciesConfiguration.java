@@ -20,7 +20,7 @@ import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.ticketEngine.ProcessBuilderTicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 
 @Configuration
@@ -45,12 +45,12 @@ public class TicketWriteDependenciesConfiguration {
 	}
 
 	@Bean
-	ProcessTicketVerificationEventHandler processTicketVerificationEventHandler(
+	TicketVerificationProcessManager ticketVerificationProcessManager(
 			TicketRepository ticketRepository,
 			TicketVerificationProvider ticketVerificationProvider,
 			DomainEventPublisher domainEventPublisher,
 			DateTimeProvider dateTimeProvider) {
-		return new ProcessTicketVerificationEventHandler(ticketRepository, ticketVerificationProvider,
+		return new TicketVerificationProcessManager(ticketRepository, ticketVerificationProvider,
 				domainEventPublisher, dateTimeProvider);
 	}
 

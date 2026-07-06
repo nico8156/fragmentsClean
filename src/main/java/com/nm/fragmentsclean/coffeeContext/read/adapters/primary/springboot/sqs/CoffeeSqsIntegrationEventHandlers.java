@@ -3,7 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.sqs
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.COFFEES_EVENTS;
 
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedProcessManager;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
@@ -16,8 +16,6 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpen
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
@@ -36,15 +34,8 @@ public class CoffeeSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler coffeeCreatedSqsIntegrationEventHandler(
-            CoffeeCreatedEventHandler coffeeCreatedHandler,
-            ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
-            ImportGooglePhotosForCoffee importGooglePhotosForCoffee) {
-        return new SimpleCoffeeSqsIntegrationEventHandler("coffee.created", envelope -> {
-            CoffeeCreatedEvent event = payloadReader.read(envelope, CoffeeCreatedEvent.class);
-            coffeeCreatedHandler.handle(event);
-            importGoogleOpeningHoursForCoffee.handle(event);
-            importGooglePhotosForCoffee.handle(event);
-        });
+            CoffeeCreatedProcessManager coffeeCreatedProcessManager) {
+        return readAndHandle("coffee.created", CoffeeCreatedEvent.class, coffeeCreatedProcessManager::handle);
     }
 
     @Bean

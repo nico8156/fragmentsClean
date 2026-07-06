@@ -120,6 +120,39 @@ Rules:
 
 Use this when a context adds a new outbox-backed Domain Event.
 
+## Pattern 2C: Explicit Policy / Process Manager
+
+```text
+transport message
+-> technical router
+-> typed event payload
+-> Policy / ProcessManager
+-> one or more domain/projection effects
+```
+
+Rules:
+
+- technical routers only deserialize and dispatch;
+- if one event triggers several effects, name that workflow as a `Policy` or
+  `ProcessManager`;
+- a process manager may coordinate existing handlers, but it must not become a
+  second transport router;
+- projection sync is still published by projection handlers, after projection
+  writes, not by command handlers or transport code;
+- technical failures still throw so SQS can retry;
+- business outcomes still publish completed domain events where the domain needs
+  that fact.
+
+Current applied workflows:
+
+- `CoffeeCreatedProcessManager`: `coffee.created` updates the summary
+  projection, then triggers Google opening-hours and photo enrichment policies;
+- `TicketVerificationProcessManager`: `ticket.verify.accepted` loads the ticket,
+  calls the verification provider, confirms/rejects the aggregate, and publishes
+  `TicketVerificationCompletedEvent` for business outcomes.
+
+Use this when a domain event starts a long-running or multi-step workflow.
+
 ## Pattern 3: Technical Failure
 
 ```text
