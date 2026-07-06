@@ -14,5 +14,6 @@ Read in order:
 8. [Command status strategy](command-status.md)
 9. [Test policy](testing-policy.md)
 10. [AWS MVP policy](aws-mvp-policy.md)
+11. [Release 1.0 architecture readiness](release-1-readiness.md)
 
 The `AGENTS.md` file remains the normative doctrine. These documents explain the doctrine in operational terms.

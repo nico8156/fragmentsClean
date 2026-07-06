@@ -33,6 +33,8 @@ Use the matching orchestrator in `.agents/backend/orchestrators`.
 - Consumers must use inbox idempotence.
 - Event contracts must stay stable and primitive-only.
 - WebSocket ACK is best-effort only.
+- WebSocket/STOMP origins must be configuration-driven, never wildcard.
+- Projection freshness must use Projection Sync SSE plus GET snapshots.
 - `/commands/{commandId}` is the canonical status source.
 - Secrets come from environment or AWS secret mechanisms.
 

@@ -1,11 +1,14 @@
 # WebSocket Strategy
 
-WebSocket is an opportunistic UX accelerator.
+WebSocket is compatibility plumbing for opportunistic command ACKs.
 
-It exists to reduce visible latency for:
+It may reduce visible latency for:
 - like ACKs
 - ticket verification ACKs
 - future lightweight user-facing acknowledgements
+
+It is not the platform synchronization model. Projection freshness belongs to
+Projection Sync SSE plus GET snapshots.
 
 Comment ACKs are being removed domain by domain from the mobile runtime. The
 comments pilot now uses Projection Sync SSE for read-model freshness and command
@@ -19,6 +22,8 @@ status polling for command reconciliation.
 - Mobile must poll command status when ACK is missing.
 - Backend must not put business invariants in socket delivery.
 - Socket payloads should stay small and command-correlated.
+- WebSocket origins must come from configuration, never from a wildcard.
+- New read-model freshness work must use Projection Sync SSE, not WebSocket.
 
 ## Deployment
 
@@ -30,4 +35,5 @@ The system must remain correct if:
 - a message is missed
 - the mobile app is backgrounded
 
-Correctness comes from command status, not socket delivery.
+Correctness comes from command status and read-model GET snapshots, not socket
+delivery.
