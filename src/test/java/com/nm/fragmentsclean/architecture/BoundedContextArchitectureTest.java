@@ -39,6 +39,21 @@ class BoundedContextArchitectureTest {
     }
 
     @Test
+    void platform_eventing_metadata_resolution_does_not_import_bounded_contexts() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("platform/eventing")).stream()
+                .filter(file -> file.getFileName().toString().contains("OutboxEventMetadata"))
+                .flatMap(file -> importsFrom(file).stream()
+                        .filter(imported -> CONTEXTS.contains(imported.context()))
+                        .map(imported -> violation(file, imported)))
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("platform/eventing orchestrates contracts and contributors; event metadata must be declared by producer contexts")
+                .isEmpty();
+    }
+
+    @Test
     void bounded_contexts_do_not_import_each_other_except_explicit_integration_edges() throws IOException {
         var violations = new java.util.ArrayList<String>();
         for (String context : CONTEXTS) {

@@ -97,6 +97,29 @@ Current applied edges:
 Use this when one bounded context needs to react to facts owned by another
 bounded context.
 
+## Pattern 2B: Producer-Owned Outbox Metadata
+
+```text
+producer Domain Event
+-> producer OutboxEventMetadataContributor
+-> platform CompositeOutboxEventMetadataResolver
+-> outbox metadata
+```
+
+Rules:
+
+- event metadata belongs near the producer context because it describes the
+  producer's aggregate identity and stream key;
+- `platform/eventing` composes contributors but must not import bounded context
+  event classes;
+- each producer context contributes only the events it owns;
+- an unknown event may still be persisted with fallback metadata, but that is a
+  signal to add the missing producer contribution;
+- adding a new Domain Event that goes to the outbox requires adding or updating
+  the producer context contribution.
+
+Use this when a context adds a new outbox-backed Domain Event.
+
 ## Pattern 3: Technical Failure
 
 ```text

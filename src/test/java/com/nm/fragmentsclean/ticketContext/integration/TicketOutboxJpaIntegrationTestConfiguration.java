@@ -1,12 +1,13 @@
 package com.nm.fragmentsclean.ticketContext.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nm.fragmentsclean.platform.eventing.CompositeOutboxEventMetadataResolver;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.OutboxDomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
-import com.nm.fragmentsclean.platform.eventing.DefaultOutboxEventMetadataResolver;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.eventing.TicketOutboxEventMetadataContributor;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.JpaTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.SpringTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
@@ -43,7 +44,8 @@ public class TicketOutboxJpaIntegrationTestConfiguration {
                 outboxRepository,
                 objectMapper,
                 dateTimeProvider,
-                new DefaultOutboxEventMetadataResolver());
+                new CompositeOutboxEventMetadataResolver(
+                        java.util.List.of(new TicketOutboxEventMetadataContributor())));
     }
 
     @Bean
