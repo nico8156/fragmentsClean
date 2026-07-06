@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -90,7 +91,7 @@ public class ReadLikeControllerIT extends AbstractBaseE2E {
 				userId,
 				targetId,
 				active,
-				updatedAt,
+				Timestamp.from(updatedAt),
 				version);
 	}
 }

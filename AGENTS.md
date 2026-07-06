@@ -222,6 +222,8 @@ Rules:
 - backend may emit ACKs best-effort
 - no business invariant may depend on socket delivery
 - production deployment must tolerate socket reconnects and missed ACKs
+- WebSocket/STOMP origins must be configuration-driven; do not use wildcard origins
+- WebSocket/STOMP must not be used for read-model freshness
 
 New mobile freshness work must prefer Projection Sync SSE over WebSocket/STOMP.
 SSE payloads must be projection-oriented (`projection.updated`) and must never

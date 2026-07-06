@@ -58,6 +58,48 @@ class BoundedContextArchitectureTest {
                 .isEmpty();
     }
 
+    @Test
+    void write_side_does_not_publish_projection_sync_events() throws IOException {
+        List<String> violations = CONTEXTS.stream()
+                .map(context -> MAIN_JAVA.resolve(context).resolve("write"))
+                .filter(Files::exists)
+                .flatMap(path -> javaFilesUnchecked(path).stream())
+                .flatMap(file -> importsFrom(file).stream()
+                        .filter(imported -> imported.context().equals("sharedKernel"))
+                        .filter(imported -> imported.importPath().startsWith("businesslogic.projectionSync."))
+                        .map(imported -> violation(file, imported)))
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("ProjectionSyncEvent belongs to read/projection boundaries, not write-side decisions")
+                .isEmpty();
+    }
+
+    @Test
+    void main_code_does_not_use_system_out_logging() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA).stream()
+                .filter(file -> fileContains(file, "System.out."))
+                .map(BoundedContextArchitectureTest::normalize)
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("main code must use structured logging and must not print payloads through System.out")
+                .isEmpty();
+    }
+
+    @Test
+    void websocket_endpoint_does_not_allow_every_origin() throws IOException {
+        Path webSocketConfig = MAIN_JAVA.resolve("sharedKernel")
+                .resolve("adapters/primary/springboot/configuration/webSocket/WebSocketConfig.java");
+
+        assertThat(Files.readString(webSocketConfig))
+                .as("WebSocket/STOMP is compatibility plumbing and must use configured origins, never wildcard origins")
+                .doesNotContain("setAllowedOriginPatterns(\"*\")")
+                .doesNotContain("setAllowedOrigins(\"*\")");
+    }
+
     private static boolean isAllowedIntegrationEdge(String sourceContext, Path sourceFile, ImportedType imported) {
         String sourcePath = normalize(sourceFile);
         String importPath = imported.context() + "." + imported.importPath();
@@ -99,6 +141,14 @@ class BoundedContextArchitectureTest {
         }
     }
 
+    private static List<Path> javaFilesUnchecked(Path root) {
+        try {
+            return javaFiles(root);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to scan " + root, exception);
+        }
+    }
+
     private static List<ImportedType> importsFrom(Path file) {
         try {
             return Files.readAllLines(file).stream()
@@ -118,6 +168,14 @@ class BoundedContextArchitectureTest {
 
     private static String normalize(Path file) {
         return file.toString().replace('\\', '/');
+    }
+
+    private static boolean fileContains(Path file, String needle) {
+        try {
+            return Files.readString(file).contains(needle);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to read " + file, exception);
+        }
     }
 
     private record ImportedType(String context, String importPath) {

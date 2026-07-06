@@ -2,6 +2,9 @@
 
 This runbook describes the minimal AWS staging deployment for Fragments.
 
+For incident and release-1 verification commands, see
+[operations-runbook.md](operations-runbook.md).
+
 ## Target
 
 - one EC2 ARM64 instance
