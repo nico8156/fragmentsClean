@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.userApplicationContext.write.adapters.primary.spri
 
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.AUTH_USERS_EVENTS;
 
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserCreatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
@@ -30,6 +30,6 @@ public class AuthUserCreatedSqsIntegrationEventHandler implements SqsIntegration
 
     @Override
     public void handle(IntegrationEventEnvelope envelope) {
-        handler.handle(payloadReader.read(envelope, AuthUserCreatedEvent.class));
+        handler.handle(payloadReader.read(envelope, AuthUserCreatedIntegrationEvent.class));
     }
 }

@@ -15,10 +15,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
+import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations;
+import com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.nm.fragmentsclean.userApplicationContext.write.adapters.primary.springboot.sqs.AuthUserCreatedSqsIntegrationEventHandler;
 
 @ActiveProfiles("test")
 public class AuthMeIT extends AbstractBaseE2E {
@@ -31,7 +36,11 @@ public class AuthMeIT extends AbstractBaseE2E {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 	@Autowired
-	OutboxEventDispatcher outboxEventDispatcher;
+	SpringOutboxEventRepository outboxEventRepository;
+	@Autowired
+	TransactionTemplate transactionTemplate;
+	@Autowired
+	AuthUserCreatedSqsIntegrationEventHandler authUserCreatedSqsIntegrationEventHandler;
 
 	@BeforeEach
 	void setup() {
@@ -62,8 +71,13 @@ public class AuthMeIT extends AbstractBaseE2E {
 		String accessToken = loginJson.path("accessToken").asText();
 		String appUserId = loginJson.path("user").path("id").asText();
 
-		// WHEN : outbox -> integration messaging
-		outboxEventDispatcher.dispatchPending();
+		// WHEN : outbox -> public integration envelope -> SQS consumer ACL
+		var envelope = transactionTemplate.execute(status -> {
+			var outboxEvent = outboxEventRepository.findTop50ByStatusOrderByIdAsc(OutboxStatus.PENDING).getFirst();
+			return new IntegrationEventEnvelopeFactory(objectMapper)
+					.from(outboxEvent, IntegrationEventDestinations.AUTH_USERS_EVENTS);
+		});
+		authUserCreatedSqsIntegrationEventHandler.handle(envelope);
 
 		// THEN : attendre que app_users soit créé (pipeline async)
 		await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
@@ -72,6 +86,11 @@ public class AuthMeIT extends AbstractBaseE2E {
 					Integer.class,
 					java.util.UUID.fromString(appUserId));
 			assertThat(count).isEqualTo(1);
+			String displayName = jdbcTemplate.queryForObject(
+					"SELECT display_name FROM app_users WHERE id = ?",
+					String.class,
+					java.util.UUID.fromString(appUserId));
+			assertThat(displayName).isEqualTo("User " + code);
 		});
 
 		// WHEN/THEN : appel /auth/me avec le Bearer => 200

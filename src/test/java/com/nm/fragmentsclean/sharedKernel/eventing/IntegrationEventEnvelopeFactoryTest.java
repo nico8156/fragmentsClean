@@ -56,6 +56,103 @@ class IntegrationEventEnvelopeFactoryTest {
     }
 
     @Test
+    void mapsAuthUserDomainPayloadToPublicIntegrationPayload() {
+        var outbox = new OutboxEventJpaEntity(
+                "11111111-1111-1111-1111-111111111111",
+                "com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent",
+                "AuthUser",
+                "22222222-2222-2222-2222-222222222222",
+                "authUser:22222222-2222-2222-2222-222222222222",
+                """
+                        {
+                          "eventId":"11111111-1111-1111-1111-111111111111",
+                          "authUserId":"22222222-2222-2222-2222-222222222222",
+                          "provider":"GOOGLE",
+                          "providerUserId":"google-user",
+                          "email":"user@example.test",
+                          "emailVerified":true,
+                          "displayName":"Test User",
+                          "avatarUrl":"https://example.test/avatar.png",
+                          "occurredAt":"2026-07-06T08:00:00Z"
+                        }
+                        """,
+                Instant.parse("2026-07-06T08:00:00Z"),
+                Instant.parse("2026-07-06T08:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.AUTH_USERS_EVENTS);
+
+        assertThat(envelope.eventType()).isEqualTo("auth.user.created");
+        assertThat(envelope.eventVersion()).isEqualTo(1);
+        assertThat(envelope.payloadJson())
+                .contains("\"authUserId\":\"22222222-2222-2222-2222-222222222222\"")
+                .contains("\"provider\":\"GOOGLE\"")
+                .doesNotContain("AuthUserCreatedEvent");
+    }
+
+    @Test
+    void mapsDoubleEncodedAuthUserDomainPayloadToPublicIntegrationPayload() {
+        var outbox = new OutboxEventJpaEntity(
+                "11111111-1111-1111-1111-111111111111",
+                "com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent",
+                "AuthUser",
+                "22222222-2222-2222-2222-222222222222",
+                "authUser:22222222-2222-2222-2222-222222222222",
+                """
+                        "{\\"eventId\\":\\"11111111-1111-1111-1111-111111111111\\",\\"authUserId\\":\\"22222222-2222-2222-2222-222222222222\\",\\"provider\\":\\"GOOGLE\\",\\"providerUserId\\":\\"google-user\\",\\"email\\":\\"user@example.test\\",\\"emailVerified\\":true,\\"displayName\\":\\"Test User\\",\\"avatarUrl\\":\\"https://example.test/avatar.png\\",\\"occurredAt\\":\\"2026-07-06T08:00:00Z\\"}"
+                        """,
+                Instant.parse("2026-07-06T08:00:00Z"),
+                Instant.parse("2026-07-06T08:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.AUTH_USERS_EVENTS);
+
+        assertThat(envelope.payloadJson())
+                .contains("\"displayName\":\"Test User\"")
+                .contains("\"email\":\"user@example.test\"");
+    }
+
+    @Test
+    void mapsAppUserDomainPayloadToPublicIntegrationPayload() {
+        var outbox = new OutboxEventJpaEntity(
+                "33333333-3333-3333-3333-333333333333",
+                "com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent",
+                "AppUser",
+                "44444444-4444-4444-4444-444444444444",
+                "appUser:44444444-4444-4444-4444-444444444444",
+                """
+                        {
+                          "eventId":"33333333-3333-3333-3333-333333333333",
+                          "userId":"44444444-4444-4444-4444-444444444444",
+                          "authUserId":"55555555-5555-5555-5555-555555555555",
+                          "displayName":"App User",
+                          "avatarUrl":null,
+                          "version":2,
+                          "occurredAt":"2026-07-06T08:00:00Z"
+                        }
+                        """,
+                Instant.parse("2026-07-06T08:00:00Z"),
+                Instant.parse("2026-07-06T08:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        var envelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.APP_USERS_EVENTS);
+
+        assertThat(envelope.eventType()).isEqualTo("app.user.created");
+        assertThat(envelope.eventVersion()).isEqualTo(1);
+        assertThat(envelope.payloadJson())
+                .contains("\"userId\":\"44444444-4444-4444-4444-444444444444\"")
+                .contains("\"authUserId\":\"55555555-5555-5555-5555-555555555555\"")
+                .contains("\"version\":2")
+                .doesNotContain("AppUserCreatedEvent");
+    }
+
+    @Test
     void routesCoffeeOpeningHoursImportedToCoffeeEventsWithStableType() {
         var outbox = new OutboxEventJpaEntity(
                 "evt-3",

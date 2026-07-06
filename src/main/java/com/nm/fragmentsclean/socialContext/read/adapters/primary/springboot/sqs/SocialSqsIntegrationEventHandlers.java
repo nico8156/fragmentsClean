@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.socialContext.read.adapters.primary.springboot.sqs
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.APP_USERS_EVENTS;
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.DOMAIN_EVENTS;
 
+import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.AppUserProfileUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
@@ -16,8 +18,6 @@ import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCre
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -58,7 +58,7 @@ public class SocialSqsIntegrationEventHandlers {
     SqsIntegrationEventHandler appUserCreatedSocialProjectionSqsIntegrationEventHandler(
             UserSocialProjectionProjector projector) {
         return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "app.user.created", envelope -> {
-            AppUserCreatedEvent event = payloadReader.read(envelope, AppUserCreatedEvent.class);
+            AppUserCreatedIntegrationEvent event = payloadReader.read(envelope, AppUserCreatedIntegrationEvent.class);
             projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt());
         });
     }
@@ -67,7 +67,7 @@ public class SocialSqsIntegrationEventHandlers {
     SqsIntegrationEventHandler appUserProfileUpdatedSocialProjectionSqsIntegrationEventHandler(
             UserSocialProjectionProjector projector) {
         return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "app.user.profile_updated", envelope -> {
-            AppUserProfileUpdatedEvent event = payloadReader.read(envelope, AppUserProfileUpdatedEvent.class);
+            AppUserProfileUpdatedIntegrationEvent event = payloadReader.read(envelope, AppUserProfileUpdatedIntegrationEvent.class);
             projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt());
         });
     }

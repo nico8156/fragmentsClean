@@ -21,7 +21,8 @@ class StableEnvelopeOutboxEventSenderTest {
 
     @Test
     void websocketFailureDoesNotFailTransportPublication() throws Exception {
-        EventBusOutboxEventSender eventBus = new EventBusOutboxEventSender(new ObjectMapper(), new EventBus());
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        EventBusOutboxEventSender eventBus = new EventBusOutboxEventSender(objectMapper, new EventBus());
         WebSocketOutboxEventSender webSocket = new FailingWebSocketOutboxEventSender();
 
         var published = new ArrayList<IntegrationEventEnvelope>();
@@ -31,6 +32,7 @@ class StableEnvelopeOutboxEventSenderTest {
                 eventBus,
                 webSocket,
                 List.of(publisher),
+                objectMapper,
                 false);
 
         sender.send(new OutboxEventJpaEntity(

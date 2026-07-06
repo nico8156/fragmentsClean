@@ -109,25 +109,7 @@ class BoundedContextArchitectureTest {
                     || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort");
         }
 
-        if ("socialContext".equals(sourceContext) && isTransportConsumer(sourcePath)) {
-            return importPath.equals("userApplicationContext.write.businesslogic.models.AppUserCreatedEvent")
-                    || importPath.equals("userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent");
-        }
-
-        if ("userApplicationContext".equals(sourceContext) && isTransportConsumer(sourcePath)) {
-            return importPath.equals("authenticationContext.write.businesslogic.models.AuthUserCreatedEvent");
-        }
-
-        if ("userApplicationContext".equals(sourceContext)) {
-            return sourcePath.endsWith("/userApplicationContext/write/businesslogic/usecases/AuthUserCreatedEventHandler.java")
-                    && importPath.equals("authenticationContext.write.businesslogic.models.AuthUserCreatedEvent");
-        }
-
         return false;
-    }
-
-    private static boolean isTransportConsumer(String sourcePath) {
-        return sourcePath.contains("/adapters/primary/springboot/sqs/");
     }
 
     private static List<Path> javaFiles(Path root) throws IOException {

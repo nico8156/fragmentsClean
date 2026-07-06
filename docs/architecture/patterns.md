@@ -64,6 +64,39 @@ Use this for:
 - wallet;
 - future projections.
 
+## Pattern 2A: Context Integration Contract
+
+```text
+Domain Event interne
+-> outbox
+-> Integration Event public versionne
+-> SQS
+-> ACL consommateur
+-> handler du contexte consommateur
+```
+
+Rules:
+
+- producer Domain Events remain private to their bounded context;
+- consumers deserialize public integration contracts, not producer Domain Event
+  classes;
+- public integration contracts live outside producer internals and use
+  primitives only;
+- the SQS envelope carries a stable `eventType` and `eventVersion`;
+- the consumer ACL translates the public contract into its own local language;
+- adding a consumer must not require importing the producer aggregate, command,
+  repository, use case, or Domain Event class.
+
+Current applied edges:
+
+- `authenticationContext -> userApplicationContext` via
+  `auth.user.created`;
+- `userApplicationContext -> socialContext` via `app.user.created` and
+  `app.user.profile_updated`.
+
+Use this when one bounded context needs to react to facts owned by another
+bounded context.
+
 ## Pattern 3: Technical Failure
 
 ```text
@@ -140,6 +173,7 @@ Rules:
 - Reading write repositories from read query handlers.
 - Publishing `ProjectionSyncEvent` from command handlers.
 - Sending Domain Events to frontend clients.
+- Deserializing another bounded context's Domain Event from an SQS consumer.
 - Treating SSE as command ACK.
 - Encoding business state transitions directly in SSE payloads.
 - Consuming SQS messages successfully after retryable technical failure.
@@ -152,11 +186,12 @@ Before adding a feature:
 1. What is the command?
 2. What aggregate decides?
 3. What Domain Event records the decision?
-4. Which projection changes?
-5. Which `ProjectionSyncEvent` is published after the projection update?
-6. Which GET returns the fresh snapshot?
-7. Which Redux listener maps `projection.updated` to retrieval?
-8. Which reducer performs snapshot replace?
-9. What is retryable technical failure?
-10. What is business rejection?
-
+4. Which public Integration Event is needed by other contexts?
+5. Which consumer ACL translates it?
+6. Which projection changes?
+7. Which `ProjectionSyncEvent` is published after the projection update?
+8. Which GET returns the fresh snapshot?
+9. Which Redux listener maps `projection.updated` to retrieval?
+10. Which reducer performs snapshot replace?
+11. What is retryable technical failure?
+12. What is business rejection?

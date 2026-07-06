@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.platform.eventing;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.EventBusOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationMessagePublisher;
@@ -30,13 +31,14 @@ public class StableEnvelopeOutboxEventSender implements OutboxEventSender {
             EventBusOutboxEventSender eventBusSender,
             ClientAckOutboxEventSender webSocketSender,
             List<IntegrationMessagePublisher> publishers,
+            ObjectMapper objectMapper,
             @Value("${app.messaging.local-event-bus.enabled:true}") boolean localEventBusEnabled
     ) {
         this.eventBusSender = eventBusSender;
         this.webSocketSender = webSocketSender;
         this.publishers = publishers;
         this.destinationResolver = new IntegrationEventDestinationResolver();
-        this.envelopeFactory = new IntegrationEventEnvelopeFactory();
+        this.envelopeFactory = new IntegrationEventEnvelopeFactory(objectMapper);
         this.localEventBusEnabled = localEventBusEnabled;
     }
 
