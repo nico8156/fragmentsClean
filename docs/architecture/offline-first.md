@@ -5,7 +5,7 @@ Fragments mobile writes must survive:
 - app background/foreground
 - process restart after local persistence
 - network timeout
-- lost WebSocket ACK
+- missed projection sync event
 - backend eventual consistency delay
 
 ## Command Lifecycle
@@ -26,7 +26,7 @@ Do not rollback on:
 - network error
 - timeout
 - 5xx
-- missing socket ACK
+- missed projection sync event
 
 Rollback only on:
 - explicit backend business rejection
@@ -41,4 +41,3 @@ Canonical fallback:
 - `/commands/{commandId}`
 
 The fallback is mandatory for production because sockets are opportunistic.
-

@@ -4,9 +4,9 @@
 
 ## Purpose
 
-It decouples mobile correctness from WebSocket delivery.
+It decouples mobile correctness from projection freshness and transport timing.
 
-Mobile uses it when an outbox record is `awaitingAck` and the ACK deadline expires.
+Mobile uses it when an outbox record is waiting for the backend command lifecycle.
 
 ## Statuses
 
@@ -28,4 +28,3 @@ Mobile uses it when an outbox record is `awaitingAck` and the ACK deadline expir
 `PENDING` is not failure.
 
 Mobile should re-check later.
-

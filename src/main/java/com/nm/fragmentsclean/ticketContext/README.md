@@ -283,9 +283,8 @@ ticket_status_projection updated
 -> client GET /api/users/me/entitlements
 ```
 
-Ce flux remplace progressivement la dépendance mobile aux ACK STOMP tickets pour
-la fraîcheur des droits produit. L'ACK socket reste temporairement présent pour
-compatibilité, mais il ne doit pas devenir la source de vérité des entitlements.
+Ce flux est le chemin actif pour la fraîcheur des droits produit. Le client
+reçoit un signal de projection, puis relit un snapshot des entitlements.
 
 ---
 

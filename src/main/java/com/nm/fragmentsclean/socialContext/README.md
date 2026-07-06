@@ -2,7 +2,7 @@
 
 > Le **socialContext** gère les interactions sociales autour des entités du produit : **likes** et **commentaires**.
 >
-> Au-delà des features (like/comment), il sert de démonstrateur de **fiabilité** et de **temps réel** : CQRS, événements, projections, idempotence et ACK WebSocket.
+> Au-delà des features (like/comment), il sert de démonstrateur de **fiabilité** et de **synchronisation de projections** : CQRS, événements, projections, idempotence et Projection Sync SSE.
 
 ---
 
@@ -70,7 +70,7 @@ Elles sont dérivées :
 
 ---
 
-### Pourquoi outbox + ACK WebSocket ?
+### Pourquoi outbox + Projection Sync ?
 
 Likes/commentaires sont sujets à :
 
@@ -84,12 +84,13 @@ Likes/commentaires sont sujets à :
 * fiabilité (pas d’événement perdu)
 * replays possibles
 
-➡️ Le WebSocket ACK garantit :
+➡️ Projection Sync garantit :
 
-* feedback immédiat côté client
-* confirmation serveur (sans polling lourd)
+* signal de fraîcheur après mise à jour des projections
+* relance du GET snapshot côté client
+* séparation nette entre lifecycle commande et read models
 
-> Le temps réel est traité comme une sortie du pipeline outbox, pas comme un `send()` direct depuis un handler.
+> Le temps réel n’est pas un bus métier. Le client ne reçoit que `projection.updated`, puis relit le read model.
 
 ---
 

@@ -1,6 +1,6 @@
 # sharedKernel
 
-> Le **sharedKernel** fournit les briques transverses nécessaires pour faire vivre l’architecture : **CQRS**, **event-driven**, **outbox**, **SQS**, **websocket ACK**, et des abstractions DDD communes.
+> Le **sharedKernel** fournit les briques transverses nécessaires pour faire vivre l’architecture : **CQRS**, **event-driven**, **outbox**, **SQS**, **Projection Sync**, et des abstractions DDD communes.
 >
 > Il n’est pas un « utilitaire fourre-tout » : c’est un **contrat d’architecture** partagé, volontairement minimal, qui permet aux bounded contexts d’évoluer sans dupliquer la plomberie.
 
@@ -13,7 +13,7 @@ Le sharedKernel sert à :
 * standardiser la façon de traiter **commands / queries / events**
 * centraliser le **pipeline outbox** (fiabilité des événements)
 * fournir des interfaces DDD communes (AggregateRoot, Entity, DomainEvent)
-* offrir une base d’infrastructure (SQS, WebSocket) via adapters
+* offrir une base d’infrastructure (SQS, Projection Sync) via adapters
 
 👉 Chaque bounded context vient « brancher » sa logique métier sur ces mécanismes.
 
@@ -75,7 +75,7 @@ Le sharedKernel vise un **juste milieu** :
 
 ➡️ Objectif : garantir que les événements ne sont jamais perdus, même en cas de crash.
 
-Le write model publie des events → l’outbox persiste → un dispatcher envoie des enveloppes stables vers SQS, les ACK WebSocket opportunistes et les logs.
+Le write model publie des events → l’outbox persiste → un dispatcher envoie des enveloppes stables vers SQS.
 
 ---
 
@@ -90,17 +90,16 @@ Le write model publie des events → l’outbox persiste → un dispatcher envoi
 
 ---
 
-### 5) WebSocket ACK (temps réel)
+### 5) Projection Sync (fraîcheur read models)
 
-* `WebSocketConfig`
-* `JwtStompChannelInterceptor`
-* `WsAckEnvelope`
-* `WebSocketOutboxEventSender`
+* `ProjectionSyncEvent`
+* `ProjectionSyncEventRepository`
+* `ProjectionSyncPublisher`
+* `ProjectionSyncController`
 
-➡️ Objectif : un retour utilisateur immédiat et fiable.
+➡️ Objectif : signaler qu’une projection est à jour, sans exposer les Domain Events au client.
 
-Même logique que SQS : on n’envoie pas directement depuis le domaine.
-On passe par l’outbox.
+Le client reçoit `projection.updated`, puis relit le read model par HTTP.
 
 ---
 
