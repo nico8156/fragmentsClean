@@ -224,11 +224,41 @@ Rules:
 - command status and outbox reconciliation are separate from projection
   freshness.
 
+## Phase 2D Checkpoint: Client Sync Target Active
+
+As of Phase 2D completion, the active client synchronization model is:
+
+```text
+HTTP command
+-> /commands/{commandId}
+
+projection.updated SSE
+-> Redux listener
+-> GET snapshot
+-> snapshot reducer
+```
+
+This is now a platform invariant:
+
+- commands use HTTP only;
+- command lifecycle uses `/commands/{commandId}` only;
+- read-model freshness uses `projection.updated` SSE only;
+- clients read fresh state through GET snapshots only;
+- no socket ACK path is active;
+- no Domain Event is sent to frontend clients;
+- no STOMP, SockJS, or WebSocket runtime is active;
+- comments, likes, tickets, and entitlements follow the target model.
+
+Do not reintroduce a second realtime channel for command ACKs. If a future client
+needs lower perceived latency, improve command status polling/backoff or the
+projection sync experience without mixing command lifecycle and read freshness.
+
 ## Anti-Patterns
 
 - Reading write repositories from read query handlers.
 - Publishing `ProjectionSyncEvent` from command handlers.
 - Sending Domain Events to frontend clients.
+- Reintroducing STOMP/SockJS/WebSocket ACKs for command lifecycle.
 - Deserializing another bounded context's Domain Event from an SQS consumer.
 - Treating SSE as command ACK.
 - Encoding business state transitions directly in SSE payloads.
