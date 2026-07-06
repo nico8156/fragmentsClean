@@ -52,15 +52,18 @@ Le userApplicationContext assure :
 * la synchronisation depuis l’identité (auth user)
 * la gestion des événements de profil
 
-Ce context est souvent alimenté par des événements venant du `authenticationContext`.
+Ce context est souvent alimenté par un contrat d’intégration public venant du
+`authenticationContext`.
 
 ---
 
 ## 🔁 Event-driven : user app synchronisé depuis auth
 
-Le `authenticationContext` émet un événement du type :
+Le `authenticationContext` décide et persiste son Domain Event interne, puis le
+pipeline outbox/SQS expose un contrat public :
 
-* `AuthUserCreatedEvent`
+* `auth.user.created`
+* `AuthUserCreatedIntegrationEvent`
 
 Le `userApplicationContext` réagit :
 
@@ -69,6 +72,8 @@ Le `userApplicationContext` réagit :
 ➡️ Il matérialise un `AppUser` côté application.
 
 > L’auth ne “possède” pas le user applicatif. Il lui donne une identité de départ.
+> Le `userApplicationContext` ne désérialise pas les Domain Events internes
+> du `authenticationContext`.
 
 ---
 

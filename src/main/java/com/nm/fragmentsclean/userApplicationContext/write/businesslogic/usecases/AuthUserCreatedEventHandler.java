@@ -1,8 +1,7 @@
 package com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserCreatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler; // ✅ adapte le package si besoin
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.slf4j.Logger;
@@ -15,7 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
-public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreatedEvent> {
+public class AuthUserCreatedEventHandler {
 
 	private static final Logger log = LoggerFactory.getLogger(AuthUserCreatedEventHandler.class);
 
@@ -28,14 +27,13 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
 		this.dateTimeProvider = dateTimeProvider;
 	}
 
-	@Override
-	public void handle(AuthUserCreatedEvent event) {
+	public void handle(AuthUserCreatedIntegrationEvent event) {
 		UUID authUserId = event.authUserId();
 		Instant now = dateTimeProvider.now();
 
 		Optional<AppUser> existing = appUserRepository.findById(authUserId);
 		if (existing.isPresent()) {
-			log.info("AppUser already exists for id={}, ignoring AuthUserCreatedEvent", authUserId);
+			log.info("AppUser already exists for id={}, ignoring auth.user.created integration event", authUserId);
 			return;
 		}
 
@@ -57,7 +55,7 @@ public class AuthUserCreatedEventHandler implements EventHandler<AuthUserCreated
 
 		try {
 			appUserRepository.save(user);
-			log.info("AppUser created from AuthUserCreatedEvent. id={}, displayName={}", authUserId,
+			log.info("AppUser created from auth.user.created integration event. id={}, displayName={}", authUserId,
 					displayName);
 		} catch (DataIntegrityViolationException e) {
 			String msg = String.valueOf(
