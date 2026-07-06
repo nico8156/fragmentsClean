@@ -27,7 +27,7 @@ class HttpGoogleAuthServiceTest {
 		var server = MockRestServiceServer.createServer(restTemplate);
 		var properties = new GoogleOAuthProperties();
 		properties.setMobileIosClientId("ios-client.apps.googleusercontent.com");
-		properties.setMobileIosRedirectUri("fragmentscleanfront://auth/google");
+		properties.setMobileIosRedirectUri("com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect");
 		properties.setTokenUri("https://oauth2.googleapis.test/token");
 		properties.setUserInfoUri("https://openidconnect.googleapis.test/v1/userinfo");
 		var service = new HttpGoogleAuthService(restTemplate, properties);
@@ -37,7 +37,7 @@ class HttpGoogleAuthServiceTest {
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_FORM_URLENCODED))
 				.andExpect(content().string(containsString("code=auth-code-123")))
 				.andExpect(content().string(containsString("client_id=ios-client.apps.googleusercontent.com")))
-				.andExpect(content().string(containsString("redirect_uri=fragmentscleanfront%3A%2F%2Fauth%2Fgoogle")))
+				.andExpect(content().string(containsString("redirect_uri=com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe%3A%2Foauthredirect")))
 				.andExpect(content().string(containsString("code_verifier=verifier-123")))
 				.andExpect(content().string(containsString("grant_type=authorization_code")))
 				.andExpect(content().string(not(containsString("client_secret"))))
@@ -65,7 +65,7 @@ class HttpGoogleAuthServiceTest {
 		var user = service.exchangeMobileAuthorizationCodeForUser(
 				"auth-code-123",
 				"verifier-123",
-				"fragmentscleanfront://auth/google");
+				"com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect");
 
 		assertThat(user.sub()).isEqualTo("google-sub-1");
 		assertThat(user.email()).isEqualTo("user@example.com");

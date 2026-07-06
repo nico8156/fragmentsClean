@@ -48,7 +48,7 @@ public class AuthMobilePkceIT extends AbstractBaseE2E {
 								{
 								  "authorizationCode": "%s",
 								  "codeVerifier": "verifier-123",
-								  "redirectUri": "fragmentscleanfront://auth/google"
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
 								""".formatted(code)))
 				.andExpect(status().isOk())
@@ -79,7 +79,7 @@ public class AuthMobilePkceIT extends AbstractBaseE2E {
 								{
 								  "authorizationCode": "",
 								  "codeVerifier": "verifier-123",
-								  "redirectUri": "fragmentscleanfront://auth/google"
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
 								"""))
 				.andExpect(status().isBadRequest());
@@ -91,7 +91,7 @@ public class AuthMobilePkceIT extends AbstractBaseE2E {
 								{
 								  "authorizationCode": "code-123",
 								  "codeVerifier": " ",
-								  "redirectUri": "fragmentscleanfront://auth/google"
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
 								"""))
 				.andExpect(status().isBadRequest());
