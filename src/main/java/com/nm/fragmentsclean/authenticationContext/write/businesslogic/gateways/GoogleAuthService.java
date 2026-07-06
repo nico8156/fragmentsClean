@@ -2,8 +2,6 @@ package com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways
 
 public interface GoogleAuthService {
 
-    GoogleUserInfo exchangeCodeForUser(String authorizationCode);
-
     GoogleUserInfo exchangeMobileAuthorizationCodeForUser(
             String authorizationCode,
             String codeVerifier,

@@ -54,7 +54,6 @@ public class AuthSecurityConfiguration {
 				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
 							.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-							.requestMatchers(HttpMethod.POST, "/auth/google/exchange").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/google/mobile").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
 							.requestMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()

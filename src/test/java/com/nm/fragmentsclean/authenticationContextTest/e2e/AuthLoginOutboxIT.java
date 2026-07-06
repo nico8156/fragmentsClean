@@ -44,13 +44,15 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 
 		// WHEN : login Google
 		mockMvc.perform(
-				post("/auth/google/exchange")
+				post("/auth/google/mobile")
 						.contentType("application/json")
 						.content("""
 								{
-								  "authorizationCode": "%s"
+								  "authorizationCode": "%s",
+								  "codeVerifier": "verifier-%s",
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
-								""".formatted(authorizationCode)))
+								""".formatted(authorizationCode, authorizationCode)))
 				.andExpect(status().isOk());
 
 		// THEN : des events ont été écrits dans l’outbox
@@ -73,13 +75,15 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 
 		// 1) Premier login
 		mockMvc.perform(
-				post("/auth/google/exchange")
+				post("/auth/google/mobile")
 						.contentType("application/json")
 						.content("""
 								{
-								  "authorizationCode": "%s"
+								  "authorizationCode": "%s",
+								  "codeVerifier": "verifier-%s",
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
-								""".formatted(authorizationCode)))
+								""".formatted(authorizationCode, authorizationCode)))
 				.andExpect(status().isOk());
 
 		var eventsAfterFirstLogin = outboxEventRepository.findAll();
@@ -92,13 +96,15 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 		// 2) Deuxième login (même authorizationCode -> même sub dans
 		// FakeGoogleAuthService)
 		mockMvc.perform(
-				post("/auth/google/exchange")
+				post("/auth/google/mobile")
 						.contentType("application/json")
 						.content("""
 								{
-								  "authorizationCode": "%s"
+								  "authorizationCode": "%s",
+								  "codeVerifier": "verifier-%s",
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
 								}
-								""".formatted(authorizationCode)))
+								""".formatted(authorizationCode, authorizationCode)))
 				.andExpect(status().isOk());
 
 		var eventsAfterSecondLogin = outboxEventRepository.findAll();

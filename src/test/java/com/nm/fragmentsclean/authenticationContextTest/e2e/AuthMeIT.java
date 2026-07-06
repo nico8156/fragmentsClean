@@ -57,11 +57,15 @@ public class AuthMeIT extends AbstractBaseE2E {
 		var code = "test-me-123";
 
 		var loginResult = mockMvc.perform(
-				post("/auth/google/exchange")
+				post("/auth/google/mobile")
 						.contentType("application/json")
 						.content("""
-								{ "authorizationCode": "%s" }
-								""".formatted(code)))
+								{
+								  "authorizationCode": "%s",
+								  "codeVerifier": "verifier-%s",
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
+								}
+								""".formatted(code, code)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.accessToken").isNotEmpty())
 				.andExpect(jsonPath("$.user.id").exists())

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.controllers.dto.GoogleLoginRequestDto;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.controllers.dto.GoogleLoginResponseDto;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.controllers.dto.GoogleMobileLoginRequestDto;
 import com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.controllers.dto.LogoutRequestDto;
@@ -36,28 +35,6 @@ public class AuthWriteController {
 		this.mobileIosRedirectUri = mobileIosRedirectUri;
 	}
 
-	@PostMapping("/google/exchange")
-	public ResponseEntity<GoogleLoginResponseDto> googleExchange(@RequestBody GoogleLoginRequestDto body) {
-
-		GoogleLoginCommand command = new GoogleLoginCommand(
-				body.authorizationCode());
-
-		GoogleLoginResult result = commandBus.dispatchWithResult(command);
-
-		var userSummary = new GoogleLoginResponseDto.UserSummary(
-				result.userId(),
-				result.displayName(),
-				result.email(),
-				result.avatarUrl());
-
-		var response = new GoogleLoginResponseDto(
-				result.accessToken(),
-				result.refreshToken(),
-				userSummary);
-
-		return ResponseEntity.ok(response);
-	}
-
 	@PostMapping("/google/mobile")
 	public ResponseEntity<GoogleLoginResponseDto> googleMobile(@RequestBody GoogleMobileLoginRequestDto body) {
 		requirePresent(body.authorizationCode(), "authorizationCode");
@@ -68,25 +45,13 @@ public class AuthWriteController {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "redirectUri is not allowed");
 		}
 
-		GoogleLoginCommand command = GoogleLoginCommand.mobilePkce(
+		GoogleLoginCommand command = new GoogleLoginCommand(
 				body.authorizationCode().trim(),
 				body.codeVerifier().trim(),
 				mobileIosRedirectUri);
 
 		GoogleLoginResult result = commandBus.dispatchWithResult(command);
-
-		var userSummary = new GoogleLoginResponseDto.UserSummary(
-				result.userId(),
-				result.displayName(),
-				result.email(),
-				result.avatarUrl());
-
-		var response = new GoogleLoginResponseDto(
-				result.accessToken(),
-				result.refreshToken(),
-				userSummary);
-
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(toResponse(result));
 	}
 
 	@PostMapping("/refresh")
@@ -113,5 +78,18 @@ public class AuthWriteController {
 		if (value == null || value.isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
 		}
+	}
+
+	private static GoogleLoginResponseDto toResponse(GoogleLoginResult result) {
+		var userSummary = new GoogleLoginResponseDto.UserSummary(
+				result.userId(),
+				result.displayName(),
+				result.email(),
+				result.avatarUrl());
+
+		return new GoogleLoginResponseDto(
+				result.accessToken(),
+				result.refreshToken(),
+				userSummary);
 	}
 }

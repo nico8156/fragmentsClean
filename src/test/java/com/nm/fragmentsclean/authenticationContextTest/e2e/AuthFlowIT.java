@@ -55,11 +55,15 @@ public class AuthFlowIT extends AbstractBaseE2E {
 
 		// WHEN
 		var mvcResult = mockMvc.perform(
-				post("/auth/google/exchange")
+				post("/auth/google/mobile")
 						.contentType("application/json")
 						.content("""
-								{ "authorizationCode": "%s" }
-								""".formatted(authorizationCode)))
+								{
+								  "authorizationCode": "%s",
+								  "codeVerifier": "verifier-%s",
+								  "redirectUri": "com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect"
+								}
+								""".formatted(authorizationCode, authorizationCode)))
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.accessToken").isNotEmpty())
