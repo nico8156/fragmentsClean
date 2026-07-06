@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases;
+package com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -6,8 +6,8 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandle
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -15,14 +15,14 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Transactional
-public class ProcessTicketVerificationEventHandler implements EventHandler<TicketVerifyAcceptedEvent> {
+public class TicketVerificationProcessManager implements EventHandler<TicketVerifyAcceptedEvent> {
 
 	private final TicketRepository ticketRepository;
 	private final TicketVerificationProvider provider;
 	private final DomainEventPublisher eventPublisher;
 	private final DateTimeProvider dateTimeProvider;
 
-	public ProcessTicketVerificationEventHandler(
+	public TicketVerificationProcessManager(
 			TicketRepository ticketRepository,
 			TicketVerificationProvider provider,
 			DomainEventPublisher eventPublisher,
@@ -43,14 +43,11 @@ public class ProcessTicketVerificationEventHandler implements EventHandler<Ticke
 			throw new IllegalStateException("Ticket userId mismatch");
 		}
 
-		// Idempotence: si terminal, on ignore (ou tu peux publier un "completed"
-		// idempotent)
 		var snap = ticket.toSnapshot();
 		if (snap.status() == Ticket.TicketStatus.CONFIRMED || snap.status() == Ticket.TicketStatus.REJECTED) {
 			return;
 		}
 
-		// Appel provider (OpenAI)
 		var result = provider.verify(evt.ocrText(), evt.imageRef());
 
 		TicketVerificationCompletedEvent completed = switch (result) {
@@ -135,13 +132,13 @@ public class ProcessTicketVerificationEventHandler implements EventHandler<Ticke
 			}
 		};
 
-		// publish -> outbox
 		eventPublisher.publish(completed);
 	}
 
 	private List<Ticket.TicketLineItem> toDomainLineItems(List<TicketVerificationProvider.LineItem> items) {
-		if (items == null)
+		if (items == null) {
 			return null;
+		}
 		return items.stream()
 				.map(i -> new Ticket.TicketLineItem(i.label(), i.quantity(), i.amountCents()))
 				.toList();

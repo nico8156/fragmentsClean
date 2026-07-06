@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
+import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedProcessManager;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
@@ -30,6 +31,8 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGo
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
+
+import java.util.List;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -105,6 +108,17 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeCreatedEventHandler(projectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeeCreatedProcessManager coffeeCreatedProcessManager(
+			CoffeeCreatedEventHandler coffeeCreatedEventHandler,
+			ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee,
+			ImportGooglePhotosForCoffee importGooglePhotosForCoffee) {
+		return new CoffeeCreatedProcessManager(List.of(
+				coffeeCreatedEventHandler,
+				importGoogleOpeningHoursForCoffee,
+				importGooglePhotosForCoffee));
 	}
 
 	@Bean

@@ -10,14 +10,14 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVe
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.ProcessTicketVerificationEventHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class ProcessTicketVerificationEventHandlerTest {
+class TicketVerificationProcessManagerTest {
 	private static final UUID COMMAND_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
 	private static final UUID TICKET_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 	private static final UUID USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
@@ -42,7 +42,7 @@ class ProcessTicketVerificationEventHandlerTest {
 
 	@Test
 	void business_rejection_publishes_completed_event() {
-		var handler = new ProcessTicketVerificationEventHandler(
+		var handler = new TicketVerificationProcessManager(
 				ticketRepository,
 				(ocrText, imageRef) -> new TicketVerificationProvider.Rejected(
 						"PARTIAL_VERIFICATION",
@@ -63,14 +63,14 @@ class ProcessTicketVerificationEventHandlerTest {
 
 	@Test
 	void retryable_technical_failure_throws_so_sqs_can_redeliver() {
-		var handler = new ProcessTicketVerificationEventHandler(
+		var handler = new TicketVerificationProcessManager(
 				ticketRepository,
 				(ocrText, imageRef) -> new TicketVerificationProvider.FailedRetryable("timeout", "tv:timeout"),
 				eventPublisher,
 				dateTimeProvider);
 
 		assertThatThrownBy(() -> handler.handle(acceptedEvent()))
-				.isInstanceOf(ProcessTicketVerificationEventHandler.TicketVerificationRetryableException.class)
+				.isInstanceOf(TicketVerificationProcessManager.TicketVerificationRetryableException.class)
 				.hasMessageContaining(TICKET_ID.toString());
 
 		assertThat(eventPublisher.published).isEmpty();
@@ -80,7 +80,7 @@ class ProcessTicketVerificationEventHandlerTest {
 
 	@Test
 	void approved_result_publishes_completed_event() {
-		var handler = new ProcessTicketVerificationEventHandler(
+		var handler = new TicketVerificationProcessManager(
 				ticketRepository,
 				(ocrText, imageRef) -> new TicketVerificationProvider.Approved(
 						400,

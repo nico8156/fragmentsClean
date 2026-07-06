@@ -141,7 +141,7 @@ Elle valide les prérequis et déclenche le traitement asynchrone.
 
 ### Orchestration asynchrone
 
-* `ProcessTicketVerificationEventHandler`
+* `TicketVerificationProcessManager`
 
 ➡️ Réagit à l’acceptation via SQS `ticket-verification-requested`
 et exécute la vérification via un provider.
