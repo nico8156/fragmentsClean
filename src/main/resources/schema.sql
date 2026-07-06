@@ -414,3 +414,10 @@ create table if not exists ticket_status_projection (
 
 create index if not exists idx_ticket_status_user on ticket_status_projection(user_id);
 create index if not exists idx_ticket_status_status on ticket_status_projection(status);
+
+create table if not exists user_entitlements_projection (
+                                                            user_id uuid primary key,
+                                                            confirmed_tickets integer not null,
+                                                            version bigint not null,
+                                                            updated_at timestamptz not null
+);

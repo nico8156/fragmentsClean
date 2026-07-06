@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandle
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcTicketStatusProjectionRepository;
+import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcUserEntitlementsProjectionRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import java.util.List;
 import org.slf4j.Logger;
@@ -16,12 +17,15 @@ public class TicketVerificationCompletedEventHandler implements EventHandler<Tic
     private static final Logger log = LoggerFactory.getLogger(TicketVerificationCompletedEventHandler.class);
 
     private final JdbcTicketStatusProjectionRepository projectionRepository;
+    private final JdbcUserEntitlementsProjectionRepository entitlementsProjectionRepository;
     private final ProjectionSyncPublisher projectionSyncPublisher;
 
     public TicketVerificationCompletedEventHandler(
             JdbcTicketStatusProjectionRepository projectionRepository,
+            JdbcUserEntitlementsProjectionRepository entitlementsProjectionRepository,
             ProjectionSyncPublisher projectionSyncPublisher) {
         this.projectionRepository = projectionRepository;
+        this.entitlementsProjectionRepository = entitlementsProjectionRepository;
         this.projectionSyncPublisher = projectionSyncPublisher;
     }
 
@@ -36,5 +40,19 @@ public class TicketVerificationCompletedEventHandler implements EventHandler<Tic
                 event.version(),
                 event.occurredAt(),
                 List.of("status", event.outcome().name().toLowerCase())));
+
+        if (event.outcome() == TicketVerificationCompletedEvent.Outcome.APPROVED) {
+            entitlementsProjectionRepository.refreshFromTicketStatus(
+                    event.userId(),
+                    event.version(),
+                    event.occurredAt());
+            projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+                    "entitlements",
+                    "user",
+                    event.userId().toString(),
+                    event.version(),
+                    event.occurredAt(),
+                    List.of("confirmedTickets")));
+        }
     }
 }
