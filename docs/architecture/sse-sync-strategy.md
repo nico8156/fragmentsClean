@@ -114,10 +114,10 @@ Allowed projection names are platform contracts, for example:
 Do not use Java class names, aggregate names, command names, event names, queue
 names, or internal table names in SSE payloads.
 
-## Mobile Migration Pilot: Comments
+## Mobile Projection Sync
 
-Comments are the first mobile domain migrated from STOMP ACK freshness to
-projection sync.
+Comments, likes, tickets, and entitlements use projection sync for read-model
+freshness. Command lifecycle remains handled by `/commands/{commandId}`.
 
 Backend publication:
 
@@ -338,20 +338,18 @@ log; clients reconnecting to another instance can resume by `Last-Event-ID`.
 Retention should be explicit. For example, keep sync rows for 24-72 hours. If a
 client resumes beyond retention, it receives `sync.resync_required`.
 
-## Relation To WebSocket ACKs
+## Relation To Command Status
 
-Existing WebSocket ACKs are command-correlated UX accelerators. They are not a
-projection synchronization strategy.
+Command status and projection synchronization are separate contracts.
 
 Keep the concepts separate:
 
-- WebSocket ACK: "your command was accepted/applied/rejected" when available.
 - Command status endpoint: canonical command reconciliation.
 - SSE sync: "this projection is now updated."
 
-Long term, command ACKs may remain WebSocket-based or move to the same SSE
-transport as a separate non-domain event type. Even then, command lifecycle
-events and projection sync events must stay separate contracts.
+STOMP/WebSocket ACKs have been removed. Do not reintroduce command ACKs through
+Projection Sync. Clients must use `GET /commands/{commandId}` for command
+lifecycle and SSE only to trigger snapshot GETs for read models.
 
 ## Error And Lifecycle Events
 

@@ -4,6 +4,30 @@ Date: 2026-07-06
 
 ## Executive Summary
 
+Status update after Phase 2D.5: STOMP/WebSocket ACK removal is complete.
+
+The active model is now:
+
+```text
+HTTP command
+-> /commands/{commandId} for command lifecycle
+
+projection.updated SSE
+-> GET snapshot
+-> reducer snapshot / reconciliation
+```
+
+Verified active-code state:
+
+- mobile has no active `wsWl`, SockJS, STOMP, socket ACK routes, or ACK tests;
+- backend has no `/ws` configuration, WebSocket ACK sender, Spring WebSocket
+  dependency, or `SimpMessagingTemplate` usage;
+- comments, likes, tickets, and entitlements use Projection Sync for freshness;
+- frontend clients do not receive Domain Events.
+
+The rest of this audit is retained as historical context from the readiness
+pass that led to the removal.
+
 Decision: remove STOMP/WebSocket in the next implementation pass.
 
 The product workflows that previously depended on STOMP ACKs now have the target

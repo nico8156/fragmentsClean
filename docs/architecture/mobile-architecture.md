@@ -21,7 +21,7 @@ Redux listener/use cases orchestrate reads and writes.
 
 Gateway ports define external contracts.
 
-Secondary adapters implement HTTP, WebSocket, SecureStore, MMKV, location, and native APIs.
+Secondary adapters implement HTTP, SSE, SecureStore, MMKV, location, and native APIs.
 
 ## Mobile Write Flow
 
@@ -32,10 +32,9 @@ UI intent
 -> optimistic reducer
 -> local outbox
 -> HTTP command
--> awaiting ACK
--> socket ACK or command-status polling
+-> awaiting command status
+-> /commands/{commandId}
 -> reconcile or rollback
 ```
 
 Rollback is reserved for explicit business rejection.
-

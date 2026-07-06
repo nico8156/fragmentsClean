@@ -54,9 +54,18 @@ Outbox row
 -> projection/domain transition
 ```
 
-## WebSocket ACK
+## Client Synchronization
 
-WebSocket ACK publication is best-effort. Failure must not fail command processing.
+Command lifecycle is exposed through `GET /commands/{commandId}`.
 
-The mobile app reconciles through ACK when available and through command status polling otherwise.
+Read-model freshness is exposed through Projection Sync SSE:
 
+```text
+projection update
+-> ProjectionSyncEvent
+-> /api/sync/events
+-> client GET snapshot
+```
+
+The backend no longer exposes a STOMP/WebSocket ACK path. SSE does not acknowledge
+commands and does not carry domain events.

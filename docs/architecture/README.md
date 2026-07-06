@@ -9,11 +9,10 @@ Read in order:
 3. [Mobile architecture](mobile-architecture.md)
 4. [Offline-first strategy](offline-first.md)
 5. [SQS strategy](sqs-strategy.md)
-6. [WebSocket strategy](websocket-strategy.md)
-7. [SSE sync strategy](sse-sync-strategy.md)
-8. [Command status strategy](command-status.md)
-9. [Test policy](testing-policy.md)
-10. [AWS MVP policy](aws-mvp-policy.md)
-11. [Release 1.0 architecture readiness](release-1-readiness.md)
+6. [SSE sync strategy](sse-sync-strategy.md)
+7. [Command status strategy](command-status.md)
+8. [Test policy](testing-policy.md)
+9. [AWS MVP policy](aws-mvp-policy.md)
+10. [Release 1.0 architecture readiness](release-1-readiness.md)
 
 The `AGENTS.md` file remains the normative doctrine. These documents explain the doctrine in operational terms.

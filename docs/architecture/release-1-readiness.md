@@ -14,8 +14,7 @@ Fragments 1.0 ships as a Spring Boot modular monolith with:
 - inbox-backed idempotence;
 - read projections;
 - Projection Sync SSE for read-model freshness;
-- `/commands/{commandId}` as canonical command status;
-- WebSocket/STOMP only as compatibility ACK plumbing while still needed.
+- `/commands/{commandId}` as canonical command status.
 
 The dangerous debt would be confusing current compromises with final
 principles. Every compromise below is acceptable only while it remains visible
@@ -81,9 +80,9 @@ Projection update
 -> snapshot reducer
 ```
 
-WebSocket/STOMP can remain only as command-correlated compatibility ACK
-plumbing. It must not be used as read-model freshness and it must not expose
-Domain Events.
+STOMP/WebSocket ACKs are not part of the active architecture. SSE must not be
+used as an ACK replacement; clients use command status for command lifecycle and
+Projection Sync only for read-model freshness.
 
 ## Important Before Release
 
@@ -130,8 +129,7 @@ Architecture tests must remain part of CI. At minimum they guard:
 - sharedKernel does not import bounded contexts;
 - bounded contexts do not import each other except documented temporary edges;
 - write side does not publish `ProjectionSyncEvent`;
-- main code does not use `System.out`;
-- WebSocket endpoint does not allow wildcard origins.
+- main code does not use `System.out`.
 
 ## Debt Accepted After Release
 
@@ -139,7 +137,6 @@ These are acceptable only as visible debt:
 
 - some consumers still deserialize producer Domain Event classes;
 - sharedKernel remains broad;
-- WebSocket/STOMP remains if still needed for command ACK compatibility;
 - schema migrations are not yet Flyway/Liquibase-managed.
 
 ## Exit Criteria For Phase 1
@@ -147,6 +144,5 @@ These are acceptable only as visible debt:
 - targeted backend guard tests pass;
 - full backend tests pass when Docker/Testcontainers is available;
 - staging runbook covers outbox/inbox/DLQ/SSE/photos;
-- WebSocket origins are configuration-driven;
 - admin coffee removal dispatches archive, not hard delete;
 - no new Kafka dependency, listener, or runtime property exists.

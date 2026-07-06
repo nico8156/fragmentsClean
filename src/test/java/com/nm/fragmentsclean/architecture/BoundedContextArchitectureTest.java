@@ -104,17 +104,6 @@ class BoundedContextArchitectureTest {
                 .isEmpty();
     }
 
-    @Test
-    void websocket_endpoint_does_not_allow_every_origin() throws IOException {
-        Path webSocketConfig = MAIN_JAVA.resolve("sharedKernel")
-                .resolve("adapters/primary/springboot/configuration/webSocket/WebSocketConfig.java");
-
-        assertThat(Files.readString(webSocketConfig))
-                .as("WebSocket/STOMP is compatibility plumbing and must use configured origins, never wildcard origins")
-                .doesNotContain("setAllowedOriginPatterns(\"*\")")
-                .doesNotContain("setAllowedOrigins(\"*\")");
-    }
-
     private static boolean isAllowedIntegrationEdge(String sourceContext, Path sourceFile, ImportedType imported) {
         String sourcePath = normalize(sourceFile);
         String importPath = imported.context() + "." + imported.importPath();
