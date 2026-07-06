@@ -48,7 +48,7 @@ Configuration:
 
 Endpoints consommes:
 
-- Auth: `POST /auth/google/exchange`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`.
+- Auth: `POST /auth/google/mobile`, `POST /auth/refresh`, `POST /auth/logout`, `GET /auth/me`.
 - Cafes: `GET /api/coffees`, `GET /api/coffees/{id}`, `GET /api/coffees/photos`, `GET /api/coffees/opening-hours`.
 - Articles: `GET /api/articles`, `GET /api/articles/{slug}?locale=...`.
 - Social: `GET /api/social/targets/{targetId}/likes`, `POST /api/social/likes`, `GET/POST/PUT/DELETE /api/social/comments`.
@@ -418,7 +418,7 @@ Minimum avant build interne:
   - `/api/coffees`;
   - `/api/coffees/photos`;
   - `/api/coffees/opening-hours`;
-  - `/auth/google/exchange`;
+  - `/auth/google/mobile`;
   - `/commands/{commandId}`.
 - Tests reducers snapshot:
   - cafe disparu du backend disparait du state;
@@ -459,4 +459,3 @@ Raison:
 4. Le backend `/api/sync/events` doit-il etre accessible aux utilisateurs mobiles avec JWT standard en staging?
 5. Quelle est la politique officielle de suppression/archive cafe pour les apps publiques?
 6. Veut-on un cache offline durable des read models des la v1 ou seulement une experience online-first avec outbox pour writes?
-

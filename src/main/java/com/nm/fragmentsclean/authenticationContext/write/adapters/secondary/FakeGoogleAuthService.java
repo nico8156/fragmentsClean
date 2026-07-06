@@ -11,11 +11,6 @@ import java.util.Locale;
 public class FakeGoogleAuthService implements GoogleAuthService {
 
     @Override
-    public GoogleUserInfo exchangeCodeForUser(String authorizationCode) {
-        return fakeUserFor(authorizationCode);
-    }
-
-    @Override
     public GoogleUserInfo exchangeMobileAuthorizationCodeForUser(
             String authorizationCode,
             String codeVerifier,

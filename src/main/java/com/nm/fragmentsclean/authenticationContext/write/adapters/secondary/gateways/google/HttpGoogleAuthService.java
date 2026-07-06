@@ -28,14 +28,6 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 	}
 
 	@Override
-	public GoogleUserInfo exchangeCodeForUser(String authorizationCode) {
-
-		// 1️⃣ Échanger le code contre des tokens
-		GoogleTokenResponse tokenResponse = exchangeCodeForTokens(authorizationCode);
-		return fetchGoogleUser(tokenResponse);
-	}
-
-	@Override
 	public GoogleUserInfo exchangeMobileAuthorizationCodeForUser(
 			String authorizationCode,
 			String codeVerifier,
@@ -52,45 +44,18 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 			throw new IllegalStateException("No access_token from Google");
 		}
 
-		// 2️⃣ Appeler /userinfo pour récupérer le profil
 		GoogleUserInfoResponse userInfo = fetchUserInfo(tokenResponse.accessToken);
 
 		if (userInfo == null || userInfo.sub == null) {
 			throw new IllegalStateException("No userinfo from Google");
 		}
 
-		// 3️⃣ Adapter au modèle domaine
 		return new GoogleUserInfo(
 				userInfo.sub,
 				userInfo.email,
 				userInfo.emailVerified != null && userInfo.emailVerified,
 				userInfo.name,
 				userInfo.picture);
-	}
-
-	private GoogleTokenResponse exchangeCodeForTokens(String authorizationCode) {
-		String url = properties.getTokenUri();
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-		form.add("code", authorizationCode);
-		form.add("client_id", properties.getClientId());
-		form.add("client_secret", properties.getClientSecret());
-		form.add("redirect_uri", properties.getRedirectUri());
-		form.add("grant_type", "authorization_code");
-		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
-
-		ResponseEntity<GoogleTokenResponse> response = restTemplate.postForEntity(url, entity,
-				GoogleTokenResponse.class);
-
-		if (!response.getStatusCode().is2xxSuccessful()) {
-			throw new IllegalStateException(
-					"Google token exchange failed: " + response.getStatusCode());
-		}
-
-		return response.getBody();
 	}
 
 	private GoogleTokenResponse exchangeMobileCodeForTokens(

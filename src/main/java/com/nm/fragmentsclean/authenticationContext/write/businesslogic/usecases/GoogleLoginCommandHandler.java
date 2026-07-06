@@ -41,13 +41,11 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 	public GoogleLoginResult execute(GoogleLoginCommand command) {
 		var now = dateTimeProvider.now();
 
-		// 1) Exchange authorizationCode -> Google user info
-		var google = command.mobilePkce()
-				? googleAuthService.exchangeMobileAuthorizationCodeForUser(
-						command.authorizationCode(),
-						command.codeVerifier(),
-						command.redirectUri())
-				: googleAuthService.exchangeCodeForUser(command.authorizationCode());
+		// 1) Exchange mobile Authorization Code + PKCE -> Google user info
+		var google = googleAuthService.exchangeMobileAuthorizationCodeForUser(
+				command.authorizationCode(),
+				command.codeVerifier(),
+				command.redirectUri());
 
 		// 2) Upsert AuthUser (auth/security aggregate)
 		AuthUser authUser = authUserRepository
