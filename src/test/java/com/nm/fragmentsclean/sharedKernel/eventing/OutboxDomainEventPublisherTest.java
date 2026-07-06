@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.eventing.CoffeeOutboxEventMetadataContributor;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
@@ -13,7 +14,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.ImportedCo
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId;
-import com.nm.fragmentsclean.platform.eventing.DefaultOutboxEventMetadataResolver;
+import com.nm.fragmentsclean.platform.eventing.CompositeOutboxEventMetadataResolver;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.OutboxDomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -35,7 +36,7 @@ class OutboxDomainEventPublisherTest {
 				repository,
 				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
 				() -> Instant.parse("2026-07-04T10:30:00Z"),
-				new DefaultOutboxEventMetadataResolver());
+				coffeeResolver());
 		var event = new CoffeePhotosImportedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -65,7 +66,7 @@ class OutboxDomainEventPublisherTest {
 				repository,
 				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
 				() -> Instant.parse("2026-07-04T11:00:00Z"),
-				new DefaultOutboxEventMetadataResolver());
+				coffeeResolver());
 		var event = new CoffeeArchivedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -91,7 +92,7 @@ class OutboxDomainEventPublisherTest {
 				repository,
 				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
 				() -> Instant.parse("2026-07-04T11:00:00Z"),
-				new DefaultOutboxEventMetadataResolver());
+				coffeeResolver());
 		var event = new CoffeeDeletedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -117,7 +118,7 @@ class OutboxDomainEventPublisherTest {
 				repository,
 				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
 				() -> Instant.parse("2026-07-05T10:00:00Z"),
-				new DefaultOutboxEventMetadataResolver());
+				coffeeResolver());
 		var event = new CoffeePhotoAddedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -146,7 +147,7 @@ class OutboxDomainEventPublisherTest {
 				repository,
 				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
 				() -> Instant.parse("2026-07-05T10:00:00Z"),
-				new DefaultOutboxEventMetadataResolver());
+				coffeeResolver());
 		var event = new CoffeePhotoDeletedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -179,5 +180,9 @@ class OutboxDomainEventPublisherTest {
 					}
 					throw new UnsupportedOperationException(method.getName());
 				});
+	}
+
+	private static CompositeOutboxEventMetadataResolver coffeeResolver() {
+		return new CompositeOutboxEventMetadataResolver(List.of(new CoffeeOutboxEventMetadataContributor()));
 	}
 }

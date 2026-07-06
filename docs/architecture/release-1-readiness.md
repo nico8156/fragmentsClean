@@ -138,7 +138,6 @@ Architecture tests must remain part of CI. At minimum they guard:
 These are acceptable only as visible debt:
 
 - some consumers still deserialize producer Domain Event classes;
-- `DefaultOutboxEventMetadataResolver` still knows all domain event types;
 - sharedKernel remains broad;
 - WebSocket/STOMP remains if still needed for command ACK compatibility;
 - schema migrations are not yet Flyway/Liquibase-managed.
