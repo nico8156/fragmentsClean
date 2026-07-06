@@ -32,7 +32,22 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 
 		// 1️⃣ Échanger le code contre des tokens
 		GoogleTokenResponse tokenResponse = exchangeCodeForTokens(authorizationCode);
+		return fetchGoogleUser(tokenResponse);
+	}
 
+	@Override
+	public GoogleUserInfo exchangeMobileAuthorizationCodeForUser(
+			String authorizationCode,
+			String codeVerifier,
+			String redirectUri) {
+		GoogleTokenResponse tokenResponse = exchangeMobileCodeForTokens(
+				authorizationCode,
+				codeVerifier,
+				redirectUri);
+		return fetchGoogleUser(tokenResponse);
+	}
+
+	private GoogleUserInfo fetchGoogleUser(GoogleTokenResponse tokenResponse) {
 		if (tokenResponse == null || tokenResponse.accessToken == null) {
 			throw new IllegalStateException("No access_token from Google");
 		}
@@ -78,6 +93,41 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 		return response.getBody();
 	}
 
+	private GoogleTokenResponse exchangeMobileCodeForTokens(
+			String authorizationCode,
+			String codeVerifier,
+			String redirectUri) {
+		String mobileClientId = requireConfigured(properties.getMobileIosClientId(), "google.oauth.mobile-ios-client-id");
+		String expectedRedirectUri = requireConfigured(
+				properties.getMobileIosRedirectUri(),
+				"google.oauth.mobile-ios-redirect-uri");
+		if (!expectedRedirectUri.equals(redirectUri)) {
+			throw new IllegalArgumentException("Invalid mobile redirectUri");
+		}
+		String url = properties.getTokenUri();
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+		form.add("code", authorizationCode);
+		form.add("client_id", mobileClientId);
+		form.add("redirect_uri", expectedRedirectUri);
+		form.add("code_verifier", codeVerifier);
+		form.add("grant_type", "authorization_code");
+		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
+
+		ResponseEntity<GoogleTokenResponse> response = restTemplate.postForEntity(url, entity,
+				GoogleTokenResponse.class);
+
+		if (!response.getStatusCode().is2xxSuccessful()) {
+			throw new IllegalStateException(
+					"Google mobile token exchange failed: " + response.getStatusCode());
+		}
+
+		return response.getBody();
+	}
+
 	private GoogleUserInfoResponse fetchUserInfo(String accessToken) {
 		String url = properties.getUserInfoUri();
 
@@ -95,6 +145,13 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 		}
 
 		return response.getBody();
+	}
+
+	private static String requireConfigured(String value, String propertyName) {
+		if (value == null || value.isBlank()) {
+			throw new IllegalStateException(propertyName + " is required");
+		}
+		return value;
 	}
 
 	// DTOs internes pour la désérialisation JSON
