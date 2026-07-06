@@ -266,12 +266,34 @@ ticket_status_projection updated
 Le frontend ne reçoit jamais `TicketVerifyAcceptedEvent` ni
 `TicketVerificationCompletedEvent`.
 
+Quand une vérification est approuvée, le même handler met également à jour le
+read model d'entitlements utilisateur après la projection ticket :
+
+```text
+ticket_status_projection updated
+-> user_entitlements_projection refreshed
+-> ProjectionSyncEvent(
+     eventName="projection.updated",
+     projection="entitlements",
+     scope="user",
+     entityId=userId,
+     hints=["confirmedTickets"]
+   )
+-> SSE
+-> client GET /api/users/me/entitlements
+```
+
+Ce flux remplace progressivement la dépendance mobile aux ACK STOMP tickets pour
+la fraîcheur des droits produit. L'ACK socket reste temporairement présent pour
+compatibilité, mais il ne doit pas devenir la source de vérité des entitlements.
+
 ---
 
 ### Repositories read
 
 * `JdbcTicketStatusReadRepository`
 * `JdbcTicketStatusProjectionRepository`
+* `JdbcUserEntitlementsProjectionRepository`
 
 ➡️ Le read model utilise une persistance optimisée (JDBC) pour les vues.
 
