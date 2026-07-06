@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -49,6 +50,9 @@ public class CoffeeReadIT extends AbstractBaseE2E {
 
 		mockMvc.perform(
 				post("/api/coffees")
+						.with(jwt().jwt(j -> j
+								.subject("11111111-1111-1111-1111-111111111111")
+								.claim("roles", java.util.List.of("USER"))))
 						.contentType("application/json")
 						.content("""
 								{
@@ -89,7 +93,7 @@ public class CoffeeReadIT extends AbstractBaseE2E {
 				.andExpect(jsonPath("$[0].id").value(COFFEE_ID.toString()))
 				.andExpect(jsonPath("$[0].googleId").value(GOOGLE_ID))
 				.andExpect(jsonPath("$[0].name").value("Fragments Café"))
-				.andExpect(jsonPath("$[0].city").value("Rennes"))
+				.andExpect(jsonPath("$[0].address.city").value("Rennes"))
 				.andReturn();
 
 		// Optionnel : sanity check en base sur la projection

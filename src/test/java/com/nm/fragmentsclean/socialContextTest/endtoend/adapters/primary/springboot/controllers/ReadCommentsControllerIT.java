@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -112,6 +113,9 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 	void can_list_comments_for_target_with_pagination_metadata() throws Exception {
 		mockMvc.perform(
 				get("/api/social/comments")
+						.with(jwt().jwt(j -> j
+								.subject("11111111-1111-1111-1111-111111111111")
+								.claim("roles", java.util.List.of("USER"))))
 						.param("targetId", TARGET_ID.toString())
 						.param("limit", "2")
 						.param("op", "retrieve"))
@@ -152,6 +156,9 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 
 		mockMvc.perform(
 				get("/api/social/comments")
+						.with(jwt().jwt(j -> j
+								.subject("11111111-1111-1111-1111-111111111111")
+								.claim("roles", java.util.List.of("USER"))))
 						.param("targetId", TARGET_ID.toString())
 						.param("limit", "1")
 						.param("op", "older")
@@ -179,6 +186,9 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 
 		mockMvc.perform(
 				get("/api/social/comments")
+						.with(jwt().jwt(j -> j
+								.subject("11111111-1111-1111-1111-111111111111")
+								.claim("roles", java.util.List.of("USER"))))
 						.param("targetId", otherTarget.toString())
 						.param("limit", "10")
 						.param("op", "retrieve"))
