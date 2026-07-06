@@ -2,7 +2,6 @@ package com.nm.fragmentsclean.authenticationContextTest.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,13 +42,14 @@ public class AuthFlowIT extends AbstractBaseE2E {
 	@BeforeEach
 	void setup() {
 		// ordre important si FK
+		outboxEventRepository.deleteAll();
+		jdbcTemplate.update("DELETE FROM refresh_tokens");
 		jdbcTemplate.update("DELETE FROM app_users");
 		jdbcTemplate.update("DELETE FROM auth_users");
-		outboxEventRepository.deleteAll();
 	}
 
 	@Test
-	void google_login_creates_auth_and_app_user_and_returns_tokens() throws Exception {
+	void google_login_creates_auth_user_and_returns_tokens() throws Exception {
 		// GIVEN
 		String authorizationCode = "test-code-123";
 
@@ -60,7 +60,6 @@ public class AuthFlowIT extends AbstractBaseE2E {
 						.content("""
 								{ "authorizationCode": "%s" }
 								""".formatted(authorizationCode)))
-				.andDo(print())
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith("application/json"))
 				.andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -103,21 +102,15 @@ public class AuthFlowIT extends AbstractBaseE2E {
 		String authUserIdDb = jdbcTemplate.queryForObject(
 				"SELECT id FROM auth_users LIMIT 1",
 				String.class);
-		String appUserIdDb = jdbcTemplate.queryForObject(
-				"SELECT id FROM app_users LIMIT 1",
-				String.class);
 
 		assertThat(authUserIdDb).isNotBlank();
-		assertThat(appUserIdDb).isNotBlank();
 
 		// ✅ auth_user.id == jwt.sub
 		assertThat(authUserIdDb).isEqualTo(jwt.getSubject());
 
 		// counts
 		var authUsers = jdbcTemplate.queryForList("SELECT * FROM auth_users");
-		var appUsers = jdbcTemplate.queryForList("SELECT * FROM app_users");
 
 		assertThat(authUsers).hasSize(1);
-		assertThat(appUsers).hasSize(1);
 	}
 }

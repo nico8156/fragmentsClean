@@ -6,4 +6,10 @@ cd "${ROOT_DIR}"
 
 ./scripts/testcontainers-check.sh
 
-exec ./scripts/backend-testcontainers -q -Dtest='*IT,*IntegrationTest,*LocalStackTest' test
+exec ./scripts/backend-testcontainers \
+  -q \
+  -Dapp.outbox.dispatcher.scheduling-enabled=false \
+  -Dspring.datasource.hikari.maximum-pool-size=2 \
+  -Dspring.datasource.hikari.minimum-idle=0 \
+  -Dtest='*IT,*IntegrationTest,*LocalStackTest' \
+  test

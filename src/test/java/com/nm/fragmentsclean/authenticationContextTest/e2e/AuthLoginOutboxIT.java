@@ -2,7 +2,6 @@ package com.nm.fragmentsclean.authenticationContextTest.e2e;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +14,6 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.Au
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserLoggedInEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.eventDispatcher.OutboxEventDispatcher;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 
 public class AuthLoginOutboxIT extends AbstractBaseE2E {
 
@@ -40,26 +38,6 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 	}
 
 	@Test
-	void debug_google_login_400() throws Exception {
-		var code = "userA";
-
-		var result = mockMvc.perform(
-				post("/auth/google/exchange")
-						.contentType("application/json")
-						.content("""
-								{
-								  "code": "%s",
-								  "codeVerifier": "dummy-verifier",
-								  "redirectUri": "com.fragments:/oauth2redirect"
-								}
-								""".formatted(code)))
-				.andDo(print())
-				.andReturn();
-
-		System.out.println("RESPONSE BODY = " + result.getResponse().getContentAsString());
-	};
-
-	@Test
 	void google_login_persists_auth_events_in_outbox() throws Exception {
 		// GIVEN
 		var authorizationCode = "outbox-login-123";
@@ -73,7 +51,6 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 								  "authorizationCode": "%s"
 								}
 								""".formatted(authorizationCode)))
-				.andDo(print())
 				.andExpect(status().isOk());
 
 		// THEN : des events ont été écrits dans l’outbox
@@ -110,9 +87,7 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 				.map(e -> e.getEventType())
 				.toList();
 
-		assertThat(typesAfterFirstLogin).contains(
-				AuthUserCreatedEvent.class.getName(),
-				AppUserCreatedEvent.class.getName());
+		assertThat(typesAfterFirstLogin).contains(AuthUserCreatedEvent.class.getName());
 
 		// 2) Deuxième login (même authorizationCode -> même sub dans
 		// FakeGoogleAuthService)
@@ -134,9 +109,7 @@ public class AuthLoginOutboxIT extends AbstractBaseE2E {
 		assertThat(typesAfterSecondLogin)
 				.anyMatch(t -> t.equals(AuthUserLoggedInEvent.class.getName()));
 
-		// Bonus anti-doublon : toujours 1 AppUser
-		Integer appUsers = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM app_users", Integer.class);
-		assertThat(appUsers).isEqualTo(1);
+		// AppUser creation is handled by async consumers; this test covers the auth outbox contract.
 	}
 
 }

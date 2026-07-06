@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +50,9 @@ public class WriteArticleControllerIT extends AbstractBaseE2E {
 
         mockMvc.perform(
                         post("/api/articles") // mapping du ArticleWriteController
+                                .with(jwt().jwt(j -> j
+                                        .subject(AUTHOR_ID.toString())
+                                        .claim("roles", java.util.List.of("USER"))))
                                 .contentType("application/json")
                                 .content(
                                         """
@@ -83,7 +87,7 @@ public class WriteArticleControllerIT extends AbstractBaseE2E {
                 )
                 .andExpect(status().isAccepted()); // comme pour le write comment
 
-        var now = Instant.parse("2024-01-01T10:00:00Z"); // date "serveur"
+        var now = dateTimeProvider.now(); // date "serveur"
 
         var entities = springArticleRepository.findAll();
         assertThat(entities).hasSize(1);

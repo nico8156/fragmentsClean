@@ -7,13 +7,10 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEv
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Component
 public class OutboxEventDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(OutboxEventDispatcher.class);
@@ -35,11 +32,10 @@ public class OutboxEventDispatcher {
     }
 
     /**
-     * Tâche périodique : envoie les events PENDING par batch.
-     * Tu peux ajuster fixedDelay via properties :
-     *   app.outbox.dispatcher.delay-ms=500
+     * Envoie les events PENDING par batch.
+     * Le scheduling est porté par ScheduledOutboxEventDispatcher pour pouvoir
+     * désactiver la boucle en tests tout en conservant l'appel explicite.
      */
-    @Scheduled(fixedDelayString = "${app.outbox.dispatcher.delay-ms:500}")
     @Transactional
     public void dispatchPending() {
         List<OutboxEventJpaEntity> pending =

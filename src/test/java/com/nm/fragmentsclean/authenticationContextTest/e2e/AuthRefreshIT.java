@@ -36,18 +36,16 @@ public class AuthRefreshIT extends AbstractBaseE2E {
     @Test
     void refresh_token_flow_works() throws Exception {
         // GIVEN : un premier login Google → access + refresh + user
-        var code = "test-refresh-123";
+        var authorizationCode = "test-refresh-123";
 
         var loginResult = mockMvc.perform(
                         post("/auth/google/exchange")
                                 .contentType("application/json")
                                 .content("""
                                     {
-                                      "code": "%s",
-                                      "codeVerifier": "dummy-verifier",
-                                      "redirectUri": "com.fragments:/oauth2redirect"
+                                      "authorizationCode": "%s"
                                     }
-                                    """.formatted(code))
+                                    """.formatted(authorizationCode))
                 )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
@@ -95,11 +93,9 @@ public class AuthRefreshIT extends AbstractBaseE2E {
         assertThat(accessToken1.split("\\.")).hasSize(3);
         assertThat(accessToken2.split("\\.")).hasSize(3);
 
-        // Sanity check DB : 1 auth_user, 1 app_user
+        // Sanity check DB : auth state is persisted. AppUser creation is handled by async consumers.
         var authUsers = jdbcTemplate.queryForList("SELECT * FROM auth_users");
-        var appUsers = jdbcTemplate.queryForList("SELECT * FROM app_users");
         assertThat(authUsers).hasSize(1);
-        assertThat(appUsers).hasSize(1);
 
         // Sanity check DB : 2 refresh_tokens pour ce user (un révoqué, un actif)
         var refreshTokens = jdbcTemplate.queryForList(

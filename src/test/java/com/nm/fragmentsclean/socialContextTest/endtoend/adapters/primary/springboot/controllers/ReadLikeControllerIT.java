@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -71,7 +72,10 @@ public class ReadLikeControllerIT extends AbstractBaseE2E {
 	@Test
 	void can_read_like_status_for_target() throws Exception {
 		mockMvc.perform(
-				get("/api/social/targets/{targetId}/likes", TARGET_ID))
+				get("/api/social/targets/{targetId}/likes", TARGET_ID)
+						.with(jwt().jwt(j -> j
+								.subject(ME_USER.toString())
+								.claim("roles", java.util.List.of("USER")))))
 				.andExpect(status().isOk())
 					.andExpect(content().contentType("application/json"))
 					.andExpect(jsonPath("$.count", is(2)))
