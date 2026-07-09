@@ -60,8 +60,9 @@ public class SocialContextWriteDependenciesConfiguration {
     @Bean
     public MakeLikeCommandHandler makeLikeCommandHandler(LikeRepository likeRepository,
                                                          DomainEventPublisher eventPublisher,
-                                                         DateTimeProvider dateTimeProvider) {
-        return new MakeLikeCommandHandler(likeRepository, eventPublisher, dateTimeProvider);
+                                                         DateTimeProvider dateTimeProvider,
+                                                         CommandStatusRecorder commandStatusRecorder) {
+        return new MakeLikeCommandHandler(likeRepository, eventPublisher, dateTimeProvider, commandStatusRecorder);
     }
     @Bean
     CreateCommentCommandHandler createCommentCommandHandler(

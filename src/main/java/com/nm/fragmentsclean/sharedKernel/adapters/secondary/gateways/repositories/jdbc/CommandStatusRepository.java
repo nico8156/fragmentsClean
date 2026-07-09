@@ -44,6 +44,11 @@ public class CommandStatusRepository implements CommandStatusRecorder {
         markApplied(commandId, aggregateType, aggregateId, null, eventType, appliedAt);
     }
 
+    @Override
+    public boolean isApplied(UUID commandId) {
+        return "APPLIED".equals(find(commandId).status());
+    }
+
     private void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventId, String eventType, Instant appliedAt) {
         jdbcTemplate.update("""
                 INSERT INTO command_status (

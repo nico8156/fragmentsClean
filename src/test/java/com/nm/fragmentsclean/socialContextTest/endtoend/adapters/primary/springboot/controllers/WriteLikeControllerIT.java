@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.rep
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -42,10 +43,14 @@ public class WriteLikeControllerIT extends AbstractBaseE2E {
 	@Autowired
 	private DateTimeProvider dateTimeProvider;
 
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
+
 	@BeforeEach
 	void setup() {
 		springLikeRepository.deleteAll();
 		outboxRepository.deleteAll();
+		jdbcTemplate.update("DELETE FROM command_status");
 
 		((DeterministicDateTimeProvider) dateTimeProvider).instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
 	}
@@ -99,6 +104,12 @@ public class WriteLikeControllerIT extends AbstractBaseE2E {
 		assertThat(event.getAggregateId()).isEqualTo(LIKE_ID.toString());
 		assertThat(event.getStreamKey()).isEqualTo("user:" + USER_ID);
 		assertThat(event.getPayloadJson()).isNotBlank();
+
+		String commandStatus = jdbcTemplate.queryForObject(
+				"SELECT status FROM command_status WHERE command_id = ?",
+				String.class,
+				COMMAND_ID);
+		assertThat(commandStatus).isEqualTo("APPLIED");
 	}
 
 	@Test
@@ -140,6 +151,12 @@ public class WriteLikeControllerIT extends AbstractBaseE2E {
 				.isEqualTo(new LikeJpaEntity(LIKE_ID, USER_ID, TARGET_ID, true, null, 1L));
 
 		assertThat(outboxRepository.findAll()).hasSize(1);
+
+		String commandStatus = jdbcTemplate.queryForObject(
+				"SELECT status FROM command_status WHERE command_id = ?",
+				String.class,
+				COMMAND_ID);
+		assertThat(commandStatus).isEqualTo("APPLIED");
 	}
 
 }
