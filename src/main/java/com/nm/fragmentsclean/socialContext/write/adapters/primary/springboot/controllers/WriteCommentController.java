@@ -52,12 +52,12 @@ public class WriteCommentController {
     public ResponseEntity<Void> update(@RequestBody CommentUpdateRequestDto body,
                                        @AuthenticationPrincipal Jwt jwt) {
 
-        // optionnel : contrôle auteur/permission dans le handler
-        // UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = UUID.fromString(jwt.getSubject());
 
         var command = new UpdateCommentCommand(
                 UUID.fromString(body.commandId()),
                 UUID.fromString(body.commentId()),
+                userId,
                 body.body(),
                 Instant.parse(body.editedAt())
         );
@@ -74,12 +74,12 @@ public class WriteCommentController {
     public ResponseEntity<Void> delete(@RequestBody CommentDeleteRequestDto body,
                                        @AuthenticationPrincipal Jwt jwt) {
 
-        // optionnel : contrôle auteur/permission dans le handler
-        // UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = UUID.fromString(jwt.getSubject());
 
         var command = new DeleteCommentCommand(
                 UUID.fromString(body.commandId()),
                 UUID.fromString(body.commentId()),
+                userId,
                 Instant.parse(body.deletedAt())
         );
 

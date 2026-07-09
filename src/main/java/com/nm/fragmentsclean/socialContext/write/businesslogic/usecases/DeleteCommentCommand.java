@@ -8,6 +8,7 @@ import java.util.UUID;
 public record DeleteCommentCommand(
         UUID commandId,
         UUID commentId,
+        UUID userId,
         Instant clientAt
 )implements Command {
 }

@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.socialContext.write.adapters.primary.springboot.controllers;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaCommentRepository;
@@ -75,18 +76,20 @@ public class SocialContextWriteDependenciesConfiguration {
     UpdateCommentCommandHandler updateCommentCommandHandler(
             CommentRepository commentRepository,
             DomainEventPublisher eventPublisher,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            CommandStatusRecorder commandStatusRecorder
     ) {
-        return new UpdateCommentCommandHandler(commentRepository, eventPublisher, dateTimeProvider);
+        return new UpdateCommentCommandHandler(commentRepository, eventPublisher, dateTimeProvider, commandStatusRecorder);
     }
 
     @Bean
     DeleteCommentCommandHandler deleteCommentCommandHandler(
             CommentRepository commentRepository,
             DomainEventPublisher eventPublisher,
-            DateTimeProvider dateTimeProvider
+            DateTimeProvider dateTimeProvider,
+            CommandStatusRecorder commandStatusRecorder
     ) {
-        return new DeleteCommentCommandHandler(commentRepository, eventPublisher, dateTimeProvider);
+        return new DeleteCommentCommandHandler(commentRepository, eventPublisher, dateTimeProvider, commandStatusRecorder);
     }
 
 

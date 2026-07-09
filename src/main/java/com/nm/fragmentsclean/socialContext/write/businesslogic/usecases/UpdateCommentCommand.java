@@ -8,6 +8,7 @@ import java.util.UUID;
 public record UpdateCommentCommand(
         UUID commandId,
         UUID commentId,
+        UUID userId,
         String newBody,
         Instant clientAt
 ) implements Command {

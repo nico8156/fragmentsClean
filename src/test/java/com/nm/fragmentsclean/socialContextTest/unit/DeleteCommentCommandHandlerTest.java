@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
@@ -24,13 +25,15 @@ public class DeleteCommentCommandHandlerTest {
 	FakeCommentRepository commentRepository = new FakeCommentRepository();
 	FakeDomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 	DeterministicDateTimeProvider dateTimeProvider = new DeterministicDateTimeProvider();
+	RecordingCommandStatusRecorder commandStatusRecorder = new RecordingCommandStatusRecorder();
 
 	DeleteCommentCommandHandler handler;
 
 	@BeforeEach
 	void setup() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
-		handler = new DeleteCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider);
+		commandStatusRecorder = new RecordingCommandStatusRecorder();
+		handler = new DeleteCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider, commandStatusRecorder);
 
 		Comment initial = Comment.createNew(
 				COMMENT_ID,
@@ -48,6 +51,7 @@ public class DeleteCommentCommandHandlerTest {
 		handler.execute(new DeleteCommentCommand(
 				CMD_ID,
 				COMMENT_ID,
+				USER_ID,
 				Instant.parse("2023-10-01T10:59:00Z")));
 
 		// THEN : état
@@ -62,6 +66,8 @@ public class DeleteCommentCommandHandlerTest {
 		assertThat(evt.commentId()).isEqualTo(COMMENT_ID);
 		assertThat(evt.deletedAt()).isEqualTo(dateTimeProvider.instantOfNow);
 		assertThat(evt.moderation()).isEqualTo(ModerationStatus.SOFT_DELETED);
+		assertThat(commandStatusRecorder.commandId).isEqualTo(CMD_ID);
+		assertThat(commandStatusRecorder.eventType).isEqualTo("social.comment.deleted");
 	}
 
 	@Test
@@ -70,6 +76,7 @@ public class DeleteCommentCommandHandlerTest {
 		handler.execute(new DeleteCommentCommand(
 				CMD_ID,
 				COMMENT_ID,
+				USER_ID,
 				Instant.parse("2023-10-01T10:59:00Z")));
 		domainEventPublisher.published.clear();
 
@@ -77,11 +84,36 @@ public class DeleteCommentCommandHandlerTest {
 		handler.execute(new DeleteCommentCommand(
 				UUID.fromString("55555555-5555-5555-5555-555555555555"),
 				COMMENT_ID,
+				USER_ID,
 				Instant.parse("2023-10-01T11:01:00Z")));
 
 		// THEN : pas de nouvel event, version reste 1
 		assertThat(domainEventPublisher.published).isEmpty();
 		var snap = commentRepository.allSnapshots().getFirst();
 		assertThat(snap.version()).isEqualTo(1L);
+		assertThat(commandStatusRecorder.commandId).isEqualTo(UUID.fromString("55555555-5555-5555-5555-555555555555"));
+		assertThat(commandStatusRecorder.eventType).isEqualTo("social.comment.deleted");
+	}
+
+	@Test
+	void should_reject_delete_from_non_author() {
+		assertThatThrownBy(() -> handler.execute(new DeleteCommentCommand(
+				CMD_ID,
+				COMMENT_ID,
+				UUID.fromString("99999999-9999-9999-9999-999999999999"),
+				Instant.parse("2023-10-01T10:59:00Z"))))
+				.isInstanceOf(IllegalStateException.class);
+		assertThat(commandStatusRecorder.commandId).isNull();
+	}
+
+	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
+		UUID commandId;
+		String eventType;
+
+		@Override
+		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
+			this.commandId = commandId;
+			this.eventType = eventType;
+		}
 	}
 }
