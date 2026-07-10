@@ -58,6 +58,7 @@ Active backend bounded contexts:
 - `articleContext`: editorial content.
 - `socialContext`: likes, comments, social interactions and their projections.
 - `ticketContext`: ticket submission, OCR/verification pipeline, entitlements source signals.
+- `adminImportContext`: Fragments Studio/admin import and editorial authoring boundary.
 - `sharedKernel`: technical abstractions only.
 
 The mobile app mirrors these capabilities as `*Wl` client contexts where useful:
@@ -165,6 +166,31 @@ Network error, timeout, offline, 5xx, or socket loss:
 Rollback is allowed only when:
 - backend returns an explicit business rejection, or
 - `/commands/{commandId}` returns `REJECTED`.
+
+## Studio / Admin Authoring Policy
+
+Fragments Studio uses admin primary adapters and application use cases to turn
+operator input into bounded-context commands. Studio controllers must not mutate
+business tables or read models directly.
+
+The target flow is:
+
+```text
+Studio UI
+-> view model
+-> studio use case
+-> admin gateway
+-> admin/studio backend use case
+-> bounded-context command
+-> domain event
+-> outbox / command status
+-> projection
+-> mobile read API
+```
+
+Admin/editorial tokens are secrets. They must come from runtime operator input,
+environment variables, or a future admin auth flow; never from Expo config or
+committed application config.
 
 ## Persistence Policy
 

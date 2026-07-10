@@ -15,7 +15,8 @@ Before coding, classify the task:
 3. Projection feature: creates or updates a read model.
 4. SQS consumer: consumes an integration event.
 5. External adapter: talks to Google, OCR engine, filesystem, S3, SQS, SMTP, etc.
-6. Architecture/doc feature: changes rules, docs, deployment policy, or guardrails.
+6. Studio/admin feature: admin-facing workflow that maps operator input to bounded-context commands.
+7. Architecture/doc feature: changes rules, docs, deployment policy, or guardrails.
 
 Use the matching orchestrator in `.agents/backend/orchestrators`.
 
@@ -37,6 +38,8 @@ Use the matching orchestrator in `.agents/backend/orchestrators`.
 - Projection freshness must use Projection Sync SSE plus GET snapshots.
 - `/commands/{commandId}` is the canonical status source.
 - Secrets come from environment or AWS secret mechanisms.
+- Studio/admin controllers dispatch commands through ports/use cases; they do not write business tables directly.
+- Admin tokens are secrets and must not be exposed through mobile/Expo config.
 
 ## Layering
 
