@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage.ArticleImageStorageProperties;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 
 @RestController
 public class ArticleImageAssetsController {

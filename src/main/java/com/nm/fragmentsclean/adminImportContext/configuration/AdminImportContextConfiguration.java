@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusArticleAuthoringPort;
-import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage.ArticleImageStorageProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
@@ -23,6 +22,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStud
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
 @Configuration

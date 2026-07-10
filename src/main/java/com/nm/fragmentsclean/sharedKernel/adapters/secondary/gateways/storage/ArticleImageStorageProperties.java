@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage;
+package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage;
 
 import java.net.URI;
 import java.nio.file.Path;

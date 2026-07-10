@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageAsset;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 
 @Component
 @ConditionalOnProperty(prefix = "article.images.storage", name = "backend", havingValue = "local", matchIfMissing = true)

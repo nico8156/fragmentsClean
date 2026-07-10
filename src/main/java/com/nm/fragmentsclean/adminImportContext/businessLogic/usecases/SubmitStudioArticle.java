@@ -7,11 +7,11 @@ import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCreationResult;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleSubmission;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
 public class SubmitStudioArticle {
@@ -37,7 +37,7 @@ public class SubmitStudioArticle {
 		Instant now = dateTimeProvider.now();
 		var cover = submission.cover();
 
-		var command = new CreateArticleCommand(
+		var command = new StudioArticleCommand(
 				commandId,
 				now,
 				articleId,

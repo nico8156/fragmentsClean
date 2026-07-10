@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.adminImportContext.businessLogic.ports;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand;
 
 public interface ArticleAuthoringPort {
-	void createArticle(CreateArticleCommand command);
+	void createArticle(StudioArticleCommand command);
 }
