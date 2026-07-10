@@ -302,6 +302,20 @@ CREATE TABLE IF NOT EXISTS articles_projection (
                                      coffee_ids_json  TEXT         NOT NULL  -- UUID[] sérialisés en JSON
 );
 
+CREATE TABLE IF NOT EXISTS admin_studio_articles (
+                                     article_id       UUID PRIMARY KEY,
+                                     status           VARCHAR(32)  NOT NULL,
+                                     payload_json     TEXT         NOT NULL,
+                                     created_at       TIMESTAMPTZ  NOT NULL,
+                                     updated_at       TIMESTAMPTZ  NOT NULL,
+                                     published_at     TIMESTAMPTZ,
+                                     deleted_at       TIMESTAMPTZ,
+                                     last_command_id  UUID
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_studio_articles_status_updated_at
+    ON admin_studio_articles (status, updated_at DESC);
+
 --
 -- CREATE INDEX idx_articles_projection_slug_locale
 --     ON articles_projection (slug, locale);

@@ -33,6 +33,7 @@ class SubmitStudioArticleTest {
 				new ObjectMapper());
 
 		var result = useCase.execute(new StudioArticleSubmission(
+				null,
 				"rennes-coffee-guide",
 				"fr-FR",
 				AUTHOR_ID,

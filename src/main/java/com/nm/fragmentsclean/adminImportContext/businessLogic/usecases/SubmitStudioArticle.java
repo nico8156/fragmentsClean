@@ -33,7 +33,7 @@ public class SubmitStudioArticle {
 
 	public StudioArticleCreationResult execute(StudioArticleSubmission submission) {
 		UUID commandId = uuidGenerator.generate();
-		UUID articleId = uuidGenerator.generate();
+		UUID articleId = submission.articleId() == null ? uuidGenerator.generate() : submission.articleId();
 		Instant now = dateTimeProvider.now();
 		var cover = submission.cover();
 
