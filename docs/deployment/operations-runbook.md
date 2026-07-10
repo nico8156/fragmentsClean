@@ -31,6 +31,23 @@ docker compose ps
 docker compose logs --tail=200 backend
 ```
 
+## Backend Image Drift
+
+`BACKEND_IMAGE` in `.env`, the resolved Compose image, and the running
+container image must match after a deployment:
+
+```bash
+cd /srv/fragments/staging
+grep '^BACKEND_IMAGE=' .env
+docker compose config --format json \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["backend"]["image"])'
+docker inspect "$(docker compose ps -q backend)" --format '{{.Config.Image}}'
+```
+
+If `.env` and `docker compose config` are newer than the running container,
+recreate only the backend service through the deployment workflow. Do not edit
+the container manually as the normal path.
+
 ## Outbox Diagnostics
 
 Inspect pending or failed events without dumping payloads:

@@ -235,7 +235,7 @@ jobs:
           upsert_env_var "COFFEE_PHOTOS_S3_REGION" "${AWS_REGION}"
           upsert_env_var "COFFEE_PHOTOS_S3_PRESIGN_TTL" "PT15M"
           upsert_env_var "ARTICLE_IMAGES_STORAGE_DIRECTORY" "/srv/fragments/article-images"
-          upsert_env_var "ARTICLE_IMAGES_PUBLIC_BASE_URL" "https://${APP_RUNTIME_DOMAIN}"
+          upsert_env_var "ARTICLE_IMAGES_PUBLIC_BASE_URL" "https://\${APP_RUNTIME_DOMAIN}"
           upsert_env_var "ARTICLE_IMAGES_STORAGE_BACKEND" "s3"
           upsert_env_var "ARTICLE_IMAGES_S3_BUCKET" "anchor-assets-prod-851725375299"
           upsert_env_var "ARTICLE_IMAGES_S3_PREFIX" "fragments/staging/articles"
@@ -256,7 +256,7 @@ jobs:
           upsert_env_var "SQS_DOMAIN_EVENTS_URL" "${SQS_DOMAIN_EVENTS_URL}"
           upsert_env_var "SQS_TICKET_EVENTS_URL" "${SQS_TICKET_EVENTS_URL}"
           upsert_env_var "SQS_TICKET_VERIFICATION_REQUESTED_URL" "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
-          mkdir -p coffee-photos
+          mkdir -p coffee-photos article-images
           aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
           docker compose pull backend
           docker compose up -d postgres
@@ -265,11 +265,12 @@ jobs:
           docker compose exec -T postgres \
             psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
-          docker compose up -d --force-recreate backend
-          RUNNING_BACKEND_IMAGE="$(docker inspect "$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
-          EXPECTED_BACKEND_IMAGE="$(read_env_var BACKEND_IMAGE)"
-          if [ "${RUNNING_BACKEND_IMAGE}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Backend container image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got ${RUNNING_BACKEND_IMAGE}." >&2
+          docker compose rm -sf backend
+          docker compose up -d --no-deps --force-recreate backend
+          RUNNING_BACKEND_IMAGE="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
+          EXPECTED_BACKEND_IMAGE="\$(read_env_var BACKEND_IMAGE)"
+          if [ "\${RUNNING_BACKEND_IMAGE}" != "\${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Backend container image mismatch. Expected \${EXPECTED_BACKEND_IMAGE}, got \${RUNNING_BACKEND_IMAGE}." >&2
             exit 1
           fi
           if grep -q '^COMPOSE_PROFILES=.*https' .env; then
