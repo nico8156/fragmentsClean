@@ -109,8 +109,13 @@ Seulement des concepts métier.
 * validation
 * création d’entité
 * émission d’événement
+* marquage `command_status` en `APPLIED`
 
 Pas de persistance directe : il parle à un **port** (`ArticleRepository`).
+
+Une commande idempotente déjà appliquée doit rester observable. Si l'article
+existe déjà pour le même `articleId`, le handler ne recrée pas l'effet métier,
+mais marque tout de même le `commandId` comme appliqué.
 
 ---
 
@@ -127,10 +132,21 @@ Pas de persistance directe : il parle à un **port** (`ArticleRepository`).
 ### Primary (entrée)
 
 * `WriteArticleController`
+* `AdminStudioArticlesController` via `adminImportContext`
 
 ➡️ Adaptation HTTP → Command
 
 Aucune logique métier dans le controller.
+
+Fragments Studio ne poste pas directement une projection. Il soumet une saisie
+éditoriale structurée à `/api/admin/studio/articles`; le boundary admin génère
+`commandId` + `articleId`, construit `CreateArticleCommand`, puis délègue au
+command bus.
+
+Les images article sont uploadées en multipart via
+`/api/admin/studio/articles/images`. L'adapter de stockage peut écrire en local
+ou S3 et retourne une référence image utilisable dans le cover ou les blocs.
+Les URI internes S3 sont résolues côté read API avant d'être envoyées au mobile.
 
 ---
 

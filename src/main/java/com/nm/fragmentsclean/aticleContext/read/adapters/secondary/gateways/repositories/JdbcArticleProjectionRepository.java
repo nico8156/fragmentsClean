@@ -65,6 +65,23 @@ public class JdbcArticleProjectionRepository implements ArticleProjectionReposit
 				    coffee_ids_json
 				)
 				VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+				ON CONFLICT (id) DO UPDATE
+				SET slug = EXCLUDED.slug,
+				    locale = EXCLUDED.locale,
+				    title = EXCLUDED.title,
+				    intro = EXCLUDED.intro,
+				    blocks_json = EXCLUDED.blocks_json,
+				    conclusion = EXCLUDED.conclusion,
+				    cover_json = EXCLUDED.cover_json,
+				    tags_json = EXCLUDED.tags_json,
+				    author_id = EXCLUDED.author_id,
+				    author_name = EXCLUDED.author_name,
+				    reading_time_min = EXCLUDED.reading_time_min,
+				    published_at = EXCLUDED.published_at,
+				    updated_at = EXCLUDED.updated_at,
+				    version = EXCLUDED.version,
+				    status = EXCLUDED.status,
+				    coffee_ids_json = EXCLUDED.coffee_ids_json
 				""",
 				event.articleId(),
 				event.slug(),

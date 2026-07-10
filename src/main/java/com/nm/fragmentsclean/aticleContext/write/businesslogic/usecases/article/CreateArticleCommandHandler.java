@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -14,23 +15,36 @@ public class CreateArticleCommandHandler implements CommandHandler<CreateArticle
     private final ArticleRepository articleRepository;
     private final DomainEventPublisher eventPublisher;
     private final DateTimeProvider dateTimeProvider;
+    private final CommandStatusRecorder commandStatusRecorder;
 
     public CreateArticleCommandHandler(ArticleRepository articleRepository,
                                        DomainEventPublisher eventPublisher,
-                                       DateTimeProvider dateTimeProvider) {
+                                       DateTimeProvider dateTimeProvider,
+                                       CommandStatusRecorder commandStatusRecorder) {
         this.articleRepository = articleRepository;
         this.eventPublisher = eventPublisher;
         this.dateTimeProvider = dateTimeProvider;
+        this.commandStatusRecorder = commandStatusRecorder;
     }
 
     @Override
     public void execute(CreateArticleCommand cmd)  {
         var now = dateTimeProvider.now();
 
+        if (commandStatusRecorder.isApplied(cmd.commandId())) {
+            return;
+        }
+
         // idempotence simple : si l’article existe déjà, on ne recrée pas
         var existing = articleRepository.byId(cmd.articleId());
         if (existing.isPresent()) {
-            // TODO: comme pour les commentaires, on pourrait vérifier cohérence slug/locale/author
+            commandStatusRecorder.markApplied(
+                    cmd.commandId(),
+                    "Article",
+                    cmd.articleId().toString(),
+                    "article.created",
+                    now
+            );
             return;
         }
 
@@ -64,5 +78,13 @@ public class CreateArticleCommandHandler implements CommandHandler<CreateArticle
 
         article.domainEvents().forEach(eventPublisher::publish);
         article.clearDomainEvents();
+
+        commandStatusRecorder.markApplied(
+                cmd.commandId(),
+                "Article",
+                cmd.articleId().toString(),
+                "article.created",
+                now
+        );
     }
 }

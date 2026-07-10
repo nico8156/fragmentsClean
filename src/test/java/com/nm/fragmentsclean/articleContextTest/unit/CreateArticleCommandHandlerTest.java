@@ -16,6 +16,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 
 public class CreateArticleCommandHandlerTest {
 
@@ -27,6 +28,7 @@ public class CreateArticleCommandHandlerTest {
 	FakeArticleRepository articleRepository = new FakeArticleRepository();
 	FakeDomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 	DeterministicDateTimeProvider dateTimeProvider = new DeterministicDateTimeProvider();
+	RecordingCommandStatusRecorder commandStatusRecorder = new RecordingCommandStatusRecorder();
 
 	CreateArticleCommandHandler handler;
 
@@ -36,7 +38,8 @@ public class CreateArticleCommandHandlerTest {
 	@BeforeEach
 	void setup() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
-		handler = new CreateArticleCommandHandler(articleRepository, domainEventPublisher, dateTimeProvider);
+		commandStatusRecorder = new RecordingCommandStatusRecorder();
+		handler = new CreateArticleCommandHandler(articleRepository, domainEventPublisher, dateTimeProvider, commandStatusRecorder);
 	}
 
 	@Test
@@ -156,5 +159,29 @@ public class CreateArticleCommandHandlerTest {
 		assertThat(evt.version()).isEqualTo(0L);
 		assertThat(evt.occurredAt()).isEqualTo(dateTimeProvider.instantOfNow);
 		assertThat(evt.clientAt()).isEqualTo(clientAt);
+		assertThat(commandStatusRecorder.appliedCommandId).isEqualTo(CMD_ID);
+		assertThat(commandStatusRecorder.aggregateType).isEqualTo("Article");
+	}
+
+	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
+		UUID appliedCommandId;
+		String aggregateType;
+		String aggregateId;
+		String eventType;
+		Instant appliedAt;
+
+		@Override
+		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
+			this.appliedCommandId = commandId;
+			this.aggregateType = aggregateType;
+			this.aggregateId = aggregateId;
+			this.eventType = eventType;
+			this.appliedAt = appliedAt;
+		}
+
+		@Override
+		public boolean isApplied(UUID commandId) {
+			return commandId.equals(appliedCommandId);
+		}
 	}
 }

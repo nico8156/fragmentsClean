@@ -23,11 +23,14 @@ public class GetArticleBySlugQueryHandler
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final ArticleImageUriResolver imageUriResolver;
 
     public GetArticleBySlugQueryHandler(JdbcTemplate jdbcTemplate,
-                                        ObjectMapper objectMapper) {
+                                        ObjectMapper objectMapper,
+                                        ArticleImageUriResolver imageUriResolver) {
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.imageUriResolver = imageUriResolver;
     }
 
     @Override
@@ -76,8 +79,8 @@ public class GetArticleBySlugQueryHandler
         long version = rs.getLong("version");
         String status = rs.getString("status"); // "published"
 
-        List<ArticleBlockView> blocks = parseBlocks(blocksJson);
-        ImageRefView cover = parseCover(coverJson);
+        List<ArticleBlockView> blocks = resolveBlockImages(parseBlocks(blocksJson));
+        ImageRefView cover = resolveImage(parseCover(coverJson));
         List<String> tags = parseStringList(tagsJson);
         List<UUID> coffeeIds = parseUuidList(coffeeIdsJson);
 
@@ -115,6 +118,26 @@ public class GetArticleBySlugQueryHandler
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse blocks_json", e);
         }
+    }
+
+    private List<ArticleBlockView> resolveBlockImages(List<ArticleBlockView> blocks) {
+        return blocks.stream()
+                .map(block -> new ArticleBlockView(
+                        block.heading(),
+                        block.paragraph(),
+                        resolveImage(block.photo())))
+                .toList();
+    }
+
+    private ImageRefView resolveImage(ImageRefView image) {
+        if (image == null) {
+            return null;
+        }
+        return new ImageRefView(
+                imageUriResolver.resolve(image.url()),
+                image.width(),
+                image.height(),
+                image.alt());
     }
 
     private ImageRefView parseCover(String json) {
