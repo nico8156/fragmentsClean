@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record StudioArticleSubmission(
+		UUID articleId,
 		String slug,
 		String locale,
 		UUID authorId,

@@ -138,10 +138,14 @@ mais marque tout de même le `commandId` comme appliqué.
 
 Aucune logique métier dans le controller.
 
-Fragments Studio ne poste pas directement une projection. Il soumet une saisie
-éditoriale structurée à `/api/admin/studio/articles`; le boundary admin génère
-`commandId` + `articleId`, construit `CreateArticleCommand`, puis délègue au
-command bus.
+Fragments Studio ne poste pas directement une projection. Il gère d'abord des
+documents éditoriaux admin (`draft`, `published`, `deleted`) sous
+`/api/admin/studio/articles`. Ces documents permettent de lister les articles,
+reprendre un brouillon, sauvegarder sans publier, puis supprimer côté console.
+
+Le publish reste le seul passage vers l'app mobile : le boundary admin conserve
+l'`articleId` généré par le Studio, génère le `commandId`, construit
+`CreateArticleCommand`, puis délègue au command bus.
 
 Les images article sont uploadées en multipart via
 `/api/admin/studio/articles/images`. L'adapter de stockage peut écrire en local
