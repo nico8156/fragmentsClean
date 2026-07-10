@@ -57,6 +57,7 @@ public class AuthSecurityConfiguration {
 							.requestMatchers(HttpMethod.POST, "/auth/google/mobile").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
 							.requestMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()
+							.requestMatchers("/error").permitAll()
 							.requestMatchers(HttpMethod.GET, "/api/coffees/**").permitAll()
 							.requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
 							.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()

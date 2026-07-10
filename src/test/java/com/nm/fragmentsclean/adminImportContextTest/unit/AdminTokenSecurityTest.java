@@ -224,6 +224,28 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void admin_studio_article_submit_with_invalid_coffee_id_returns_400_not_401() throws Exception {
+		mockMvc("admin-secret").perform(post("/api/admin/studio/articles")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret")
+						.contentType("application/json")
+						.content("""
+								{
+								  "slug": "guide-cafe-rennes",
+								  "locale": "fr-FR",
+								  "authorId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+								  "authorName": "Fragments Studio",
+								  "title": "Guide cafe Rennes",
+								  "intro": "Intro",
+								  "blocks": [{ "heading": "Debut", "paragraph": "Paragraphe" }],
+								  "conclusion": "Conclusion",
+								  "tags": ["coffee"],
+								  "coffeeIds": ["not-a-uuid"]
+								}
+								"""))
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
 	void admin_studio_article_image_with_valid_token_reaches_controller() throws Exception {
 		mockMvc("admin-secret").perform(multipart("/api/admin/studio/articles/images")
 						.file(new org.springframework.mock.web.MockMultipartFile(
