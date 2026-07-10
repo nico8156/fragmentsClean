@@ -103,6 +103,11 @@ Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 - `COFFEE_PHOTOS_S3_PREFIX`
 - `COFFEE_PHOTOS_S3_REGION`
 - `COFFEE_PHOTOS_S3_PRESIGN_TTL`
+- `ARTICLE_IMAGES_STORAGE_BACKEND`
+- `ARTICLE_IMAGES_S3_BUCKET`
+- `ARTICLE_IMAGES_S3_PREFIX`
+- `ARTICLE_IMAGES_S3_REGION`
+- `ARTICLE_IMAGES_S3_PRESIGN_TTL`
 - `OPENAI_API_KEY`
 - `OPENAI_PROJECT_ID`
 - all `SQS_*_URL` values from CloudFormation outputs
@@ -125,12 +130,20 @@ COFFEE_PHOTOS_S3_BUCKET=anchor-assets-prod-851725375299
 COFFEE_PHOTOS_S3_PREFIX=fragments/staging/coffees
 COFFEE_PHOTOS_S3_REGION=eu-west-3
 COFFEE_PHOTOS_S3_PRESIGN_TTL=PT15M
+ARTICLE_IMAGES_STORAGE_DIRECTORY=/srv/fragments/article-images
+ARTICLE_IMAGES_PUBLIC_BASE_URL=https://<APP_DOMAIN>
+ARTICLE_IMAGES_STORAGE_BACKEND=s3
+ARTICLE_IMAGES_S3_BUCKET=anchor-assets-prod-851725375299
+ARTICLE_IMAGES_S3_PREFIX=fragments/staging/articles
+ARTICLE_IMAGES_S3_REGION=eu-west-3
+ARTICLE_IMAGES_S3_PRESIGN_TTL=PT15M
 ```
 
 The staging backend reuses the Anchor asset bucket with an isolated Fragments prefix:
 
 ```text
 s3://anchor-assets-prod-851725375299/fragments/staging/coffees/...
+s3://anchor-assets-prod-851725375299/fragments/staging/articles/...
 ```
 
 The EC2 runtime IAM role is limited to object operations under `fragments/staging/*`.
