@@ -396,6 +396,7 @@ class AdminTokenSecurityTest {
 						new StudioArticleImageAsset(
 								UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
 								"/api/articles/image-assets/test.jpg",
+								"/api/articles/image-assets/test.jpg",
 								null,
 								null,
 								alt)));

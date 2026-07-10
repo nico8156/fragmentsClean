@@ -42,8 +42,9 @@ public class S3ArticleImageStorageConfiguration {
 	@Bean
 	ArticleImageStorage s3ArticleImageStorage(
 			ArticleImageStorageProperties properties,
-			S3Client articleImageS3Client) {
-		return new S3ArticleImageStorage(properties, articleImageS3Client);
+			S3Client articleImageS3Client,
+			S3Presigner articleImageS3Presigner) {
+		return new S3ArticleImageStorage(properties, articleImageS3Client, articleImageS3Presigner);
 	}
 
 	private void configureCredentials(S3ClientBuilder builder, ArticleImageStorageProperties properties) {
