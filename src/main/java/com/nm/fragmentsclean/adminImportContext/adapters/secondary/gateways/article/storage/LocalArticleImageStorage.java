@@ -42,7 +42,8 @@ public class LocalArticleImageStorage implements ArticleImageStorage {
 			throw new ArticleImageStorageException("Failed to store article image", exception);
 		}
 
-		return new StudioArticleImageAsset(assetId, publicUri(storedFileName), null, null, alt);
+		var publicUri = publicUri(storedFileName);
+		return new StudioArticleImageAsset(assetId, publicUri, publicUri, null, null, alt);
 	}
 
 	private String publicUri(String fileName) {

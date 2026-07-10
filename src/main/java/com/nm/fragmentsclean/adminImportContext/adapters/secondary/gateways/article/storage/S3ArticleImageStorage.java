@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage;
 
+import java.time.Duration;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -10,14 +11,21 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.Ar
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 public class S3ArticleImageStorage implements ArticleImageStorage {
 	private final ArticleImageStorageProperties properties;
 	private final S3Client s3Client;
+	private final S3Presigner s3Presigner;
 
-	public S3ArticleImageStorage(ArticleImageStorageProperties properties, S3Client s3Client) {
+	public S3ArticleImageStorage(
+			ArticleImageStorageProperties properties,
+			S3Client s3Client,
+			S3Presigner s3Presigner) {
 		this.properties = properties;
 		this.s3Client = s3Client;
+		this.s3Presigner = s3Presigner;
 	}
 
 	@Override
@@ -35,7 +43,17 @@ public class S3ArticleImageStorage implements ArticleImageStorage {
 						.contentType(contentType == null || contentType.isBlank() ? "application/octet-stream" : contentType)
 						.build(),
 				RequestBody.fromBytes(bytes.clone()));
-		return new StudioArticleImageAsset(assetId, "s3://" + bucket + "/" + key, null, null, alt);
+		return new StudioArticleImageAsset(assetId, "s3://" + bucket + "/" + key, previewUrlFor(bucket, key), null, null, alt);
+	}
+
+	private String previewUrlFor(String bucket, String key) {
+		var request = GetObjectPresignRequest.builder()
+				.signatureDuration(properties.getS3PresignTtl() == null
+						? Duration.ofMinutes(15)
+						: properties.getS3PresignTtl())
+				.getObjectRequest(builder -> builder.bucket(bucket).key(key))
+				.build();
+		return s3Presigner.presignGetObject(request).url().toString();
 	}
 
 	private String keyFor(UUID articleId, UUID assetId, String extension) {

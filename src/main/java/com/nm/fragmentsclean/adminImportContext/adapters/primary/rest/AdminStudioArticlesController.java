@@ -127,6 +127,7 @@ public class AdminStudioArticlesController {
 	public record AdminStudioArticleImageResponse(
 			UUID assetId,
 			String url,
+			String previewUrl,
 			Integer width,
 			Integer height,
 			String alt) {
@@ -134,6 +135,7 @@ public class AdminStudioArticlesController {
 			return new AdminStudioArticleImageResponse(
 					asset.assetId(),
 					asset.url(),
+					asset.previewUrl(),
 					asset.width(),
 					asset.height(),
 					asset.alt());
