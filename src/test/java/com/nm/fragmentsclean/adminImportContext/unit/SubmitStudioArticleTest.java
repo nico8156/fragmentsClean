@@ -10,12 +10,12 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleBlock;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleSubmission;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
 
 class SubmitStudioArticleTest {
 	private static final UUID COMMAND_ID = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
@@ -63,10 +63,10 @@ class SubmitStudioArticleTest {
 	}
 
 	private static class RecordingArticleAuthoringPort implements ArticleAuthoringPort {
-		CreateArticleCommand command;
+		StudioArticleCommand command;
 
 		@Override
-		public void createArticle(CreateArticleCommand command) {
+		public void createArticle(StudioArticleCommand command) {
 			this.command = command;
 		}
 	}

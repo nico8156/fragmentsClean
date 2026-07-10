@@ -3,8 +3,8 @@ package com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.sto
 import java.net.URI;
 import java.time.Duration;
 
-import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage.ArticleImageStorageProperties;
 import com.nm.fragmentsclean.aticleContext.read.ArticleImageUriResolver;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;

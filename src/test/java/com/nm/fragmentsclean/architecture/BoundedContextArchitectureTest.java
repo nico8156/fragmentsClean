@@ -110,7 +110,9 @@ class BoundedContextArchitectureTest {
 
         if ("adminImportContext".equals(sourceContext)) {
             return importPath.equals("coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand")
-                    || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort");
+                    || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort")
+                    || (sourcePath.endsWith("adminImportContext/adapters/secondary/gateways/article/CommandBusArticleAuthoringPort.java")
+                            && importPath.equals("aticleContext.write.businesslogic.usecases.article.CreateArticleCommand"));
         }
 
         return false;

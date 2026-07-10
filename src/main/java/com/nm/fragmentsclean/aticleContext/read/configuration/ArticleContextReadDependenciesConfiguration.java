@@ -14,7 +14,6 @@ import com.nm.fragmentsclean.aticleContext.read.ArticleImageUriResolver;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.storage.DefaultArticleImageUriResolver;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
-import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.storage.ArticleImageStorageProperties;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.JpaArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
@@ -22,6 +21,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Autowired;
 
