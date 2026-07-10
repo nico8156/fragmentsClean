@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
+import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminStudioArticlesController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
@@ -33,10 +34,13 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreat
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceSearchResult;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageAsset;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsConfiguration;
@@ -50,6 +54,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -187,6 +192,53 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void admin_studio_article_submit_without_token_returns_401() throws Exception {
+		mockMvc("admin-secret").perform(post("/api/admin/studio/articles")
+						.contentType("application/json")
+						.content("{}"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void admin_studio_article_submit_with_valid_token_reaches_controller() throws Exception {
+		mockMvc("admin-secret").perform(post("/api/admin/studio/articles")
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret")
+						.contentType("application/json")
+						.content("""
+								{
+								  "slug": "guide-cafe-rennes",
+								  "locale": "fr-FR",
+								  "authorId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+								  "authorName": "Fragments Studio",
+								  "title": "Guide cafe Rennes",
+								  "intro": "Intro",
+								  "blocks": [{ "heading": "Debut", "paragraph": "Paragraphe" }],
+								  "conclusion": "Conclusion",
+								  "tags": ["coffee"],
+								  "coffeeIds": []
+								}
+								"""))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.commandId").value("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+				.andExpect(jsonPath("$.articleId").value("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+	}
+
+	@Test
+	void admin_studio_article_image_with_valid_token_reaches_controller() throws Exception {
+		mockMvc("admin-secret").perform(multipart("/api/admin/studio/articles/images")
+						.file(new org.springframework.mock.web.MockMultipartFile(
+								"articleId",
+								"",
+								"text/plain",
+								"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb".getBytes()))
+						.file("image", "jpeg-bytes".getBytes())
+						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.assetId").value("dddddddd-dddd-dddd-dddd-dddddddddddd"))
+				.andExpect(jsonPath("$.url").value("/api/articles/image-assets/test.jpg"));
+	}
+
+	@Test
 	void admin_route_with_missing_configured_token_stays_closed() throws Exception {
 		mockMvc("").perform(get("/api/admin/import/places")
 						.param("query", "cafe")
@@ -274,6 +326,7 @@ class AdminTokenSecurityTest {
 
 		return MockMvcBuilders.standaloneSetup(
 						controller(),
+						adminStudioArticlesController(),
 						adminCoffeesController(queryHandler, handlers),
 						projectionSyncController())
 				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
@@ -329,6 +382,25 @@ class AdminTokenSecurityTest {
 		);
 	}
 
+	private AdminStudioArticlesController adminStudioArticlesController() {
+		return new AdminStudioArticlesController(
+				new SubmitStudioArticle(
+						command -> {
+						},
+						new SequenceUuidGenerator(
+								UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+								UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")),
+						() -> Instant.parse("2026-07-10T10:15:30Z"),
+						new com.fasterxml.jackson.databind.ObjectMapper()),
+				new StoreStudioArticleImage((articleId, fileName, contentType, bytes, alt) ->
+						new StudioArticleImageAsset(
+								UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
+								"/api/articles/image-assets/test.jpg",
+								null,
+								null,
+								alt)));
+	}
+
 	private ProjectionSyncController projectionSyncController() {
 		return new ProjectionSyncController(new FakeProjectionSyncDispatcher());
 	}
@@ -348,6 +420,23 @@ class AdminTokenSecurityTest {
 		@Override
 		public Optional<GooglePlaceCoffeePreview> findCoffeePreview(String googlePlaceId) {
 			return Optional.empty();
+		}
+	}
+
+	private static class SequenceUuidGenerator implements com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator {
+		private final UUID first;
+		private final UUID second;
+		private int calls;
+
+		SequenceUuidGenerator(UUID first, UUID second) {
+			this.first = first;
+			this.second = second;
+		}
+
+		@Override
+		public UUID generate() {
+			calls += 1;
+			return calls == 1 ? first : second;
 		}
 	}
 
