@@ -37,6 +37,7 @@ import java.util.List;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -195,7 +196,7 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	CoffeePhotoUriResolver coffeePhotoUriResolver(
 			CoffeePhotoStorageProperties properties,
-			ObjectProvider<S3Presigner> s3Presigner) {
+			@Qualifier("coffeePhotoS3Presigner") ObjectProvider<S3Presigner> s3Presigner) {
 		return new DefaultCoffeePhotoUriResolver(properties, s3Presigner.getIfAvailable());
 	}
 }
