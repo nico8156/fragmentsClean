@@ -26,6 +26,24 @@ For incident and release-1 verification commands, see
 | GitHub Actions failed at `ssh-keyscan`. | The EC2 Security Group allowed SSH only from a personal IP, not from the GitHub runner. | First deploy used a temporary broad SSH rule. | The workflow now opens SSH only for the current runner `/32` and revokes it at the end. |
 | Runtime `.env` risked becoming unreadable. | Secrets and operational values were initially mixed without ownership sections. | `.env.example` is grouped by responsibility and contains placeholders only. | Runtime config changes must preserve the documented sections. |
 
+## Ticketverify Engine
+
+The backend image builds the native `ticketverify` CLI in a dedicated Docker
+stage from `nico8156/ticket_engine` at the pinned commit declared in the
+`Dockerfile`.
+
+Do not copy a locally built `bin/ticketverify` into the staging image manually:
+local development binaries may be macOS artifacts. At runtime staging expects:
+
+```text
+TICKETVERIFY_BINARY_PATH=/app/bin/ticketverify
+```
+
+After deployment, ticket verification should be validated through the mobile
+write flow or `scripts/demo.sh`. The command status endpoint may acknowledge the
+accepted command before the ticket read model reaches its final
+`CONFIRMED`/`REJECTED` status.
+
 ## Infrastructure
 
 Deploy the stack:
