@@ -2,8 +2,12 @@ package com.nm.fragmentsclean.ticketContext.read.adapters.primary.springboot.con
 
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.ticketContext.read.GetUserEntitlementsQuery;
+import com.nm.fragmentsclean.ticketContext.read.pass.PassCountersView;
+import com.nm.fragmentsclean.ticketContext.read.pass.PassLevel;
+import com.nm.fragmentsclean.ticketContext.read.pass.PassLevelView;
 import com.nm.fragmentsclean.ticketContext.read.projections.UserEntitlementsView;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +37,12 @@ public class ReadUserEntitlementsController {
         return ResponseEntity.ok(new UserEntitlementsResponse(
                 view.userId(),
                 view.confirmedTickets(),
+                view.publishedComments(),
+                view.confirmedLikes(),
+                view.rights(),
+                view.currentLevel(),
+                view.counters(),
+                view.levels(),
                 view.version(),
                 view.updatedAt(),
                 Instant.now()));
@@ -41,6 +51,12 @@ public class ReadUserEntitlementsController {
     public record UserEntitlementsResponse(
             UUID userId,
             int confirmedTickets,
+            int publishedComments,
+            int confirmedLikes,
+            List<String> rights,
+            PassLevel currentLevel,
+            PassCountersView counters,
+            List<PassLevelView> levels,
             long version,
             Instant updatedAt,
             Instant serverTime) {

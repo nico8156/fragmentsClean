@@ -19,14 +19,7 @@ public class JdbcUserEntitlementsProjectionRepository implements UserEntitlement
     }
 
     public UserEntitlementsView refreshFromTicketStatus(UUID userId, long version, Instant updatedAt) {
-        Integer confirmedTickets = jdbc.queryForObject("""
-            SELECT COUNT(*)
-            FROM ticket_status_projection
-            WHERE user_id = ?
-              AND status = 'CONFIRMED'
-        """, Integer.class, userId);
-
-        int count = confirmedTickets == null ? 0 : confirmedTickets;
+        int count = countConfirmedTickets(userId);
 
         jdbc.update("""
             INSERT INTO user_entitlements_projection (
@@ -39,7 +32,41 @@ public class JdbcUserEntitlementsProjectionRepository implements UserEntitlement
               updated_at = EXCLUDED.updated_at
         """, userId, count, version, Timestamp.from(updatedAt));
 
-        return new UserEntitlementsView(userId, count, version, updatedAt);
+        return new UserEntitlementsView(userId, count, countPublishedComments(userId), countConfirmedLikes(userId), version, updatedAt);
+    }
+
+    private int countConfirmedTickets(UUID userId) {
+        Integer confirmedTickets = jdbc.queryForObject("""
+            SELECT COUNT(*)
+            FROM ticket_status_projection
+            WHERE user_id = ?
+              AND status = 'CONFIRMED'
+        """, Integer.class, userId);
+
+        return confirmedTickets == null ? 0 : confirmedTickets;
+    }
+
+    private int countPublishedComments(UUID userId) {
+        Integer publishedComments = jdbc.queryForObject("""
+            SELECT COUNT(*)
+            FROM social_comments_projection
+            WHERE author_id = ?
+              AND deleted_at IS NULL
+              AND moderation = 'PUBLISHED'
+        """, Integer.class, userId);
+
+        return publishedComments == null ? 0 : publishedComments;
+    }
+
+    private int countConfirmedLikes(UUID userId) {
+        Integer confirmedLikes = jdbc.queryForObject("""
+            SELECT COUNT(*)
+            FROM social_likes_projection
+            WHERE user_id = ?
+              AND active = true
+        """, Integer.class, userId);
+
+        return confirmedLikes == null ? 0 : confirmedLikes;
     }
 
     @Override
@@ -51,12 +78,21 @@ public class JdbcUserEntitlementsProjectionRepository implements UserEntitlement
         """, userId);
 
         if (!rs.next()) {
-            return new UserEntitlementsView(userId, 0, 0L, Instant.EPOCH);
+            return new UserEntitlementsView(
+                    userId,
+                    countConfirmedTickets(userId),
+                    countPublishedComments(userId),
+                    countConfirmedLikes(userId),
+                    0L,
+                    Instant.EPOCH);
         }
 
+        UUID persistedUserId = UUID.fromString(rs.getString("user_id"));
         return new UserEntitlementsView(
-                UUID.fromString(rs.getString("user_id")),
-                rs.getInt("confirmed_tickets"),
+                persistedUserId,
+                countConfirmedTickets(persistedUserId),
+                countPublishedComments(persistedUserId),
+                countConfirmedLikes(persistedUserId),
                 rs.getLong("version"),
                 ((Timestamp) rs.getObject("updated_at")).toInstant());
     }

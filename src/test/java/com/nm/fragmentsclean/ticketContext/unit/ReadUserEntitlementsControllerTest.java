@@ -25,6 +25,8 @@ class ReadUserEntitlementsControllerTest {
                 new UserEntitlementsView(
                         userId,
                         3,
+                        1,
+                        0,
                         12L,
                         Instant.parse("2026-07-06T10:00:00Z"))))));
         ReadUserEntitlementsController controller = new ReadUserEntitlementsController(queryBus);
@@ -35,6 +37,13 @@ class ReadUserEntitlementsControllerTest {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().userId()).isEqualTo(userId);
         assertThat(response.getBody().confirmedTickets()).isEqualTo(3);
+        assertThat(response.getBody().publishedComments()).isEqualTo(1);
+        assertThat(response.getBody().confirmedLikes()).isEqualTo(0);
+        assertThat(response.getBody().counters().validatedTickets()).isEqualTo(3);
+        assertThat(response.getBody().currentLevel().name()).isEqualTo("URBAN_EXPLORER");
+        assertThat(response.getBody().levels()).hasSize(4);
+        assertThat(response.getBody().levels().get(3).requirements().validatedTickets()).isNull();
+        assertThat(response.getBody().rights()).isEmpty();
         assertThat(response.getBody().version()).isEqualTo(12L);
     }
 

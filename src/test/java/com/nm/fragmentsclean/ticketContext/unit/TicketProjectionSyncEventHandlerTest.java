@@ -138,6 +138,8 @@ class TicketProjectionSyncEventHandlerTest {
 			return new com.nm.fragmentsclean.ticketContext.read.projections.UserEntitlementsView(
 					userId,
 					1,
+					0,
+					0,
 					version,
 					updatedAt);
 		}

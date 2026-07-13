@@ -116,6 +116,9 @@ CREATE INDEX IF NOT EXISTS idx_social_likes_projection_user_target
 CREATE INDEX IF NOT EXISTS idx_social_likes_projection_target_active
     ON social_likes_projection (target_id, active);
 
+CREATE INDEX IF NOT EXISTS idx_social_likes_projection_user_active
+    ON social_likes_projection (user_id, active);
+
 -- Comments (write model)
 CREATE TABLE IF NOT EXISTS comments (
                                         comment_id   UUID          NOT NULL PRIMARY KEY,
@@ -158,6 +161,9 @@ CREATE TABLE IF NOT EXISTS social_comments_projection (
 
 CREATE INDEX IF NOT EXISTS idx_social_comments_projection_target_created_at
     ON social_comments_projection (target_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_social_comments_projection_author_visible
+    ON social_comments_projection (author_id, deleted_at, moderation);
 
 
 create table if not exists users (

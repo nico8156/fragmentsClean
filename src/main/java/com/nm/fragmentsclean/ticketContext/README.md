@@ -286,6 +286,40 @@ ticket_status_projection updated
 Ce flux est le chemin actif pour la fraîcheur des droits produit. Le client
 reçoit un signal de projection, puis relit un snapshot des entitlements.
 
+## Pass mobile
+
+Le contrat mobile `GET /api/users/me/entitlements` porte aussi le snapshot de
+progression Pass. Le backend reste source de vérité pour les compteurs :
+
+```text
+ticket_status_projection
++ social_comments_projection
++ social_likes_projection
+-> UserEntitlementsView
+-> PassProgressPolicy
+-> /api/users/me/entitlements
+-> mobile entitlementWl read model
+-> PassViewModel selector
+-> Pass rings UI
+```
+
+Les seuils Pass actuels sont fixes côté backend :
+
+* `COFFEE_TASTER` : 3 tickets validés, débloque `SCAN`.
+* `URBAN_EXPLORER` : 5 tickets validés et 3 commentaires publiés, débloque `COMMENT`.
+* `SOCIAL_BEAN` : 10 tickets validés, 5 commentaires publiés et 5 likes confirmés, débloque `LIKE`.
+* `FRAGMENTS_MASTER` : niveau final libre. Il n'ajoute pas de nouvel objectif ;
+  il devient complet quand `SOCIAL_BEAN` est complet.
+
+Le backend ne retourne pas de couleurs ni de règles visuelles. Le mobile calcule
+uniquement la progression graphique à partir de `counters`, `requirements` et
+`status`.
+
+Dette assumée pour le MVP : ce read model assemble des compteurs à partir de
+projections ticket et social. La cible plus stricte serait une projection Pass
+alimentée par événements d'intégration social/ticket, sans lecture SQL
+transverse.
+
 ---
 
 ### Repositories read
