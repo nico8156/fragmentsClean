@@ -222,7 +222,8 @@ TICKETVERIFY_ENGINE_DIR=/Users/nicolasmaldiney/ticketverify-engine \
 
 En Docker/staging/prod, l'image backend ne reutilise pas ce binaire local,
 qui peut etre macOS. Le `Dockerfile` reconstruit un binaire Linux depuis le
-repo `nico8156/ticket_engine` au commit `cdebb4e`, puis le copie vers
+repo `nico8156/ticket_engine` au commit
+`cdebb4e33cc419f5111a2a93b9a4f4f82e1b2bb5`, puis le copie vers
 `/app/bin/ticketverify`.
 
 ---

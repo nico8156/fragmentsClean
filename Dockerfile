@@ -1,13 +1,13 @@
 FROM debian:bookworm-slim AS ticketverify-engine
 ARG TICKETVERIFY_ENGINE_REPO=https://github.com/nico8156/ticket_engine.git
-ARG TICKETVERIFY_ENGINE_REF=cdebb4e
+ARG TICKETVERIFY_ENGINE_REF=cdebb4e33cc419f5111a2a93b9a4f4f82e1b2bb5
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates cmake g++ git make \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /ticketverify-engine
-RUN git init . \
+RUN git init -b build . \
     && git remote add origin "${TICKETVERIFY_ENGINE_REPO}" \
     && git fetch --depth 1 origin "${TICKETVERIFY_ENGINE_REF}" \
     && git checkout FETCH_HEAD \
