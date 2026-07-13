@@ -11,6 +11,7 @@ RUN git init -b build . \
     && git remote add origin "${TICKETVERIFY_ENGINE_REPO}" \
     && git fetch --depth 1 origin "${TICKETVERIFY_ENGINE_REF}" \
     && git checkout FETCH_HEAD \
+    && sed -i '/include(CTest)/d;/enable_testing()/d;/add_subdirectory(tests)/d' CMakeLists.txt \
     && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --target ticketverify --parallel
 
