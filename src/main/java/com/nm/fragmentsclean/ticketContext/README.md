@@ -201,6 +201,30 @@ Il ne lit pas l'image depuis `imageRef`. La vision native Apple ou tout autre OC
 produit le texte en amont. Aucun dump OCR local ni log de payload OCR complet ne
 doit être produit par l'adapter.
 
+### Packaging du moteur
+
+Le backend appelle le moteur via `ProcessBuilderTicketVerificationProvider`.
+Le chemin est configure par `ticketverify.binary-path` ou par
+`TICKETVERIFY_BINARY_PATH`.
+
+En developpement local, le binaire attendu est :
+
+```text
+fragmentsClean/bin/ticketverify
+```
+
+Pour le reconstruire depuis le repo moteur :
+
+```bash
+TICKETVERIFY_ENGINE_DIR=/Users/nicolasmaldiney/ticketverify-engine \
+  ./scripts/build-ticketverify-engine.sh
+```
+
+En Docker/staging/prod, l'image backend ne reutilise pas ce binaire local,
+qui peut etre macOS. Le `Dockerfile` reconstruit un binaire Linux depuis le
+repo `nico8156/ticket_engine` au commit `cdebb4e`, puis le copie vers
+`/app/bin/ticketverify`.
+
 ---
 
 ### SQS

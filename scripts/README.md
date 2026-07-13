@@ -40,6 +40,25 @@ Lance une démo fonctionnelle complète :
 
 ---
 
+## scripts/build-ticketverify-engine.sh
+
+Reconstruit le moteur C++ `ticketverify-engine` et synchronise le CLI attendu
+par le backend :
+
+```bash
+TICKETVERIFY_ENGINE_DIR=/Users/nicolasmaldiney/ticketverify-engine \
+  ./scripts/build-ticketverify-engine.sh
+```
+
+Le script compile avec CMake, copie le binaire vers `bin/ticketverify`, puis
+vérifie `ticketverify --version`.
+
+L'image Docker backend ne réutilise pas ce binaire local, qui peut être macOS.
+Elle reconstruit un binaire Linux depuis le repo `nico8156/ticket_engine` à un
+commit piné.
+
+---
+
 ## Objectif
 
 Ces scripts servent uniquement à la **vitrine projet** :
