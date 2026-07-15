@@ -275,7 +275,7 @@ jobs:
             exit 1
           fi
           if grep -q '^COMPOSE_PROFILES=.*https' .env; then
-            docker compose --profile https up -d caddy
+            docker compose --profile https up -d --no-deps caddy
           fi
           docker compose ps
           EOF
