@@ -369,6 +369,51 @@ ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);
 
+CREATE TABLE IF NOT EXISTS saved_coffees (
+                                             saved_coffee_id UUID PRIMARY KEY,
+                                             user_id UUID NOT NULL REFERENCES app_users(id),
+                                             coffee_id UUID NOT NULL,
+                                             active BOOLEAN NOT NULL,
+                                             updated_at TIMESTAMPTZ NOT NULL,
+                                             version BIGINT NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_saved_coffees_user_coffee
+    ON saved_coffees (user_id, coffee_id);
+
+CREATE INDEX IF NOT EXISTS ix_saved_coffees_user_active
+    ON saved_coffees (user_id, active);
+
+CREATE TABLE IF NOT EXISTS user_saved_coffees_projection (
+                                                             saved_coffee_id UUID PRIMARY KEY,
+                                                             user_id UUID NOT NULL,
+                                                             coffee_id UUID NOT NULL,
+                                                             active BOOLEAN NOT NULL,
+                                                             version BIGINT NOT NULL,
+                                                             updated_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS ux_user_saved_coffees_projection_user_coffee
+    ON user_saved_coffees_projection (user_id, coffee_id);
+
+CREATE INDEX IF NOT EXISTS ix_user_saved_coffees_projection_user_active
+    ON user_saved_coffees_projection (user_id, active, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS ix_user_saved_coffees_projection_coffee_active
+    ON user_saved_coffees_projection (coffee_id, active);
+
+CREATE TABLE IF NOT EXISTS user_saved_coffee_cafes_projection (
+                                                                  coffee_id UUID PRIMARY KEY,
+                                                                  name TEXT NOT NULL,
+                                                                  address_line1 TEXT,
+                                                                  city TEXT,
+                                                                  postal_code TEXT,
+                                                                  country TEXT,
+                                                                  archived BOOLEAN NOT NULL DEFAULT false,
+                                                                  version BIGINT NOT NULL,
+                                                                  updated_at TIMESTAMPTZ NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
                                               id         UUID PRIMARY KEY,
                                               user_id    UUID        NOT NULL,

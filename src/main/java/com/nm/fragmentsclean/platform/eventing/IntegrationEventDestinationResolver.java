@@ -23,7 +23,7 @@ public class IntegrationEventDestinationResolver {
             case "Article" -> List.of(ARTICLES_EVENTS);
             case "Coffee" -> List.of(COFFEES_EVENTS);
             case "AuthUser" -> List.of(AUTH_USERS_EVENTS);
-            case "AppUser" -> List.of(APP_USERS_EVENTS);
+            case "AppUser", "SavedCoffee" -> List.of(APP_USERS_EVENTS);
             case "Comment", "Like" -> List.of(DOMAIN_EVENTS);
             default -> List.of(DOMAIN_EVENTS);
         };
