@@ -34,6 +34,19 @@ public final class IntegrationEventTypeCatalog {
         return STABLE_TYPES.getOrDefault(simpleName, simpleName);
     }
 
+    public static String stableTypeForClassName(String className, String destination) {
+        String simpleName = className.substring(className.lastIndexOf('.') + 1);
+        if ("app-users-events".equals(destination)) {
+            return switch (simpleName) {
+                case "CoffeeCreatedEvent" -> "coffee.saved_coffee_projection.created";
+                case "CoffeeArchivedEvent" -> "coffee.saved_coffee_projection.archived";
+                case "CoffeeDeletedEvent" -> "coffee.saved_coffee_projection.deleted";
+                default -> stableTypeForClassName(className);
+            };
+        }
+        return stableTypeForClassName(className);
+    }
+
     public static int currentVersion(String stableEventType) {
         return 1;
     }

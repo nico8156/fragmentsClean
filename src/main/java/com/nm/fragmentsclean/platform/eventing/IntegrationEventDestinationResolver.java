@@ -19,9 +19,17 @@ public class IntegrationEventDestinationResolver {
             return List.of(TICKET_EVENTS);
         }
 
+        if ("Coffee".equals(aggregateType)) {
+            if (eventType.endsWith("CoffeeCreatedEvent")
+                    || eventType.endsWith("CoffeeArchivedEvent")
+                    || eventType.endsWith("CoffeeDeletedEvent")) {
+                return List.of(COFFEES_EVENTS, APP_USERS_EVENTS);
+            }
+            return List.of(COFFEES_EVENTS);
+        }
+
         return switch (aggregateType) {
             case "Article" -> List.of(ARTICLES_EVENTS);
-            case "Coffee" -> List.of(COFFEES_EVENTS);
             case "AuthUser" -> List.of(AUTH_USERS_EVENTS);
             case "AppUser", "SavedCoffee" -> List.of(APP_USERS_EVENTS);
             case "Comment", "Like" -> List.of(DOMAIN_EVENTS);

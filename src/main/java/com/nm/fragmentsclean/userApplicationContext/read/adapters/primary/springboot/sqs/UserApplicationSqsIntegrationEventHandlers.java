@@ -1,7 +1,6 @@
 package com.nm.fragmentsclean.userApplicationContext.read.adapters.primary.springboot.sqs;
 
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.APP_USERS_EVENTS;
-import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.COFFEES_EVENTS;
 
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
@@ -32,7 +31,7 @@ public class UserApplicationSqsIntegrationEventHandlers {
 	@Bean
 	SqsIntegrationEventHandler coffeeCreatedSavedCoffeeProjectionSqsIntegrationEventHandler(
 			SavedCoffeeCafeProjectionProjector projector) {
-		return new SimpleSqsIntegrationEventHandler(COFFEES_EVENTS, "coffee.created", envelope -> {
+		return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "coffee.saved_coffee_projection.created", envelope -> {
 			CoffeeCreatedIntegrationEvent event = payloadReader.read(envelope, CoffeeCreatedIntegrationEvent.class);
 			projector.upsert(event);
 		});
@@ -41,7 +40,7 @@ public class UserApplicationSqsIntegrationEventHandlers {
 	@Bean
 	SqsIntegrationEventHandler coffeeArchivedSavedCoffeeProjectionSqsIntegrationEventHandler(
 			SavedCoffeeCafeProjectionProjector projector) {
-		return new SimpleSqsIntegrationEventHandler(COFFEES_EVENTS, "coffee.archived", envelope -> {
+		return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "coffee.saved_coffee_projection.archived", envelope -> {
 			CoffeeLifecycleIntegrationEvent event = payloadReader.read(envelope, CoffeeLifecycleIntegrationEvent.class);
 			projector.archive(event);
 		});
@@ -50,7 +49,7 @@ public class UserApplicationSqsIntegrationEventHandlers {
 	@Bean
 	SqsIntegrationEventHandler coffeeDeletedSavedCoffeeProjectionSqsIntegrationEventHandler(
 			SavedCoffeeCafeProjectionProjector projector) {
-		return new SimpleSqsIntegrationEventHandler(COFFEES_EVENTS, "coffee.deleted", envelope -> {
+		return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "coffee.saved_coffee_projection.deleted", envelope -> {
 			CoffeeLifecycleIntegrationEvent event = payloadReader.read(envelope, CoffeeLifecycleIntegrationEvent.class);
 			projector.archive(event);
 		});
