@@ -311,7 +311,7 @@ jobs:
           docker compose ps
           EOF
 
-      - name: Verify staging backend image
+      - name: Converge and verify staging backend image
         env:
           EXPECTED_BACKEND_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
         run: |
@@ -323,6 +323,15 @@ jobs:
           echo "Configured backend image: \${configured_image}"
           echo "Compose backend image: \${compose_image}"
           echo "Running backend image: \${running_image}"
+          if [ "\${running_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Running backend image is stale; recreating staging-backend-1 from ${EXPECTED_BACKEND_IMAGE}."
+            docker pull "${EXPECTED_BACKEND_IMAGE}"
+            docker rm -f staging-backend-1 || true
+            docker compose create --force-recreate backend
+            docker start staging-backend-1
+            running_image="\$(docker inspect staging-backend-1 --format '{{.Config.Image}}')"
+            echo "Running backend image after converge: \${running_image}"
+          fi
           if [ "\${configured_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
             echo "Configured backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${configured_image}." >&2
             exit 1
