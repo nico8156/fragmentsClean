@@ -265,8 +265,9 @@ jobs:
           docker compose exec -T postgres \
             psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
+          docker compose stop backend || true
           docker compose rm -sf backend
-          docker compose up -d --no-deps --force-recreate backend
+          docker compose up -d --pull always --no-deps --force-recreate backend
           RUNNING_BACKEND_IMAGE="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
           EXPECTED_BACKEND_IMAGE="\$(read_env_var BACKEND_IMAGE)"
           if [ "\${RUNNING_BACKEND_IMAGE}" != "\${EXPECTED_BACKEND_IMAGE}" ]; then
@@ -277,6 +278,32 @@ jobs:
             docker compose --profile https up -d caddy
           fi
           docker compose ps
+          EOF
+
+      - name: Verify staging backend image
+        env:
+          EXPECTED_BACKEND_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+        run: |
+          ssh -T -o LogLevel=ERROR -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" 'bash -seuo pipefail' <<EOF
+          cd "${STAGING_REMOTE_DIR}"
+          configured_image="\$(grep '^BACKEND_IMAGE=' .env | tail -n 1 | cut -d= -f2-)"
+          compose_image="\$(docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["backend"]["image"])')"
+          running_image="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
+          echo "Configured backend image: \${configured_image}"
+          echo "Compose backend image: \${compose_image}"
+          echo "Running backend image: \${running_image}"
+          if [ "\${configured_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Configured backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${configured_image}." >&2
+            exit 1
+          fi
+          if [ "\${compose_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Compose backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${compose_image}." >&2
+            exit 1
+          fi
+          if [ "\${running_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
+            echo "Running backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${running_image}." >&2
+            exit 1
+          fi
           EOF
 
       - name: Smoke test staging backend
