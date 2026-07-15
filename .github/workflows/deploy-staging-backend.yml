@@ -224,23 +224,20 @@ jobs:
             printf '%s' "\${value}"
           }
           backend_container_id() {
-            docker ps -aq --filter 'name=^/staging-backend-1$'
+            docker ps -aq --filter 'name=staging-backend-1' | head -n 1
           }
           running_backend_image() {
-            container_id="\$(backend_container_id)"
-            if [ -z "\${container_id}" ]; then
+            if ! docker inspect staging-backend-1 >/dev/null 2>&1; then
               echo ""
               return
             fi
-            docker inspect "\${container_id}" --format '{{.Config.Image}}'
+            docker inspect staging-backend-1 --format '{{.Config.Image}}'
           }
           ensure_backend_image() {
             expected_image="\$(read_env_var BACKEND_IMAGE)"
             docker pull "\${expected_image}"
             previous_container_id="\$(backend_container_id)"
-            if [ -n "\${previous_container_id}" ]; then
-              docker rm -f "\${previous_container_id}"
-            fi
+            docker rm -f staging-backend-1 || true
             docker compose up -d --no-deps --force-recreate backend
             current_container_id="\$(backend_container_id)"
             if [ -z "\${current_container_id}" ]; then
