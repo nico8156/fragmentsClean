@@ -265,9 +265,20 @@ jobs:
           docker compose exec -T postgres \
             psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
-          docker compose stop backend || true
-          docker compose rm -sf backend
-          docker compose up -d --pull always --no-deps --force-recreate backend
+          PREVIOUS_BACKEND_CONTAINER_ID="\$(docker compose ps -aq backend || true)"
+          if [ -n "\${PREVIOUS_BACKEND_CONTAINER_ID}" ]; then
+            docker rm -f "\${PREVIOUS_BACKEND_CONTAINER_ID}"
+          fi
+          docker compose up -d --pull always --no-deps backend
+          CURRENT_BACKEND_CONTAINER_ID="\$(docker compose ps -q backend)"
+          if [ -z "\${CURRENT_BACKEND_CONTAINER_ID}" ]; then
+            echo "Backend container was not created." >&2
+            exit 1
+          fi
+          if [ -n "\${PREVIOUS_BACKEND_CONTAINER_ID}" ] && [ "\${CURRENT_BACKEND_CONTAINER_ID}" = "\${PREVIOUS_BACKEND_CONTAINER_ID}" ]; then
+            echo "Backend container was not recreated. Container id is still \${CURRENT_BACKEND_CONTAINER_ID}." >&2
+            exit 1
+          fi
           RUNNING_BACKEND_IMAGE="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
           EXPECTED_BACKEND_IMAGE="\$(read_env_var BACKEND_IMAGE)"
           if [ "\${RUNNING_BACKEND_IMAGE}" != "\${EXPECTED_BACKEND_IMAGE}" ]; then
