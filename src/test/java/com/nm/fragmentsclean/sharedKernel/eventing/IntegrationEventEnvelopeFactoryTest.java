@@ -178,6 +178,54 @@ class IntegrationEventEnvelopeFactoryTest {
     }
 
     @Test
+    void routesCoffeeCreatedToCoffeeEventsAndSavedCoffeeProjectionEventsWithStableTypes() {
+        var outbox = new OutboxEventJpaEntity(
+                "evt-created",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent",
+                "Coffee",
+                "11111111-1111-1111-1111-111111111111",
+                "coffee:11111111-1111-1111-1111-111111111111",
+                """
+                        {
+                          "eventId":"22222222-2222-2222-2222-222222222222",
+                          "commandId":"33333333-3333-3333-3333-333333333333",
+                          "coffeeId":{"value":"11111111-1111-1111-1111-111111111111"},
+                          "name":{"value":"Fragments Cafe"},
+                          "address":{"city":"Paris"},
+                          "version":3,
+                          "occurredAt":"2026-07-04T10:00:00Z"
+                        }
+                        """,
+                Instant.parse("2026-07-04T10:00:00Z"),
+                Instant.parse("2026-07-04T10:00:01Z"),
+                OutboxStatus.PENDING,
+                0);
+
+        assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
+                .containsExactly("coffees-events", "app-users-events");
+
+        var coffeeEnvelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
+
+        assertThat(coffeeEnvelope.eventType()).isEqualTo("coffee.created");
+        assertThat(coffeeEnvelope.eventVersion()).isEqualTo(1);
+        assertThat(coffeeEnvelope.destination()).isEqualTo("coffees-events");
+        assertThat(coffeeEnvelope.payloadJson())
+                .contains("\"coffeeId\":\"11111111-1111-1111-1111-111111111111\"")
+                .contains("\"name\":\"Fragments Cafe\"");
+
+        var userProjectionEnvelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.APP_USERS_EVENTS);
+
+        assertThat(userProjectionEnvelope.eventType()).isEqualTo("coffee.saved_coffee_projection.created");
+        assertThat(userProjectionEnvelope.eventVersion()).isEqualTo(1);
+        assertThat(userProjectionEnvelope.destination()).isEqualTo("app-users-events");
+        assertThat(userProjectionEnvelope.payloadJson())
+                .contains("\"coffeeId\":\"11111111-1111-1111-1111-111111111111\"")
+                .contains("\"name\":\"Fragments Cafe\"");
+    }
+
+    @Test
     void routesCoffeePhotosImportedToCoffeeEventsWithStableType() {
         var outbox = new OutboxEventJpaEntity(
                 "evt-4",
@@ -217,7 +265,7 @@ class IntegrationEventEnvelopeFactoryTest {
                 0);
 
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
-                .containsExactly("coffees-events");
+                .containsExactly("coffees-events", "app-users-events");
 
         var envelope = new IntegrationEventEnvelopeFactory()
                 .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
@@ -225,6 +273,13 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(envelope.eventType()).isEqualTo("coffee.archived");
         assertThat(envelope.eventVersion()).isEqualTo(1);
         assertThat(envelope.destination()).isEqualTo("coffees-events");
+
+        var userProjectionEnvelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.APP_USERS_EVENTS);
+
+        assertThat(userProjectionEnvelope.eventType()).isEqualTo("coffee.saved_coffee_projection.archived");
+        assertThat(userProjectionEnvelope.eventVersion()).isEqualTo(1);
+        assertThat(userProjectionEnvelope.destination()).isEqualTo("app-users-events");
     }
 
     @Test
@@ -242,7 +297,7 @@ class IntegrationEventEnvelopeFactoryTest {
                 0);
 
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
-                .containsExactly("coffees-events");
+                .containsExactly("coffees-events", "app-users-events");
 
         var envelope = new IntegrationEventEnvelopeFactory()
                 .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
@@ -250,6 +305,13 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(envelope.eventType()).isEqualTo("coffee.deleted");
         assertThat(envelope.eventVersion()).isEqualTo(1);
         assertThat(envelope.destination()).isEqualTo("coffees-events");
+
+        var userProjectionEnvelope = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.APP_USERS_EVENTS);
+
+        assertThat(userProjectionEnvelope.eventType()).isEqualTo("coffee.saved_coffee_projection.deleted");
+        assertThat(userProjectionEnvelope.eventVersion()).isEqualTo(1);
+        assertThat(userProjectionEnvelope.destination()).isEqualTo("app-users-events");
     }
 
     @Test

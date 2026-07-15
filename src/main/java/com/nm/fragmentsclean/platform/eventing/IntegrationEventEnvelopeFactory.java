@@ -18,7 +18,7 @@ public class IntegrationEventEnvelopeFactory {
     }
 
     public IntegrationEventEnvelope from(OutboxEventJpaEntity event, String destination) {
-        String stableType = IntegrationEventTypeCatalog.stableTypeForClassName(event.getEventType());
+        String stableType = IntegrationEventTypeCatalog.stableTypeForClassName(event.getEventType(), destination);
         String publicPayloadJson = payloadMapper.toPublicPayloadJson(stableType, event);
         return new IntegrationEventEnvelope(
                 event.getEventId(),

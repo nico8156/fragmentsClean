@@ -18,7 +18,7 @@ class IntegrationEventDestinationResolverTest {
         assertThat(destinations("AppUser", "com.example.AppUserCreatedEvent"))
                 .containsExactly("app-users-events");
         assertThat(destinations("Coffee", "com.example.CoffeeCreatedEvent"))
-                .containsExactly("coffees-events");
+                .containsExactly("coffees-events", "app-users-events");
         assertThat(destinations("Article", "com.example.ArticleCreatedEvent"))
                 .containsExactly("articles-events");
         assertThat(destinations("Comment", "com.example.CommentCreatedEvent"))

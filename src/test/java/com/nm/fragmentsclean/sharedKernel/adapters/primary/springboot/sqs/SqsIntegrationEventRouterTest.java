@@ -71,19 +71,13 @@ class SqsIntegrationEventRouterTest {
     }
 
     @Test
-    void fans_out_duplicate_registered_routes_to_all_handlers() {
+    void rejects_duplicate_registered_routes_at_startup() {
         var first = new RecordingHandler(route());
         var second = new RecordingHandler(route());
-        var inbox = new FakeInboxMessageRepository();
-        var router = new SqsIntegrationEventRouter(inbox, List.of(first, second));
-        var envelope = envelope("event-1", "coffee.created");
 
-        router.route(envelope);
-
-        assertThat(first.handled).containsExactly(envelope);
-        assertThat(second.handled).containsExactly(envelope);
-        assertThat(inbox.processed).containsExactly(envelope);
-        assertThat(inbox.failed).isEmpty();
+        assertThatThrownBy(() -> new SqsIntegrationEventRouter(new FakeInboxMessageRepository(), List.of(first, second)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Duplicate SQS integration event route");
     }
 
     private static SqsIntegrationEventRoute route() {

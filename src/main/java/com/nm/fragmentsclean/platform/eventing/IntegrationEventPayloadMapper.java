@@ -28,8 +28,10 @@ public class IntegrationEventPayloadMapper {
                 case "auth.user.created" -> authUserCreated(node, event);
                 case "app.user.created" -> appUserCreated(node, event);
                 case "app.user.profile_updated" -> appUserProfileUpdated(node, event);
-                case "coffee.created" -> coffeeCreated(node, event);
-                case "coffee.archived", "coffee.deleted" -> coffeeLifecycle(node, event);
+                case "coffee.created", "coffee.saved_coffee_projection.created" -> coffeeCreated(node, event);
+                case "coffee.archived", "coffee.deleted",
+                        "coffee.saved_coffee_projection.archived",
+                        "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
                 default -> null;
             };
 
