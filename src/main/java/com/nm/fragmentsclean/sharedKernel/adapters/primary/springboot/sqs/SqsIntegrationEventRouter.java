@@ -4,7 +4,6 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,7 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     private static final Logger log = LoggerFactory.getLogger(SqsIntegrationEventRouter.class);
 
     private final InboxMessageRepository inbox;
-    private final Map<SqsIntegrationEventRoute, SqsIntegrationEventHandler> handlers;
+    private final Map<SqsIntegrationEventRoute, List<SqsIntegrationEventHandler>> handlers;
 
     public SqsIntegrationEventRouter(
             InboxMessageRepository inbox,
@@ -24,12 +23,9 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     ) {
         this.inbox = inbox;
         this.handlers = handlers.stream()
-                .collect(Collectors.toUnmodifiableMap(
+                .collect(Collectors.groupingBy(
                         SqsIntegrationEventHandler::route,
-                        Function.identity(),
-                        (first, duplicate) -> {
-                            throw new IllegalStateException("Duplicate SQS integration event route " + first.route());
-                        }
+                        Collectors.toUnmodifiableList()
                 ));
     }
 
@@ -51,15 +47,17 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     }
 
     private void dispatch(IntegrationEventEnvelope envelope) {
-        SqsIntegrationEventHandler handler = handlers.get(new SqsIntegrationEventRoute(
+        List<SqsIntegrationEventHandler> routeHandlers = handlers.get(new SqsIntegrationEventRoute(
                 envelope.destination(),
                 envelope.eventType()
         ));
-        if (handler == null) {
+        if (routeHandlers == null || routeHandlers.isEmpty()) {
             log.debug("[sqs] ignored eventId={} type={} destination={}",
                     envelope.eventId(), envelope.eventType(), envelope.destination());
             return;
         }
-        handler.handle(envelope);
+        for (SqsIntegrationEventHandler handler : routeHandlers) {
+            handler.handle(envelope);
+        }
     }
 }

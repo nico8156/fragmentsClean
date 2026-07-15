@@ -1,6 +1,5 @@
 package com.nm.fragmentsclean.userApplicationContext.read.projections;
 
-import java.time.Instant;
 import java.util.UUID;
 
 public record SavedCoffeeItemView(
@@ -10,7 +9,7 @@ public record SavedCoffeeItemView(
 		String city,
 		String postalCode,
 		String country,
-		Instant savedAt,
+		String savedAt,
 		long version
 ) {
 }

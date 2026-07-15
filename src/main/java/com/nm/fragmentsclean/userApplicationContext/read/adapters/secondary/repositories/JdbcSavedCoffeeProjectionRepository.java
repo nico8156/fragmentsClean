@@ -117,7 +117,7 @@ public class JdbcSavedCoffeeProjectionRepository {
 				""",
 				this::mapItem,
 				userId);
-		return new SavedCoffeeListView(items, maxVersion(userId), serverTime);
+		return new SavedCoffeeListView(items, maxVersion(userId), serverTime.toString());
 	}
 
 	private SavedCoffeeItemView mapItem(ResultSet rs, int rowNum) throws SQLException {
@@ -128,7 +128,7 @@ public class JdbcSavedCoffeeProjectionRepository {
 				rs.getString("city"),
 				rs.getString("postal_code"),
 				rs.getString("country"),
-				rs.getTimestamp("saved_at").toInstant(),
+				rs.getTimestamp("saved_at").toInstant().toString(),
 				rs.getLong("version"));
 	}
 
