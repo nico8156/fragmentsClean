@@ -235,11 +235,15 @@ jobs:
           }
           ensure_backend_image() {
             expected_image="\$(read_env_var BACKEND_IMAGE)"
+            echo "Expected backend image: \${expected_image}"
+            echo "Backend container before deploy: \$(docker ps -a --filter name=staging-backend-1 --format '{{.ID}} {{.Image}} {{.Status}}' || true)"
             docker pull "\${expected_image}"
             previous_container_id="\$(backend_container_id)"
             docker rm -f staging-backend-1 || true
-            docker compose up -d --no-deps --force-recreate backend
+            docker compose create --force-recreate backend
+            docker start staging-backend-1
             current_container_id="\$(backend_container_id)"
+            echo "Backend container after deploy: \$(docker ps -a --filter name=staging-backend-1 --format '{{.ID}} {{.Image}} {{.Status}}' || true)"
             if [ -z "\${current_container_id}" ]; then
               echo "Backend container was not created." >&2
               exit 1
@@ -315,7 +319,7 @@ jobs:
           cd "${STAGING_REMOTE_DIR}"
           configured_image="\$(grep '^BACKEND_IMAGE=' .env | tail -n 1 | cut -d= -f2-)"
           compose_image="\$(docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["backend"]["image"])')"
-          running_image="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
+          running_image="\$(docker inspect staging-backend-1 --format '{{.Config.Image}}')"
           echo "Configured backend image: \${configured_image}"
           echo "Compose backend image: \${compose_image}"
           echo "Running backend image: \${running_image}"
