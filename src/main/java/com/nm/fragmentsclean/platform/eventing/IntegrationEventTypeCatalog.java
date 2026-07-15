@@ -17,6 +17,7 @@ public final class IntegrationEventTypeCatalog {
             Map.entry("CoffeePhotosImportedEvent", "coffee.photos_imported"),
             Map.entry("AppUserCreatedEvent", "app.user.created"),
             Map.entry("AppUserProfileUpdatedEvent", "app.user.profile_updated"),
+            Map.entry("SavedCoffeeSetEvent", "user.saved_coffee.set"),
             Map.entry("LikeSetEvent", "social.like.set"),
             Map.entry("CommentCreatedEvent", "social.comment.created"),
             Map.entry("CommentUpdatedEvent", "social.comment.updated"),

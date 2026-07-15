@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMeta
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.SavedCoffeeSetEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -18,6 +19,12 @@ public class AppUserOutboxEventMetadataContributor implements OutboxEventMetadat
 		}
 		if (event instanceof AppUserProfileUpdatedEvent appEvent) {
 			return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
+		}
+		if (event instanceof SavedCoffeeSetEvent savedCoffeeEvent) {
+			return Optional.of(aggregate(
+					"SavedCoffee",
+					savedCoffeeEvent.savedCoffeeId().toString(),
+					"appUser:" + savedCoffeeEvent.userId() + ":savedCoffee"));
 		}
 		return Optional.empty();
 	}

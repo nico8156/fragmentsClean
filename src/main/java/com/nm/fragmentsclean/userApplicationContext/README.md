@@ -25,6 +25,7 @@ Parce qu’il existe deux notions différentes de « user » :
 * informations publiques
 * préférences
 * données de compte
+* cafés enregistrés par l’utilisateur (`saved coffees`)
 
 ➡️ C’est une **problématique produit**.
 
@@ -82,16 +83,48 @@ Le `userApplicationContext` réagit :
 ### Modèle métier
 
 * `AppUser`
+* `SavedCoffee`
 * `AppUserCreatedEvent`
 * `AppUserProfileUpdatedEvent`
+* `SavedCoffeeSetEvent`
 
 ### Use case
 
 * `AuthUserCreatedEventHandler`
+* `SetSavedCoffeeCommandHandler`
 
 ### Port
 
 * `AppUserRepository`
+* `SavedCoffeeRepository`
+
+## Saved coffees
+
+Un `SavedCoffee` représente une préférence privée utilisateur : “je veux retrouver
+ce café plus tard”. Il ne remplace pas le like.
+
+Différences avec `socialContext` :
+
+* le like est un signal social attaché à une cible et exposé en compteur ;
+* le saved coffee est une préférence personnelle attachée à un `AppUser` ;
+* il ne participe pas aux entitlements ;
+* il doit être disponible cross-device et offline-first côté mobile.
+
+Le flux mobile attendu est :
+
+```text
+tap enregistrer
+-> commande SetSavedCoffee
+-> outbox backend
+-> SavedCoffeeSetEvent
+-> user_saved_coffees_projection
+-> projection.updated savedCoffees/user/{userId}
+-> mobile GET /api/users/me/saved-coffees
+```
+
+Le read model `savedCoffees` maintient aussi une petite projection locale des
+cafés alimentée par les événements stables `coffee.created`, `coffee.archived`
+et `coffee.deleted`. Le read side ne lit donc pas les tables du `coffeeContext`.
 
 ---
 
