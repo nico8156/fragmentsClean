@@ -223,6 +223,40 @@ jobs:
             fi
             printf '%s' "\${value}"
           }
+          backend_container_id() {
+            docker ps -aq --filter 'name=^/staging-backend-1$'
+          }
+          running_backend_image() {
+            container_id="\$(backend_container_id)"
+            if [ -z "\${container_id}" ]; then
+              echo ""
+              return
+            fi
+            docker inspect "\${container_id}" --format '{{.Config.Image}}'
+          }
+          ensure_backend_image() {
+            expected_image="\$(read_env_var BACKEND_IMAGE)"
+            docker pull "\${expected_image}"
+            previous_container_id="\$(backend_container_id)"
+            if [ -n "\${previous_container_id}" ]; then
+              docker rm -f "\${previous_container_id}"
+            fi
+            docker compose up -d --no-deps --force-recreate backend
+            current_container_id="\$(backend_container_id)"
+            if [ -z "\${current_container_id}" ]; then
+              echo "Backend container was not created." >&2
+              exit 1
+            fi
+            if [ -n "\${previous_container_id}" ] && [ "\${current_container_id}" = "\${previous_container_id}" ]; then
+              echo "Backend container was not recreated. Container id is still \${current_container_id}." >&2
+              exit 1
+            fi
+            running_image="\$(running_backend_image)"
+            if [ "\${running_image}" != "\${expected_image}" ]; then
+              echo "Backend container image mismatch. Expected \${expected_image}, got \${running_image}." >&2
+              exit 1
+            fi
+          }
           upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
           upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
           upsert_env_var "GOOGLE_PLACES_PHOTO_IMPORT_LIMIT" "3"
@@ -265,28 +299,13 @@ jobs:
           docker compose exec -T postgres \
             psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
             -f /docker-entrypoint-initdb.d/01-schema.sql
-          PREVIOUS_BACKEND_CONTAINER_ID="\$(docker compose ps -aq backend || true)"
-          if [ -n "\${PREVIOUS_BACKEND_CONTAINER_ID}" ]; then
-            docker rm -f "\${PREVIOUS_BACKEND_CONTAINER_ID}"
-          fi
-          docker compose up -d --pull always --no-deps backend
-          CURRENT_BACKEND_CONTAINER_ID="\$(docker compose ps -q backend)"
-          if [ -z "\${CURRENT_BACKEND_CONTAINER_ID}" ]; then
-            echo "Backend container was not created." >&2
-            exit 1
-          fi
-          if [ -n "\${PREVIOUS_BACKEND_CONTAINER_ID}" ] && [ "\${CURRENT_BACKEND_CONTAINER_ID}" = "\${PREVIOUS_BACKEND_CONTAINER_ID}" ]; then
-            echo "Backend container was not recreated. Container id is still \${CURRENT_BACKEND_CONTAINER_ID}." >&2
-            exit 1
-          fi
-          RUNNING_BACKEND_IMAGE="\$(docker inspect "\$(docker compose ps -q backend)" --format '{{.Config.Image}}')"
-          EXPECTED_BACKEND_IMAGE="\$(read_env_var BACKEND_IMAGE)"
-          if [ "\${RUNNING_BACKEND_IMAGE}" != "\${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Backend container image mismatch. Expected \${EXPECTED_BACKEND_IMAGE}, got \${RUNNING_BACKEND_IMAGE}." >&2
-            exit 1
-          fi
+          ensure_backend_image
           if grep -q '^COMPOSE_PROFILES=.*https' .env; then
             docker compose --profile https up -d --no-deps caddy
+          fi
+          if [ "\$(running_backend_image)" != "\$(read_env_var BACKEND_IMAGE)" ]; then
+            echo "Backend image drifted after dependent services update; recreating backend once more." >&2
+            ensure_backend_image
           fi
           docker compose ps
           EOF
