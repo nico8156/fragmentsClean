@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegratio
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -118,12 +119,20 @@ public class IntegrationEventPayloadMapper {
 
     private UUID uuidOrFallback(JsonNode node, String fieldName, String fallback) {
         String value = text(node, fieldName);
-        return UUID.fromString(value == null ? fallback : value);
+        return parseUuidOrDeterministicFallback(value == null ? fallback : value);
     }
 
     private UUID uuidFromValueObjectOrFallback(JsonNode node, String fieldName, String fallback) {
         String value = valueObjectText(node, fieldName);
-        return UUID.fromString(value == null ? fallback : value);
+        return parseUuidOrDeterministicFallback(value == null ? fallback : value);
+    }
+
+    private UUID parseUuidOrDeterministicFallback(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            return UUID.nameUUIDFromBytes(value.getBytes(StandardCharsets.UTF_8));
+        }
     }
 
     private String text(JsonNode node, String fieldName) {
