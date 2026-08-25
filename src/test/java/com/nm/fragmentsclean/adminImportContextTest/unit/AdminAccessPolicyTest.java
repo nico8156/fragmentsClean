@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminAccessPolicy;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
@@ -38,7 +38,7 @@ class AdminAccessPolicyTest {
 		assertThat(new AdminAccessPolicy(properties, repository).isAllowed(jwtAuthentication(UUID.randomUUID(), "other@example.test"))).isFalse();
 	}
 
-	private static UsernamePasswordAuthenticationToken jwtAuthentication(UUID userId, String email) {
+	private static JwtAuthenticationToken jwtAuthentication(UUID userId, String email) {
 		var jwt = Jwt.withTokenValue("test-token")
 				.header("alg", "HS256")
 				.subject(userId.toString())
@@ -46,7 +46,7 @@ class AdminAccessPolicyTest {
 				.issuedAt(Instant.now())
 				.expiresAt(Instant.now().plusSeconds(60))
 				.build();
-		return new UsernamePasswordAuthenticationToken(jwt, "token", List.of());
+		return new JwtAuthenticationToken(jwt, List.of());
 	}
 
 	private static class FakeRepository implements AdminUserAccessRepository {
