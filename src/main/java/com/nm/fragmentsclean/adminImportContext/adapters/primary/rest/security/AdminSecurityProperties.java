@@ -37,6 +37,10 @@ public class AdminSecurityProperties {
 				|| (email != null && csv(bootstrapEmails).stream().anyMatch(email::equalsIgnoreCase));
 	}
 
+	public Set<String> bootstrapUserIds() { return csv(bootstrapUserIds); }
+	public Set<String> bootstrapEmails() { return csv(bootstrapEmails); }
+	public boolean hasBootstrapAdmin() { return !bootstrapUserIds().isEmpty() || !bootstrapEmails().isEmpty(); }
+
 	private Set<String> csv(String value) {
 		return value == null ? Set.of() : Arrays.stream(value.split(","))
 				.map(String::trim)

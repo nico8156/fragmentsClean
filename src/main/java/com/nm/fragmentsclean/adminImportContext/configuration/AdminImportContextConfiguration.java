@@ -24,6 +24,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdm
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
@@ -81,8 +82,8 @@ public class AdminImportContextConfiguration {
 	}
 
 	@Bean
-	ListAdminUsers listAdminUsers(AdminUserAccessRepository repository) {
-		return new ListAdminUsers(repository);
+	ListAdminUsers listAdminUsers(AdminUserAccessRepository repository, AdminSecurityProperties properties) {
+		return new ListAdminUsers(repository, properties);
 	}
 
 	@Bean
@@ -91,7 +92,7 @@ public class AdminImportContextConfiguration {
 	}
 
 	@Bean
-	RevokeAdminUser revokeAdminUser(AdminUserAccessRepository repository) {
-		return new RevokeAdminUser(repository);
+	RevokeAdminUser revokeAdminUser(AdminUserAccessRepository repository, AdminSecurityProperties properties) {
+		return new RevokeAdminUser(repository, properties);
 	}
 }
