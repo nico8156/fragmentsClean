@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coff
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLogRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
@@ -21,6 +22,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GrantAdmi
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdminUsers;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdminUser;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
@@ -95,4 +97,7 @@ public class AdminImportContextConfiguration {
 	RevokeAdminUser revokeAdminUser(AdminUserAccessRepository repository, AdminSecurityProperties properties) {
 		return new RevokeAdminUser(repository, properties);
 	}
+
+	@Bean
+	RecordAdminAudit recordAdminAudit(AdminAuditLogRepository repository) { return new RecordAdminAudit(repository); }
 }

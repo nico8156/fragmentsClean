@@ -361,6 +361,17 @@ CREATE TABLE IF NOT EXISTS admin_user_access (
     granted_by UUID REFERENCES auth_users(id)
 );
 
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id UUID PRIMARY KEY,
+    actor_user_id UUID NOT NULL REFERENCES auth_users(id),
+    action VARCHAR(64) NOT NULL,
+    target_user_id UUID,
+    outcome VARCHAR(32) NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
+
 
 CREATE TABLE IF NOT EXISTS app_users (
                                          id            UUID PRIMARY KEY,

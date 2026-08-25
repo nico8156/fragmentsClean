@@ -19,6 +19,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.AdminUserAc
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GrantAdminUser;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdminUsers;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdminUser;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
 @RestController
@@ -28,13 +29,15 @@ public class AdminAccessController {
 	private final GrantAdminUser grantAdminUser;
 	private final RevokeAdminUser revokeAdminUser;
 	private final DateTimeProvider dateTimeProvider;
+	private final RecordAdminAudit recordAdminAudit;
 
 	public AdminAccessController(ListAdminUsers listAdminUsers, GrantAdminUser grantAdminUser,
-			RevokeAdminUser revokeAdminUser, DateTimeProvider dateTimeProvider) {
+			RevokeAdminUser revokeAdminUser, DateTimeProvider dateTimeProvider, RecordAdminAudit recordAdminAudit) {
 		this.listAdminUsers = listAdminUsers;
 		this.grantAdminUser = grantAdminUser;
 		this.revokeAdminUser = revokeAdminUser;
 		this.dateTimeProvider = dateTimeProvider;
+		this.recordAdminAudit = recordAdminAudit;
 	}
 
 	@GetMapping
@@ -47,12 +50,14 @@ public class AdminAccessController {
 			Authentication authentication) {
 		var granted = grantAdminUser.execute(request.userId(), request.email(),
 				UUID.fromString(authentication.getName()), dateTimeProvider.now());
+		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_GRANTED", granted.userId(), "APPLIED", dateTimeProvider.now());
 		return ResponseEntity.status(HttpStatus.CREATED).body(AdminUserResponse.from(granted));
 	}
 
 	@DeleteMapping("/{userId}")
-	public ResponseEntity<Void> revoke(@PathVariable UUID userId) {
+	public ResponseEntity<Void> revoke(@PathVariable UUID userId, Authentication authentication) {
 		revokeAdminUser.execute(userId);
+		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_REVOKED", userId, "APPLIED", dateTimeProvider.now());
 		return ResponseEntity.noContent().build();
 	}
 
