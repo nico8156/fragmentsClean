@@ -15,7 +15,7 @@ No DNS or OAuth provider configuration is changed by this document.
 The mobile redirect is a native custom-scheme value and must remain distinct
 from browser redirects.
 
-## Proposed shared-host staging names
+## Target naming proposal
 
 The preferred model uses subdomains rather than path prefixes:
 
@@ -26,8 +26,23 @@ The preferred model uses subdomains rather than path prefixes:
 | `fragments-staging.anchor-event.fr` | Mobile API and compatibility endpoint | Fragments backend |
 | `studio-staging.anchor-event.fr` | Studio browser | Studio frontend |
 
-The exact names remain to be confirmed before Phase 1. Existing production or
-staging URLs must not be repointed implicitly by a deployment workflow.
+This proposal preserves the existing Fragments staging API hostname and adds
+explicit Anchor and Studio subdomains. It must be confirmed before DNS changes.
+Existing production or staging URLs must not be repointed implicitly by a
+deployment workflow.
+
+## Production naming proposal
+
+| Host | Consumer | Destination |
+| --- | --- | --- |
+| `anchor-event.fr` | Anchor web/public pages | Anchor web container |
+| `api.anchor-event.fr` | Anchor clients and APIs | Anchor backend |
+| `fragments.anchor-event.fr` | Studio, legal pages, or Fragments public site | Studio/public web container |
+| `api.fragments.anchor-event.fr` | Mobile and Studio API calls | Fragments backend |
+
+Production names must be introduced through DNS records and Caddy together.
+The mobile API URL and OAuth callbacks must be updated only after HTTPS health
+checks pass on the new hosts.
 
 ## OAuth redirects
 
