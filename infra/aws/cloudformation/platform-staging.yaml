@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Shared staging platform for Anchor and Fragments on one ARM64 EC2 host.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: fragments-platform
+  EnvironmentName:
+    Type: String
+    Default: staging
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing key pair. Prefer SSM after bootstrap and restrict SSH.
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+  AllowedSshCidr:
+    Type: String
+    Description: Temporary operator CIDR for SSH. Use an operator /32 or disable SSH after SSM validation.
+  InstanceType:
+    Type: String
+    Default: t4g.medium
+    AllowedValues:
+      - t4g.medium
+      - t4g.large
+  RootVolumeSizeGiB:
+    Type: Number
+    Default: 30
+    MinValue: 16
+  DataVolumeSizeGiB:
+    Type: Number
+    Default: 80
+    MinValue: 30
+  UbuntuAmiParameter:
+    Type: String
+    Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+  AnchorEcrRepositoryArns:
+    Type: CommaDelimitedList
+    Description: Existing Anchor backend and web ECR repository ARNs.
+  FragmentsEcrRepositoryArns:
+    Type: CommaDelimitedList
+    Description: Existing Fragments ECR repository ARNs.
+  AnchorSqsQueueArns:
+    Type: CommaDelimitedList
+    Description: Existing Anchor queue ARNs.
+  FragmentsSqsQueueArns:
+    Type: CommaDelimitedList
+    Description: Existing Fragments queue ARNs.
+  AssetBucketName:
+    Type: String
+    Default: anchor-assets-prod-851725375299
+
+Resources:
+  PlatformSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Shared Anchor and Fragments staging platform
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSshCidr
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  PlatformRuntimeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-${EnvironmentName}-runtime
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-${EnvironmentName}-runtime-resources
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                Resource: !Split
+                  - ','
+                  - !Join
+                    - ','
+                    - - !Join [',', !Ref AnchorEcrRepositoryArns]
+                      - !Join [',', !Ref FragmentsEcrRepositoryArns]
+              - Effect: Allow
+                Action:
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:ChangeMessageVisibility
+                  - sqs:SendMessage
+                Resource: !Split
+                  - ','
+                  - !Join
+                    - ','
+                    - - !Join [',', !Ref AnchorSqsQueueArns]
+                      - !Join [',', !Ref FragmentsSqsQueueArns]
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/anchor/staging/*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/*
+
+  PlatformInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref PlatformRuntimeRole
+
+  PlatformDataVolume:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
+    UpdateReplacePolicy: Snapshot
+    Properties:
+      AvailabilityZone: !GetAtt PlatformInstance.AvailabilityZone
+      Encrypted: true
+      Size: !Ref DataVolumeSizeGiB
+      VolumeType: gp3
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}-data
+
+  PlatformInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Sub '{{resolve:ssm:${UbuntuAmiParameter}}}'
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref PlatformInstanceProfile
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref PlatformSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref RootVolumeSizeGiB
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+        - DeviceName: /dev/sdf
+          Ebs:
+            VolumeSize: !Ref DataVolumeSizeGiB
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}
+      MetadataOptions:
+        HttpTokens: required
+        HttpEndpoint: enabled
+
+  PlatformElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${EnvironmentName}
+
+  PlatformElasticIpAssociation:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      AllocationId: !GetAtt PlatformElasticIp.AllocationId
+      InstanceId: !Ref PlatformInstance
+
+Outputs:
+  InstanceId:
+    Value: !Ref PlatformInstance
+  InstancePublicIp:
+    Value: !Ref PlatformElasticIp
+  InstanceSecurityGroupId:
+    Value: !Ref PlatformSecurityGroup
+  PlatformRuntimeRoleArn:
+    Value: !GetAtt PlatformRuntimeRole.Arn
+  PlatformDataVolumeId:
+    Value: !Ref PlatformDataVolume
