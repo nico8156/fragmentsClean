@@ -44,7 +44,7 @@ public class TicketVerificationProcessManager implements EventHandler<TicketVeri
 		}
 
 		var snap = ticket.toSnapshot();
-		if (snap.status() == Ticket.TicketStatus.CONFIRMED || snap.status() == Ticket.TicketStatus.REJECTED) {
+        if (snap.status() == Ticket.TicketStatus.CONFIRMED || snap.status() == Ticket.TicketStatus.REJECTED || snap.status() == Ticket.TicketStatus.DELETED) {
 			return;
 		}
 

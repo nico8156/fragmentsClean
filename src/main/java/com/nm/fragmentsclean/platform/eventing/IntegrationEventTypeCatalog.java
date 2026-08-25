@@ -24,6 +24,8 @@ public final class IntegrationEventTypeCatalog {
             Map.entry("CommentDeletedEvent", "social.comment.deleted"),
             Map.entry("TicketVerifyAcceptedEvent", "ticket.verify.accepted"),
             Map.entry("TicketVerificationCompletedEvent", "ticket.verification.completed")
+            ,Map.entry("TicketAdminUpdatedEvent", "ticket.admin.updated")
+            ,Map.entry("TicketAdminDeletedEvent", "ticket.admin.deleted")
     );
 
     private IntegrationEventTypeCatalog() {

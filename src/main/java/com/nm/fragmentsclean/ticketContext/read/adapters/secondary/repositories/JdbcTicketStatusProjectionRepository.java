@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminUpdatedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminDeletedEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -119,5 +121,16 @@ public class JdbcTicketStatusProjectionRepository {
                 evt.version(),
                 ts(evt.occurredAt())
         );
+    }
+
+    public void applyAdminUpdated(TicketAdminUpdatedEvent evt) {
+        jdbc.update("""
+            UPDATE ticket_status_projection SET status=?, image_ref=?, ocr_text=?, amount_cents=?, currency=?, ticket_date=?, merchant_name=?, merchant_address=?, payment_method=?, rejection_reason=?, version=?, occurred_at=? WHERE ticket_id=? AND version <= ?
+            """, evt.status(), evt.imageRef(), evt.ocrText(), evt.amountCents(), evt.currency(), ts(evt.ticketDate()), evt.merchantName(), evt.merchantAddress(), evt.paymentMethod(), evt.rejectionReason(), evt.version(), ts(evt.occurredAt()), evt.ticketId(), evt.version());
+    }
+
+    public void applyAdminDeleted(TicketAdminDeletedEvent evt) {
+        jdbc.update("UPDATE ticket_status_projection SET status='DELETED', version=?, occurred_at=? WHERE ticket_id=? AND version <= ?",
+                evt.version(), ts(evt.occurredAt()), evt.ticketId(), evt.version());
     }
 }

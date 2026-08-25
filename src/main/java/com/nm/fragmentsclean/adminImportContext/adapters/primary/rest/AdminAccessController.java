@@ -50,14 +50,14 @@ public class AdminAccessController {
 			Authentication authentication) {
 		var granted = grantAdminUser.execute(request.userId(), request.email(),
 				UUID.fromString(authentication.getName()), dateTimeProvider.now());
-		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_GRANTED", granted.userId(), "APPLIED", dateTimeProvider.now());
+		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_GRANTED", "USER", granted.userId(), null, "APPLIED", dateTimeProvider.now());
 		return ResponseEntity.status(HttpStatus.CREATED).body(AdminUserResponse.from(granted));
 	}
 
 	@DeleteMapping("/{userId}")
 	public ResponseEntity<Void> revoke(@PathVariable UUID userId, Authentication authentication) {
 		revokeAdminUser.execute(userId);
-		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_REVOKED", userId, "APPLIED", dateTimeProvider.now());
+		recordAdminAudit.execute(UUID.fromString(authentication.getName()), "ADMIN_ACCESS_REVOKED", "USER", userId, null, "APPLIED", dateTimeProvider.now());
 		return ResponseEntity.noContent().build();
 	}
 

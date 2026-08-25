@@ -10,6 +10,9 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEven
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerifyAcceptedEventHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminUpdatedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminDeletedEvent;
+import com.nm.fragmentsclean.ticketContext.read.projections.TicketAdminEventHandlers;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import org.springframework.context.annotation.Bean;
@@ -43,6 +46,16 @@ public class TicketSqsIntegrationEventHandlers {
             TicketVerificationProcessManager handler) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_VERIFICATION_REQUESTED, "ticket.verify.accepted",
                 envelope -> handler.handle(payloadReader.read(envelope, TicketVerifyAcceptedEvent.class)));
+    }
+
+    @Bean SqsIntegrationEventHandler ticketAdminUpdatedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler) {
+        return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.admin.updated",
+                envelope -> handler.updated(payloadReader.read(envelope, TicketAdminUpdatedEvent.class)));
+    }
+
+    @Bean SqsIntegrationEventHandler ticketAdminDeletedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler) {
+        return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.admin.deleted",
+                envelope -> handler.deleted(payloadReader.read(envelope, TicketAdminDeletedEvent.class)));
     }
 
     private record SimpleTicketSqsIntegrationEventHandler(

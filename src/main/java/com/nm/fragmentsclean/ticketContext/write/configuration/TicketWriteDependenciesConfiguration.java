@@ -22,6 +22,8 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRe
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminUpdateTicketCommandHandler;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminDeleteTicketCommandHandler;
 
 @Configuration
 @EntityScan(basePackages = "com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.entities")
@@ -42,6 +44,16 @@ public class TicketWriteDependenciesConfiguration {
 			DomainEventPublisher domainEventPublisher,
 			DateTimeProvider dateTimeProvider) {
 		return new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean AdminUpdateTicketCommandHandler adminUpdateTicketCommandHandler(TicketRepository repository,
+			DomainEventPublisher publisher, DateTimeProvider clock) {
+		return new AdminUpdateTicketCommandHandler(repository, publisher, clock);
+	}
+
+	@Bean AdminDeleteTicketCommandHandler adminDeleteTicketCommandHandler(TicketRepository repository,
+			DomainEventPublisher publisher, DateTimeProvider clock) {
+		return new AdminDeleteTicketCommandHandler(repository, publisher, clock);
 	}
 
 	@Bean
