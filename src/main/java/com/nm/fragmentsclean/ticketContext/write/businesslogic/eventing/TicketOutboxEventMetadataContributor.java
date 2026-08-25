@@ -5,6 +5,8 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMeta
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminUpdatedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdminDeletedEvent;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -25,6 +27,8 @@ public class TicketOutboxEventMetadataContributor implements OutboxEventMetadata
 					ticketEvent.ticketId().toString(),
 					"user:" + ticketEvent.userId()));
 		}
+		if (event instanceof TicketAdminUpdatedEvent ticketEvent) return Optional.of(new OutboxEventMetadata("Ticket", ticketEvent.ticketId().toString(), "user:" + ticketEvent.userId()));
+		if (event instanceof TicketAdminDeletedEvent ticketEvent) return Optional.of(new OutboxEventMetadata("Ticket", ticketEvent.ticketId().toString(), "user:" + ticketEvent.userId()));
 		return Optional.empty();
 	}
 }

@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.rowset.SqlRowSet;
@@ -51,6 +52,21 @@ public class JdbcTicketStatusReadRepository implements TicketStatusReadRepositor
 				rs.getString("rejection_reason"),
 				rs.getLong("version"),
 				toInstant((Timestamp) rs.getObject("occurred_at")));
+	}
+
+	@Override
+	public List<TicketStatusView> list() {
+		return jdbc.query("""
+				SELECT ticket_id, user_id, status, outcome, image_ref, ocr_text,
+				amount_cents, currency, ticket_date, merchant_name, merchant_address,
+				payment_method, rejection_reason, version, occurred_at
+				FROM ticket_status_projection ORDER BY occurred_at DESC
+				""", (rs, row) -> new TicketStatusView(UUID.fromString(rs.getString("ticket_id")),
+				UUID.fromString(rs.getString("user_id")), rs.getString("status"), rs.getString("outcome"),
+				rs.getString("image_ref"), rs.getString("ocr_text"), (Integer) rs.getObject("amount_cents"),
+				rs.getString("currency"), toInstant((Timestamp) rs.getObject("ticket_date")),
+				rs.getString("merchant_name"), rs.getString("merchant_address"), rs.getString("payment_method"),
+				rs.getString("rejection_reason"), rs.getLong("version"), toInstant((Timestamp) rs.getObject("occurred_at"))));
 	}
 
 	private Instant toInstant(Timestamp ts) {

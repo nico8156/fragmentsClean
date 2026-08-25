@@ -128,7 +128,7 @@ public class Ticket extends AggregateRoot {
      * @return true si changement, false si idempotent/no-op
      */
     public boolean markAnalyzingIfPossible(String ocrText, String imageRef, Instant serverNow) {
-        if (this.status == TicketStatus.CONFIRMED || this.status == TicketStatus.REJECTED) {
+        if (this.status == TicketStatus.CONFIRMED || this.status == TicketStatus.REJECTED || this.status == TicketStatus.DELETED) {
             return false; // terminal -> no-op
         }
         boolean changed = false;
@@ -160,7 +160,7 @@ public class Ticket extends AggregateRoot {
      */
     public boolean confirm(ConfirmResult result, Instant serverNow) {
         Objects.requireNonNull(result, "result");
-        if (this.status == TicketStatus.CONFIRMED) {
+        if (this.status == TicketStatus.CONFIRMED || this.status == TicketStatus.DELETED) {
             return false;
         }
         if (this.status == TicketStatus.REJECTED) {
@@ -194,7 +194,7 @@ public class Ticket extends AggregateRoot {
         if (this.status == TicketStatus.REJECTED) {
             return false;
         }
-        if (this.status == TicketStatus.CONFIRMED) {
+        if (this.status == TicketStatus.CONFIRMED || this.status == TicketStatus.DELETED) {
             throw new IllegalStateException("Cannot reject a confirmed ticket");
         }
 
@@ -203,6 +203,24 @@ public class Ticket extends AggregateRoot {
 
         touch(serverNow);
         return true;
+    }
+
+    public void adminUpdate(UUID commandId, UUID actorUserId, AdminUpdate update, Instant serverNow) {
+        this.ocrText = update.ocrText(); this.imageRef = update.imageRef();
+        this.amountCents = update.amountCents(); this.currency = update.currency();
+        this.ticketDate = update.ticketDate(); this.merchantName = update.merchantName();
+        this.merchantAddress = update.merchantAddress(); this.paymentMethod = update.paymentMethod();
+        this.lineItems = update.lineItems() == null ? null : new ArrayList<>(update.lineItems());
+        this.rejectionReason = update.rejectionReason(); this.status = update.status();
+        touch(serverNow);
+        registerEvent(new TicketAdminUpdatedEvent(UUID.randomUUID(), commandId, id, userId,
+                toSnapshot(), actorUserId, serverNow));
+    }
+
+    public void adminDelete(UUID commandId, UUID actorUserId, Instant serverNow) {
+        this.status = TicketStatus.DELETED; touch(serverNow);
+        registerEvent(new TicketAdminDeletedEvent(UUID.randomUUID(), commandId, id, userId,
+                actorUserId, version, serverNow));
     }
 
     private void touch(Instant serverNow) {
@@ -283,7 +301,8 @@ public class Ticket extends AggregateRoot {
         CAPTURED,
         ANALYZING,
         CONFIRMED,
-        REJECTED
+        REJECTED,
+        DELETED
     }
 
     public record TicketLineItem(
@@ -301,4 +320,8 @@ public class Ticket extends AggregateRoot {
             String paymentMethod,
             List<TicketLineItem> lineItems
     ) {}
+
+    public record AdminUpdate(String ocrText, String imageRef, Integer amountCents, String currency,
+            Instant ticketDate, String merchantName, String merchantAddress, String paymentMethod,
+            List<TicketLineItem> lineItems, String rejectionReason, TicketStatus status) {}
 }
