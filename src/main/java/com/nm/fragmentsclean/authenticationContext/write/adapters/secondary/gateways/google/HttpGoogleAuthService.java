@@ -32,10 +32,30 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 			String authorizationCode,
 			String codeVerifier,
 			String redirectUri) {
-		GoogleTokenResponse tokenResponse = exchangeMobileCodeForTokens(
+		GoogleTokenResponse tokenResponse = exchangeCodeForTokens(
 				authorizationCode,
 				codeVerifier,
-				redirectUri);
+				redirectUri,
+				properties.getMobileIosClientId(),
+				properties.getMobileIosRedirectUri(),
+				"google.oauth.mobile-ios-client-id",
+				"google.oauth.mobile-ios-redirect-uri");
+		return fetchGoogleUser(tokenResponse);
+	}
+
+	@Override
+	public GoogleUserInfo exchangeStudioAuthorizationCodeForUser(
+			String authorizationCode,
+			String codeVerifier,
+			String redirectUri) {
+		GoogleTokenResponse tokenResponse = exchangeCodeForTokens(
+				authorizationCode,
+				codeVerifier,
+				redirectUri,
+				properties.getStudioClientId(),
+				properties.getStudioRedirectUri(),
+				"google.oauth.studio-client-id",
+				"google.oauth.studio-redirect-uri");
 		return fetchGoogleUser(tokenResponse);
 	}
 
@@ -58,16 +78,20 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 				userInfo.picture);
 	}
 
-	private GoogleTokenResponse exchangeMobileCodeForTokens(
+	private GoogleTokenResponse exchangeCodeForTokens(
 			String authorizationCode,
 			String codeVerifier,
-			String redirectUri) {
-		String mobileClientId = requireConfigured(properties.getMobileIosClientId(), "google.oauth.mobile-ios-client-id");
+			String redirectUri,
+			String clientIdValue,
+			String expectedRedirectValue,
+			String clientIdProperty,
+			String redirectProperty) {
+		String clientId = requireConfigured(clientIdValue, clientIdProperty);
 		String expectedRedirectUri = requireConfigured(
-				properties.getMobileIosRedirectUri(),
-				"google.oauth.mobile-ios-redirect-uri");
+				expectedRedirectValue,
+				redirectProperty);
 		if (!expectedRedirectUri.equals(redirectUri)) {
-			throw new IllegalArgumentException("Invalid mobile redirectUri");
+			throw new IllegalArgumentException("Invalid OAuth redirectUri");
 		}
 		String url = properties.getTokenUri();
 
@@ -76,7 +100,7 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 
 		MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
 		form.add("code", authorizationCode);
-		form.add("client_id", mobileClientId);
+		form.add("client_id", clientId);
 		form.add("redirect_uri", expectedRedirectUri);
 		form.add("code_verifier", codeVerifier);
 		form.add("grant_type", "authorization_code");

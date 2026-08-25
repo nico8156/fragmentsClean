@@ -11,15 +11,22 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.arti
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLogRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GrantAdminUser;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdminUsers;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdminUser;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
@@ -75,4 +82,22 @@ public class AdminImportContextConfiguration {
 	UuidGenerator uuidGenerator() {
 		return UUID::randomUUID;
 	}
+
+	@Bean
+	ListAdminUsers listAdminUsers(AdminUserAccessRepository repository, AdminSecurityProperties properties) {
+		return new ListAdminUsers(repository, properties);
+	}
+
+	@Bean
+	GrantAdminUser grantAdminUser(AdminUserAccessRepository repository) {
+		return new GrantAdminUser(repository);
+	}
+
+	@Bean
+	RevokeAdminUser revokeAdminUser(AdminUserAccessRepository repository, AdminSecurityProperties properties) {
+		return new RevokeAdminUser(repository, properties);
+	}
+
+	@Bean
+	RecordAdminAudit recordAdminAudit(AdminAuditLogRepository repository) { return new RecordAdminAudit(repository); }
 }

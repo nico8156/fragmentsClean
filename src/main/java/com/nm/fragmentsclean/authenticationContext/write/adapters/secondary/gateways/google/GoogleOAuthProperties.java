@@ -17,6 +17,10 @@ public class GoogleOAuthProperties {
      */
     private String mobileIosRedirectUri;
 
+    /** Client ID and redirect URI dedicated to the browser-based Studio PKCE flow. */
+    private String studioClientId;
+    private String studioRedirectUri;
+
     /**
      * Endpoint token Google.
      */
@@ -34,6 +38,12 @@ public class GoogleOAuthProperties {
 
     public String getMobileIosRedirectUri() { return mobileIosRedirectUri; }
     public void setMobileIosRedirectUri(String mobileIosRedirectUri) { this.mobileIosRedirectUri = mobileIosRedirectUri; }
+
+    public String getStudioClientId() { return studioClientId; }
+    public void setStudioClientId(String studioClientId) { this.studioClientId = studioClientId; }
+
+    public String getStudioRedirectUri() { return studioRedirectUri; }
+    public void setStudioRedirectUri(String studioRedirectUri) { this.studioRedirectUri = studioRedirectUri; }
 
     public String getTokenUri() { return tokenUri; }
     public void setTokenUri(String tokenUri) { this.tokenUri = tokenUri; }
