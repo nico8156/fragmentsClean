@@ -55,6 +55,8 @@ public class AuthSecurityConfiguration {
 				.authorizeHttpRequests(auth -> auth
 							.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/google/mobile").permitAll()
+							.requestMatchers(HttpMethod.GET, "/auth/google/studio/config").permitAll()
+							.requestMatchers(HttpMethod.POST, "/auth/google/studio").permitAll()
 							.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
 							.requestMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()
 							.requestMatchers("/error").permitAll()
