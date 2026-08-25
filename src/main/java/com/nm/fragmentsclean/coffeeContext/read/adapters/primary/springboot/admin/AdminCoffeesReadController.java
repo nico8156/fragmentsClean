@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
 
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
@@ -27,6 +28,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffe
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AdminAuditRecorder;
 
 @RestController
 public class AdminCoffeesReadController {
@@ -35,17 +37,28 @@ public class AdminCoffeesReadController {
 	private final CoffeePhotoProjectionRepository photoProjectionRepository;
 	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
 	private final CoffeePhotoUriResolver photoUriResolver;
+	private final AdminAuditRecorder adminAuditRecorder;
 
 	public AdminCoffeesReadController(CommandBus commandBus,
 			QueryBus queryBus,
 			CoffeePhotoProjectionRepository photoProjectionRepository,
 			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
-			CoffeePhotoUriResolver photoUriResolver) {
+			CoffeePhotoUriResolver photoUriResolver,
+			AdminAuditRecorder adminAuditRecorder) {
 		this.commandBus = commandBus;
 		this.queryBus = queryBus;
 		this.photoProjectionRepository = photoProjectionRepository;
 		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
 		this.photoUriResolver = photoUriResolver;
+		this.adminAuditRecorder = adminAuditRecorder;
+	}
+
+	public AdminCoffeesReadController(CommandBus commandBus, QueryBus queryBus,
+			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
+			CoffeePhotoUriResolver photoUriResolver) {
+		this(commandBus, queryBus, photoProjectionRepository, openingHoursProjectionRepository,
+				photoUriResolver, (actor, action, type, target, command, outcome, occurred) -> {});
 	}
 
 	@GetMapping("/api/admin/coffees")
@@ -74,32 +87,59 @@ public class AdminCoffeesReadController {
 	}
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}")
-	public ResponseEntity<Void> archiveCoffee(@PathVariable UUID coffeeId) {
-		commandBus.dispatch(new ArchiveCoffeeCommand(UUID.randomUUID(), coffeeId, java.time.Instant.now()));
+	public ResponseEntity<Void> archiveCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
+		commandBus.dispatch(new ArchiveCoffeeCommand(commandId, coffeeId, now));
+		audit(authentication, "COFFEE_ARCHIVED", coffeeId, commandId, "ACCEPTED", now);
 		return ResponseEntity.accepted().build();
 	}
 
+	public ResponseEntity<Void> archiveCoffee(UUID coffeeId) { return archiveCoffee(coffeeId, null); }
+
 	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<Void> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo)
+	public ResponseEntity<Void> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo, Authentication authentication)
 			throws java.io.IOException {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
 		commandBus.dispatch(new AddCoffeePhotoCommand(
-				UUID.randomUUID(),
+				commandId,
 				coffeeId,
 				photo.getOriginalFilename(),
 				photo.getContentType(),
 				photo.getBytes(),
-				java.time.Instant.now()));
+				now));
+		audit(authentication, "COFFEE_PHOTO_ADDED", coffeeId, commandId, "ACCEPTED", now);
 		return ResponseEntity.accepted().build();
 	}
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}/photos/{photoId}")
-	public ResponseEntity<Void> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId) {
+	public ResponseEntity<Void> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId, Authentication authentication) {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
 		commandBus.dispatch(new DeleteCoffeePhotoCommand(
-				UUID.randomUUID(),
+				commandId,
 				coffeeId,
 				photoId,
-				java.time.Instant.now()));
+				now));
+		audit(authentication, "COFFEE_PHOTO_DELETED", photoId, commandId, "ACCEPTED", now);
 		return ResponseEntity.accepted().build();
+	}
+
+	public ResponseEntity<Void> addPhoto(UUID coffeeId, MultipartFile photo) throws java.io.IOException {
+		return addPhoto(coffeeId, photo, null);
+	}
+
+	public ResponseEntity<Void> deletePhoto(UUID coffeeId, UUID photoId) {
+		return deletePhoto(coffeeId, photoId, null);
+	}
+
+	private void audit(Authentication authentication, String action, UUID targetId, UUID commandId,
+			String outcome, java.time.Instant occurredAt) {
+		if (authentication != null) {
+			adminAuditRecorder.record(UUID.fromString(authentication.getName()), action, "COFFEE", targetId,
+					commandId, outcome, occurredAt);
+		}
 	}
 
 	public record AdminCoffeeResponse(
