@@ -52,7 +52,7 @@ Parameters:
     Default: anchor-assets-prod-851725375299
   SecretsKmsKeyArn:
     Type: String
-    Description: Customer-managed KMS key used for SSM SecureString parameters.
+    Description: Existing AWS-managed or customer-managed KMS key used for SSM SecureString parameters.
 
 Resources:
   PlatformSecurityGroup:

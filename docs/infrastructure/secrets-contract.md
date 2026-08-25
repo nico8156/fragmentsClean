@@ -4,8 +4,10 @@ This contract defines names and ownership. It contains no secret values.
 
 ## Source of truth
 
-Runtime secrets must live in AWS SSM Parameter Store as `SecureString` values
-encrypted with the platform customer-managed KMS key.
+Runtime secrets must live in AWS SSM Parameter Store as `SecureString` values.
+For the current staging account they are encrypted with the existing AWS-managed
+`alias/aws/ssm` key. The platform stack receives its key ARN explicitly through
+`SecretsKmsKeyArn`.
 
 The mutualised EC2 runtime may read only these namespaces:
 
@@ -65,3 +67,15 @@ These values are not application secrets:
 - Rotate JWT only through an explicit session-impacting change window.
 - Keep a rollback value available until the new health check passes.
 - Record parameter names, actor, time, and result; never record parameter values.
+
+## Current staging KMS choice
+
+The current staging key is:
+
+```text
+alias/aws/ssm
+arn:aws:kms:eu-west-3:851725375299:key/6e2d9298-8432-48e2-a566-bc10cbc78f2a
+```
+
+No new key is required for the initial migration. This choice is sufficient
+for the current staging risk and avoids unnecessary key administration.
