@@ -50,6 +50,9 @@ Parameters:
   AssetBucketName:
     Type: String
     Default: anchor-assets-prod-851725375299
+  SecretsKmsKeyArn:
+    Type: String
+    Description: Customer-managed KMS key used for SSM SecureString parameters.
 
 Resources:
   PlatformSecurityGroup:
@@ -128,6 +131,17 @@ Resources:
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/anchor/staging/*
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:GetParametersByPath
+                Resource:
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/anchor/${EnvironmentName}/*
+                  - !Sub arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/fragments/${EnvironmentName}/*
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: !Ref SecretsKmsKeyArn
 
   PlatformInstanceProfile:
     Type: AWS::IAM::InstanceProfile
