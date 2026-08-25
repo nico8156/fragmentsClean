@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleBlock;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCreationResult;
@@ -30,6 +31,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArtic
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDocumentRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
 @RestController
@@ -40,6 +42,22 @@ public class AdminStudioArticlesController {
 	private final StudioArticleDocumentRepository studioArticleDocumentRepository;
 	private final DateTimeProvider dateTimeProvider;
 	private final ObjectMapper objectMapper;
+	private final RecordAdminAudit recordAdminAudit;
+
+	public AdminStudioArticlesController(
+			SubmitStudioArticle submitStudioArticle,
+			StoreStudioArticleImage storeStudioArticleImage,
+			StudioArticleDocumentRepository studioArticleDocumentRepository,
+			DateTimeProvider dateTimeProvider,
+			ObjectMapper objectMapper,
+			RecordAdminAudit recordAdminAudit) {
+		this.submitStudioArticle = submitStudioArticle;
+		this.storeStudioArticleImage = storeStudioArticleImage;
+		this.studioArticleDocumentRepository = studioArticleDocumentRepository;
+		this.dateTimeProvider = dateTimeProvider;
+		this.objectMapper = objectMapper;
+		this.recordAdminAudit = recordAdminAudit;
+	}
 
 	public AdminStudioArticlesController(
 			SubmitStudioArticle submitStudioArticle,
@@ -47,11 +65,8 @@ public class AdminStudioArticlesController {
 			StudioArticleDocumentRepository studioArticleDocumentRepository,
 			DateTimeProvider dateTimeProvider,
 			ObjectMapper objectMapper) {
-		this.submitStudioArticle = submitStudioArticle;
-		this.storeStudioArticleImage = storeStudioArticleImage;
-		this.studioArticleDocumentRepository = studioArticleDocumentRepository;
-		this.dateTimeProvider = dateTimeProvider;
-		this.objectMapper = objectMapper;
+		this(submitStudioArticle, storeStudioArticleImage, studioArticleDocumentRepository, dateTimeProvider,
+				objectMapper, new RecordAdminAudit(entry -> {}));
 	}
 
 	@GetMapping
@@ -65,12 +80,18 @@ public class AdminStudioArticlesController {
 	@PutMapping("/{articleId}")
 	public AdminStudioArticleDocumentResponse saveDraft(
 			@PathVariable UUID articleId,
-			@RequestBody AdminStudioArticleSubmitRequest body) {
+			@RequestBody AdminStudioArticleSubmitRequest body, Authentication authentication) {
+		var document = saveDocument(articleId, "draft", body, null);
+		audit(authentication, "ARTICLE_DRAFT_SAVED", articleId, null, "APPLIED");
+		return AdminStudioArticleDocumentResponse.from(document);
+	}
+
+	public AdminStudioArticleDocumentResponse saveDraft(UUID articleId, AdminStudioArticleSubmitRequest body) {
 		return AdminStudioArticleDocumentResponse.from(saveDocument(articleId, "draft", body, null));
 	}
 
 	@DeleteMapping("/{articleId}")
-	public ResponseEntity<AdminStudioArticleDocumentResponse> deleteArticle(@PathVariable UUID articleId) {
+	public ResponseEntity<AdminStudioArticleDocumentResponse> deleteArticle(@PathVariable UUID articleId, Authentication authentication) {
 		Instant now = dateTimeProvider.now();
 		StudioArticleDocument existing = studioArticleDocumentRepository.findById(articleId)
 				.orElseGet(() -> new StudioArticleDocument(articleId, "draft", "{}", now, now, null, null, null));
@@ -84,12 +105,17 @@ public class AdminStudioArticlesController {
 				now,
 				existing.lastCommandId());
 		studioArticleDocumentRepository.save(deleted);
+		audit(authentication, "ARTICLE_DELETED", articleId, existing.lastCommandId(), "APPLIED");
 		return ResponseEntity.accepted().body(AdminStudioArticleDocumentResponse.from(deleted));
+	}
+
+	public ResponseEntity<AdminStudioArticleDocumentResponse> deleteArticle(UUID articleId) {
+		return deleteArticle(articleId, null);
 	}
 
 	@PostMapping
 	public ResponseEntity<AdminStudioArticleSubmittedResponse> submitArticle(
-			@RequestBody AdminStudioArticleSubmitRequest body) {
+			@RequestBody AdminStudioArticleSubmitRequest body, Authentication authentication) {
 		StudioArticleCreationResult result = submitStudioArticle.execute(new StudioArticleSubmission(
 				body.articleId(),
 				body.slug(),
@@ -106,23 +132,40 @@ public class AdminStudioArticlesController {
 				body.coffeeIds() == null ? List.of() : body.coffeeIds()
 		));
 		saveDocument(result.articleId(), "published", body.withArticleId(result.articleId()), result.commandId());
+		audit(authentication, "ARTICLE_SUBMITTED", result.articleId(), result.commandId(), result.status());
 		return ResponseEntity.status(HttpStatus.ACCEPTED)
 				.body(AdminStudioArticleSubmittedResponse.from(result));
+	}
+
+	public ResponseEntity<AdminStudioArticleSubmittedResponse> submitArticle(AdminStudioArticleSubmitRequest body) {
+		return submitArticle(body, null);
 	}
 
 	@PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<AdminStudioArticleImageResponse> uploadImage(
 			@RequestPart("articleId") String rawArticleId,
 			@RequestPart(value = "alt", required = false) String alt,
-			@RequestPart("image") MultipartFile image) throws IOException {
+			@RequestPart("image") MultipartFile image, Authentication authentication) throws IOException {
 		StudioArticleImageAsset asset = storeStudioArticleImage.execute(
 				UUID.fromString(rawArticleId),
 				image.getOriginalFilename(),
 				image.getContentType(),
 				image.getBytes(),
 				alt);
+		audit(authentication, "ARTICLE_IMAGE_UPLOADED", asset.assetId(), null, "APPLIED");
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(AdminStudioArticleImageResponse.from(asset));
+	}
+
+	public ResponseEntity<AdminStudioArticleImageResponse> uploadImage(String rawArticleId, String alt, MultipartFile image) throws IOException {
+		return uploadImage(rawArticleId, alt, image, null);
+	}
+
+	private void audit(Authentication authentication, String action, UUID targetId, UUID commandId, String outcome) {
+		if (authentication != null) {
+			recordAdminAudit.execute(UUID.fromString(authentication.getName()), action, "ARTICLE", targetId,
+					commandId, outcome, dateTimeProvider.now());
+		}
 	}
 
 	public record AdminStudioArticleSubmitRequest(
