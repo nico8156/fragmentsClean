@@ -58,6 +58,7 @@ tested PostgreSQL backup and restore procedure.
 - mount the data volume without formatting an existing disk;
 - create the platform-owned Caddy runtime;
 - move application secrets to SSM Parameter Store or Secrets Manager;
+- pass the existing `alias/aws/ssm` key ARN for the initial staging migration;
 - migrate Anchor deployment credentials to GitHub OIDC;
 - add CloudWatch alarms and deployment locking;
 - decide whether `t4g.medium` is sufficient after observing both applications
