@@ -365,10 +365,16 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
     id UUID PRIMARY KEY,
     actor_user_id UUID NOT NULL REFERENCES auth_users(id),
     action VARCHAR(64) NOT NULL,
+    target_type VARCHAR(64) NOT NULL DEFAULT 'USER',
+    target_id UUID,
     target_user_id UUID,
+    command_id UUID,
     outcome VARCHAR(32) NOT NULL,
     occurred_at TIMESTAMPTZ NOT NULL
 );
+ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS target_type VARCHAR(64) NOT NULL DEFAULT 'USER';
+ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS target_id UUID;
+ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS command_id UUID;
 
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
 

@@ -12,4 +12,9 @@ public class RecordAdminAudit {
 	public void execute(UUID actorUserId, String action, UUID targetUserId, String outcome, Instant occurredAt) {
 		repository.append(new AdminAuditEntry(UUID.randomUUID(), actorUserId, action, targetUserId, outcome, occurredAt));
 	}
+	public void execute(UUID actorUserId, String action, String targetType, UUID targetId,
+			UUID commandId, String outcome, Instant occurredAt) {
+		repository.append(new AdminAuditEntry(UUID.randomUUID(), actorUserId, action, targetType,
+				targetId, commandId, outcome, occurredAt));
+	}
 }
