@@ -16,11 +16,26 @@ public class RecordAdminAudit implements AdminAuditRecorder {
 	public void execute(UUID actorUserId, String action, String targetType, UUID targetId,
 			UUID commandId, String outcome, Instant occurredAt) {
 		repository.append(new AdminAuditEntry(UUID.randomUUID(), actorUserId, action, targetType,
-				targetId, commandId, outcome, occurredAt));
+				targetId, commandId, outcome, null, occurredAt));
+	}
+	public void failure(UUID actorUserId, String action, String targetType, UUID targetId,
+			UUID commandId, String outcome, String reason, Instant occurredAt) {
+		repository.append(new AdminAuditEntry(UUID.randomUUID(), actorUserId, action, targetType,
+				targetId, commandId, outcome, sanitize(reason), occurredAt));
+	}
+	@Override
+	public void recordFailure(UUID actorUserId, String action, String targetType, UUID targetId,
+			UUID commandId, String outcome, String reason, Instant occurredAt) {
+		failure(actorUserId, action, targetType, targetId, commandId, outcome, reason, occurredAt);
 	}
 	@Override
 	public void record(UUID actorUserId, String action, String targetType, UUID targetId,
 			UUID commandId, String outcome, Instant occurredAt) {
 		execute(actorUserId, action, targetType, targetId, commandId, outcome, occurredAt);
+	}
+	private String sanitize(String reason) {
+		if (reason == null) return null;
+		var compact = reason.replaceAll("[\\r\\n\\t]", " ").trim();
+		return compact.length() > 240 ? compact.substring(0, 240) : compact;
 	}
 }

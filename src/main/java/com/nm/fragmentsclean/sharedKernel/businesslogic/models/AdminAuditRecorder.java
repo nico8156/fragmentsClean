@@ -7,4 +7,8 @@ import java.util.UUID;
 public interface AdminAuditRecorder {
 	void record(UUID actorUserId, String action, String targetType, UUID targetId,
 			UUID commandId, String outcome, Instant occurredAt);
+	default void recordFailure(UUID actorUserId, String action, String targetType, UUID targetId,
+			UUID commandId, String outcome, String reason, Instant occurredAt) {
+		record(actorUserId, action, targetType, targetId, commandId, outcome, occurredAt);
+	}
 }

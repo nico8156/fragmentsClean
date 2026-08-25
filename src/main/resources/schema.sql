@@ -370,11 +370,13 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
     target_user_id UUID,
     command_id UUID,
     outcome VARCHAR(32) NOT NULL,
+    reason VARCHAR(240),
     occurred_at TIMESTAMPTZ NOT NULL
 );
 ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS target_type VARCHAR(64) NOT NULL DEFAULT 'USER';
 ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS target_id UUID;
 ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS command_id UUID;
+ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS reason VARCHAR(240);
 
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
 

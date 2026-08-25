@@ -13,9 +13,9 @@ public class JdbcAdminAuditLogRepository implements AdminAuditLogRepository {
 	public JdbcAdminAuditLogRepository(JdbcTemplate jdbcTemplate) { this.jdbcTemplate = jdbcTemplate; }
 	@Override public void append(AdminAuditEntry entry) {
 		jdbcTemplate.update("""
-				INSERT INTO admin_audit_log (id, actor_user_id, action, target_type, target_id, target_user_id, command_id, outcome, occurred_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				INSERT INTO admin_audit_log (id, actor_user_id, action, target_type, target_id, target_user_id, command_id, outcome, reason, occurred_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				""", entry.id(), entry.actorUserId(), entry.action(), entry.targetType(), entry.targetId(),
-				entry.targetType().equals("USER") ? entry.targetId() : null, entry.commandId(), entry.outcome(), Timestamp.from(entry.occurredAt()));
+				entry.targetType().equals("USER") ? entry.targetId() : null, entry.commandId(), entry.outcome(), entry.reason(), Timestamp.from(entry.occurredAt()));
 	}
 }
