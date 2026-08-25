@@ -1,0 +1,28 @@
+{$ANCHOR_WEB_DOMAIN} {
+	encode gzip
+	reverse_proxy anchor-web:3000
+}
+
+{$ANCHOR_API_DOMAIN} {
+	encode gzip
+	reverse_proxy anchor-backend:8080
+}
+
+{$FRAGMENTS_API_DOMAIN} {
+	@sse path /api/sync/events /api/admin/sync/events
+	handle @sse {
+		reverse_proxy fragments-backend:8080 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		encode gzip
+		reverse_proxy fragments-backend:8080
+	}
+}
+
+{$STUDIO_DOMAIN} {
+	encode gzip
+	reverse_proxy fragments-studio:4173
+}

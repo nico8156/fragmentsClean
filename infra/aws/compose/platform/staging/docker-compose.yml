@@ -1,0 +1,29 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      ANCHOR_EDGE_NETWORK: ${ANCHOR_EDGE_NETWORK:-anchor-staging-edge}
+      FRAGMENTS_EDGE_NETWORK: ${FRAGMENTS_EDGE_NETWORK:-fragments-staging-edge}
+      ANCHOR_WEB_DOMAIN: ${ANCHOR_WEB_DOMAIN}
+      ANCHOR_API_DOMAIN: ${ANCHOR_API_DOMAIN}
+      FRAGMENTS_API_DOMAIN: ${FRAGMENTS_API_DOMAIN}
+      STUDIO_DOMAIN: ${STUDIO_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - anchor-edge
+      - fragments-edge
+
+networks:
+  anchor-edge:
+    name: ${ANCHOR_EDGE_NETWORK:-anchor-staging-edge}
+    external: true
+  fragments-edge:
+    name: ${FRAGMENTS_EDGE_NETWORK:-fragments-staging-edge}
+    external: true
