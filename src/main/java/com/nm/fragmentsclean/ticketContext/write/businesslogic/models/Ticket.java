@@ -214,7 +214,8 @@ public class Ticket extends AggregateRoot {
         this.rejectionReason = update.rejectionReason(); this.status = update.status();
         touch(serverNow);
         registerEvent(new TicketAdminUpdatedEvent(UUID.randomUUID(), commandId, id, userId,
-                toSnapshot(), actorUserId, serverNow));
+                status.name(), ocrText, imageRef, amountCents, currency, ticketDate, merchantName,
+                merchantAddress, paymentMethod, rejectionReason, version, actorUserId, serverNow));
     }
 
     public void adminDelete(UUID commandId, UUID actorUserId, Instant serverNow) {

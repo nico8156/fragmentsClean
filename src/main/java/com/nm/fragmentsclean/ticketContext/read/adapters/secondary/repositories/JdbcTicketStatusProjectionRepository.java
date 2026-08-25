@@ -124,10 +124,9 @@ public class JdbcTicketStatusProjectionRepository {
     }
 
     public void applyAdminUpdated(TicketAdminUpdatedEvent evt) {
-        var s = evt.snapshot();
         jdbc.update("""
             UPDATE ticket_status_projection SET status=?, image_ref=?, ocr_text=?, amount_cents=?, currency=?, ticket_date=?, merchant_name=?, merchant_address=?, payment_method=?, rejection_reason=?, version=?, occurred_at=? WHERE ticket_id=? AND version <= ?
-            """, s.status().name(), s.imageRef(), s.ocrText(), s.amountCents(), s.currency(), ts(s.ticketDate()), s.merchantName(), s.merchantAddress(), s.paymentMethod(), s.rejectionReason(), s.version(), ts(evt.occurredAt()), s.ticketId(), s.version());
+            """, evt.status(), evt.imageRef(), evt.ocrText(), evt.amountCents(), evt.currency(), ts(evt.ticketDate()), evt.merchantName(), evt.merchantAddress(), evt.paymentMethod(), evt.rejectionReason(), evt.version(), ts(evt.occurredAt()), evt.ticketId(), evt.version());
     }
 
     public void applyAdminDeleted(TicketAdminDeletedEvent evt) {
