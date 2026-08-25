@@ -355,6 +355,12 @@ ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(512);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_auth_users_provider_user
     ON auth_users (provider, provider_user_id);
 
+CREATE TABLE IF NOT EXISTS admin_user_access (
+    user_id UUID PRIMARY KEY REFERENCES auth_users(id) ON DELETE CASCADE,
+    granted_at TIMESTAMPTZ NOT NULL,
+    granted_by UUID REFERENCES auth_users(id)
+);
+
 
 CREATE TABLE IF NOT EXISTS app_users (
                                          id            UUID PRIMARY KEY,

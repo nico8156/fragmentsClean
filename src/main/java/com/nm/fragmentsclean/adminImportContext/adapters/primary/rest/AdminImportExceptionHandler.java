@@ -9,12 +9,18 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.goog
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GooglePlaceNotFoundException;
 
 @RestControllerAdvice(assignableTypes = {
-		AdminImportPlacesController.class
+		AdminImportPlacesController.class,
+		AdminAccessController.class
 })
 public class AdminImportExceptionHandler {
 	@ExceptionHandler(IllegalArgumentException.class)
 	ResponseEntity<AdminImportErrorResponse> badRequest(IllegalArgumentException exception) {
 		return ResponseEntity.badRequest().body(new AdminImportErrorResponse(exception.getMessage()));
+	}
+
+	@ExceptionHandler(IllegalStateException.class)
+	ResponseEntity<AdminImportErrorResponse> conflict(IllegalStateException exception) {
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(new AdminImportErrorResponse(exception.getMessage()));
 	}
 
 	@ExceptionHandler(GooglePlaceNotFoundException.class)

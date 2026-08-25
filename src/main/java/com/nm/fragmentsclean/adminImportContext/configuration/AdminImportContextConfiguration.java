@@ -11,12 +11,16 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.arti
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GrantAdminUser;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdminUsers;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdminUser;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
@@ -74,5 +78,20 @@ public class AdminImportContextConfiguration {
 	@Bean
 	UuidGenerator uuidGenerator() {
 		return UUID::randomUUID;
+	}
+
+	@Bean
+	ListAdminUsers listAdminUsers(AdminUserAccessRepository repository) {
+		return new ListAdminUsers(repository);
+	}
+
+	@Bean
+	GrantAdminUser grantAdminUser(AdminUserAccessRepository repository) {
+		return new GrantAdminUser(repository);
+	}
+
+	@Bean
+	RevokeAdminUser revokeAdminUser(AdminUserAccessRepository repository) {
+		return new RevokeAdminUser(repository);
 	}
 }
