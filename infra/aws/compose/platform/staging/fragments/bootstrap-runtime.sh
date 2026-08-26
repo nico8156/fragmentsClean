@@ -9,6 +9,9 @@ runtime_pg_password=$(aws ssm get-parameter --region "$aws_region" --name /fragm
 runtime_jwt_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/AUTH_JWT_SECRET --with-decryption --query Parameter.Value --output text)
 runtime_google_places_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/GOOGLE_PLACES_API_KEY --with-decryption --query Parameter.Value --output text)
 runtime_google_studio_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/GOOGLE_STUDIO_CLIENT_SECRET --with-decryption --query Parameter.Value --output text)
+# This is deliberately a normal SSM String, not a secret: it identifies the
+# operator account allowed to bootstrap an otherwise empty admin allow-list.
+runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
 
 umask 077
 : > "$runtime_root/.env"
@@ -30,6 +33,7 @@ write_env GOOGLE_MOBILE_IOS_REDIRECT_URI com.googleusercontent.apps.255942605258
 write_env GOOGLE_STUDIO_CLIENT_ID 255942605258-1nji47405hqf1q2imk35toejorv1opsk.apps.googleusercontent.com
 write_env GOOGLE_STUDIO_REDIRECT_URI https://studio-staging.anchor-event.fr/
 write_env GOOGLE_STUDIO_CLIENT_SECRET "$runtime_google_studio_secret"
+write_env ADMIN_SECURITY_BOOTSTRAP_USER_IDS "$runtime_admin_bootstrap_user_ids"
 write_env AUTH_JWT_ISSUER https://auth.fragments
 write_env FRAGMENTS_CORS_ALLOWED_ORIGINS https://studio-staging.anchor-event.fr
 write_env APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED false
@@ -52,4 +56,4 @@ write_env ARTICLE_IMAGES_S3_PREFIX fragments/staging/articles
 write_env ARTICLE_IMAGES_S3_REGION "$aws_region"
 write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.fr
 
-unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret
+unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_admin_bootstrap_user_ids
