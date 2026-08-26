@@ -1,0 +1,7 @@
+ARG BASE_IMAGE=851725375299.dkr.ecr.eu-west-3.amazonaws.com/fragments/staging/backend:staging-latest
+FROM ${BASE_IMAGE}
+
+# The base image already contains the pinned ticket verification engine. This
+# deployment image replaces only the application artefact built and tested by
+# Maven, avoiding a redundant native-engine build during an operational deploy.
+COPY target/fragmentsClean-0.0.1-SNAPSHOT.jar /app/app.jar
