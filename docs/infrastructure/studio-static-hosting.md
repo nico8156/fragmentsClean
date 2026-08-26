@@ -15,10 +15,9 @@ The templates are intentionally split by region and lifecycle:
 
 1. `studio-static-bucket.yaml` in `eu-west-3`;
 2. `studio-certificate.yaml` in `us-east-1`;
-3. add/verify the Route 53 record for the certificate validation if needed;
+3. retrieve the ACM DNS validation CNAME and create it in the OVH DNS zone;
 4. `studio-cloudfront.yaml` in `us-east-1`;
-5. add the Route 53 alias from `studio-staging.anchor-event.fr` to the
-   CloudFront distribution;
+5. create the `studio-staging` CNAME to the CloudFront distribution in OVH;
 6. build and sync `fragments-admin/fragments-studio/dist` to the bucket;
 7. invalidate CloudFront after a release.
 
@@ -40,7 +39,45 @@ CloudFront maps 403/404 responses to `/index.html` for browser routes. API
 traffic does not pass through this distribution; Studio calls the Fragments
 backend host configured by `VITE_FRAGMENTS_BACKEND_URL`.
 
-## Current boundary
+## OVH DNS and ACM validation
 
-This phase creates infrastructure templates only. It does not create the S3
-bucket, certificate, distribution, DNS record, or upload any Studio build.
+The authoritative DNS zone is managed by OVH, not Route 53. The certificate
+stack therefore requests a DNS-validated ACM certificate without attempting to
+modify DNS. The validation CNAME must be copied from ACM and created in OVH.
+
+Use the following controlled sequence from a machine authenticated to AWS:
+
+```bash
+aws cloudformation deploy \
+  --region us-east-1 \
+  --stack-name fragments-studio-certificate-staging \
+  --template-file infra/aws/cloudformation/studio-certificate.yaml
+
+CERT_ARN=$(aws cloudformation describe-stacks \
+  --region us-east-1 \
+  --stack-name fragments-studio-certificate-staging \
+  --query 'Stacks[0].Outputs[?OutputKey==`StudioCertificateArn`].OutputValue' \
+  --output text)
+
+aws acm describe-certificate \
+  --region us-east-1 \
+  --certificate-arn "$CERT_ARN" \
+  --query 'Certificate.DomainValidationOptions[].ResourceRecord'
+```
+
+Create the returned `Name` and `Value` as a CNAME in the OVH zone. After DNS
+propagation, wait for `ISSUED`:
+
+```bash
+aws acm wait certificate-validated \
+  --region us-east-1 \
+  --certificate-arn "$CERT_ARN"
+```
+
+The CloudFront CNAME is created only after the distribution exists. It must
+point `studio-staging` to the distribution hostname, not to the ACM validation
+record. No OVH API token or AWS credential belongs in Git, the Studio bundle,
+or the conversation.
+
+This phase creates infrastructure templates and the controlled OVH procedure;
+it does not create AWS resources, DNS records, or upload a Studio build.
