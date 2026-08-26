@@ -45,6 +45,10 @@ Parameters:
   GitHubBranch:
     Type: String
     Default: main
+  SsmDeployInstanceId:
+    Type: String
+    Default: i-004d3e9cbca327d01
+    Description: Platform EC2 instance targeted by the SSM deployment workflow.
     Description: GitHub branch allowed to assume the deploy role.
   ExistingGitHubOidcProviderArn:
     Type: String
@@ -367,24 +371,24 @@ Resources:
                   - ecr:UploadLayerPart
                 Resource:
                   - !GetAtt BackendRepository.Arn
-              - Sid: DescribeSecurityGroupsForTemporarySsh
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSecurityGroups
-                Resource: '*'
               - Sid: ReadStagingStackOutputs
                 Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
-              - Sid: ManageTemporaryRunnerSshIngress
+              - Sid: DeployThroughSsm
                 Effect: Allow
                 Action:
-                  - ec2:AuthorizeSecurityGroupIngress
-                  - ec2:RevokeSecurityGroupIngress
+                  - ssm:SendCommand
                 Resource:
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${InstanceSecurityGroup}
+                  - !Sub arn:aws:ssm:${AWS::Region}::document/AWS-RunShellScript
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${SsmDeployInstanceId}
+              - Sid: ReadSsmCommandResult
+                Effect: Allow
+                Action:
+                  - ssm:GetCommandInvocation
+                Resource: '*'
 
 Outputs:
   InstanceId:
