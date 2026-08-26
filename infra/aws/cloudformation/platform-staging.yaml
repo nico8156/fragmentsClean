@@ -149,19 +149,6 @@ Resources:
       Roles:
         - !Ref PlatformRuntimeRole
 
-  PlatformDataVolume:
-    Type: AWS::EC2::Volume
-    DeletionPolicy: Snapshot
-    UpdateReplacePolicy: Snapshot
-    Properties:
-      AvailabilityZone: !GetAtt PlatformInstance.AvailabilityZone
-      Encrypted: true
-      Size: !Ref DataVolumeSizeGiB
-      VolumeType: gp3
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${EnvironmentName}-data
-
   PlatformInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -215,5 +202,3 @@ Outputs:
     Value: !Ref PlatformSecurityGroup
   PlatformRuntimeRoleArn:
     Value: !GetAtt PlatformRuntimeRole.Arn
-  PlatformDataVolumeId:
-    Value: !Ref PlatformDataVolume
