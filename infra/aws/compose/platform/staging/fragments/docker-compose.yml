@@ -1,0 +1,49 @@
+services:
+  fragments-postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - /srv/fragments-postgres/postgres-data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/data.sql:/docker-entrypoint-initdb.d/02-data.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      fragments-edge:
+        aliases:
+          - fragments-postgres
+
+  fragments-backend:
+    image: ${BACKEND_IMAGE}
+    restart: unless-stopped
+    depends_on:
+      fragments-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      JDBC_DATABASE_URL: jdbc:postgresql://fragments-postgres:5432/${POSTGRES_DB}?stringtype=unspecified
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      TICKETVERIFY_BINARY_PATH: ${TICKETVERIFY_BINARY_PATH:-/app/bin/ticketverify}
+    expose:
+      - "8080"
+    volumes:
+      - ./coffee-photos:/srv/fragments/coffee-photos
+    networks:
+      fragments-edge:
+        aliases:
+          - fragments-backend
+
+networks:
+  fragments-edge:
+    name: ${FRAGMENTS_EDGE_NETWORK:-fragments-staging-edge}
+    external: true
