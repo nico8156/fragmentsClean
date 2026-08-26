@@ -5,18 +5,12 @@ Parameters:
   StudioDomain:
     Type: String
     Default: studio-staging.anchor-event.fr
-  HostedZoneId:
-    Type: AWS::Route53::HostedZone::Id
-    Description: Route 53 hosted zone containing the Studio domain.
 
 Resources:
   StudioCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Ref StudioDomain
-      DomainValidationOptions:
-        - DomainName: !Ref StudioDomain
-          HostedZoneId: !Ref HostedZoneId
       ValidationMethod: DNS
 
 Outputs:
