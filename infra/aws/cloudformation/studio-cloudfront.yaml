@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront distribution for the private Fragments Studio S3 site.
+
+Parameters:
+  StudioDomain:
+    Type: String
+    Default: studio-staging.anchor-event.fr
+  StudioCertificateArn:
+    Type: String
+    Description: ACM certificate ARN from us-east-1 for StudioDomain.
+  StudioSiteBucketName:
+    Type: String
+  StudioSiteBucketArn:
+    Type: String
+  StudioSiteBucketRegionalDomainName:
+    Type: String
+
+Resources:
+  StudioOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub ${AWS::StackName}-s3-oac
+        Description: CloudFront-only read access to the private Studio bucket.
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  StudioDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub Fragments Studio ${AWS::StackName}
+        Aliases:
+          - !Ref StudioDomain
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: StudioS3Origin
+            DomainName: !Ref StudioSiteBucketRegionalDomainName
+            OriginAccessControlId: !GetAtt StudioOriginAccessControl.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: StudioS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        ViewerCertificate:
+          AcmCertificateArn: !Ref StudioCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+
+  StudioSiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref StudioSiteBucketName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${StudioSiteBucketArn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${StudioDistribution}
+
+Outputs:
+  StudioDistributionId:
+    Value: !Ref StudioDistribution
+  StudioDistributionDomainName:
+    Value: !GetAtt StudioDistribution.DomainName
+  StudioDomain:
+    Value: !Ref StudioDomain

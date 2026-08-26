@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: ACM certificate for the Fragments Studio CloudFront hostname.
+
+Parameters:
+  StudioDomain:
+    Type: String
+    Default: studio-staging.anchor-event.fr
+  HostedZoneId:
+    Type: AWS::Route53::HostedZone::Id
+    Description: Route 53 hosted zone containing the Studio domain.
+
+Resources:
+  StudioCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref StudioDomain
+      DomainValidationOptions:
+        - DomainName: !Ref StudioDomain
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
+
+Outputs:
+  StudioCertificateArn:
+    Value: !Ref StudioCertificate
+  StudioDomain:
+    Value: !Ref StudioDomain

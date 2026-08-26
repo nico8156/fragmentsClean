@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Private S3 origin bucket for the Fragments Studio static build.
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: fragments-studio-staging-851725375299
+    Description: Globally unique bucket name for the Studio static artifacts.
+
+Resources:
+  StudioSiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref BucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  StudioSiteBucketName:
+    Value: !Ref StudioSiteBucket
+  StudioSiteBucketArn:
+    Value: !GetAtt StudioSiteBucket.Arn
+  StudioSiteBucketRegionalDomainName:
+    Value: !GetAtt StudioSiteBucket.RegionalDomainName
