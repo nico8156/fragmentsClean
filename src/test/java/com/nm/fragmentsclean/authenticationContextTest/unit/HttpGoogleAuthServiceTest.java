@@ -73,4 +73,50 @@ class HttpGoogleAuthServiceTest {
 		assertThat(user.pictureUrl()).isEqualTo("https://example.com/avatar.png");
 		server.verify();
 	}
+
+	@Test
+	void studio_pkce_exchange_posts_the_configured_client_secret() {
+		var restTemplate = new RestTemplate();
+		var server = MockRestServiceServer.createServer(restTemplate);
+		var properties = new GoogleOAuthProperties();
+		properties.setStudioClientId("studio-client.apps.googleusercontent.com");
+		properties.setStudioRedirectUri("https://studio-staging.anchor-event.fr/");
+		properties.setStudioClientSecret("studio-client-secret");
+		properties.setTokenUri("https://oauth2.googleapis.test/token");
+		properties.setUserInfoUri("https://openidconnect.googleapis.test/v1/userinfo");
+		var service = new HttpGoogleAuthService(restTemplate, properties);
+
+		server.expect(requestTo("https://oauth2.googleapis.test/token"))
+				.andExpect(method(HttpMethod.POST))
+				.andExpect(content().string(containsString("client_id=studio-client.apps.googleusercontent.com")))
+				.andExpect(content().string(containsString("redirect_uri=https%3A%2F%2Fstudio-staging.anchor-event.fr%2F")))
+				.andExpect(content().string(containsString("code_verifier=verifier-123")))
+				.andExpect(content().string(containsString("client_secret=studio-client-secret")))
+				.andRespond(withSuccess("""
+						{
+						  "access_token": "google-access-token",
+						  "expires_in": 3600,
+						  "token_type": "Bearer"
+						}
+						""", MediaType.APPLICATION_JSON));
+
+		server.expect(requestTo("https://openidconnect.googleapis.test/v1/userinfo"))
+				.andExpect(method(HttpMethod.GET))
+				.andRespond(withSuccess("""
+						{
+						  "sub": "google-sub-1",
+						  "email": "studio@example.com",
+						  "email_verified": true,
+						  "name": "Studio User"
+						}
+						""", MediaType.APPLICATION_JSON));
+
+		var user = service.exchangeStudioAuthorizationCodeForUser(
+				"auth-code-123",
+				"verifier-123",
+				"https://studio-staging.anchor-event.fr/");
+
+		assertThat(user.email()).isEqualTo("studio@example.com");
+		server.verify();
+	}
 }
