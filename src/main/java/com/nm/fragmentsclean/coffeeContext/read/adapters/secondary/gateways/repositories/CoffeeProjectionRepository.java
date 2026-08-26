@@ -9,6 +9,10 @@ import java.util.UUID;
 public interface CoffeeProjectionRepository {
 	void apply(CoffeeCreatedEvent event);
 
+	default void apply(CoffeeSummaryView view) {
+		insertSeed(view);
+	}
+
 	void deleteByCoffeeId(UUID coffeeId);
 
 	List<CoffeeSummaryView> findAll();

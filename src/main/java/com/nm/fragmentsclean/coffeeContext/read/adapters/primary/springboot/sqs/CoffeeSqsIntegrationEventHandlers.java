@@ -3,14 +3,13 @@ package com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.sqs
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.COFFEES_EVENTS;
 
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
-import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedProcessManager;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
@@ -20,6 +19,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -34,8 +34,8 @@ public class CoffeeSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler coffeeCreatedSqsIntegrationEventHandler(
-            CoffeeCreatedProcessManager coffeeCreatedProcessManager) {
-        return readAndHandle("coffee.created", CoffeeCreatedEvent.class, coffeeCreatedProcessManager::handle);
+            CoffeeCreatedIntegrationEventHandler coffeeCreatedIntegrationEventHandler) {
+        return readAndHandle("coffee.created", CoffeeCreatedIntegrationEvent.class, coffeeCreatedIntegrationEventHandler::handle);
     }
 
     @Bean
