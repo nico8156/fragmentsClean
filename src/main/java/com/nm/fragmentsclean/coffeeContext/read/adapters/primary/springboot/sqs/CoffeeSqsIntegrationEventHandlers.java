@@ -20,6 +20,8 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -56,12 +58,12 @@ public class CoffeeSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler coffeePhotosImportedSqsIntegrationEventHandler(CoffeePhotosImportedEventHandler handler) {
-        return readAndHandle("coffee.photos_imported", CoffeePhotosImportedEvent.class, handler::handle);
+        return readAndHandle("coffee.photos_imported", CoffeePhotosImportedIntegrationEvent.class, handler::handle);
     }
 
     @Bean
     SqsIntegrationEventHandler coffeePhotoAddedSqsIntegrationEventHandler(CoffeePhotoAddedEventHandler handler) {
-        return readAndHandle("coffee.photo_added", CoffeePhotoAddedEvent.class, handler::handle);
+        return readAndHandle("coffee.photo_added", CoffeePhotoAddedIntegrationEvent.class, handler::handle);
     }
 
     @Bean

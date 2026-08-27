@@ -222,6 +222,14 @@ POST /api/admin/coffees/{coffeeId}/photos
 -> projection.updated hints:["photos"]
 ```
 
+Les messages SQS `coffee.photo_added` et `coffee.photos_imported` utilisent des
+contrats d'intégration primitifs (`UUID`, chaînes, dates et listes de références)
+distincts des événements de domaine. Cela garantit la désérialisation côté
+consommateur et évite d'exposer les value objects du write model au transport.
+La réponse HTTP `202` signifie que S3 et la projection peuvent être traités
+asynchronement ; Studio doit donc rafraîchir après le signal de projection ou
+une nouvelle lecture.
+
 ```text
 DELETE /api/admin/coffees/{coffeeId}/photos/{photoId}
 -> DeleteCoffeePhotoCommand
