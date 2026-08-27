@@ -18,10 +18,18 @@ public record CoffeeCreatedEvent(
         PhoneNumber phoneNumber,
         WebsiteUrl website,
         List<Tag> tags,
+        CoffeePublicationStatus publicationStatus,
         int version,
         Instant occurredAt,
         Instant clientAt
 ) implements DomainEvent {
+
+    public CoffeeCreatedEvent(UUID eventId, UUID commandId, CoffeeId coffeeId, GooglePlaceId googlePlaceId,
+                              CoffeeName name, Address address, GeoPoint location, PhoneNumber phoneNumber,
+                              WebsiteUrl website, List<Tag> tags, int version, Instant occurredAt, Instant clientAt) {
+        this(eventId, commandId, coffeeId, googlePlaceId, name, address, location, phoneNumber, website, tags,
+                CoffeePublicationStatus.PUBLISHED, version, occurredAt, clientAt);
+    }
 
     @Override
     public UUID eventId() {

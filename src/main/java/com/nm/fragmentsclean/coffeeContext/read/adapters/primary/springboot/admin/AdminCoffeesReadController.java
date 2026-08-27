@@ -78,7 +78,7 @@ public class AdminCoffeesReadController {
 								Collectors.mapping(AdminCoffeeOpeningHoursResponse::from, Collectors.toList())
 						));
 
-		var views = queryBus.dispatch(new ListCoffeesQuery());
+		var views = queryBus.dispatch(new ListCoffeesQuery(false));
 		return views.stream()
 				.map(CoffeeSummaryResponse::from)
 				.map(summary -> AdminCoffeeResponse.from(

@@ -106,6 +106,7 @@ public class IntegrationEventPayloadMapper {
                 addressText(address, "city"),
                 addressText(address, "postalCode"),
                 addressText(address, "country"),
+                text(node, "publicationStatus"),
                 intValue(node, "version"),
                 instantOrFallback(node, "occurredAt", event.getOccurredAt())
         );

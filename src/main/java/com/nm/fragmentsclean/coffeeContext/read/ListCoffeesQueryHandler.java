@@ -18,6 +18,6 @@ public class ListCoffeesQueryHandler implements QueryHandler<ListCoffeesQuery, L
 
     @Override
     public List<CoffeeSummaryView> handle(ListCoffeesQuery query) {
-        return readRepository.findAll();
+        return readRepository.findAll(query.publishedOnly());
     }
 }

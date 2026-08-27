@@ -13,6 +13,7 @@ public record CoffeeCreatedIntegrationEvent(
 		String city,
 		String postalCode,
 		String country,
+		String publicationStatus,
 		int version,
 		Instant occurredAt
 ) {

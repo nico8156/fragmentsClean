@@ -87,7 +87,8 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
                 phone,
                 website,
                 tags,
-                now
+                now,
+                command.publicationStatus()
         );
 
         // 4) Persister
@@ -105,6 +106,7 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
                 phone,
                 website,
                 tags.stream().toList(),
+                coffee.publicationStatus(),
                 coffee.version(),
                 now,                                // occurredAt
                 command.clientAt()                  // clientAt

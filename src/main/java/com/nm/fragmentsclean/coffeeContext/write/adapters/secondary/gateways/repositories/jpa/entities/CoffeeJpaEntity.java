@@ -56,6 +56,9 @@ public class CoffeeJpaEntity {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
+    @Column(name = "publication_status", nullable = false)
+    private String publicationStatus;
+
     protected CoffeeJpaEntity() {
         // for JPA
     }
@@ -75,6 +78,14 @@ public class CoffeeJpaEntity {
                            int version,
                            Instant updatedAt,
                            Instant archivedAt) {
+        this(id, googlePlaceId, name, addressLine1, city, postalCode, country, lat, lon, phoneNumber,
+                website, tagsCsv, version, updatedAt, archivedAt, archivedAt != null ? "ARCHIVED" : "PUBLISHED");
+    }
+
+    public CoffeeJpaEntity(UUID id, String googlePlaceId, String name, String addressLine1, String city,
+                           String postalCode, String country, double lat, double lon, String phoneNumber,
+                           String website, String tagsCsv, int version, Instant updatedAt, Instant archivedAt,
+                           String publicationStatus) {
         this.id = id;
         this.googlePlaceId = googlePlaceId;
         this.name = name;
@@ -90,6 +101,7 @@ public class CoffeeJpaEntity {
         this.version = version;
         this.updatedAt = updatedAt;
         this.archivedAt = archivedAt;
+        this.publicationStatus = publicationStatus;
     }
 
     public UUID getId() {
@@ -151,6 +163,8 @@ public class CoffeeJpaEntity {
     public Instant getArchivedAt() {
         return archivedAt;
     }
+
+    public String getPublicationStatus() { return publicationStatus; }
 
     public void setVersion(int version) {
         this.version = version;
