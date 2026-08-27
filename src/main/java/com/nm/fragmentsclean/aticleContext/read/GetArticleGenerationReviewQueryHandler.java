@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class GetArticleGenerationReviewQueryHandler {
+public final class GetArticleGenerationReviewQueryHandler implements ArticleGenerationReviewReader {
 	private final JdbcTemplate jdbcTemplate;
 	private final ArticleImageUriResolver imageUriResolver;
 
@@ -19,6 +19,7 @@ public final class GetArticleGenerationReviewQueryHandler {
 		this.imageUriResolver = imageUriResolver;
 	}
 
+	@Override
 	public GetArticleGenerationReview handle(UUID sagaId) {
 		var saga = jdbcTemplate.queryForMap("""
 				SELECT saga_id, article_id, revision_id, theme, state, generation_attempts, updated_at

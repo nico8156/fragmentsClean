@@ -356,6 +356,21 @@ state, command status and outbox event share one transaction.
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 
+### Phase 15 review notification
+
+When the generation completion event is consumed from the `articles-events` SQS
+destination, the notification adapter reads the authoritative review snapshot
+and sends a text/HTML email through SES. The email contains the generated cover,
+section images, a Studio review link, and an explicit reminder that generation
+never publishes by itself.
+
+The SES adapter is conditional on `fragments.editorial.email.enabled=true` and
+uses the runtime AWS credential chain. Its sender, recipient, Studio URL and
+region are configuration values; no credential or provider SDK type crosses the
+application port. Inbox claim protects duplicate SQS deliveries. The email
+identity and runtime `ses:SendEmail` permission remain owned by the separate
+staging SES CloudFormation stack.
+
 ## Media ownership
 
 Durable article media references point to Fragments-owned storage. Each image

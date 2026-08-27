@@ -25,3 +25,19 @@ Reply-To: nmaldiney@gmail.com
 
 While SES remains in sandbox, the recipient must confirm the AWS verification
 email. Request production access before sending to unverified recipients.
+
+Runtime configuration is supplied through the deployment secret/configuration
+channel, never through the Studio bundle:
+
+```text
+EDITORIAL_EMAIL_ENABLED=true
+EDITORIAL_EMAIL_FROM=studio@anchor-event.fr
+EDITORIAL_EMAIL_RECIPIENT=nmaldiney@gmail.com
+EDITORIAL_EMAIL_STUDIO_BASE_URL=https://studio-staging.anchor-event.fr
+EDITORIAL_EMAIL_REGION=eu-west-3
+```
+
+The application consumes the existing platform runtime role permission. The
+sender must remain `studio@anchor-event.fr` (or another verified SES identity)
+and the sandbox recipient must remain verified until SES production access is
+granted.
