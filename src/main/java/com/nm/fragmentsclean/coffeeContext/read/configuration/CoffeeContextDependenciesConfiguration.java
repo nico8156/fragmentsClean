@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedProcessManager;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
+import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHandler;
@@ -138,6 +139,11 @@ public class CoffeeContextDependenciesConfiguration {
 			ImportGoogleOpeningHoursForCoffee openingHoursImporter,
 			ImportGooglePhotosForCoffee photosImporter) {
 		return new CoffeeCreatedIntegrationEnrichmentHandler(openingHoursImporter, photosImporter);
+	}
+
+	@Bean
+	CoffeeDeletedMediaCleanupHandler coffeeDeletedMediaCleanupHandler(CoffeePhotoStorage photoStorage) {
+		return new CoffeeDeletedMediaCleanupHandler(photoStorage);
 	}
 
 	@Bean

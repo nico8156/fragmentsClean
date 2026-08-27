@@ -13,6 +13,9 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GoogleP
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
 public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 	private final CoffeePhotoStorageProperties properties;
@@ -38,6 +41,15 @@ public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 						.build(),
 				RequestBody.fromBytes(photo.bytes()));
 		return new ImportedCoffeePhoto(photoId, "s3://" + bucket + "/" + key);
+	}
+
+	@Override
+	public void deleteForCoffee(CoffeeId coffeeId) {
+		var bucket = requireConfigured(properties.getS3Bucket(), "coffee.photos.storage.s3-bucket");
+		var prefix = normalizePrefix(properties.getS3Prefix()) + "/" + coffeeId.value() + "/";
+		var objects = s3Client.listObjectsV2(ListObjectsV2Request.builder().bucket(bucket).prefix(prefix).build())
+			.contents().stream().map(object -> ObjectIdentifier.builder().key(object.key()).build()).toList();
+		if (!objects.isEmpty()) s3Client.deleteObjects(DeleteObjectsRequest.builder().bucket(bucket).delete(builder -> builder.objects(objects)).build());
 	}
 
 	private String keyFor(CoffeeId coffeeId, UUID photoId, String extension) {

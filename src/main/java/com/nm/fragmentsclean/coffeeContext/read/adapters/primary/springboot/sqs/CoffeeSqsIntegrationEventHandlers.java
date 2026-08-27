@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventH
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
@@ -51,8 +52,12 @@ public class CoffeeSqsIntegrationEventHandlers {
     }
 
     @Bean
-    SqsIntegrationEventHandler coffeeDeletedSqsIntegrationEventHandler(CoffeeDeletedEventHandler handler) {
-        return readAndHandle("coffee.deleted", CoffeeDeletedEvent.class, handler::handle);
+    SqsIntegrationEventHandler coffeeDeletedSqsIntegrationEventHandler(CoffeeDeletedEventHandler handler,
+            CoffeeDeletedMediaCleanupHandler mediaCleanupHandler) {
+        return readAndHandle("coffee.deleted", CoffeeDeletedEvent.class, event -> {
+            handler.handle(event);
+            mediaCleanupHandler.handle(event);
+        });
     }
 
     @Bean
