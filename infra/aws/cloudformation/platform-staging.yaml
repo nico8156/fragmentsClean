@@ -132,6 +132,13 @@ Resources:
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/anchor/staging/*
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/*
               - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - fragments/staging/coffees/*
+              - Effect: Allow
                 Action:
                   - ssm:GetParameter
                   - ssm:GetParameters
