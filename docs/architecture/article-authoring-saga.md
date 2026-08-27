@@ -356,6 +356,14 @@ state, command status and outbox event share one transaction.
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 
+Phase 18 adds that primary adapter without enabling it by default. When enabled,
+the scheduled use case checks a database-backed budget for non-terminal sagas,
+deduplicates the normalized subject over a configurable window, then dispatches
+the existing `RequestArticleGenerationCommand` with trigger `SCHEDULED`. It
+does not call OpenAI, create revisions directly, or bypass the outbox/SQS flow.
+The provider lease remains the concurrency and restart safety boundary; the
+schedule only creates work when the configured budget allows it.
+
 ### Phase 15 review notification
 
 When the generation completion event is consumed from the `articles-events` SQS
