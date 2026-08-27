@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositories;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRevisionMaterializer;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.GeneratedArticleDraft;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import java.sql.Timestamp;
@@ -8,8 +10,8 @@ import java.time.Instant;
 import java.util.UUID;
 @Repository
 public final class JdbcArticleRevisionMaterializer implements ArticleRevisionMaterializer {
-    private final JdbcTemplate jdbc;
-    public JdbcArticleRevisionMaterializer(JdbcTemplate jdbc) { this.jdbc=jdbc; }
+    private final JdbcTemplate jdbc; private final ObjectMapper mapper;
+    public JdbcArticleRevisionMaterializer(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc=jdbc; this.mapper=mapper; }
     @Override public void materialize(UUID articleId, UUID revisionId, GeneratedArticleDraft draft, Instant now) {
         Integer exists=jdbc.queryForObject("SELECT count(*) FROM articles WHERE article_id=?",Integer.class,articleId);
         if (exists==null || exists!=1) throw new IllegalStateException("Cannot materialize a revision for an unknown article");
@@ -28,5 +30,10 @@ public final class JdbcArticleRevisionMaterializer implements ArticleRevisionMat
         }
         int tagPosition=0;
         for (var tag : draft.tags()) jdbc.update("INSERT INTO article_revision_tags (revision_id,position,tag) VALUES (?,?,?)",revisionId,tagPosition++,tag.label());
+        jdbc.update("UPDATE articles SET working_revision_id=?,title=?,intro=?,conclusion=?,tags_json=?,reading_time_min=?,updated_at=?,version=version+1 WHERE article_id=?",
+                revisionId,draft.content().title().value(),draft.content().introduction().value(),draft.content().conclusion().value(),
+                tagsJson(draft),
+                readingTime,Timestamp.from(now),articleId);
     }
+    private String tagsJson(GeneratedArticleDraft draft) { try { return mapper.writeValueAsString(draft.tags().stream().map(t->t.label()).toList()); } catch (JsonProcessingException e) { throw new IllegalStateException("Cannot serialize article tags",e); } }
 }

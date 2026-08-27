@@ -7,5 +7,6 @@ import java.util.UUID;
 
 public record RequestArticleGenerationCommand(
         UUID commandId, Instant clientAt, UUID sagaId, UUID articleId, UUID revisionId,
-        String theme, String locale, ArticleAuthoringTrigger trigger
+        String theme, String slug, String locale, UUID authorId, String authorName,
+        ArticleAuthoringTrigger trigger
 ) implements Command { }

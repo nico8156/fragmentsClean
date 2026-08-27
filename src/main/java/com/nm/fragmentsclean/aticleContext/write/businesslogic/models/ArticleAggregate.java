@@ -43,6 +43,17 @@ public final class ArticleAggregate extends AggregateRoot {
         this.lifecycle = ArticleLifecycle.DRAFT;
     }
 
+    private ArticleAggregate(UUID articleId, String slug, String locale, UUID authorId,
+                             String authorName, Instant now) {
+        super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
+        this.slug = requireText(slug, "Le slug est obligatoire.");
+        this.locale = requireText(locale, "La locale est obligatoire.");
+        this.authorId = Objects.requireNonNull(authorId, "L'auteur est obligatoire.");
+        this.authorName = requireText(authorName, "Le nom de l'auteur est obligatoire.");
+        this.createdAt = Objects.requireNonNull(now, "La date de création est obligatoire.");
+        this.lifecycle = ArticleLifecycle.DRAFT;
+    }
+
     public static ArticleAggregate draft(UUID articleId,
                                          String slug,
                                          String locale,
@@ -51,6 +62,15 @@ public final class ArticleAggregate extends AggregateRoot {
                                          ArticleRevision workingRevision,
                                          Instant now) {
         return new ArticleAggregate(articleId, slug, locale, authorId, authorName, workingRevision, now);
+    }
+
+    public static ArticleAggregate awaitingGeneration(UUID articleId, String slug, String locale,
+                                                       UUID authorId, String authorName, Instant now) {
+        return new ArticleAggregate(articleId, slug, locale, authorId, authorName, now);
+    }
+
+    public boolean awaitsGeneratedRevision() {
+        return workingRevisionId == null && revisions.isEmpty() && lifecycle == ArticleLifecycle.DRAFT;
     }
 
     public void submitForReview(Instant now) {

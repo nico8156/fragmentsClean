@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleAuthoringSagaRepository;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleGenerationShellRepository;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleAggregate;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleGenerationRequestedEvent;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
@@ -16,13 +18,14 @@ import java.util.UUID;
 @Transactional
 public final class RequestArticleGenerationCommandHandler implements CommandHandler<RequestArticleGenerationCommand> {
     private final ArticleAuthoringSagaRepository sagas;
+    private final ArticleGenerationShellRepository articles;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;
     private final CommandStatusRecorder statuses;
 
-    public RequestArticleGenerationCommandHandler(ArticleAuthoringSagaRepository sagas, DomainEventPublisher events,
+    public RequestArticleGenerationCommandHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationShellRepository articles, DomainEventPublisher events,
                                                   DateTimeProvider clock, CommandStatusRecorder statuses) {
-        this.sagas = sagas; this.events = events; this.clock = clock; this.statuses = statuses;
+        this.sagas = sagas; this.articles = articles; this.events = events; this.clock = clock; this.statuses = statuses;
     }
 
     @Override public void execute(RequestArticleGenerationCommand command) {
@@ -30,6 +33,8 @@ public final class RequestArticleGenerationCommandHandler implements CommandHand
         if (statuses.isApplied(command.commandId())) return;
         if (sagas.byId(command.sagaId()).isPresent()) throw new IllegalStateException("Generation saga already exists");
         var now = clock.now();
+        articles.save(ArticleAggregate.awaitingGeneration(command.articleId(), command.slug(), command.locale(),
+                command.authorId(), command.authorName(), now));
         var saga = ArticleAuthoringSaga.request(command.sagaId(), command.articleId(), command.revisionId(),
                 command.theme(), command.trigger(), now);
         saga.enqueueGeneration(now);

@@ -324,6 +324,17 @@ is idempotent for an existing revision. A missing article is an explicit
 technical failure; the adapter does not create an article shell or bypass the
 article aggregate lifecycle.
 
+### Phase 12 Studio generation entry point
+
+The authenticated Studio entry point accepts only the editorial subject and
+locale. The admin ACL creates command, saga, article and revision identities,
+then dispatches one `RequestArticleGeneration` command. Its transaction creates
+an `ArticleAggregate` shell in `DRAFT`, persists the saga in
+`GENERATION_PENDING`, marks the command accepted and appends the generation
+event to the outbox. The generated revision later replaces the compatibility
+placeholder and becomes the article working revision; it is never published by
+generation.
+
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 
