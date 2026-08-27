@@ -350,4 +350,26 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(factory.from(deleted, IntegrationEventDestinations.COFFEES_EVENTS).eventType())
                 .isEqualTo("coffee.photo_deleted");
     }
+
+    @Test
+    void maps_photo_added_domain_value_objects_to_primitive_sqs_payload() {
+        var outbox = new OutboxEventJpaEntity(
+                "99999999-9999-9999-9999-999999999999",
+                "com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent",
+                "Coffee", "11111111-1111-1111-1111-111111111111", "coffee:11111111-1111-1111-1111-111111111111",
+                """
+                        {"eventId":"99999999-9999-9999-9999-999999999999","commandId":"88888888-8888-8888-8888-888888888888",
+                         "coffeeId":{"value":"11111111-1111-1111-1111-111111111111"},
+                         "photo":{"photoId":{"value":"22222222-2222-2222-2222-222222222222"},"photoUri":"s3://bucket/photo.jpg"},
+                         "version":4,"occurredAt":"2026-08-27T09:40:00Z","clientAt":"2026-08-27T09:39:00Z"}
+                        """,
+                Instant.parse("2026-08-27T09:40:00Z"), Instant.parse("2026-08-27T09:40:01Z"), OutboxStatus.PENDING, 0);
+
+        var payload = new IntegrationEventEnvelopeFactory()
+                .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS).payloadJson();
+
+        assertThat(payload).contains("\"coffeeId\":\"11111111-1111-1111-1111-111111111111\"")
+                .contains("\"photoId\":\"22222222-2222-2222-2222-222222222222\"")
+                .contains("s3://bucket/photo.jpg");
+    }
 }
