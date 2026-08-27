@@ -104,11 +104,38 @@ class BoundedContextArchitectureTest {
                 .isEmpty();
     }
 
+    @Test
+    void admin_primary_adapters_do_not_import_article_context() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("adminImportContext/adapters/primary")).stream()
+                .flatMap(file -> importsFrom(file).stream()
+                        .filter(imported -> imported.context().equals("aticleContext"))
+                        .map(imported -> violation(file, imported)))
+                .sorted().toList();
+
+        assertThat(violations)
+                .as("Studio controllers must call adminImportContext use cases and ports")
+                .isEmpty();
+    }
+
+    @Test
+    void article_domain_has_no_lombok_data_or_public_setters() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("aticleContext/write/businesslogic/models")).stream()
+                .filter(file -> fileContains(file, "@Data") || fileMatches(file, "public\\s+void\\s+set[A-Z]"))
+                .map(BoundedContextArchitectureTest::normalize).sorted().toList();
+
+        assertThat(violations)
+                .as("article domain objects expose behavior, not generic mutation")
+                .isEmpty();
+    }
+
     private static boolean isAllowedIntegrationEdge(String sourceContext, Path sourceFile, ImportedType imported) {
         String sourcePath = normalize(sourceFile);
         String importPath = imported.context() + "." + imported.importPath();
 
         if ("adminImportContext".equals(sourceContext)) {
+            if (sourcePath.contains("adminImportContext/adapters/secondary/gateways/article/")) {
+                return "aticleContext".equals(imported.context());
+            }
             return importPath.equals("coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand")
                     || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort")
                     || (sourcePath.endsWith("adminImportContext/adapters/secondary/gateways/article/CommandBusArticleAuthoringPort.java")
@@ -161,6 +188,14 @@ class BoundedContextArchitectureTest {
     private static boolean fileContains(Path file, String needle) {
         try {
             return Files.readString(file).contains(needle);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to read " + file, exception);
+        }
+    }
+
+    private static boolean fileMatches(Path file, String regex) {
+        try {
+            return Pattern.compile(regex).matcher(Files.readString(file)).find();
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to read " + file, exception);
         }

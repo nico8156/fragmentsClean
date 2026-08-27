@@ -18,24 +18,24 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArtic
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleGenerationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioGeneratedArticleEdit;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudioGeneratedArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
-import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReview;
-import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReviewQueryHandler;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ApproveArticlePublication;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleGenerationReview;
 
 @RestController
 @RequestMapping("/api/admin/studio/article-generations")
 public final class AdminStudioArticleGenerationController {
 	private final StartStudioArticleGeneration start;
-	private final GetArticleGenerationReviewQueryHandler reviews;
+	private final GetStudioArticleGenerationReview reviews;
 	private final EditStudioGeneratedArticle edit;
-	private final ApproveArticlePublication approve;
+	private final ApproveStudioArticlePublication approve;
 
 	public AdminStudioArticleGenerationController(
 			StartStudioArticleGeneration start,
-			GetArticleGenerationReviewQueryHandler reviews,
+			GetStudioArticleGenerationReview reviews,
 			EditStudioGeneratedArticle edit,
-			ApproveArticlePublication approve) {
+			ApproveStudioArticlePublication approve) {
 		this.start = start;
 		this.reviews = reviews;
 		this.edit = edit;
@@ -53,8 +53,8 @@ public final class AdminStudioArticleGenerationController {
 	}
 
 	@GetMapping("/{sagaId}")
-	public GetArticleGenerationReview review(@PathVariable UUID sagaId) {
-		return reviews.handle(sagaId);
+	public StudioArticleGenerationReview review(@PathVariable UUID sagaId) {
+		return reviews.execute(sagaId);
 	}
 
 	@PutMapping("/{sagaId}/revision")

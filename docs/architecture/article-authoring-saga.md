@@ -375,6 +375,17 @@ failed sagas and marks health `DEGRADED` when active saga states remain stale
 beyond the configured threshold. Metrics and health expose identifiers neither
 from articles nor from operators.
 
+### Phase 20 release hardening
+
+The Studio article controller depends only on `adminImportContext` models and
+use cases. Review reads, revision edits, generation requests and signed
+publication approval cross into `articleContext` through explicit secondary
+adapters. Architecture regression tests reject future direct imports from an
+admin primary adapter and protect the rich article domain from generic public
+setters or Lombok `@Data`. The final verification gate combines these boundary
+tests with the saga, scheduling, publication-capacity and notification suites
+before the accumulated branches are merged.
+
 ### Phase 15 review notification
 
 When the generation completion event is consumed from the `articles-events` SQS

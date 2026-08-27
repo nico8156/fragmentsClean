@@ -15,6 +15,8 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.goog
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GeneratedArticleEditingPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationReviewPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticlePublicationApprovalPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLogRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
@@ -32,6 +34,8 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStud
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudioGeneratedArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -74,6 +78,8 @@ public class AdminImportContextConfiguration {
 	@Bean StartStudioArticleGeneration startStudioArticleGeneration(ArticleGenerationAuthoringPort port, UuidGenerator ids, DateTimeProvider clock) { return new StartStudioArticleGeneration(port,ids,clock); }
 	@Bean GeneratedArticleEditingPort generatedArticleEditingPort(CommandBus commandBus){return new CommandBusGeneratedArticleEditingPort(commandBus);}
 	@Bean EditStudioGeneratedArticle editStudioGeneratedArticle(GeneratedArticleEditingPort port,UuidGenerator ids,DateTimeProvider clock){return new EditStudioGeneratedArticle(port,ids,clock);}
+	@Bean GetStudioArticleGenerationReview getStudioArticleGenerationReview(ArticleGenerationReviewPort port){return new GetStudioArticleGenerationReview(port);}
+	@Bean ApproveStudioArticlePublication approveStudioArticlePublication(ArticlePublicationApprovalPort port){return new ApproveStudioArticlePublication(port);}
 
 	@Bean
 	SubmitStudioArticle submitStudioArticle(
