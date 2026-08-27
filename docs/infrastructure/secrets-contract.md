@@ -26,7 +26,7 @@ Production uses the same structure with the `production` environment segment.
 | `/fragments/{env}/AUTH_JWT_SECRET` | Access/refresh token signing | Invalidates existing tokens if replaced |
 | `/fragments/{env}/ADMIN_SECURITY_TOKEN` | Legacy/admin transition token | Rotate after OAuth admin flow is confirmed |
 | `/fragments/{env}/GOOGLE_PLACES_API_KEY` | Google Places provider | Provider key rotation |
-| `/fragments/{env}/OPENAI_API_KEY` | Optional OCR/editorial provider | Provider key rotation |
+| `/fragments/{env}/OPENAI_API_KEY` | Required when editorial generation is enabled | Provider key rotation |
 | `/fragments/{env}/OPENAI_PROJECT_ID` | Optional provider project | Configuration change |
 
 Public OAuth client IDs and URLs are not secrets and remain build/runtime
@@ -67,6 +67,12 @@ These values are not application secrets:
 - Rotate JWT only through an explicit session-impacting change window.
 - Keep a rollback value available until the new health check passes.
 - Record parameter names, actor, time, and result; never record parameter values.
+
+The Fragments staging bootstrap reads `OPENAI_API_KEY` directly from SSM on the
+EC2 host, writes it only to the root-owned runtime `.env` under `umask 077`, and
+unsets the temporary shell variable immediately afterwards. It also enables the
+article OpenAI adapter and pins the configured text and image model names. The
+deployment scripts must never echo the generated `.env` file.
 
 ## Current staging KMS choice
 
