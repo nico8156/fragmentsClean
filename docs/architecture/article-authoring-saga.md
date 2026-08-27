@@ -309,8 +309,10 @@ model selection, credentials, retries, JSON schema and provider error mapping
 belong to the adapter.
 
 `ArticleGenerationRun` records attempts, safe provider metadata, schema version,
-timings and outcome. It does not make article lifecycle decisions. Generated
-content always creates or updates a working revision and never publishes it.
+timings and outcome. A successful attempt is stored separately as a normalized,
+versioned generation artifact before the saga reaches `READY_FOR_REVIEW`.
+Materialising that artifact into the relational article revision aggregate is a
+separate persistence step; generated content never publishes itself.
 
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.

@@ -10,8 +10,8 @@ import java.time.Instant;
 
 @Component
 public final class ArticleGenerationCompletionHandler {
-    private final ArticleAuthoringSagaRepository sagas; private final ArticleGenerationRunRepository runs; private final DomainEventPublisher events;
-    public ArticleGenerationCompletionHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationRunRepository runs, DomainEventPublisher events) { this.sagas=sagas; this.runs=runs; this.events=events; }
+    private final ArticleAuthoringSagaRepository sagas; private final ArticleGenerationRunRepository runs; private final ArticleGenerationArtifactRepository artifacts; private final DomainEventPublisher events;
+    public ArticleGenerationCompletionHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationRunRepository runs, ArticleGenerationArtifactRepository artifacts, DomainEventPublisher events) { this.sagas=sagas; this.runs=runs; this.artifacts=artifacts; this.events=events; }
     @Transactional
     public void complete(ArticleGenerationLeaseClaimer.Work work, String provider, String responseId, String model, String schemaVersion, GeneratedArticleDraft draft, Instant now) {
         if (draft == null) throw new IllegalArgumentException("Validated generation draft is required");
@@ -19,7 +19,8 @@ public final class ArticleGenerationCompletionHandler {
         var current=saga.snapshot();
         if (current.state()!=ArticleAuthoringSagaState.GENERATING || !work.run().workerId().equals(current.leaseOwner())) return;
         var run=runs.byId(work.run().runId()).orElseThrow(); run.succeed(provider,responseId,model,schemaVersion,now);
-        saga.startValidation(now); sagas.save(saga); runs.save(run);
+        artifacts.save(run.snapshot().runId(), current.sagaId(), current.articleId(), current.revisionId(), schemaVersion, draft);
+        saga.startValidation(now); saga.markReadyForReview(now); sagas.save(saga); runs.save(run);
         var s=saga.snapshot(); events.publish(new ArticleGenerationCompletedEvent(java.util.UUID.randomUUID(), s.sagaId(), s.articleId(), s.revisionId(), work.run().runId(), provider,responseId,model,schemaVersion,s.version(),now));
     }
 }

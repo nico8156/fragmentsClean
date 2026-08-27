@@ -646,3 +646,15 @@ create table if not exists article_generation_runs (
     unique (saga_id, attempt)
 );
 create index if not exists idx_article_generation_run_saga on article_generation_runs(saga_id, attempt);
+
+-- Normalized provider output awaiting relational revision materialisation.
+create table if not exists article_generation_artifacts (
+    run_id uuid primary key references article_generation_runs(run_id),
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    article_id uuid not null,
+    revision_id uuid not null,
+    schema_version varchar(64) not null,
+    draft_json text not null,
+    created_at timestamptz not null
+);
+create unique index if not exists uq_article_generation_artifact_revision on article_generation_artifacts(revision_id);
