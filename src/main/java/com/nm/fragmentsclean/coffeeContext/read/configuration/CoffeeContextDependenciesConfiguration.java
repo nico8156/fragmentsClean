@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.read.configuration;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedProcessManager;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
@@ -14,6 +15,7 @@ import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.stor
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionSource;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoStorage;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlacePhotosGateway;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlaceOpeningHoursGateway;
@@ -109,6 +111,14 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeCreatedEventHandler(projectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeeCreatedIntegrationEventHandler coffeeCreatedIntegrationEventHandler(
+			CoffeeProjectionSource projectionSource,
+			CoffeeProjectionRepository projectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeeCreatedIntegrationEventHandler(projectionSource, projectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean

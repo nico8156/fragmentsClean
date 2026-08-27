@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +45,7 @@ public class AdminStudioArticlesController {
 	private final ObjectMapper objectMapper;
 	private final RecordAdminAudit recordAdminAudit;
 
+	@Autowired
 	public AdminStudioArticlesController(
 			SubmitStudioArticle submitStudioArticle,
 			StoreStudioArticleImage storeStudioArticleImage,

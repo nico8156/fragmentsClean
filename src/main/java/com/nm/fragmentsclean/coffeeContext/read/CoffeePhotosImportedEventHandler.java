@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.read;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
@@ -25,15 +26,26 @@ public class CoffeePhotosImportedEventHandler implements EventHandler<CoffeePhot
 	@Transactional
 	public void handle(CoffeePhotosImportedEvent event) {
 		var coffeeId = event.coffeeId().value();
-		projectionRepository.replaceForCoffee(coffeeId, event.photos().stream()
+		replace(coffeeId, event.photos().stream()
 				.map(photo -> new CoffeePhotoView(photo.photoId(), coffeeId, photo.photoUri()))
-				.toList());
+				.toList(), event.version(), event.occurredAt());
+	}
+
+	public void handle(CoffeePhotosImportedIntegrationEvent event) {
+		replace(event.coffeeId(), event.photos().stream()
+				.map(photo -> new CoffeePhotoView(photo.photoId(), event.coffeeId(), photo.photoUri()))
+				.toList(), event.version(), event.occurredAt());
+	}
+
+	private void replace(java.util.UUID coffeeId, java.util.List<CoffeePhotoView> photos, long version,
+			java.time.Instant occurredAt) {
+		projectionRepository.replaceForCoffee(coffeeId, photos);
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),
-				event.version(),
-				event.occurredAt(),
+				version,
+				occurredAt,
 				List.of("photos")));
 	}
 }

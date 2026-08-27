@@ -20,6 +20,7 @@ public class GoogleOAuthProperties {
     /** Client ID and redirect URI dedicated to the browser-based Studio PKCE flow. */
     private String studioClientId;
     private String studioRedirectUri;
+    private String studioClientSecret;
 
     /**
      * Endpoint token Google.
@@ -44,6 +45,9 @@ public class GoogleOAuthProperties {
 
     public String getStudioRedirectUri() { return studioRedirectUri; }
     public void setStudioRedirectUri(String studioRedirectUri) { this.studioRedirectUri = studioRedirectUri; }
+
+    public String getStudioClientSecret() { return studioClientSecret; }
+    public void setStudioClientSecret(String studioClientSecret) { this.studioClientSecret = studioClientSecret; }
 
     public String getTokenUri() { return tokenUri; }
     public void setTokenUri(String tokenUri) { this.tokenUri = tokenUri; }

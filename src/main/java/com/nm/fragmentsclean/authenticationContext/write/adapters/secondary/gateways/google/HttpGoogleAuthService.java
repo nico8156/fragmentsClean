@@ -38,6 +38,7 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 				redirectUri,
 				properties.getMobileIosClientId(),
 				properties.getMobileIosRedirectUri(),
+				null,
 				"google.oauth.mobile-ios-client-id",
 				"google.oauth.mobile-ios-redirect-uri");
 		return fetchGoogleUser(tokenResponse);
@@ -54,6 +55,7 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 				redirectUri,
 				properties.getStudioClientId(),
 				properties.getStudioRedirectUri(),
+				properties.getStudioClientSecret(),
 				"google.oauth.studio-client-id",
 				"google.oauth.studio-redirect-uri");
 		return fetchGoogleUser(tokenResponse);
@@ -84,6 +86,7 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 			String redirectUri,
 			String clientIdValue,
 			String expectedRedirectValue,
+			String clientSecretValue,
 			String clientIdProperty,
 			String redirectProperty) {
 		String clientId = requireConfigured(clientIdValue, clientIdProperty);
@@ -104,6 +107,9 @@ public class HttpGoogleAuthService implements GoogleAuthService {
 		form.add("redirect_uri", expectedRedirectUri);
 		form.add("code_verifier", codeVerifier);
 		form.add("grant_type", "authorization_code");
+		if (clientSecretValue != null) {
+			form.add("client_secret", requireConfigured(clientSecretValue, "google.oauth.studio-client-secret"));
+		}
 		HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
 
 		ResponseEntity<GoogleTokenResponse> response = restTemplate.postForEntity(url, entity,

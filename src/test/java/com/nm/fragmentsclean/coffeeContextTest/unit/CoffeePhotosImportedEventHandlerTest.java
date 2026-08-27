@@ -16,6 +16,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhot
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.ImportedCoffeePhoto;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 
@@ -54,6 +55,23 @@ class CoffeePhotosImportedEventHandlerTest {
 		assertThat(syncEvent.entityId()).isEqualTo(event.coffeeId().value().toString());
 		assertThat(syncEvent.version()).isEqualTo(event.version());
 		assertThat(syncEvent.hints()).containsExactly("photos");
+	}
+
+	@Test
+	void replaces_photo_projection_from_primitive_sqs_contract() {
+		var repository = new RecordingPhotoProjectionRepository();
+		var syncPublisher = new RecordingProjectionSyncPublisher();
+		var handler = new CoffeePhotosImportedEventHandler(repository, syncPublisher);
+		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+		var photoId = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
+
+		handler.handle(new CoffeePhotosImportedIntegrationEvent(
+			UUID.randomUUID(), UUID.randomUUID(), coffeeId,
+			List.of(new CoffeePhotosImportedIntegrationEvent.PhotoReference(photoId, "s3://bucket/photo.jpg")),
+			12, Instant.parse("2026-07-04T10:20:00Z"), Instant.parse("2026-07-04T10:19:59Z")));
+
+		assertThat(repository.replacedCoffeeIds).containsExactly(coffeeId);
+		assertThat(repository.replacedPhotos).containsExactly(new CoffeePhotoView(photoId, coffeeId, "s3://bucket/photo.jpg"));
 	}
 
 	private static CoffeePhotosImportedEvent photosImportedEvent(List<ImportedCoffeePhoto> photos) {

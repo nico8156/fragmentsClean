@@ -8,6 +8,8 @@
 .DS_Store
 .env
 target
+!target/
+!target/fragmentsClean-0.0.1-SNAPSHOT.jar
 docker-postgresql-data-for-dev
 **/docker-postgresql-data-for-dev
 **/postgres-data
