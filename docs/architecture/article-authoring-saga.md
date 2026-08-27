@@ -147,6 +147,27 @@ Exceptional terminal states are `REJECTED`, `FAILED`, `EXPIRED`, and
 `CANCELLED`. Every transition is explicit and tested. Arbitrary state setters
 are forbidden.
 
+### Phase 9 implementation boundary
+
+The first orchestration slice is wired through the existing command bus and
+`articles-events` SQS destination:
+
+```text
+RequestArticleGeneration
+-> saga GENERATION_PENDING + command status + outbox
+-> inbox idempotence
+-> short lease transaction
+-> OpenAI call outside the transaction
+-> run SUCCEEDED + saga VALIDATING + completion outbox event
+```
+
+Each attempt is recorded in `article_generation_runs` with its worker lease,
+provider response metadata and schema version. The generated domain draft is
+validated by the provider boundary, but is deliberately not copied into this
+technical attempt table. Materialising it into an article revision is the next
+phase; this slice therefore cannot yet send the review email or expose a
+ready-to-review article in Studio.
+
 The persisted saga records only coordination information:
 
 - saga, article and revision identifiers;

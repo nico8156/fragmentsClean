@@ -11,6 +11,8 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegra
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationRequestedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.nio.charset.StandardCharsets;
@@ -52,6 +54,19 @@ public class IntegrationEventPayloadMapper {
                         longValue(node, "version"),
                         instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                         instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.generation.requested" -> new ArticleGenerationRequestedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "sagaId", event.getAggregateId()), uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()), text(node, "theme"), text(node, "locale"),
+                        text(node, "trigger"), longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.generation.completed" -> new ArticleGenerationCompletedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "sagaId", event.getAggregateId()), uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()), uuidOrFallback(node, "runId", event.getEventId()),
+                        text(node, "provider"), text(node, "providerResponseId"), text(node, "model"), text(node, "schemaVersion"),
+                        longValue(node, "sagaVersion"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
                 default -> null;
             };
 

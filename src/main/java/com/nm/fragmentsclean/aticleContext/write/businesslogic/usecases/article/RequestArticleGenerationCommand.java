@@ -1,0 +1,11 @@
+package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article;
+
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+import java.time.Instant;
+import java.util.UUID;
+
+public record RequestArticleGenerationCommand(
+        UUID commandId, Instant clientAt, UUID sagaId, UUID articleId, UUID revisionId,
+        String theme, String locale, ArticleAuthoringTrigger trigger
+) implements Command { }

@@ -63,6 +63,14 @@ public final class ArticleAuthoringSaga {
         }
     }
     public void startValidation(Instant now) { transition(ArticleAuthoringSagaState.GENERATING, ArticleAuthoringSagaState.VALIDATING, now); clearLease(); }
+    public void retryGeneration(ArticleAuthoringFailureCategory category, Instant now) {
+        Objects.requireNonNull(category, "category");
+        if (state != ArticleAuthoringSagaState.GENERATING) reject("Cannot retry generation from " + state);
+        state = ArticleAuthoringSagaState.GENERATION_PENDING;
+        failureCategory = category;
+        clearLease();
+        touch(now);
+    }
     public void markReadyForReview(Instant now) { transition(ArticleAuthoringSagaState.VALIDATING, ArticleAuthoringSagaState.READY_FOR_REVIEW, now); }
     public void requestNotification(Instant now) { transition(ArticleAuthoringSagaState.READY_FOR_REVIEW, ArticleAuthoringSagaState.NOTIFICATION_PENDING, now); }
     public void markNotified(Instant now) { transition(ArticleAuthoringSagaState.NOTIFICATION_PENDING, ArticleAuthoringSagaState.NOTIFIED, now); }

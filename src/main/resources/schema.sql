@@ -626,3 +626,23 @@ create table if not exists article_authoring_sagas (
 create unique index if not exists uq_article_authoring_saga_revision on article_authoring_sagas(revision_id);
 create index if not exists idx_article_authoring_saga_state on article_authoring_sagas(state, updated_at);
 create index if not exists idx_article_authoring_saga_lease on article_authoring_sagas(lease_until);
+
+-- One immutable attempt record per saga attempt; provider payload is not stored here.
+create table if not exists article_generation_runs (
+    run_id uuid primary key,
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    attempt integer not null,
+    worker_id varchar(128) not null,
+    status varchar(16) not null,
+    provider_response_id varchar(256),
+    provider varchar(64),
+    model varchar(128),
+    schema_version varchar(64),
+    failure_category varchar(32),
+    started_at timestamptz not null,
+    completed_at timestamptz,
+    constraint article_generation_run_attempt_ck check (attempt > 0),
+    constraint article_generation_run_status_ck check (status in ('STARTED','SUCCEEDED','FAILED')),
+    unique (saga_id, attempt)
+);
+create index if not exists idx_article_generation_run_saga on article_generation_runs(saga_id, attempt);
