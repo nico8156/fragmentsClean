@@ -110,6 +110,11 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 		return jdbcTemplate.query(filteredSql, this::mapRow);
 	}
 
+	@Override
+	public List<CoffeeSummaryView> findAll() {
+		return findAll(true);
+	}
+
 	// ----------------- private -----------------
 
 	private void upsert(
