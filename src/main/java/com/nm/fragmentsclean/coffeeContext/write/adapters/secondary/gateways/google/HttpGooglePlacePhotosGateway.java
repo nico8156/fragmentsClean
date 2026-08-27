@@ -19,6 +19,7 @@ import java.util.Objects;
 @Component
 public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 	private static final String PLACE_FIELD_MASK = "photos";
+	private static final int MAX_IMPORT_LIMIT = 15;
 
 	private final RestTemplate restTemplate;
 	private final String apiKey;
@@ -35,14 +36,14 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 			@Value("${google.places.language-code:fr}") String languageCode,
 			@Value("${google.places.region-code:FR}") String regionCode,
 			@Value("${google.places.photo-max-width-px:1200}") int maxWidthPx,
-			@Value("${google.places.photo-import-limit:3}") int importLimit) {
+			@Value("${google.places.photo-import-limit:15}") int importLimit) {
 		this.restTemplate = restTemplate;
 		this.apiKey = apiKey;
 		this.baseUrl = baseUrl;
 		this.languageCode = languageCode;
 		this.regionCode = regionCode;
 		this.maxWidthPx = maxWidthPx;
-		this.importLimit = importLimit;
+		this.importLimit = Math.min(Math.max(importLimit, 0), MAX_IMPORT_LIMIT);
 	}
 
 	@Override
@@ -56,7 +57,7 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 				.map(Photo::name)
 				.map(this::blankToNull)
 				.filter(Objects::nonNull)
-				.limit(Math.max(importLimit, 0))
+				.limit(importLimit)
 				.map(this::downloadPhoto)
 				.toList();
 	}

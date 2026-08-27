@@ -6,6 +6,9 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -63,6 +66,48 @@ class HttpGooglePlacePhotosGatewayTest {
 		assertThat(photos.getFirst().sourceName()).isEqualTo("places/ChIJ-place/photos/photo-1");
 		assertThat(photos.getFirst().contentType()).isEqualTo("image/jpeg");
 		assertThat(photos.getFirst().bytes()).isEqualTo("jpeg-bytes".getBytes());
+		server.verify();
+	}
+
+	@Test
+	void caps_google_place_photo_import_at_fifteen() {
+		var restTemplate = new RestTemplate();
+		var server = MockRestServiceServer.createServer(restTemplate);
+		var gateway = new HttpGooglePlacePhotosGateway(
+				restTemplate,
+				"test-api-key",
+				"https://places.googleapis.com/v1",
+				"fr",
+				"FR",
+				900,
+				20);
+		var photoNames = IntStream.rangeClosed(1, 16)
+				.mapToObj(index -> "places/ChIJ-place/photos/photo-" + index)
+				.toList();
+		var responseBody = "{\"photos\":[" + photoNames.stream()
+				.map(name -> "{\"name\":\"" + name + "\"}")
+				.collect(Collectors.joining(",")) + "]}";
+
+		server.expect(requestTo("https://places.googleapis.com/v1/places/ChIJ-place?languageCode=fr&regionCode=FR"))
+				.andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+
+		photoNames.stream().limit(15).forEach(photoName -> {
+			var photoIndex = photoName.substring(photoName.lastIndexOf('-') + 1);
+			server.expect(requestTo("https://places.googleapis.com/v1/" + photoName + "/media?maxWidthPx=900&skipHttpRedirect=true"))
+					.andRespond(withSuccess("""
+							{
+							  "name": "%s/media",
+							  "photoUri": "https://lh3.googleusercontent.com/photo-%s"
+							}
+							""".formatted(photoName, photoIndex), MediaType.APPLICATION_JSON));
+			server.expect(requestTo("https://lh3.googleusercontent.com/photo-" + photoIndex))
+					.andRespond(withSuccess(("jpeg-bytes-" + photoIndex).getBytes(), MediaType.IMAGE_JPEG));
+		});
+
+		var photos = gateway.findPhotos(new GooglePlaceId("ChIJ-place"));
+
+		assertThat(photos).hasSize(15);
+		assertThat(photos.getLast().sourceName()).isEqualTo("places/ChIJ-place/photos/photo-15");
 		server.verify();
 	}
 }

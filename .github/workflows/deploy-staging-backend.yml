@@ -41,7 +41,7 @@ jobs:
       - name: Test backend deployment guard
         run: |
           ./mvnw -q \
-            -Dtest=BoundedContextArchitectureTest,StoragePresignerWiringTest,CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,IntegrationEventDestinationResolverTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,BusHandlerRegistrationListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
+            -Dtest=BoundedContextArchitectureTest,StoragePresignerWiringTest,CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,IntegrationEventDestinationResolverTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,BusHandlerRegistrationListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,HttpGooglePlacePhotosGatewayTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
             test
 
       - name: Package backend
