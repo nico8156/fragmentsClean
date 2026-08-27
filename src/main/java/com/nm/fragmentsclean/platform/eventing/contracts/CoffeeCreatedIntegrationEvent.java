@@ -17,4 +17,10 @@ public record CoffeeCreatedIntegrationEvent(
 		int version,
 		Instant occurredAt
 ) {
+	public CoffeeCreatedIntegrationEvent(UUID eventId, UUID commandId, UUID coffeeId, String googlePlaceId,
+			String name, String addressLine1, String city, String postalCode, String country, int version,
+			Instant occurredAt) {
+		this(eventId, commandId, coffeeId, googlePlaceId, name, addressLine1, city, postalCode, country,
+				"PUBLISHED", version, occurredAt);
+	}
 }

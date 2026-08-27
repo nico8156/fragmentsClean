@@ -8,7 +8,6 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.ImportedGoo
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublicationStatus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 
 public class ImportGooglePlaceCoffee {
@@ -48,7 +47,7 @@ public class ImportGooglePlaceCoffee {
 				preview.website(),
 				List.of("google-places"),
 				now,
-				CoffeePublicationStatus.DRAFT
+				"DRAFT"
 		);
 
 		var result = coffeeCreationPort.createCoffee(command);

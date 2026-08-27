@@ -15,12 +15,12 @@ public interface CoffeeProjectionRepository {
 
 	void deleteByCoffeeId(UUID coffeeId);
 
-	void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt);
-	void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt);
+	default void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt) { }
+	default void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt) { }
 
-	List<CoffeeSummaryView> findAll(boolean publishedOnly);
+	List<CoffeeSummaryView> findAll();
 
-	default List<CoffeeSummaryView> findAll() { return findAll(true); }
+	default List<CoffeeSummaryView> findAll(boolean publishedOnly) { return findAll(); }
 
 	// ✅ seed : insert direct d'une view (idempotent via ON CONFLICT)
 	void insertSeed(CoffeeSummaryView view);

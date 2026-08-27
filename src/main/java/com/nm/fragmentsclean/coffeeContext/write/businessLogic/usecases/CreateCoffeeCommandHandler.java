@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublicationStatus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -88,7 +89,7 @@ public class CreateCoffeeCommandHandler implements CommandHandler<CreateCoffeeCo
                 website,
                 tags,
                 now,
-                command.publicationStatus()
+                CoffeePublicationStatus.valueOf(command.publicationStatus() == null ? "PUBLISHED" : command.publicationStatus())
         );
 
         // 4) Persister
