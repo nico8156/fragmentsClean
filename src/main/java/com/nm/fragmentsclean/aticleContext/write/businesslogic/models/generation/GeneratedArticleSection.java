@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generatio
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleParagraph;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleSection;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleImageRef;
 
 import java.util.Objects;
 
@@ -19,4 +20,5 @@ public final class GeneratedArticleSection {
     }
     public ArticleSection content() { return content; }
     public ArticleVisualBrief visualBrief() { return visualBrief; }
+    public GeneratedArticleSection withImage(ArticleImageRef image) { return new GeneratedArticleSection(content.withImage(image), visualBrief); }
 }

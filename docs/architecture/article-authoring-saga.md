@@ -335,6 +335,15 @@ event to the outbox. The generated revision later replaces the compatibility
 placeholder and becomes the article working revision; it is never published by
 generation.
 
+### Phase 13 generated media
+
+After text generation and before the completion transaction, the media service
+generates one portrait cover and one landscape image per section. Stable image
+identities derive from the saga and media slot, so a retry overwrites the same
+S3 keys instead of creating orphan variants. Provider calls and S3 writes occur
+outside database transactions. Only Fragments-owned storage references enter
+the article revision; provider bytes and temporary URLs are never persisted.
+
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 

@@ -15,6 +15,7 @@ public final class ArticleGenerationCompletionHandler {
     @Transactional
     public void complete(ArticleGenerationLeaseClaimer.Work work, String provider, String responseId, String model, String schemaVersion, GeneratedArticleDraft draft, Instant now) {
         if (draft == null) throw new IllegalArgumentException("Validated generation draft is required");
+        if (draft.coverImage()==null || draft.sections().stream().anyMatch(section->section.content().images().size()!=1)) throw new IllegalArgumentException("Generated article media is incomplete");
         var saga=sagas.byId(work.saga().sagaId()).orElseThrow();
         var current=saga.snapshot();
         if (current.state()!=ArticleAuthoringSagaState.GENERATING || !work.run().workerId().equals(current.leaseOwner())) return;

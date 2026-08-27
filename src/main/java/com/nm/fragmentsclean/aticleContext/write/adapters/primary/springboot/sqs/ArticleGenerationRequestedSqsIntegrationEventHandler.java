@@ -24,17 +24,19 @@ public final class ArticleGenerationRequestedSqsIntegrationEventHandler implemen
     private final SqsIntegrationEventPayloadReader payloadReader;
     private final ArticleGenerationLeaseClaimer claimer;
     private final ArticleGenerationProvider provider;
+    private final com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleGeneratedMediaService media;
     private final ArticleGenerationCompletionHandler completer;
 
     public ArticleGenerationRequestedSqsIntegrationEventHandler(SqsIntegrationEventPayloadReader payloadReader,
-            ArticleGenerationLeaseClaimer claimer, ArticleGenerationProvider provider, ArticleGenerationCompletionHandler completer) {
-        this.payloadReader=payloadReader; this.claimer=claimer; this.provider=provider; this.completer=completer;
+            ArticleGenerationLeaseClaimer claimer, ArticleGenerationProvider provider, com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleGeneratedMediaService media, ArticleGenerationCompletionHandler completer) {
+        this.payloadReader=payloadReader; this.claimer=claimer; this.provider=provider; this.media=media; this.completer=completer;
     }
     @Override public SqsIntegrationEventRoute route() { return new SqsIntegrationEventRoute(ARTICLES_EVENTS, "article.generation.requested"); }
     @Override public void handle(IntegrationEventEnvelope envelope) {
         var request=payloadReader.read(envelope, ArticleGenerationRequestedIntegrationEvent.class);
         var now=Instant.now(); var work=claimer.claim(request.sagaId(), "article-generation-"+UUID.randomUUID(), now, Duration.ofMinutes(5));
         var result=provider.generate(new ArticleGenerationProvider.Request(request.sagaId(), ArticleSubject.from(request.theme()), request.locale()));
-        completer.complete(work, "openai", result.providerResponseId(), result.model(), result.schemaVersion(), result.draft(), Instant.now());
+        var enriched=media.generate(request.sagaId(),request.articleId(),result.draft());
+        completer.complete(work, "openai", result.providerResponseId(), result.model(), result.schemaVersion(), enriched, Instant.now());
     }
 }
