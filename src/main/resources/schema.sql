@@ -282,7 +282,95 @@ CREATE TABLE IF NOT EXISTS articles (
                           published_at      TIMESTAMPTZ,
 
                           status            VARCHAR(32)    NOT NULL,
-                          version           BIGINT         NOT NULL
+                          version           BIGINT         NOT NULL,
+
+                          -- Compatibility pointers used during revision migration.
+                          working_revision_id   UUID,
+                          published_revision_id UUID
+);
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS working_revision_id UUID;
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS published_revision_id UUID;
+
+CREATE TABLE IF NOT EXISTS article_revisions (
+    revision_id       UUID PRIMARY KEY,
+    article_id        UUID         NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE,
+    revision_number   INTEGER      NOT NULL,
+    title             TEXT         NOT NULL,
+    introduction      TEXT         NOT NULL,
+    conclusion        TEXT         NOT NULL,
+    cover_reference   TEXT,
+    cover_width       INTEGER,
+    cover_height      INTEGER,
+    cover_alt         TEXT,
+    reading_time_min  INTEGER      NOT NULL,
+    status            VARCHAR(32)  NOT NULL,
+    created_at        TIMESTAMPTZ  NOT NULL,
+    updated_at        TIMESTAMPTZ  NOT NULL,
+    published_at      TIMESTAMPTZ,
+    version           BIGINT       NOT NULL,
+
+    CONSTRAINT uq_article_revision_number UNIQUE (article_id, revision_number),
+    CONSTRAINT ck_article_revision_cover_dimensions CHECK (
+        (cover_reference IS NULL AND cover_width IS NULL AND cover_height IS NULL AND cover_alt IS NULL)
+        OR (cover_reference IS NOT NULL AND cover_width > 0 AND cover_height > 0 AND cover_alt IS NOT NULL)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_article_revisions_article_updated
+    ON article_revisions (article_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS article_revision_sections (
+    section_id   UUID PRIMARY KEY,
+    revision_id  UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    position     INTEGER      NOT NULL,
+    heading      VARCHAR(140) NOT NULL,
+
+    CONSTRAINT uq_article_revision_section_position UNIQUE (revision_id, position),
+    CONSTRAINT ck_article_revision_section_position CHECK (position >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS article_revision_paragraphs (
+    paragraph_id UUID PRIMARY KEY,
+    section_id   UUID         NOT NULL REFERENCES article_revision_sections(section_id) ON DELETE CASCADE,
+    position     INTEGER      NOT NULL,
+    body         TEXT         NOT NULL,
+
+    CONSTRAINT uq_article_section_paragraph_position UNIQUE (section_id, position),
+    CONSTRAINT ck_article_revision_paragraph_position CHECK (position >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS article_revision_images (
+    image_id           UUID PRIMARY KEY,
+    revision_id        UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    section_id         UUID         REFERENCES article_revision_sections(section_id) ON DELETE CASCADE,
+    position           INTEGER      NOT NULL,
+    storage_reference  TEXT         NOT NULL,
+    width              INTEGER      NOT NULL,
+    height             INTEGER      NOT NULL,
+    alt                TEXT         NOT NULL,
+    source             VARCHAR(64),
+    attribution        TEXT,
+
+    CONSTRAINT uq_article_revision_image_position UNIQUE (revision_id, section_id, position),
+    CONSTRAINT ck_article_revision_image_position CHECK (position >= 0),
+    CONSTRAINT ck_article_revision_image_dimensions CHECK (width > 0 AND height > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_article_revision_images_revision
+    ON article_revision_images (revision_id, section_id, position);
+
+CREATE TABLE IF NOT EXISTS article_revision_tags (
+    revision_id UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    position    INTEGER      NOT NULL,
+    tag         VARCHAR(80)  NOT NULL,
+
+    PRIMARY KEY (revision_id, position),
+    CONSTRAINT uq_article_revision_tag_value UNIQUE (revision_id, tag),
+    CONSTRAINT ck_article_revision_tag_position CHECK (position >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS articles_projection (
