@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.aticleContext.read.ArticleGenerationReviewReader;
 import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReview;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewEmail;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewEmailPort;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalIssuer;
 
 class ArticleReviewEmailNotificationServiceTest {
 	@Test
@@ -21,6 +22,7 @@ class ArticleReviewEmailNotificationServiceTest {
 		UUID articleId = UUID.randomUUID();
 		UUID revisionId = UUID.randomUUID();
 		var sent = new EmailPortFake();
+		ArticleReviewApprovalIssuer approvalToken = (saga, article, revision, now) -> "approval-token";
 		var service = new ArticleReviewEmailNotificationService(
 				new ReviewReaderFake(review(sagaId, articleId, revisionId)),
 				sent,
@@ -29,12 +31,13 @@ class ArticleReviewEmailNotificationServiceTest {
 						"studio@anchor-event.fr",
 						"nmaldiney@gmail.com",
 						"https://studio-staging.anchor-event.fr",
-						"eu-west-3"));
+						"eu-west-3"),
+				approvalToken);
 
 		service.notifyReviewReady(sagaId, articleId, revisionId);
 
 		assertEquals("article-review:" + sagaId + ":" + revisionId, sent.email.idempotencyKey());
-		assertTrue(sent.email.htmlBody().contains("https://studio-staging.anchor-event.fr/?articleGenerationSagaId=" + sagaId));
+		assertTrue(sent.email.htmlBody().contains("https://studio-staging.anchor-event.fr/?articleApprovalToken=approval-token"));
 		assertTrue(sent.email.htmlBody().contains("https://cdn.example.test/cover.png"));
 		assertTrue(sent.email.htmlBody().contains("&lt;script&gt;"));
 	}

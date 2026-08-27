@@ -41,3 +41,13 @@ The application consumes the existing platform runtime role permission. The
 sender must remain `studio@anchor-event.fr` (or another verified SES identity)
 and the sandbox recipient must remain verified until SES production access is
 granted.
+
+The approval token signing secret is a separate runtime secret:
+
+```text
+EDITORIAL_APPROVAL_SECRET=<generated-high-entropy-secret>
+EDITORIAL_APPROVAL_TTL=PT24H
+```
+
+It must not be placed in GitHub variables, the Studio bundle, an email body, or
+the repository. The email only carries the signed token in the Studio link.

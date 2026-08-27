@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReview;
 import com.nm.fragmentsclean.aticleContext.read.ArticleGenerationReviewReader;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewEmail;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewEmailPort;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalIssuer;
 
 @Component
 @ConditionalOnBean(ArticleReviewEmailPort.class)
@@ -16,14 +17,17 @@ public final class ArticleReviewEmailNotificationService {
 	private final ArticleGenerationReviewReader reviews;
 	private final ArticleReviewEmailPort emailPort;
 	private final ArticleReviewEmailProperties properties;
+	private final ArticleReviewApprovalIssuer approvalTokens;
 
 	public ArticleReviewEmailNotificationService(
 			ArticleGenerationReviewReader reviews,
 			ArticleReviewEmailPort emailPort,
-			ArticleReviewEmailProperties properties) {
+			ArticleReviewEmailProperties properties,
+			ArticleReviewApprovalIssuer approvalTokens) {
 		this.reviews = reviews;
 		this.emailPort = emailPort;
 		this.properties = properties;
+		this.approvalTokens = approvalTokens;
 	}
 
 	public void notifyReviewReady(UUID sagaId, UUID articleId, UUID revisionId) {
@@ -36,7 +40,8 @@ public final class ArticleReviewEmailNotificationService {
 		}
 
 		String subject = "Article prêt à relire : " + review.subject();
-		String studioUrl = properties.studioBaseUrl() + "/?articleGenerationSagaId=" + sagaId;
+		String approvalToken = approvalTokens.issue(sagaId, articleId, revisionId, review.updatedAt());
+		String studioUrl = properties.studioBaseUrl() + "/?articleApprovalToken=" + approvalToken;
 		emailPort.send(new ArticleReviewEmail(
 				"article-review:" + sagaId + ":" + revisionId,
 				properties.recipient(),

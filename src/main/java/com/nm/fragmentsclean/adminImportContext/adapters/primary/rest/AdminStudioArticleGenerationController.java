@@ -21,6 +21,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudi
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
 import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReview;
 import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReviewQueryHandler;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ApproveArticlePublication;
 
 @RestController
 @RequestMapping("/api/admin/studio/article-generations")
@@ -28,14 +29,17 @@ public final class AdminStudioArticleGenerationController {
 	private final StartStudioArticleGeneration start;
 	private final GetArticleGenerationReviewQueryHandler reviews;
 	private final EditStudioGeneratedArticle edit;
+	private final ApproveArticlePublication approve;
 
 	public AdminStudioArticleGenerationController(
 			StartStudioArticleGeneration start,
 			GetArticleGenerationReviewQueryHandler reviews,
-			EditStudioGeneratedArticle edit) {
+			EditStudioGeneratedArticle edit,
+			ApproveArticlePublication approve) {
 		this.start = start;
 		this.reviews = reviews;
 		this.edit = edit;
+		this.approve = approve;
 	}
 
 	@PostMapping
@@ -59,6 +63,11 @@ public final class AdminStudioArticleGenerationController {
 			@RequestBody EditRequest body) {
 		UUID commandId = edit.execute(body.toModel(sagaId));
 		return ResponseEntity.accepted().body(new CommandAccepted(commandId));
+	}
+
+	@PostMapping("/approvals/{token}/publish")
+	public ResponseEntity<CommandAccepted> approve(@PathVariable String token) {
+		return ResponseEntity.accepted().body(new CommandAccepted(approve.execute(token)));
 	}
 
 	public record Request(String subject, String locale) {

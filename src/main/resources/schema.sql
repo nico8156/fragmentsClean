@@ -658,3 +658,20 @@ create table if not exists article_generation_artifacts (
     created_at timestamptz not null
 );
 create unique index if not exists uq_article_generation_artifact_revision on article_generation_artifacts(revision_id);
+
+-- Single-use, revision-bound publication approvals. Only the token hash is stored.
+create table if not exists article_review_approvals (
+    approval_id uuid primary key,
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    article_id uuid not null,
+    revision_id uuid not null,
+    token_hash varchar(128) not null unique,
+    expires_at timestamptz not null,
+    consumed_at timestamptz,
+    created_at timestamptz not null,
+    constraint article_review_approval_expiry_ck check (expires_at > created_at)
+);
+create unique index if not exists uq_article_review_approval_revision
+    on article_review_approvals(saga_id, revision_id);
+create index if not exists idx_article_review_approval_expiry
+    on article_review_approvals(expires_at, consumed_at);

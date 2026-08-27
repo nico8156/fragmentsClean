@@ -371,6 +371,20 @@ application port. Inbox claim protects duplicate SQS deliveries. The email
 identity and runtime `ses:SendEmail` permission remain owned by the separate
 staging SES CloudFormation stack.
 
+### Phase 16 publication approval
+
+The review link contains a signed, revision-bound approval token. Its payload
+contains only the saga, article, revision and expiry identifiers; the database
+stores a SHA-256 hash rather than the token itself. The approval record is
+consumed atomically before dispatching `PublishArticleRevisionCommand` inside
+the same application transaction. A second request, an expired token, a
+tampered token, or a stale revision is rejected.
+
+Opening the email link never publishes. It opens Studio with a confirmation
+screen, and only the explicit confirmation button calls the authenticated
+`POST` approval endpoint. Publication therefore keeps the existing command
+status, transactional outbox and mobile projection flow.
+
 ## Media ownership
 
 Durable article media references point to Fragments-owned storage. Each image
