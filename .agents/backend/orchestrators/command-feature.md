@@ -21,7 +21,10 @@ Use this when a backend feature changes state inside one bounded context.
 6. Persist aggregate and outbox in the same transaction.
 7. Add integration coverage if persistence/outbox is involved.
 8. Verify command status expectations if the command is mobile-facing.
-9. Review BC boundaries.
+9. If the command starts a long-running process, mark the command according to
+   acceptance of that intent and expose process progress through a separate
+   query model. Do not leave command status `PENDING` for the whole process.
+10. Review BC boundaries.
 
 ## Pitfalls
 
@@ -30,6 +33,8 @@ Use this when a backend feature changes state inside one bounded context.
 - calling another BC service directly
 - emitting event payloads with domain objects
 - treating network failure as command rejection
+- calling a remote provider from the command transaction
+- encoding long-running process progress as command status
 
 ## Validation
 
@@ -38,4 +43,5 @@ Use this when a backend feature changes state inside one bounded context.
 - controller remains thin
 - command returns `202 Accepted` when processing is async
 - `/commands/{commandId}` can eventually report `APPLIED` or `REJECTED`
-
+- no remote call executes inside the command transaction
+- long-running process state, when present, is not encoded as command status

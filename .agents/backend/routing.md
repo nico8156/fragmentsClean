@@ -66,6 +66,13 @@ Studio/admin controllers stay thin. They call admin use cases and ports, and the
 owning bounded context still owns domain state, events, command status, and
 read-model projection.
 
+## Durable Process Manager
+
+Use `orchestrators/process-manager.md` when a workflow spans transactions,
+messages, remote work, or operator delays and must survive restart. Combine it
+with command, SQS consumer, projection, query, and external-adapter
+orchestrators as required. Do not use command status or SSE as process state.
+
 ## If Unsure
 
 Do not code first.

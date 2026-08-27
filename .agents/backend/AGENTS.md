@@ -17,6 +17,8 @@ Before coding, classify the task:
 5. External adapter: talks to Google, OCR engine, filesystem, S3, SQS, SMTP, etc.
 6. Studio/admin feature: admin-facing workflow that maps operator input to bounded-context commands.
 7. Architecture/doc feature: changes rules, docs, deployment policy, or guardrails.
+8. Durable process manager: coordinates a workflow across transactions,
+   asynchronous delivery, remote work, or operator delays.
 
 Use the matching orchestrator in `.agents/backend/orchestrators`.
 
@@ -25,6 +27,8 @@ Use the matching orchestrator in `.agents/backend/orchestrators`.
 - Controllers stay thin.
 - Writes go through command handlers.
 - Aggregates/domain models protect invariants.
+- Domain models are behavioral: no public domain setters or Lombok `@Data`;
+  use named factories and intention-revealing methods.
 - Read endpoints use query handlers.
 - Read models are not aggregates.
 - Write side must not read projection tables for decisions.
@@ -40,6 +44,10 @@ Use the matching orchestrator in `.agents/backend/orchestrators`.
 - Secrets come from environment or AWS secret mechanisms.
 - Studio/admin controllers dispatch commands through ports/use cases; they do not write business tables directly.
 - Admin tokens are secrets and must not be exposed through mobile/Expo config.
+- External calls must not run inside database transactions. Long-running work
+  uses a durable lease and an idempotent completion command.
+- Provider DTOs and serialization types stay in adapters and are mapped through
+  an anti-corruption boundary before domain factories are called.
 
 ## Layering
 
@@ -98,6 +106,9 @@ Expected tests:
 - repository integration tests with Testcontainers when persistence matters
 - web tests with MockMvc for HTTP contracts
 - SQS/inbox tests for duplicate delivery and retry behavior
+- process-manager tests for state transitions, leases, stale completion and
+  restart recovery
+- serialization compatibility and round-trip tests at external/event boundaries
 - architecture tests for forbidden dependencies when practical
 
 Testcontainers require Docker.
@@ -113,3 +124,6 @@ Before declaring a backend task complete, verify:
 - inbox/idempotence exists for event consumers
 - SQS route does not run in parallel with the same legacy DB poller route
 - command status behavior is compatible with mobile offline-first
+- long-running process status is not confused with command status or SSE
+- no remote call holds a database transaction open
+- domain packages expose no public setters or Lombok `@Data`

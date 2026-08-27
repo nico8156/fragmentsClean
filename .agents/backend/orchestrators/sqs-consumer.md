@@ -30,6 +30,13 @@ Use this when adding or migrating an asynchronous event consumer to SQS.
 - keying idempotence on technical database PKs
 - deleting inbox rows as a retry shortcut
 - acknowledging SQS before business success
+- deserializing a producer domain event instead of a versioned public contract
+- calling a slow remote provider while holding the inbox/business transaction
+  open
+
+When a consumed event starts long remote work, record/claim durable work and
+commit the inbox-backed handling first. Execute remote work outside that
+transaction and complete it through an idempotent command.
 
 ## Validation
 
