@@ -603,3 +603,26 @@ create table if not exists user_entitlements_projection (
                                                             version bigint not null,
                                                             updated_at timestamptz not null
 );
+
+-- Durable process-manager state for long-running Studio article authoring.
+-- The saga is coordination state; article content remains owned by articleContext.
+create table if not exists article_authoring_sagas (
+    saga_id uuid primary key,
+    article_id uuid not null,
+    revision_id uuid not null,
+    theme text not null,
+    trigger varchar(32) not null,
+    state varchar(40) not null,
+    version bigint not null,
+    generation_attempts integer not null default 0,
+    lease_owner varchar(128),
+    lease_until timestamptz,
+    failure_category varchar(32),
+    created_at timestamptz not null,
+    updated_at timestamptz not null,
+    constraint article_authoring_saga_version_ck check (version >= 0),
+    constraint article_authoring_saga_attempts_ck check (generation_attempts >= 0)
+);
+create unique index if not exists uq_article_authoring_saga_revision on article_authoring_sagas(revision_id);
+create index if not exists idx_article_authoring_saga_state on article_authoring_sagas(state, updated_at);
+create index if not exists idx_article_authoring_saga_lease on article_authoring_sagas(lease_until);
