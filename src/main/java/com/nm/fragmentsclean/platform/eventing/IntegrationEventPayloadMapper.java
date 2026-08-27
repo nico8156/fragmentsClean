@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegratio
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.nio.charset.StandardCharsets;
@@ -37,6 +38,11 @@ public class IntegrationEventPayloadMapper {
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
                 case "coffee.photo_added" -> coffeePhotoAdded(node, event);
                 case "coffee.photos_imported" -> coffeePhotosImported(node, event);
+                case "coffee.published" -> new CoffeePublishedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                        intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
                 default -> null;
             };
 

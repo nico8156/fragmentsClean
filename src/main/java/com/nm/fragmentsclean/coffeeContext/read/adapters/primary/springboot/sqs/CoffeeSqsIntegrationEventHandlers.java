@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventH
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
@@ -24,6 +25,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEven
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -49,6 +51,15 @@ public class CoffeeSqsIntegrationEventHandlers {
     @Bean
     SqsIntegrationEventHandler coffeeArchivedSqsIntegrationEventHandler(CoffeeArchivedEventHandler handler) {
         return readAndHandle("coffee.archived", CoffeeArchivedEvent.class, handler::handle);
+    }
+
+    @Bean
+    SqsIntegrationEventHandler coffeePublishedSqsIntegrationEventHandler(CoffeePublishedEventHandler handler) {
+        return readAndHandle("coffee.published", CoffeePublishedIntegrationEvent.class, event ->
+                handler.handle(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublishedEvent(
+                        event.eventId(), event.commandId(),
+                        new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId(event.coffeeId()),
+                        event.version(), event.occurredAt(), null)));
     }
 
     @Bean

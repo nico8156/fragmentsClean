@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.storage.DefaultCoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
@@ -30,6 +31,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCo
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -78,6 +80,12 @@ public class CoffeeContextDependenciesConfiguration {
 	}
 
 	@Bean
+	PublishCoffeeCommandHandler publishCoffeeCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
+		return new PublishCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
 	DeleteCoffeeCommandHandler deleteCoffeeCommandHandler(CoffeeRepository coffeeRepository,
 			DomainEventPublisher domainEventPublisher,
 			DateTimeProvider dateTimeProvider) {
@@ -113,6 +121,12 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeCreatedEventHandler(projectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeePublishedEventHandler coffeePublishedEventHandler(CoffeeProjectionRepository repository,
+			ProjectionSyncPublisher syncPublisher) {
+		return new CoffeePublishedEventHandler(repository, syncPublisher);
 	}
 
 	@Bean

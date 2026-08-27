@@ -16,6 +16,7 @@ public interface CoffeeProjectionRepository {
 	void deleteByCoffeeId(UUID coffeeId);
 
 	void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt);
+	void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt);
 
 	List<CoffeeSummaryView> findAll(boolean publishedOnly);
 

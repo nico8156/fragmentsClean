@@ -28,6 +28,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveC
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AdminAuditRecorder;
@@ -111,6 +112,14 @@ public class AdminCoffeesReadController {
 
 	public ResponseEntity<AdminCommandAcceptedResponse> permanentlyDeleteCoffee(UUID coffeeId) {
 		return permanentlyDeleteCoffee(coffeeId, null);
+	}
+
+	@PostMapping("/api/admin/coffees/{coffeeId}/publish")
+	public ResponseEntity<AdminCommandAcceptedResponse> publishCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+		var commandId = UUID.randomUUID(); var now = java.time.Instant.now();
+		commandBus.dispatch(new PublishCoffeeCommand(commandId, coffeeId, now));
+		audit(authentication, "COFFEE_PUBLISHED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
 	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

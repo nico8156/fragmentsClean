@@ -246,6 +246,13 @@ public final class Coffee extends AggregateRoot {
 		this.publicationStatus = CoffeePublicationStatus.ARCHIVED;
 	}
 
+	public void publish(Instant now) {
+		if (isArchived()) throw new IllegalStateException("Archived coffee cannot be published");
+		if (publicationStatus == CoffeePublicationStatus.PUBLISHED) return;
+		touch(now);
+		publicationStatus = CoffeePublicationStatus.PUBLISHED;
+	}
+
 	private void touch(Instant now) {
 		this.version += 1;
 		this.updatedAt = now != null ? now : Instant.now();

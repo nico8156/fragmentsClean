@@ -59,6 +59,12 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 	}
 
 	@Override
+	public void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt) {
+		jdbcTemplate.update("UPDATE coffee_summaries_projection SET publication_status = 'PUBLISHED', version = ?, updated_at = ? WHERE id = ?",
+				version, Timestamp.from(updatedAt), coffeeId);
+	}
+
+	@Override
 	public void insertSeed(CoffeeSummaryView view) {
 		upsert(
 				view.id(),
