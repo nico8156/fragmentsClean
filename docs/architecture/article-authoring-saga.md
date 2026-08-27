@@ -314,6 +314,16 @@ versioned generation artifact before the saga reaches `READY_FOR_REVIEW`.
 Materialising that artifact into the relational article revision aggregate is a
 separate persistence step; generated content never publishes itself.
 
+### Phase 11 revision materialisation
+
+The validated artifact is materialised transactionally into the relational
+revision structure: `article_revisions`, ordered sections, paragraphs and
+editorial tags. The adapter verifies that the owning article already exists,
+assigns the next revision number, computes the read-time reading estimate and
+is idempotent for an existing revision. A missing article is an explicit
+technical failure; the adapter does not create an article shell or bypass the
+article aggregate lifecycle.
+
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 
