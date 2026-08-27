@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleAuthoringSagaRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleGenerationShellRepository;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleAuthoringObservability;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleAggregate;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleGenerationRequestedEvent;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
@@ -11,6 +12,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublis
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -22,10 +24,19 @@ public final class RequestArticleGenerationCommandHandler implements CommandHand
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;
     private final CommandStatusRecorder statuses;
+    private final ArticleAuthoringObservability observability;
 
     public RequestArticleGenerationCommandHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationShellRepository articles, DomainEventPublisher events,
                                                   DateTimeProvider clock, CommandStatusRecorder statuses) {
+        this(sagas, articles, events, clock, statuses, ArticleAuthoringObservability.noop());
+    }
+
+    @Autowired
+    public RequestArticleGenerationCommandHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationShellRepository articles, DomainEventPublisher events,
+                                                  DateTimeProvider clock, CommandStatusRecorder statuses,
+                                                  ArticleAuthoringObservability observability) {
         this.sagas = sagas; this.articles = articles; this.events = events; this.clock = clock; this.statuses = statuses;
+        this.observability = observability;
     }
 
     @Override public void execute(RequestArticleGenerationCommand command) {
@@ -44,5 +55,6 @@ public final class RequestArticleGenerationCommandHandler implements CommandHand
                 s.articleId(), s.revisionId(), s.theme(), command.locale(), s.trigger(), s.version(), now, command.clientAt()));
         statuses.markApplied(command.commandId(), "ArticleAuthoringSaga", s.sagaId().toString(),
                 "article.generation.requested", now);
+        observability.generationRequested(command.trigger());
     }
 }

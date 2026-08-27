@@ -364,6 +364,17 @@ does not call OpenAI, create revisions directly, or bypass the outbox/SQS flow.
 The provider lease remains the concurrency and restart safety boundary; the
 schedule only creates work when the configured budget allows it.
 
+### Phase 19 recovery and observability
+
+Saga recovery remains lease-based: an SQS redelivery may reclaim a generation
+only after the previous worker lease expires, and the new run receives a new
+attempt number and worker identity. Operational counters expose requests by
+trigger, lease claims and recoveries, successful completions, and bounded
+failure categories. The `articleAuthoringHealth` actuator component reports
+failed sagas and marks health `DEGRADED` when active saga states remain stale
+beyond the configured threshold. Metrics and health expose identifiers neither
+from articles nor from operators.
+
 ### Phase 15 review notification
 
 When the generation completion event is consumed from the `articles-events` SQS
