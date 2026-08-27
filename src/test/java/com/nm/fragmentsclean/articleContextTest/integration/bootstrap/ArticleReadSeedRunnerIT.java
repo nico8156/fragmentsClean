@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,7 +19,12 @@ import com.nm.fragmentsclean.TestContainers;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.bootstrap.ArticleReadSeedRunner;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @SpringBootTest
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 @ActiveProfiles("database")
 class ArticleReadSeedRunnerIT extends TestContainers {
 
@@ -33,6 +39,9 @@ class ArticleReadSeedRunnerIT extends TestContainers {
 
 	@Autowired
 	ObjectMapper objectMapper;
+
+	@Autowired
+	MockMvc mockMvc;
 
 	@BeforeEach
 	void resetDb() {
@@ -100,6 +109,32 @@ class ArticleReadSeedRunnerIT extends TestContainers {
 		long n2 = repo.count();
 
 		assertThat(n2).isEqualTo(n1);
+	}
+
+	@Test
+	void mobile_article_contract_exposes_ordered_content_and_metadata() throws Exception {
+		runner.run();
+
+		mockMvc.perform(get("/api/articles/quest-ce-que-le-cafe-de-specialite")
+				.param("locale", "fr-FR"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.slug").value("quest-ce-que-le-cafe-de-specialite"))
+				.andExpect(jsonPath("$.locale").value("fr-FR"))
+				.andExpect(jsonPath("$.title").value("Qu'est-ce que le café de spécialité ?"))
+				.andExpect(jsonPath("$.intro").isString())
+				.andExpect(jsonPath("$.intro").isNotEmpty())
+				.andExpect(jsonPath("$.blocks").isArray())
+				.andExpect(jsonPath("$.blocks.length()", org.hamcrest.Matchers.is(3)))
+				.andExpect(jsonPath("$.blocks[0].heading").value("Une histoire de terroir"))
+				.andExpect(jsonPath("$.blocks[0].paragraph").isString())
+				.andExpect(jsonPath("$.blocks[0].photo.url").isString())
+				.andExpect(jsonPath("$.blocks[0].photo.alt").isNotEmpty())
+				.andExpect(jsonPath("$.cover.url").isString())
+				.andExpect(jsonPath("$.tags").isArray())
+				.andExpect(jsonPath("$.author.id").value("author-helene-martin"))
+				.andExpect(jsonPath("$.readingTimeMin").value(6))
+				.andExpect(jsonPath("$.status").value("published"))
+				.andExpect(jsonPath("$.conclusion").isNotEmpty());
 	}
 
 	private int seedArraySize(String classpathLocation) throws Exception {
