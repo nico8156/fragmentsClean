@@ -29,8 +29,8 @@ class CoffeeCreatedIntegrationEventHandlerTest {
 		var syncPublisher = new RecordingProjectionSyncPublisher();
 		var handler = new CoffeeCreatedIntegrationEventHandler(source, projectionRepository, syncPublisher);
 
-		handler.handle(new CoffeeCreatedIntegrationEvent(
-				UUID.randomUUID(), UUID.randomUUID(), view.id(), view.name(), view.addressLine(), view.city(),
+			handler.handle(new CoffeeCreatedIntegrationEvent(
+				UUID.randomUUID(), UUID.randomUUID(), view.id(), "places/google-1", view.name(), view.addressLine(), view.city(),
 				view.postalCode(), view.country(), (int) view.version(), view.updatedAt()));
 
 		assertThat(projectionRepository.appliedViews).containsExactly(view);
