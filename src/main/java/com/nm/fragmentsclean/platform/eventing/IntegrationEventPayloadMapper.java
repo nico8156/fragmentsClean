@@ -7,10 +7,13 @@ import com.nm.fragmentsclean.platform.eventing.contracts.AppUserProfileUpdatedIn
 import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public class IntegrationEventPayloadMapper {
@@ -32,6 +35,8 @@ public class IntegrationEventPayloadMapper {
                 case "coffee.archived", "coffee.deleted",
                         "coffee.saved_coffee_projection.archived",
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
+                case "coffee.photo_added" -> coffeePhotoAdded(node, event);
+                case "coffee.photos_imported" -> coffeePhotosImported(node, event);
                 default -> null;
             };
 
@@ -115,6 +120,39 @@ public class IntegrationEventPayloadMapper {
         );
     }
 
+    private CoffeePhotoAddedIntegrationEvent coffeePhotoAdded(JsonNode node, OutboxEventJpaEntity event) {
+        JsonNode photo = node.get("photo");
+        return new CoffeePhotoAddedIntegrationEvent(
+                uuidOrFallback(node, "eventId", event.getEventId()),
+                uuidOrFallback(node, "commandId", event.getEventId()),
+                uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                uuidFromValueObjectOrFallback(photo, "photoId", event.getEventId()),
+                text(photo, "photoUri"),
+                intValue(node, "version"),
+                instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                instantOrFallback(node, "clientAt", event.getOccurredAt()));
+    }
+
+    private CoffeePhotosImportedIntegrationEvent coffeePhotosImported(JsonNode node, OutboxEventJpaEntity event) {
+        List<CoffeePhotosImportedIntegrationEvent.PhotoReference> photos = new java.util.ArrayList<>();
+        JsonNode photoNodes = node.get("photos");
+        if (photoNodes != null && photoNodes.isArray()) {
+            for (JsonNode photo : photoNodes) {
+                photos.add(new CoffeePhotosImportedIntegrationEvent.PhotoReference(
+                        uuidFromValueObjectOrFallback(photo, "photoId", event.getEventId()),
+                        text(photo, "photoUri")));
+            }
+        }
+        return new CoffeePhotosImportedIntegrationEvent(
+                uuidOrFallback(node, "eventId", event.getEventId()),
+                uuidOrFallback(node, "commandId", event.getEventId()),
+                uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                photos,
+                longValue(node, "version"),
+                instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                instantOrFallback(node, "clientAt", event.getOccurredAt()));
+    }
+
     private UUID uuid(JsonNode node, String fieldName) {
         return UUID.fromString(text(node, fieldName));
     }
@@ -138,6 +176,9 @@ public class IntegrationEventPayloadMapper {
     }
 
     private String text(JsonNode node, String fieldName) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
         JsonNode value = node.get(fieldName);
         if (value == null) {
             value = node.get(camelToSnake(fieldName));
@@ -165,6 +206,9 @@ public class IntegrationEventPayloadMapper {
     }
 
     private String valueObjectText(JsonNode node, String fieldName) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
         JsonNode value = node.get(fieldName);
         if (value == null) {
             value = node.get(camelToSnake(fieldName));
