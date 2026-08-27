@@ -414,6 +414,13 @@ published articles. The initial configurable proposal is a warning at 24 and a
 hard limit at 30. The backend enforces the hard limit transactionally. Studio
 may display the policy but must not duplicate it as the source of truth.
 
+Phase 17 closes the write-side guard: the publication handler evaluates the
+policy inside its transaction, and the JDBC capacity adapter locks the current
+published rows before counting them. The article being republished is excluded
+from the count. Reaching 24 remains an operational warning; reaching 30 is an
+explicit domain rejection. The warning is deliberately not duplicated in the
+Studio client yet, so the backend remains authoritative.
+
 No generated article is automatically published. Scheduled generation also
 obeys generation budgets, pending-review capacity, topic deduplication and a
 single-run lease.
