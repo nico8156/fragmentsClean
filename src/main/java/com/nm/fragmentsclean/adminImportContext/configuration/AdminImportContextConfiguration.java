@@ -9,10 +9,12 @@ import org.springframework.context.annotation.Configuration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusArticleGenerationAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusGeneratedArticleEditingPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GeneratedArticleEditingPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLogRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
@@ -29,6 +31,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGoo
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudioGeneratedArticle;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -69,6 +72,8 @@ public class AdminImportContextConfiguration {
 
 	@Bean ArticleGenerationAuthoringPort articleGenerationAuthoringPort(CommandBus commandBus) { return new CommandBusArticleGenerationAuthoringPort(commandBus); }
 	@Bean StartStudioArticleGeneration startStudioArticleGeneration(ArticleGenerationAuthoringPort port, UuidGenerator ids, DateTimeProvider clock) { return new StartStudioArticleGeneration(port,ids,clock); }
+	@Bean GeneratedArticleEditingPort generatedArticleEditingPort(CommandBus commandBus){return new CommandBusGeneratedArticleEditingPort(commandBus);}
+	@Bean EditStudioGeneratedArticle editStudioGeneratedArticle(GeneratedArticleEditingPort port,UuidGenerator ids,DateTimeProvider clock){return new EditStudioGeneratedArticle(port,ids,clock);}
 
 	@Bean
 	SubmitStudioArticle submitStudioArticle(

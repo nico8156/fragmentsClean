@@ -344,6 +344,15 @@ S3 keys instead of creating orphan variants. Provider calls and S3 writes occur
 outside database transactions. Only Fragments-owned storage references enter
 the article revision; provider bytes and temporary URLs are never persisted.
 
+### Phase 14 review and editing
+
+Studio reads a backend-owned saga/revision snapshot. S3 references remain
+stable in edit commands while short-lived signed URLs are returned separately
+for preview. Editing dispatches an idempotent command, reconstructs rich article
+content through domain factories, verifies saga/article/revision identity and
+moves `READY_FOR_REVIEW` to `EDITING`. Relational revision replacement, saga
+state, command status and outbox event share one transaction.
+
 Manual Studio generation and scheduled generation dispatch the same
 `RequestArticleGeneration` use case. A scheduler is only a primary adapter.
 
