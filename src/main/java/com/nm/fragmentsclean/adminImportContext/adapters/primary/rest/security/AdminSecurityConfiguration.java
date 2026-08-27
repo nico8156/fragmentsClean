@@ -12,7 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
-import com.nm.fragmentsclean.authenticationContext.read.adapters.primary.springboot.security.JwtAuthConverters;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.JwtAuthConverters;
 
 @Configuration
 @EnableConfigurationProperties(AdminSecurityProperties.class)
