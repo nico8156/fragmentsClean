@@ -59,12 +59,27 @@ public final class ArticleAggregate extends AggregateRoot {
         lifecycle = ArticleLifecycle.IN_REVIEW;
     }
 
+    public void registerDraftCreated(java.util.UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleDraftCreatedEvent(
+                UUID.randomUUID(), commandId, id, workingRevisionId, slug, locale, now, clientAt));
+    }
+
     public void publishWorkingRevision(Instant now) {
         ensureLifecycle(ArticleLifecycle.IN_REVIEW, "Seul un article en revue peut être publié.");
         workingRevision().publish(now);
         publishedRevisionId = workingRevisionId;
         lifecycle = ArticleLifecycle.PUBLISHED;
         version++;
+    }
+
+    public void registerRevisionSubmitted(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleRevisionSubmittedEvent(
+                UUID.randomUUID(), commandId, id, workingRevisionId, now, clientAt));
+    }
+
+    public void registerRevisionPublished(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleRevisionPublishedEvent(
+                UUID.randomUUID(), commandId, id, publishedRevisionId, now, clientAt));
     }
 
     public UUID startWorkingRevision(UUID revisionId, ArticleContent content, Instant now) {
