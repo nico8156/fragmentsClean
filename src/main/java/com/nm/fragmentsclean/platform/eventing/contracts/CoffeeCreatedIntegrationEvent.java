@@ -7,6 +7,7 @@ public record CoffeeCreatedIntegrationEvent(
 		UUID eventId,
 		UUID commandId,
 		UUID coffeeId,
+		String googlePlaceId,
 		String name,
 		String addressLine1,
 		String city,

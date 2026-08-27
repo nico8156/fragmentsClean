@@ -156,7 +156,10 @@ Les enrichissements Google sont des faits métier séparés : ils ne sont pas é
 * `CoffeeCreatedProcessManager`
 
 ➡️ Un seul point d’entrée métier pour la création.
-Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via outbox/SQS.
+Les enrichissements réagissent ensuite à `CoffeeCreatedEvent` via l’EventBus local
+quand il est activé. En staging/production, le contrat primitif SQS `coffee.created`
+déclenche `CoffeeCreatedIntegrationEnrichmentHandler`, afin que le flux reste
+opérationnel avec `APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED=false`.
 L'action produit de retrait du catalogue est `ArchiveCoffeeCommand`. Le hard delete reste une capacité technique non exposée comme comportement produit par défaut.
 
 ---
@@ -185,6 +188,9 @@ CoffeeCreatedEvent
 -> coffee_photos_projection
 -> projection.updated hints:["photos"]
 ```
+
+En staging/production, le point de départ effectif est le message SQS
+`coffee.created`, qui déclenche séparément l’import des horaires et des photos.
 
 Le gateway Google récupère d'abord les `photos[].name` via Place Details, puis appelle Place Photos avec `skipHttpRedirect=true` pour obtenir un `photoUri` temporaire. L'image est téléchargée immédiatement et stockée via `CoffeePhotoStorage`.
 

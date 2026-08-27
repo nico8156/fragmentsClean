@@ -4,6 +4,9 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePh
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlacePhotosGateway;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
@@ -34,39 +37,48 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 
 	@Override
 	public void handle(CoffeeCreatedEvent event) {
-		if (event.googlePlaceId() == null) {
-			log.info("Skip Google photo import for coffeeId={} because googlePlaceId is missing", event.coffeeId().value());
+		handle(event.coffeeId(), event.commandId(), event.googlePlaceId(), event.version(), event.occurredAt(), event.clientAt());
+	}
+
+	public void handle(CoffeeCreatedIntegrationEvent event) {
+		handle(new CoffeeId(event.coffeeId()), event.commandId(),
+				event.googlePlaceId() == null ? null : new GooglePlaceId(event.googlePlaceId()),
+				event.version(), event.occurredAt(), event.occurredAt());
+	}
+
+	private void handle(CoffeeId coffeeId, UUID commandId, GooglePlaceId googlePlaceId, int version,
+			java.time.Instant occurredAt, java.time.Instant clientAt) {
+		if (googlePlaceId == null) {
+			log.info("Skip Google photo import for coffeeId={} because googlePlaceId is missing", coffeeId.value());
 			return;
 		}
 
-		var googlePhotos = photosGateway.findPhotos(event.googlePlaceId());
+		var googlePhotos = photosGateway.findPhotos(googlePlaceId);
 		if (googlePhotos.isEmpty()) {
 			log.info("Google photo import found no photos for coffeeId={} googlePlaceId={}",
-					event.coffeeId().value(), event.googlePlaceId().value());
+					coffeeId.value(), googlePlaceId.value());
 			return;
 		}
 
 		var importedPhotos = googlePhotos.stream()
-				.map(photo -> photoStorage.store(event.coffeeId(), event.googlePlaceId(), photo))
+				.map(photo -> photoStorage.store(coffeeId, googlePlaceId, photo))
 				.toList();
 		if (importedPhotos.isEmpty()) {
-			log.info("Google photo import stored no photos for coffeeId={} googlePlaceId={}",
-					event.coffeeId().value(), event.googlePlaceId().value());
+			log.info("Google photo import stored no photos for coffeeId={} googlePlaceId={}", coffeeId.value(), googlePlaceId.value());
 			return;
 		}
 
 		var now = dateTimeProvider.now();
-		log.info("Publishing CoffeePhotosImportedEvent for coffeeId={} importedPhotos={}",
-				event.coffeeId().value(), importedPhotos.size());
+		log.info("Publishing CoffeePhotosImportedEvent for coffeeId={} importedPhotos={}", coffeeId.value(), importedPhotos.size());
 		domainEventPublisher.publish(new CoffeePhotosImportedEvent(
 				UUID.randomUUID(),
-				event.commandId(),
-				event.coffeeId(),
-				event.googlePlaceId(),
+				commandId,
+				coffeeId,
+				googlePlaceId,
 				importedPhotos,
-				event.version(),
+				version,
 				now,
-				event.clientAt()
+				clientAt
 		));
 	}
 }

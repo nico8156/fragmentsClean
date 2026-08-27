@@ -100,6 +100,7 @@ public class IntegrationEventPayloadMapper {
                 uuidOrFallback(node, "eventId", event.getEventId()),
                 uuidOrFallback(node, "commandId", event.getEventId()),
                 uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                valueObjectText(node, "googlePlaceId"),
                 valueObjectText(node, "name"),
                 addressText(address, "line1"),
                 addressText(address, "city"),
