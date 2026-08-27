@@ -154,15 +154,16 @@ The platform target after this audit:
 
 - A fresh AWS account can create the stack from one CloudFormation template.
 - UserData installs Docker, Compose and AWS CLI v2 without manual repair.
-- GitHub Actions receives all deploy values from stack outputs and GitHub Secrets.
+- GitHub Actions resolves deployment values from CloudFormation outputs; the
+  stable, non-secret OIDC role ARN is versioned in the workflow.
 - Runtime secrets stay only in `/srv/fragments/staging/.env`.
-- SSH is temporary per workflow run, not permanently open.
+- CI/CD uses SSM Run Command and requires no inbound SSH.
 - Kafka and Redis are absent from staging.
 
 ## Remaining Improvement
 
-SSH is still the deployment transport. It is acceptable for staging, but the long-term target is:
+The deployment transport is now:
 
 - no inbound SSH from GitHub;
-- AWS SSM Session Manager or Systems Manager Run Command;
-- deploy role scoped to SSM commands instead of Security Group mutation.
+- AWS Systems Manager Run Command;
+- deploy role scoped to the platform instance and `AWS-RunShellScript` document.

@@ -11,15 +11,14 @@ on:
       - 'pom.xml'
       - 'Dockerfile'
       - '.dockerignore'
-      - 'infra/aws/compose/staging/**'
+      - 'infra/aws/compose/platform/staging/fragments/**'
+      - 'infra/aws/cloudformation/staging-minimal.yaml'
       - '.github/workflows/deploy-staging-backend.yml'
 
 env:
   AWS_REGION: eu-west-3
-  ECR_REPOSITORY: ${{ secrets.STAGING_ECR_REPOSITORY }}
-  STAGING_SECURITY_GROUP_ID: ${{ secrets.STAGING_SECURITY_GROUP_ID }}
-  STAGING_REMOTE_DIR: /srv/fragments/staging
-  STAGING_STACK_NAME: fragments-staging-minimal
+  FRAGMENTS_STACK_NAME: fragments-staging-minimal
+  PLATFORM_STACK_NAME: platform-staging
 
 jobs:
   deploy:
@@ -48,74 +47,47 @@ jobs:
       - name: Package backend
         run: ./mvnw -q -DskipTests package
 
-      - name: Configure AWS credentials
+      - name: Validate deployment scripts
+        run: |
+          bash -n infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh
+          bash -n infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh
+
+      - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::851725375299:role/fragments-staging-github-ssm-deploy
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Resolve AWS deployment targets
+        run: |
+          set -euo pipefail
+          ecr_repository="$(aws cloudformation describe-stacks \
+            --region "${AWS_REGION}" \
+            --stack-name "${FRAGMENTS_STACK_NAME}" \
+            --query "Stacks[0].Outputs[?OutputKey=='EcrRepositoryUri'].OutputValue | [0]" \
+            --output text)"
+          platform_instance_id="$(aws cloudformation describe-stacks \
+            --region "${AWS_REGION}" \
+            --stack-name "${PLATFORM_STACK_NAME}" \
+            --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue | [0]" \
+            --output text)"
+          test -n "${ecr_repository}"
+          test "${ecr_repository}" != "None"
+          test -n "${platform_instance_id}"
+          test "${platform_instance_id}" != "None"
+          case "${ecr_repository}" in
+            *.dkr.ecr.${AWS_REGION}.amazonaws.com/fragments/staging/backend) ;;
+            *) echo "Unexpected ECR repository: ${ecr_repository}" >&2; exit 1 ;;
+          esac
+          case "${platform_instance_id}" in
+            i-*) ;;
+            *) echo "Unexpected platform instance id." >&2; exit 1 ;;
+          esac
+          echo "ECR_REPOSITORY=${ecr_repository}" >> "${GITHUB_ENV}"
+          echo "PLATFORM_INSTANCE_ID=${platform_instance_id}" >> "${GITHUB_ENV}"
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Resolve staging SQS queue URLs
-        run: |
-          set -euo pipefail
-          stack_outputs_json="$(aws cloudformation describe-stacks \
-            --region "${AWS_REGION}" \
-            --stack-name "${STAGING_STACK_NAME}" \
-            --query 'Stacks[0].Outputs' \
-            --output json)"
-
-          resolve_output() {
-            local output_key="$1"
-            local env_key="$2"
-            local value
-            value="$(STACK_OUTPUTS_JSON="${stack_outputs_json}" OUTPUT_KEY="${output_key}" python3 - <<'PY'
-          import json
-          import os
-
-          outputs = json.loads(os.environ["STACK_OUTPUTS_JSON"])
-          output_key = os.environ["OUTPUT_KEY"]
-          for output in outputs:
-              if output.get("OutputKey") == output_key:
-                  print(output.get("OutputValue", ""))
-                  break
-          PY
-          )"
-            if [ -z "${value}" ] || [ "${value}" = "None" ]; then
-              echo "::error::Missing CloudFormation output ${output_key} in stack ${STAGING_STACK_NAME}."
-              exit 1
-            fi
-            echo "${env_key}=${value}" >> "${GITHUB_ENV}"
-          }
-
-          resolve_output ArticlesEventsQueueUrl SQS_ARTICLES_EVENTS_URL
-          resolve_output AuthUsersEventsQueueUrl SQS_AUTH_USERS_EVENTS_URL
-          resolve_output AppUsersEventsQueueUrl SQS_APP_USERS_EVENTS_URL
-          resolve_output CoffeesEventsQueueUrl SQS_COFFEES_EVENTS_URL
-          resolve_output DomainEventsQueueUrl SQS_DOMAIN_EVENTS_URL
-          resolve_output TicketEventsQueueUrl SQS_TICKET_EVENTS_URL
-          resolve_output TicketVerificationRequestedQueueUrl SQS_TICKET_VERIFICATION_REQUESTED_URL
-
-      - name: Validate staging deployment secrets
-        run: |
-          test -n "${ECR_REPOSITORY}"
-          CLEAN_ECR_REPOSITORY="$(printf '%s' "${ECR_REPOSITORY}" | tr -d '[:space:]')"
-          if [ "${CLEAN_ECR_REPOSITORY}" != "${ECR_REPOSITORY}" ]; then
-            echo "::error::STAGING_ECR_REPOSITORY must not contain spaces or newlines."
-            exit 1
-          fi
-          case "${ECR_REPOSITORY}" in
-            http://*|https://*)
-              echo "::error::STAGING_ECR_REPOSITORY must be an ECR repository URI without protocol."
-              exit 1
-              ;;
-            *:*)
-              echo "::error::STAGING_ECR_REPOSITORY must not include an image tag."
-              exit 1
-              ;;
-          esac
-          echo "ECR_REPOSITORY=${ECR_REPOSITORY}" >> "${GITHUB_ENV}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -127,7 +99,6 @@ jobs:
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         run: |
-          test -n "${ECR_REPOSITORY}"
           docker buildx build \
             --platform linux/arm64 \
             --tag "${ECR_REPOSITORY}:${IMAGE_TAG}" \
@@ -136,244 +107,78 @@ jobs:
             . \
             --push
 
-      - name: Authorize runner SSH ingress
-        run: |
-          test -n "${STAGING_SECURITY_GROUP_ID}"
-          RUNNER_PUBLIC_IP="$(curl -fsSL https://checkip.amazonaws.com | tr -d '[:space:]')"
-          test -n "${RUNNER_PUBLIC_IP}"
-          echo "RUNNER_PUBLIC_IP=${RUNNER_PUBLIC_IP}" >> "${GITHUB_ENV}"
-          aws ec2 authorize-security-group-ingress \
-            --region "${AWS_REGION}" \
-            --group-id "${STAGING_SECURITY_GROUP_ID}" \
-            --protocol tcp \
-            --port 22 \
-            --cidr "${RUNNER_PUBLIC_IP}/32" || true
-
-      - name: Write SSH private key
-        env:
-          STAGING_SSH_PRIVATE_KEY: ${{ secrets.STAGING_SSH_PRIVATE_KEY }}
-        run: |
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$STAGING_SSH_PRIVATE_KEY" > ~/.ssh/staging_key
-          chmod 600 ~/.ssh/staging_key
-          for _ in $(seq 1 10); do
-            ssh-keyscan -T 10 -H "${{ secrets.STAGING_EC2_HOST }}" >> ~/.ssh/known_hosts && exit 0
-            sleep 5
-          done
-          echo "::error::Unable to scan staging SSH host key. Check Security Group port 22 and STAGING_EC2_HOST."
-          exit 1
-
-      - name: Sync deployment files
-        run: |
-          ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" \
-            "mkdir -p '${STAGING_REMOTE_DIR}/db'"
-          scp -i ~/.ssh/staging_key \
-            infra/aws/compose/staging/docker-compose.yml \
-            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/docker-compose.yml"
-          scp -i ~/.ssh/staging_key \
-            infra/aws/compose/staging/Caddyfile \
-            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/Caddyfile"
-          scp -i ~/.ssh/staging_key \
-            src/main/resources/schema.sql \
-            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/db/schema.sql"
-          scp -i ~/.ssh/staging_key \
-            src/main/resources/data.sql \
-            "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}:${STAGING_REMOTE_DIR}/db/data.sql"
-
-      - name: Deploy on staging host
+      - name: Deploy on platform instance through SSM
         env:
           IMAGE_TAG: sha-${{ github.sha }}
-          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
-          require_env() {
-            key="$1"
-            if [ -z "${!key:-}" ]; then
-              echo "::error::Required environment variable ${key} is empty."
-              exit 1
-            fi
-          }
-          require_env GOOGLE_PLACES_API_KEY
-          require_env SQS_ARTICLES_EVENTS_URL
-          require_env SQS_AUTH_USERS_EVENTS_URL
-          require_env SQS_APP_USERS_EVENTS_URL
-          require_env SQS_COFFEES_EVENTS_URL
-          require_env SQS_DOMAIN_EVENTS_URL
-          require_env SQS_TICKET_EVENTS_URL
-          require_env SQS_TICKET_VERIFICATION_REQUESTED_URL
-          ssh -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" <<EOF
           set -euo pipefail
-          set +x
-          cd "${STAGING_REMOTE_DIR}"
-          test -f .env
-          upsert_env_var() {
-            key="\$1"
-            value="\$2"
-            if grep -q "^\${key}=" .env; then
-              sed -i "s|^\${key}=.*|\${key}=\${value}|" .env
-            else
-              printf '\n%s=%s\n' "\${key}" "\${value}" >> .env
-            fi
-          }
-          read_env_var() {
-            key="\$1"
-            value="\$(grep "^\${key}=" .env | tail -n 1 | cut -d= -f2-)"
-            if [ -z "\${value}" ]; then
-              echo "Required runtime .env variable \${key} is empty." >&2
-              exit 1
-            fi
-            printf '%s' "\${value}"
-          }
-          backend_container_id() {
-            docker ps -aq --filter 'name=staging-backend-1' | head -n 1
-          }
-          running_backend_image() {
-            if ! docker inspect staging-backend-1 >/dev/null 2>&1; then
-              echo ""
-              return
-            fi
-            docker inspect staging-backend-1 --format '{{.Config.Image}}'
-          }
-          ensure_backend_image() {
-            expected_image="\$(read_env_var BACKEND_IMAGE)"
-            echo "Expected backend image: \${expected_image}"
-            echo "Backend container before deploy: \$(docker ps -a --filter name=staging-backend-1 --format '{{.ID}} {{.Image}} {{.Status}}' || true)"
-            docker pull "\${expected_image}"
-            previous_container_id="\$(backend_container_id)"
-            docker rm -f staging-backend-1 || true
-            docker compose create --force-recreate backend
-            docker start staging-backend-1
-            current_container_id="\$(backend_container_id)"
-            echo "Backend container after deploy: \$(docker ps -a --filter name=staging-backend-1 --format '{{.ID}} {{.Image}} {{.Status}}' || true)"
-            if [ -z "\${current_container_id}" ]; then
-              echo "Backend container was not created." >&2
-              exit 1
-            fi
-            if [ -n "\${previous_container_id}" ] && [ "\${current_container_id}" = "\${previous_container_id}" ]; then
-              echo "Backend container was not recreated. Container id is still \${current_container_id}." >&2
-              exit 1
-            fi
-            running_image="\$(running_backend_image)"
-            if [ "\${running_image}" != "\${expected_image}" ]; then
-              echo "Backend container image mismatch. Expected \${expected_image}, got \${running_image}." >&2
-              exit 1
-            fi
-          }
-          upsert_env_var "BACKEND_IMAGE" "${ECR_REPOSITORY}:${IMAGE_TAG}"
-          upsert_env_var "GOOGLE_PLACES_API_KEY" "${GOOGLE_PLACES_API_KEY}"
-          upsert_env_var "GOOGLE_PLACES_PHOTO_IMPORT_LIMIT" "3"
-          APP_RUNTIME_DOMAIN="\$(read_env_var APP_DOMAIN)"
-          upsert_env_var "COFFEE_PHOTOS_STORAGE_DIRECTORY" "/srv/fragments/coffee-photos"
-          upsert_env_var "COFFEE_PHOTOS_PUBLIC_BASE_URL" "https://\${APP_RUNTIME_DOMAIN}"
-          upsert_env_var "COFFEE_PHOTOS_STORAGE_BACKEND" "s3"
-          upsert_env_var "COFFEE_PHOTOS_S3_BUCKET" "anchor-assets-prod-851725375299"
-          upsert_env_var "COFFEE_PHOTOS_S3_PREFIX" "fragments/staging/coffees"
-          upsert_env_var "COFFEE_PHOTOS_S3_REGION" "${AWS_REGION}"
-          upsert_env_var "COFFEE_PHOTOS_S3_PRESIGN_TTL" "PT15M"
-          upsert_env_var "ARTICLE_IMAGES_STORAGE_DIRECTORY" "/srv/fragments/article-images"
-          upsert_env_var "ARTICLE_IMAGES_PUBLIC_BASE_URL" "https://\${APP_RUNTIME_DOMAIN}"
-          upsert_env_var "ARTICLE_IMAGES_STORAGE_BACKEND" "s3"
-          upsert_env_var "ARTICLE_IMAGES_S3_BUCKET" "anchor-assets-prod-851725375299"
-          upsert_env_var "ARTICLE_IMAGES_S3_PREFIX" "fragments/staging/articles"
-          upsert_env_var "ARTICLE_IMAGES_S3_REGION" "${AWS_REGION}"
-          upsert_env_var "ARTICLE_IMAGES_S3_PRESIGN_TTL" "PT15M"
-          upsert_env_var "FRAGMENTS_MULTIPART_MAX_FILE_SIZE" "10MB"
-          upsert_env_var "FRAGMENTS_MULTIPART_MAX_REQUEST_SIZE" "10MB"
-          upsert_env_var "APP_MESSAGING_SQS_ENABLED" "true"
-          upsert_env_var "APP_MESSAGING_SQS_MAX_MESSAGES" "5"
-          upsert_env_var "APP_MESSAGING_SQS_WAIT_TIME" "PT20S"
-          upsert_env_var "APP_MESSAGING_SQS_VISIBILITY_TIMEOUT" "PT30S"
-          upsert_env_var "APP_MESSAGING_SQS_SHUTDOWN_TIMEOUT" "PT5S"
-          upsert_env_var "FRAGMENTS_CORS_ALLOWED_HEADERS" "Authorization,Content-Type,Accept,Origin,X-Requested-With,Last-Event-ID"
-          upsert_env_var "SQS_ARTICLES_EVENTS_URL" "${SQS_ARTICLES_EVENTS_URL}"
-          upsert_env_var "SQS_AUTH_USERS_EVENTS_URL" "${SQS_AUTH_USERS_EVENTS_URL}"
-          upsert_env_var "SQS_APP_USERS_EVENTS_URL" "${SQS_APP_USERS_EVENTS_URL}"
-          upsert_env_var "SQS_COFFEES_EVENTS_URL" "${SQS_COFFEES_EVENTS_URL}"
-          upsert_env_var "SQS_DOMAIN_EVENTS_URL" "${SQS_DOMAIN_EVENTS_URL}"
-          upsert_env_var "SQS_TICKET_EVENTS_URL" "${SQS_TICKET_EVENTS_URL}"
-          upsert_env_var "SQS_TICKET_VERIFICATION_REQUESTED_URL" "${SQS_TICKET_VERIFICATION_REQUESTED_URL}"
-          mkdir -p coffee-photos article-images
-          aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REPOSITORY%/*}"
-          docker compose pull backend
-          docker compose up -d postgres
-          POSTGRES_RUNTIME_USER="\$(read_env_var POSTGRES_USER)"
-          POSTGRES_RUNTIME_DB="\$(read_env_var POSTGRES_DB)"
-          docker compose exec -T postgres \
-            psql -U "\${POSTGRES_RUNTIME_USER}" -d "\${POSTGRES_RUNTIME_DB}" \
-            -f /docker-entrypoint-initdb.d/01-schema.sql
-          ensure_backend_image
-          if grep -q '^COMPOSE_PROFILES=.*https' .env; then
-            docker compose --profile https up -d --no-deps caddy
-          fi
-          if [ "\$(running_backend_image)" != "\$(read_env_var BACKEND_IMAGE)" ]; then
-            echo "Backend image drifted after dependent services update; recreating backend once more." >&2
-            ensure_backend_image
-          fi
-          docker compose ps
-          EOF
+          deploy_script_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh"
+          backend_image="${ECR_REPOSITORY}:${IMAGE_TAG}"
+          remote_command="curl --fail --silent --show-error --location '${deploy_script_url}' --output /tmp/fragments-deploy-via-ssm.sh && chmod 700 /tmp/fragments-deploy-via-ssm.sh && /tmp/fragments-deploy-via-ssm.sh '${backend_image}' '${GITHUB_SHA}'"
+          command_parameters="$(jq -nc --arg command "${remote_command}" '{commands:[$command]}')"
+          command_id="$(aws ssm send-command \
+            --region "${AWS_REGION}" \
+            --instance-ids "${PLATFORM_INSTANCE_ID}" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy Fragments ${GITHUB_SHA}" \
+            --parameters "${command_parameters}" \
+            --query 'Command.CommandId' \
+            --output text)"
 
-      - name: Converge and verify staging backend image
-        env:
-          EXPECTED_BACKEND_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
-        run: |
-          ssh -T -o LogLevel=ERROR -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" 'bash -seuo pipefail' <<EOF
-          cd "${STAGING_REMOTE_DIR}"
-          configured_image="\$(grep '^BACKEND_IMAGE=' .env | tail -n 1 | cut -d= -f2-)"
-          compose_image="\$(docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["services"]["backend"]["image"])')"
-          running_image="\$(docker inspect staging-backend-1 --format '{{.Config.Image}}')"
-          echo "Configured backend image: \${configured_image}"
-          echo "Compose backend image: \${compose_image}"
-          echo "Running backend image: \${running_image}"
-          if [ "\${running_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Running backend image is stale; recreating staging-backend-1 from ${EXPECTED_BACKEND_IMAGE}."
-            docker pull "${EXPECTED_BACKEND_IMAGE}"
-            docker rm -f staging-backend-1 || true
-            docker compose create --force-recreate backend
-            docker start staging-backend-1
-            running_image="\$(docker inspect staging-backend-1 --format '{{.Config.Image}}')"
-            echo "Running backend image after converge: \${running_image}"
-          fi
-          if [ "\${configured_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Configured backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${configured_image}." >&2
-            exit 1
-          fi
-          if [ "\${compose_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Compose backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${compose_image}." >&2
-            exit 1
-          fi
-          if [ "\${running_image}" != "${EXPECTED_BACKEND_IMAGE}" ]; then
-            echo "Running backend image mismatch. Expected ${EXPECTED_BACKEND_IMAGE}, got \${running_image}." >&2
-            exit 1
-          fi
-          EOF
-
-      - name: Smoke test staging backend
-        run: |
-          ssh -T -o LogLevel=ERROR -i ~/.ssh/staging_key "${{ secrets.STAGING_EC2_USER }}@${{ secrets.STAGING_EC2_HOST }}" 'bash -seuo pipefail' <<'EOF'
-          cd /srv/fragments/staging
-          status_code=""
-          for _ in $(seq 1 30); do
-            status_code=$(curl -s -o /tmp/fragments-health.json -w '%{http_code}' "http://127.0.0.1:8080/actuator/health" || true)
-            echo "fragments staging health status: ${status_code}"
-            if [ "$status_code" = "200" ]; then
-              cat /tmp/fragments-health.json
-              exit 0
-            fi
+          for _ in $(seq 1 120); do
+            status="$(aws ssm get-command-invocation \
+              --region "${AWS_REGION}" \
+              --command-id "${command_id}" \
+              --instance-id "${PLATFORM_INSTANCE_ID}" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)"
+            case "${status}" in
+              Success)
+                aws ssm get-command-invocation \
+                  --region "${AWS_REGION}" \
+                  --command-id "${command_id}" \
+                  --instance-id "${PLATFORM_INSTANCE_ID}" \
+                  --query 'StandardOutputContent' \
+                  --output text
+                exit 0
+                ;;
+              Failed|Cancelled|TimedOut|Cancelling)
+                aws ssm get-command-invocation \
+                  --region "${AWS_REGION}" \
+                  --command-id "${command_id}" \
+                  --instance-id "${PLATFORM_INSTANCE_ID}" \
+                  --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
+                  --output json
+                exit 1
+                ;;
+            esac
             sleep 5
           done
-          echo "Backend smoke test failed after retries with status: ${status_code:-none}"
-          docker compose ps || true
-          docker compose logs --tail=200 backend || true
+          echo "SSM deployment did not complete before the workflow timeout." >&2
           exit 1
-          EOF
 
-      - name: Revoke runner SSH ingress
-        if: always()
+      - name: Verify deployed image through SSM
+        env:
+          EXPECTED_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
         run: |
-          if [ -n "${STAGING_SECURITY_GROUP_ID:-}" ] && [ -n "${RUNNER_PUBLIC_IP:-}" ]; then
-            aws ec2 revoke-security-group-ingress \
-              --region "${AWS_REGION}" \
-              --group-id "${STAGING_SECURITY_GROUP_ID}" \
-              --protocol tcp \
-              --port 22 \
-              --cidr "${RUNNER_PUBLIC_IP}/32" || true
-          fi
+          set -euo pipefail
+          verify_command="running_image=\$(docker inspect staging-fragments-backend-1 --format '{{.Config.Image}}') && test \"\${running_image}\" = '${EXPECTED_IMAGE}' && curl --fail --silent --show-error https://fragments-staging.anchor-event.fr/actuator/health"
+          command_parameters="$(jq -nc --arg command "${verify_command}" '{commands:[$command]}')"
+          command_id="$(aws ssm send-command \
+            --region "${AWS_REGION}" \
+            --instance-ids "${PLATFORM_INSTANCE_ID}" \
+            --document-name AWS-RunShellScript \
+            --comment "Verify Fragments ${GITHUB_SHA}" \
+            --parameters "${command_parameters}" \
+            --query 'Command.CommandId' \
+            --output text)"
+          aws ssm wait command-executed \
+            --region "${AWS_REGION}" \
+            --command-id "${command_id}" \
+            --instance-id "${PLATFORM_INSTANCE_ID}"
+          aws ssm get-command-invocation \
+            --region "${AWS_REGION}" \
+            --command-id "${command_id}" \
+            --instance-id "${PLATFORM_INSTANCE_ID}" \
+            --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
+            --output json

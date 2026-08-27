@@ -48,7 +48,8 @@ step.
 - EC2 instance metadata requires IMDSv2.
 - S3 public access block is enabled on the shared asset bucket.
 - GitHub Actions has an OIDC deploy role for Fragments restricted to the
-  `main` branch.
+  `main` branch. Backend deployment targets the shared platform instance through
+  SSM Run Command; it does not open port 22 or carry an SSH private key.
 - Anchor still uses static AWS credentials in its deployment workflow and must
   be aligned with OIDC before the hosts are consolidated.
 - No Fragments RDS instance was observed; both applications currently use
