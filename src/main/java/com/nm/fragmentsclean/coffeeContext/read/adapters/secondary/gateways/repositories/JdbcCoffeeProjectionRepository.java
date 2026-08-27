@@ -41,6 +41,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				event.phoneNumber() != null ? event.phoneNumber().value() : null,
 				event.website() != null ? event.website().value() : null,
 				toTagsJsonFromEvent(event),
+				event.publicationStatus().name(),
 				null, // rating future
 				event.version(),
 				Timestamp.from(event.occurredAt()));
@@ -49,6 +50,18 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 	@Override
 	public void deleteByCoffeeId(UUID coffeeId) {
 		jdbcTemplate.update("DELETE FROM coffee_summaries_projection WHERE id = ?", coffeeId);
+	}
+
+	@Override
+	public void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt) {
+		jdbcTemplate.update("UPDATE coffee_summaries_projection SET publication_status = 'ARCHIVED', version = ?, updated_at = ? WHERE id = ?",
+				version, Timestamp.from(updatedAt), coffeeId);
+	}
+
+	@Override
+	public void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt) {
+		jdbcTemplate.update("UPDATE coffee_summaries_projection SET publication_status = 'PUBLISHED', version = ?, updated_at = ? WHERE id = ?",
+				version, Timestamp.from(updatedAt), coffeeId);
 	}
 
 	@Override
@@ -66,13 +79,14 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				view.phoneNumber(),
 				view.website(),
 				toTagsJson(view.tags()),
+				view.publicationStatus(),
 				null, // rating future
 				(int) view.version(),
 				Timestamp.from(view.updatedAt()));
 	}
 
 	@Override
-	public List<CoffeeSummaryView> findAll() {
+	public List<CoffeeSummaryView> findAll(boolean publishedOnly) {
 		String sql = """
 				SELECT id,
 				       google_place_id,
@@ -86,13 +100,14 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				       phone_number,
 				       website,
 				       tags_json,
+				       publication_status,
 				       version,
 				       updated_at
 				FROM coffee_summaries_projection
 				ORDER BY name ASC
 				""";
-
-		return jdbcTemplate.query(sql, this::mapRow);
+		String filteredSql = publishedOnly ? sql.replace("ORDER BY", "WHERE publication_status = 'PUBLISHED' ORDER BY") : sql;
+		return jdbcTemplate.query(filteredSql, this::mapRow);
 	}
 
 	// ----------------- private -----------------
@@ -110,6 +125,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 			String phoneNumber,
 			String website,
 			String tagsJson,
+			String publicationStatus,
 			Double rating,
 			int version,
 			Timestamp updatedAt) {
@@ -128,10 +144,11 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 						    phone_number,
 						    website,
 						    tags_json,
+						    publication_status,
 						    rating,
 						    version,
 						    updated_at
-						) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?)
+						) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?, ?, ?, ?)
 						ON CONFLICT (id) DO UPDATE SET
 						    google_place_id = EXCLUDED.google_place_id,
 						    name = EXCLUDED.name,
@@ -144,6 +161,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 						    phone_number = EXCLUDED.phone_number,
 						    website = EXCLUDED.website,
 						    tags_json = EXCLUDED.tags_json,
+						    publication_status = EXCLUDED.publication_status,
 						    rating = EXCLUDED.rating,
 						    version = EXCLUDED.version,
 						    updated_at = EXCLUDED.updated_at
@@ -160,6 +178,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				phoneNumber,
 				website,
 				tagsJson,
+				publicationStatus,
 				rating,
 				version,
 				updatedAt);
@@ -181,6 +200,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 
 		String tagsJson = rs.getString("tags_json");
 		Set<String> tags = parseTagsJson(tagsJson);
+		String publicationStatus = rs.getString("publication_status");
 
 		long version = rs.getLong("version");
 		var updatedAt = rs.getTimestamp("updated_at").toInstant();
@@ -198,6 +218,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				phoneNumber,
 				website,
 				tags,
+				publicationStatus == null ? "PUBLISHED" : publicationStatus,
 				version,
 				updatedAt);
 	}

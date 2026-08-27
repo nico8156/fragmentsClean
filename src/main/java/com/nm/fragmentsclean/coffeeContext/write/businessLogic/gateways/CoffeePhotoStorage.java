@@ -7,4 +7,5 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GoogleP
 
 public interface CoffeePhotoStorage {
 	ImportedCoffeePhoto store(CoffeeId coffeeId, GooglePlaceId googlePlaceId, GooglePlacePhoto photo);
+	default void deleteForCoffee(CoffeeId coffeeId) { }
 }

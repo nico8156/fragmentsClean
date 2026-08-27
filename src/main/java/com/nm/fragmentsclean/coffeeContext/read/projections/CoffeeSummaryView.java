@@ -18,6 +18,13 @@ public record CoffeeSummaryView(
 		String phoneNumber,
 		String website,
 		Set<String> tags,
+		String publicationStatus,
 		long version,
 		Instant updatedAt) {
+	public CoffeeSummaryView(UUID id, String googleId, String name, double latitude, double longitude,
+			String addressLine, String city, String postalCode, String country, String phoneNumber,
+			String website, Set<String> tags, long version, Instant updatedAt) {
+		this(id, googleId, name, latitude, longitude, addressLine, city, postalCode, country, phoneNumber,
+				website, tags, "PUBLISHED", version, updatedAt);
+	}
 }

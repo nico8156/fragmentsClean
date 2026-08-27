@@ -27,6 +27,8 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AdminAuditRecorder;
@@ -77,7 +79,7 @@ public class AdminCoffeesReadController {
 								Collectors.mapping(AdminCoffeeOpeningHoursResponse::from, Collectors.toList())
 						));
 
-		var views = queryBus.dispatch(new ListCoffeesQuery());
+		var views = queryBus.dispatch(new ListCoffeesQuery(false));
 		return views.stream()
 				.map(CoffeeSummaryResponse::from)
 				.map(summary -> AdminCoffeeResponse.from(
@@ -89,18 +91,39 @@ public class AdminCoffeesReadController {
 	}
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}")
-	public ResponseEntity<Void> archiveCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+	public ResponseEntity<AdminCommandAcceptedResponse> archiveCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
 		var commandId = UUID.randomUUID();
 		var now = java.time.Instant.now();
 		commandBus.dispatch(new ArchiveCoffeeCommand(commandId, coffeeId, now));
 		audit(authentication, "COFFEE_ARCHIVED", coffeeId, commandId, "ACCEPTED", now);
-		return ResponseEntity.accepted().build();
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
-	public ResponseEntity<Void> archiveCoffee(UUID coffeeId) { return archiveCoffee(coffeeId, null); }
+	public ResponseEntity<AdminCommandAcceptedResponse> archiveCoffee(UUID coffeeId) { return archiveCoffee(coffeeId, null); }
+
+	@DeleteMapping("/api/admin/coffees/{coffeeId}/permanent")
+	public ResponseEntity<AdminCommandAcceptedResponse> permanentlyDeleteCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
+		commandBus.dispatch(new DeleteCoffeeCommand(commandId, coffeeId, now));
+		audit(authentication, "COFFEE_DELETED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
+
+	public ResponseEntity<AdminCommandAcceptedResponse> permanentlyDeleteCoffee(UUID coffeeId) {
+		return permanentlyDeleteCoffee(coffeeId, null);
+	}
+
+	@PostMapping("/api/admin/coffees/{coffeeId}/publish")
+	public ResponseEntity<AdminCommandAcceptedResponse> publishCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+		var commandId = UUID.randomUUID(); var now = java.time.Instant.now();
+		commandBus.dispatch(new PublishCoffeeCommand(commandId, coffeeId, now));
+		audit(authentication, "COFFEE_PUBLISHED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
 
 	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<Void> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo, Authentication authentication)
+	public ResponseEntity<AdminCommandAcceptedResponse> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo, Authentication authentication)
 			throws java.io.IOException {
 		var commandId = UUID.randomUUID();
 		var now = java.time.Instant.now();
@@ -112,11 +135,11 @@ public class AdminCoffeesReadController {
 				photo.getBytes(),
 				now));
 		audit(authentication, "COFFEE_PHOTO_ADDED", coffeeId, commandId, "ACCEPTED", now);
-		return ResponseEntity.accepted().build();
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}/photos/{photoId}")
-	public ResponseEntity<Void> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId, Authentication authentication) {
+	public ResponseEntity<AdminCommandAcceptedResponse> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId, Authentication authentication) {
 		var commandId = UUID.randomUUID();
 		var now = java.time.Instant.now();
 		commandBus.dispatch(new DeleteCoffeePhotoCommand(
@@ -125,14 +148,14 @@ public class AdminCoffeesReadController {
 				photoId,
 				now));
 		audit(authentication, "COFFEE_PHOTO_DELETED", photoId, commandId, "ACCEPTED", now);
-		return ResponseEntity.accepted().build();
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
-	public ResponseEntity<Void> addPhoto(UUID coffeeId, MultipartFile photo) throws java.io.IOException {
+	public ResponseEntity<AdminCommandAcceptedResponse> addPhoto(UUID coffeeId, MultipartFile photo) throws java.io.IOException {
 		return addPhoto(coffeeId, photo, null);
 	}
 
-	public ResponseEntity<Void> deletePhoto(UUID coffeeId, UUID photoId) {
+	public ResponseEntity<AdminCommandAcceptedResponse> deletePhoto(UUID coffeeId, UUID photoId) {
 		return deletePhoto(coffeeId, photoId, null);
 	}
 

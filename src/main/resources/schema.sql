@@ -32,6 +32,8 @@ CREATE TABLE IF NOT EXISTS coffees (
 
 ALTER TABLE IF EXISTS coffees
     ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE IF EXISTS coffees
+    ADD COLUMN IF NOT EXISTS publication_status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED';
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_coffees_google_place_id
     ON coffees (google_place_id)
@@ -64,6 +66,8 @@ CREATE TABLE IF NOT EXISTS coffee_summaries_projection (
                                              version         INTEGER NOT NULL,
                                              updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
 );
+ALTER TABLE IF EXISTS coffee_summaries_projection
+    ADD COLUMN IF NOT EXISTS publication_status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED';
 CREATE TABLE IF NOT EXISTS coffee_photos_projection (
   id         UUID PRIMARY KEY,
   coffee_id  UUID NOT NULL,

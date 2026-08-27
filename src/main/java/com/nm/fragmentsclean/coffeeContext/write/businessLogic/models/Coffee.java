@@ -25,6 +25,7 @@ public final class Coffee extends AggregateRoot {
 	private int version;
 	private Instant updatedAt;
 	private Instant archivedAt;
+	private CoffeePublicationStatus publicationStatus;
 
 	// ========= CTOR privé "complet" =========
 
@@ -40,7 +41,8 @@ public final class Coffee extends AggregateRoot {
 			OpeningHours openingHours,
 			int version,
 			Instant updatedAt,
-			Instant archivedAt) {
+			Instant archivedAt,
+			CoffeePublicationStatus publicationStatus) {
 
 		super(coffeeId.value()); // <-- on remonte l'UUID brut à AggregateRoot
 		this.coffeeId = Objects.requireNonNull(coffeeId, "coffee id required");
@@ -58,6 +60,8 @@ public final class Coffee extends AggregateRoot {
 		this.version = version;
 		this.updatedAt = updatedAt != null ? updatedAt : Instant.now();
 		this.archivedAt = archivedAt;
+		this.publicationStatus = publicationStatus != null ? publicationStatus :
+				(archivedAt != null ? CoffeePublicationStatus.ARCHIVED : CoffeePublicationStatus.PUBLISHED);
 	}
 
 	// ========= Factory "createNew" (pour les commands) =========
@@ -72,6 +76,13 @@ public final class Coffee extends AggregateRoot {
 			WebsiteUrl website,
 			Set<Tag> tags,
 			Instant now) {
+		return createNew(coffeeId, googleId, name, address, location, phoneNumber, website, tags, now,
+				CoffeePublicationStatus.PUBLISHED);
+	}
+
+	public static Coffee createNew(CoffeeId coffeeId, GooglePlaceId googleId, CoffeeName name,
+			Address address, GeoPoint location, PhoneNumber phoneNumber, WebsiteUrl website,
+			Set<Tag> tags, Instant now, CoffeePublicationStatus publicationStatus) {
 		return new Coffee(
 				coffeeId != null ? coffeeId : CoffeeId.newId(),
 				googleId,
@@ -85,7 +96,7 @@ public final class Coffee extends AggregateRoot {
 				/* openingHours */ OpeningHours.empty(),
 				/* version */ 0,
 				now,
-				null);
+			null, publicationStatus);
 	}
 
 	// ========= Factory "rehydrate" (pour les repos JPA) =========
@@ -104,6 +115,14 @@ public final class Coffee extends AggregateRoot {
 			int version,
 			Instant updatedAt,
 			Instant archivedAt) {
+		return rehydrate(coffeeId, googleId, name, address, location, phoneNumber, website, tags, photos,
+				openingHours, version, updatedAt, archivedAt, null);
+	}
+
+	public static Coffee rehydrate(CoffeeId coffeeId, GooglePlaceId googleId, CoffeeName name,
+			Address address, GeoPoint location, PhoneNumber phoneNumber, WebsiteUrl website, Set<Tag> tags,
+			List<Photo> photos, OpeningHours openingHours, int version, Instant updatedAt, Instant archivedAt,
+			CoffeePublicationStatus publicationStatus) {
 		return new Coffee(
 				coffeeId,
 				googleId,
@@ -117,7 +136,7 @@ public final class Coffee extends AggregateRoot {
 				openingHours,
 				version,
 				updatedAt,
-				archivedAt);
+				archivedAt, publicationStatus);
 	}
 
 	// ========= Getters domaine =========
@@ -178,6 +197,8 @@ public final class Coffee extends AggregateRoot {
 		return archivedAt != null;
 	}
 
+	public CoffeePublicationStatus publicationStatus() { return publicationStatus; }
+
 	// ========= Behavior =========
 
 	public void rename(CoffeeName newName, Instant now) {
@@ -222,6 +243,14 @@ public final class Coffee extends AggregateRoot {
 		}
 		touch(now);
 		this.archivedAt = this.updatedAt;
+		this.publicationStatus = CoffeePublicationStatus.ARCHIVED;
+	}
+
+	public void publish(Instant now) {
+		if (isArchived()) throw new IllegalStateException("Archived coffee cannot be published");
+		if (publicationStatus == CoffeePublicationStatus.PUBLISHED) return;
+		touch(now);
+		publicationStatus = CoffeePublicationStatus.PUBLISHED;
 	}
 
 	private void touch(Instant now) {

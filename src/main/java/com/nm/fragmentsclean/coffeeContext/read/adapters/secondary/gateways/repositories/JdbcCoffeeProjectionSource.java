@@ -25,7 +25,7 @@ public class JdbcCoffeeProjectionSource implements CoffeeProjectionSource {
 	public Optional<CoffeeSummaryView> findByCoffeeId(UUID coffeeId) {
 		return jdbcTemplate.query("""
 				SELECT id, google_place_id, name, lat, lon, address_line1, city,
-				       postal_code, country, phone_number, website, tags_csv, version, updated_at
+				       postal_code, country, phone_number, website, tags_csv, publication_status, version, updated_at
 				FROM coffees
 				WHERE id = ? AND archived_at IS NULL
 				""", this::mapRow, coffeeId).stream().findFirst();
@@ -37,6 +37,7 @@ public class JdbcCoffeeProjectionSource implements CoffeeProjectionSource {
 				rs.getDouble("lat"), rs.getDouble("lon"), rs.getString("address_line1"),
 				rs.getString("city"), rs.getString("postal_code"), rs.getString("country"),
 				rs.getString("phone_number"), rs.getString("website"), parseTags(rs.getString("tags_csv")),
+				rs.getString("publication_status"),
 				rs.getLong("version"), rs.getTimestamp("updated_at").toInstant());
 	}
 

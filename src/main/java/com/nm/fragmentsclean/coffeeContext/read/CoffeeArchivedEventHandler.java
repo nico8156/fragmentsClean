@@ -31,16 +31,14 @@ public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEv
 	@Override
 	public void handle(CoffeeArchivedEvent event) {
 		var coffeeId = event.coffeeId().value();
-		photoProjectionRepository.deleteForCoffee(coffeeId);
-		openingHoursProjectionRepository.deleteForCoffee(coffeeId);
-		projectionRepository.deleteByCoffeeId(coffeeId);
+		projectionRepository.markArchived(coffeeId, event.version(), event.occurredAt());
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),
 				(long) event.version(),
 				event.occurredAt(),
-				List.of("archived", "summary", "photos", "openingHours")
+				List.of("archived", "summary")
 		));
 	}
 }

@@ -15,6 +15,7 @@ public record CoffeeSummaryResponse(
 		String phoneNumber,
 		String website,
 		Set<String> tags,
+		String publicationStatus,
 		long version,
 		Instant updatedAt) {
 	public record Location(double lat, double lon) {
@@ -32,7 +33,8 @@ public record CoffeeSummaryResponse(
 				new Address(v.addressLine(), v.city(), v.postalCode(), v.country()),
 				v.phoneNumber(),
 				v.website(),
-				v.tags(),
+					v.tags(),
+					v.publicationStatus(),
 				v.version(),
 				v.updatedAt());
 	}

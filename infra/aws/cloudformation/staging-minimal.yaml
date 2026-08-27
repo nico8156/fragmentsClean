@@ -216,6 +216,13 @@ Resources:
                   - s3:DeleteObject
                 Resource:
                   - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/*
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: arn:aws:s3:::anchor-assets-prod-851725375299
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - fragments/staging/coffees/*
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
