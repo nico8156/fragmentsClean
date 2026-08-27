@@ -23,7 +23,7 @@ For incident and release-1 verification commands, see
 | CloudFormation rejected the template with `Unrecognized resource types: AWS::EC2::InstanceProfile`. | The instance profile resource type was wrong. | Use `AWS::IAM::InstanceProfile`. | Always run `aws cloudformation validate-template` before deploy. |
 | EC2 came up without Docker. | Ubuntu 24.04 ARM64 does not provide the `awscli` apt package used by UserData; `set -e` stopped the bootstrap before Docker. | Install AWS CLI v2 from the official ARM64 archive and keep Docker install independent. | UserData must be idempotent and avoid distro packages that are absent on target AMIs. |
 | Docker image build failed with `invalid reference format`. | `STAGING_ECR_REPOSITORY` contained whitespace/newline or an image tag. | Correct the secret to the bare ECR repository URI. | The workflow validates the secret before build. |
-| GitHub Actions failed at `ssh-keyscan`. | The EC2 Security Group allowed SSH only from a personal IP, not from the GitHub runner. | First deploy used a temporary broad SSH rule. | The workflow now opens SSH only for the current runner `/32` and revokes it at the end. |
+| GitHub Actions failed at `ssh-keyscan`. | The legacy workflow targeted an obsolete stopped EC2 and still depended on inbound SSH. | Deployment moved to the active `platform-staging` instance through SSM Run Command. | CI no longer owns an SSH key or mutates Security Group ingress. |
 | Runtime `.env` risked becoming unreadable. | Secrets and operational values were initially mixed without ownership sections. | `.env.example` is grouped by responsibility and contains placeholders only. | Runtime config changes must preserve the documented sections. |
 
 ## Ticketverify Engine
@@ -84,25 +84,21 @@ aws cloudformation describe-stacks \
 
 ## Host Bootstrap
 
-Read the current staging host from CloudFormation:
+Read the current shared staging host from the platform stack:
 
 ```bash
 aws cloudformation describe-stacks \
   --region eu-west-3 \
-  --stack-name fragments-staging-minimal \
-  --query "Stacks[0].Outputs[?OutputKey=='InstancePublicIp'].OutputValue" \
+  --stack-name platform-staging \
+  --query "Stacks[0].Outputs[?OutputKey=='InstanceId'].OutputValue" \
   --output text
 ```
 
-SSH to the instance with the Ubuntu AMI user:
+Use SSM for operator access. Inbound SSH is not part of CI/CD:
 
 ```bash
-ssh -i ~/.ssh/anchor-staging-key.pem ubuntu@<instance-public-ip>
-cd /srv/fragments/staging
+aws ssm start-session --region eu-west-3 --target <instance-id>
 ```
-
-If the key has another local filename, keep the same `ubuntu@<instance-public-ip>` target and replace only the `-i` path.
-The public IP can change if the EC2 instance is replaced, so prefer the CloudFormation output over a hardcoded address.
 
 Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 
@@ -168,34 +164,30 @@ The EC2 runtime IAM role is limited to object operations under `fragments/stagin
 
 ## GitHub Actions
 
-Required repository secrets:
+No repository deployment secret is required. The stable, non-secret OIDC role
+ARN is versioned in the workflow. Runtime secrets remain exclusively in
+encrypted SSM parameters and are read by the EC2 role.
 
-- `AWS_DEPLOY_ROLE_ARN`
-- `STAGING_ECR_REPOSITORY`
-- `STAGING_EC2_HOST`
-- `STAGING_EC2_USER`
-- `STAGING_SSH_PRIVATE_KEY`
-- `STAGING_SECURITY_GROUP_ID`
+The role is owned by the dedicated
+`fragments-staging-deploy-role.yaml` stack. It can push only the Fragments
+backend repository and send `AWS-RunShellScript` only to the shared platform
+instance. It has no Security Group mutation permission.
 
-`STAGING_ECR_REPOSITORY` must be the `EcrRepositoryUri` CloudFormation output.
-It must not include a protocol, whitespace, or an image tag.
-
-`AWS_DEPLOY_ROLE_ARN` must be the `GitHubDeployRoleArn` CloudFormation output.
-
-`STAGING_SECURITY_GROUP_ID` must be the `InstanceSecurityGroupId` CloudFormation output.
+ECR and the target EC2 instance are resolved at runtime from the
+`fragments-staging-minimal` and `platform-staging` stack outputs.
 
 The workflow:
 
 1. runs backend tests;
 2. builds the backend Docker image for `linux/arm64`;
 3. pushes immutable `sha-<commit>` and `staging-latest` tags to ECR;
-4. temporarily authorizes SSH only from the GitHub runner public IP;
-5. syncs Compose, Caddy, `schema.sql`, and `data.sql`;
-6. upserts `BACKEND_IMAGE`, Google Places, coffee photo storage, S3 photo storage, CORS, SQS URLs, and SQS consumer settings in `/srv/fragments/staging/.env`;
-7. restarts `postgres` and `backend`;
-8. starts Caddy when `COMPOSE_PROFILES=https`;
-8. smoke-tests `GET /actuator/health`;
-9. revokes the temporary runner SSH rule.
+4. resolves the active instance from the `platform-staging` stack;
+5. invokes an immutable revision of `deploy-via-ssm.sh` through SSM Run Command;
+6. rebuilds `/srv/fragments/staging/.env` from encrypted SSM parameters on the host;
+7. applies the idempotent schema and recreates only the Fragments backend;
+8. verifies the exact image and `GET /actuator/health` through SSM.
+
+The workflow never receives database, JWT, Google or application secrets.
 
 ## Mobile / EAS
 

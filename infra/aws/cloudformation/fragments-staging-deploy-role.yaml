@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: GitHub OIDC role for inbound-free Fragments staging deployments through SSM.
+
+Parameters:
+  GitHubOidcProviderArn:
+    Type: String
+    Default: arn:aws:iam::851725375299:oidc-provider/token.actions.githubusercontent.com
+  GitHubRepository:
+    Type: String
+    Default: nico8156/fragmentsClean
+  GitHubBranch:
+    Type: String
+    Default: main
+  PlatformInstanceId:
+    Type: String
+    Default: i-004d3e9cbca327d01
+  BackendRepositoryArn:
+    Type: String
+    Default: arn:aws:ecr:eu-west-3:851725375299:repository/fragments/staging/backend
+
+Resources:
+  GitHubSsmDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: fragments-staging-github-ssm-deploy
+      Description: GitHub Actions role limited to ECR and SSM deployment on the shared staging host.
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref GitHubOidcProviderArn
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${GitHubRepository}:ref:refs/heads/${GitHubBranch}
+      Policies:
+        - PolicyName: fragments-staging-ssm-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: EcrAuthorizationToken
+                Effect: Allow
+                Action: ecr:GetAuthorizationToken
+                Resource: '*'
+              - Sid: PushFragmentsBackendImage
+                Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:BatchGetImage
+                  - ecr:CompleteLayerUpload
+                  - ecr:DescribeRepositories
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:InitiateLayerUpload
+                  - ecr:PutImage
+                  - ecr:UploadLayerPart
+                Resource: !Ref BackendRepositoryArn
+              - Sid: ReadDeploymentStackOutputs
+                Effect: Allow
+                Action: cloudformation:DescribeStacks
+                Resource:
+                  - arn:aws:cloudformation:eu-west-3:851725375299:stack/fragments-staging-minimal/*
+                  - arn:aws:cloudformation:eu-west-3:851725375299:stack/platform-staging/*
+              - Sid: DeployThroughSsm
+                Effect: Allow
+                Action: ssm:SendCommand
+                Resource:
+                  - arn:aws:ssm:eu-west-3::document/AWS-RunShellScript
+                  - !Sub arn:aws:ec2:eu-west-3:851725375299:instance/${PlatformInstanceId}
+              - Sid: ReadSsmCommandResult
+                Effect: Allow
+                Action: ssm:GetCommandInvocation
+                Resource: '*'
+
+Outputs:
+  GitHubSsmDeployRoleArn:
+    Value: !GetAtt GitHubSsmDeployRole.Arn

@@ -45,11 +45,11 @@ Parameters:
   GitHubBranch:
     Type: String
     Default: main
+    Description: GitHub branch allowed to assume the deploy role.
   SsmDeployInstanceId:
     Type: String
     Default: i-004d3e9cbca327d01
     Description: Platform EC2 instance targeted by the SSM deployment workflow.
-    Description: GitHub branch allowed to assume the deploy role.
   ExistingGitHubOidcProviderArn:
     Type: String
     Default: ''
@@ -377,6 +377,7 @@ Resources:
                   - cloudformation:DescribeStacks
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/platform-staging/*
               - Sid: DeployThroughSsm
                 Effect: Allow
                 Action:
