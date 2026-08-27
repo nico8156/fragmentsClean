@@ -10,6 +10,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrat
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.nio.charset.StandardCharsets;
@@ -43,6 +44,14 @@ public class IntegrationEventPayloadMapper {
                         uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
                         intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
+                case "article.revision.published" -> new ArticleRevisionPublishedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()),
+                        longValue(node, "version"),
+                        instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
                 default -> null;
             };
 

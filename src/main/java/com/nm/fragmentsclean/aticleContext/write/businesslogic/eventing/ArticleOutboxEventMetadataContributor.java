@@ -1,6 +1,9 @@
 package com.nm.fragmentsclean.aticleContext.write.businesslogic.eventing;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleDraftCreatedEvent;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionPublishedEvent;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionSubmittedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadata;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadataContributor;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
@@ -13,6 +16,15 @@ public class ArticleOutboxEventMetadataContributor implements OutboxEventMetadat
 	@Override
 	public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
 		if (event instanceof ArticleCreatedEvent articleEvent) {
+			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
+		}
+		if (event instanceof ArticleDraftCreatedEvent articleEvent) {
+			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
+		}
+		if (event instanceof ArticleRevisionSubmittedEvent articleEvent) {
+			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
+		}
+		if (event instanceof ArticleRevisionPublishedEvent articleEvent) {
 			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
 		}
 		return Optional.empty();

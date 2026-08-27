@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleProjectionRow;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -100,6 +101,24 @@ public class JdbcArticleProjectionRepository implements ArticleProjectionReposit
 				event.version(),
 				status,
 				coffeeIdsJson);
+	}
+
+	@Override
+	public void apply(ArticleRevisionPublishedIntegrationEvent event) {
+		jdbcTemplate.update("""
+				UPDATE articles_projection
+				SET status = 'published',
+				    published_at = ?,
+				    updated_at = ?,
+				    version = ?
+				WHERE id = ?
+				  AND version < ?
+				""",
+				Timestamp.from(event.occurredAt()),
+				Timestamp.from(event.occurredAt()),
+				event.version(),
+				event.articleId(),
+				event.version());
 	}
 
 	@Override
