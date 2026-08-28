@@ -25,6 +25,11 @@ Examples:
 4. Map external DTO/errors to internal result types.
 5. Add adapter integration test if the contract is risky.
 6. Add config via environment variables, never hardcoded secrets.
+7. Define serialization DTOs in the adapter and map them through an explicit
+   anti-corruption boundary before constructing domain objects.
+8. For long-running work, claim durable work in a short transaction, call the
+   remote system outside the transaction, then submit an idempotent completion
+   command.
 
 ## Pitfalls
 
@@ -32,6 +37,9 @@ Examples:
 - placing retries in domain logic
 - hardcoding local paths/secrets
 - making external availability part of a domain invariant
+- holding a database transaction open during a remote call
+- deserializing provider JSON directly into an aggregate or value object
+- exposing raw provider payloads or credentials in domain state or logs
 
 ## Validation
 
@@ -39,4 +47,5 @@ Examples:
 - adapter tests cover external mapping
 - config is environment-driven
 - failures are observable and do not corrupt state
-
+- malformed and incompatible responses are rejected before domain mapping
+- timeout and duplicate completion paths are tested when work is durable

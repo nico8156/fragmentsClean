@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Fragments staging editorial email identities and scoped runtime permission.
+
+Parameters:
+  EmailDomain:
+    Type: String
+    Default: anchor-event.fr
+  ReviewRecipient:
+    Type: String
+    Default: nmaldiney@gmail.com
+  PlatformRuntimeRoleName:
+    Type: String
+    Default: fragments-platform-staging-runtime
+
+Resources:
+  SendingDomainIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref EmailDomain
+      DkimAttributes:
+        SigningEnabled: true
+
+  SandboxReviewRecipientIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref ReviewRecipient
+
+  RuntimeSendEmailPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: fragments-staging-editorial-email
+      Roles:
+        - !Ref PlatformRuntimeRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - ses:SendEmail
+              - ses:SendRawEmail
+            Resource: !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${EmailDomain}
+
+Outputs:
+  SendingDomain:
+    Value: !Ref SendingDomainIdentity
+  ReviewRecipient:
+    Value: !Ref SandboxReviewRecipientIdentity
+  DkimName1:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenName1
+  DkimValue1:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenValue1
+  DkimName2:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenName2
+  DkimValue2:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenValue2
+  DkimName3:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenName3
+  DkimValue3:
+    Value: !GetAtt SendingDomainIdentity.DkimDNSTokenValue3

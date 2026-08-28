@@ -9,6 +9,8 @@ runtime_pg_password=$(aws ssm get-parameter --region "$aws_region" --name /fragm
 runtime_jwt_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/AUTH_JWT_SECRET --with-decryption --query Parameter.Value --output text)
 runtime_google_places_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/GOOGLE_PLACES_API_KEY --with-decryption --query Parameter.Value --output text)
 runtime_google_studio_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/GOOGLE_STUDIO_CLIENT_SECRET --with-decryption --query Parameter.Value --output text)
+runtime_openai_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_API_KEY --with-decryption --query Parameter.Value --output text)
+runtime_openai_project_id=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_PROJECT_ID --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
 # This is deliberately a normal SSM String, not a secret: it identifies the
 # operator account allowed to bootstrap an otherwise empty admin allow-list.
 runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
@@ -23,8 +25,18 @@ write_env POSTGRES_DB fragmentsclean
 write_env POSTGRES_PASSWORD "$runtime_pg_password"
 write_env AUTH_JWT_SECRET "$runtime_jwt_secret"
 write_env GOOGLE_PLACES_API_KEY "$runtime_google_places_key"
-write_env OPENAI_API_KEY ''
-write_env OPENAI_PROJECT_ID ''
+write_env OPENAI_API_KEY "$runtime_openai_key"
+write_env OPENAI_PROJECT_ID "$runtime_openai_project_id"
+write_env ARTICLE_GENERATION_OPENAI_ENABLED true
+write_env ARTICLE_GENERATION_TEXT_MODEL gpt-4o-mini
+write_env ARTICLE_GENERATION_IMAGE_MODEL gpt-image-1-mini
+write_env ARTICLE_GENERATION_SCHEDULE_ENABLED true
+write_env ARTICLE_GENERATION_SCHEDULE_DELAY_MS 604800000
+write_env ARTICLE_GENERATION_SCHEDULE_INITIAL_DELAY_MS 0
+write_env ARTICLE_GENERATION_SCHEDULE_SUBJECT "Découverte hebdomadaire autour de la culture café"
+write_env ARTICLE_GENERATION_SCHEDULE_LOCALE fr-FR
+write_env ARTICLE_GENERATION_SCHEDULE_MAX_PENDING 2
+write_env ARTICLE_GENERATION_SCHEDULE_DEDUPLICATION_HOURS 168
 write_env SPRING_PROFILES_ACTIVE prod
 write_env AWS_REGION "$aws_region"
 write_env FRAGMENTS_EDGE_NETWORK fragments-staging-edge
@@ -56,4 +68,4 @@ write_env ARTICLE_IMAGES_S3_PREFIX fragments/staging/articles
 write_env ARTICLE_IMAGES_S3_REGION "$aws_region"
 write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.fr
 
-unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_admin_bootstrap_user_ids
+unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_admin_bootstrap_user_ids

@@ -1,320 +1,159 @@
 package com.nm.fragmentsclean.adminImportContext.adapters.primary.rest;
 
+import com.nm.fragmentsclean.adminImportContext.businessLogic.models.*;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.*;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestPart;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.security.core.Authentication;
-
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleBlock;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCreationResult;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDocument;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageAsset;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleSubmission;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDocumentRepository;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-
 @RestController
 @RequestMapping("/api/admin/studio/articles")
-public class AdminStudioArticlesController {
-	private final SubmitStudioArticle submitStudioArticle;
-	private final StoreStudioArticleImage storeStudioArticleImage;
-	private final StudioArticleDocumentRepository studioArticleDocumentRepository;
-	private final DateTimeProvider dateTimeProvider;
-	private final ObjectMapper objectMapper;
-	private final RecordAdminAudit recordAdminAudit;
+public final class AdminStudioArticlesController {
+    private final SubmitStudioArticle submit;
+    private final SaveStudioArticleDraft save;
+    private final ArchiveStudioArticle archive;
+    private final StoreStudioArticleImage storeImage;
+    private final StudioArticleDraftCatalog catalog;
+    private final RecordAdminAudit audit;
+    private final DateTimeProvider clock;
 
-	@Autowired
-	public AdminStudioArticlesController(
-			SubmitStudioArticle submitStudioArticle,
-			StoreStudioArticleImage storeStudioArticleImage,
-			StudioArticleDocumentRepository studioArticleDocumentRepository,
-			DateTimeProvider dateTimeProvider,
-			ObjectMapper objectMapper,
-			RecordAdminAudit recordAdminAudit) {
-		this.submitStudioArticle = submitStudioArticle;
-		this.storeStudioArticleImage = storeStudioArticleImage;
-		this.studioArticleDocumentRepository = studioArticleDocumentRepository;
-		this.dateTimeProvider = dateTimeProvider;
-		this.objectMapper = objectMapper;
-		this.recordAdminAudit = recordAdminAudit;
-	}
+    @Autowired
+    public AdminStudioArticlesController(SubmitStudioArticle submit, SaveStudioArticleDraft save,
+                                         ArchiveStudioArticle archive, StoreStudioArticleImage storeImage,
+                                         StudioArticleDraftCatalog catalog, RecordAdminAudit audit,
+                                         DateTimeProvider clock) {
+        this.submit = submit; this.save = save; this.archive = archive;
+        this.storeImage = storeImage; this.catalog = catalog; this.audit = audit;
+        this.clock = clock;
+    }
 
-	public AdminStudioArticlesController(
-			SubmitStudioArticle submitStudioArticle,
-			StoreStudioArticleImage storeStudioArticleImage,
-			StudioArticleDocumentRepository studioArticleDocumentRepository,
-			DateTimeProvider dateTimeProvider,
-			ObjectMapper objectMapper) {
-		this(submitStudioArticle, storeStudioArticleImage, studioArticleDocumentRepository, dateTimeProvider,
-				objectMapper, new RecordAdminAudit(entry -> {}));
-	}
+    @GetMapping
+    public ArticleListResponse listArticles() {
+        return new ArticleListResponse(catalog.list().stream().map(ArticleDocumentResponse::from).toList());
+    }
 
-	@GetMapping
-	public AdminStudioArticleListResponse listArticles() {
-		return new AdminStudioArticleListResponse(
-				studioArticleDocumentRepository.list().stream()
-						.map(AdminStudioArticleDocumentResponse::from)
-						.toList());
-	}
+    @PutMapping("/{articleId}")
+    public ResponseEntity<ArticleDocumentResponse> saveDraft(@PathVariable UUID articleId,
+                                                              @RequestBody ArticleDraftRequest body,
+                                                              Authentication authentication) {
+        if (body.articleId() != null && !articleId.equals(body.articleId())) {
+            throw new IllegalArgumentException("Article path and payload identifiers differ");
+        }
+        var result = save.execute(body.withArticleId(articleId).toSubmission());
+        var document = catalog.byId(articleId).orElseThrow();
+        record(authentication, "ARTICLE_DRAFT_SAVED", articleId, result.commandId(), "APPLIED");
+        return ResponseEntity.accepted().body(ArticleDocumentResponse.from(document, result.commandId()));
+    }
 
-	@PutMapping("/{articleId}")
-	public AdminStudioArticleDocumentResponse saveDraft(
-			@PathVariable UUID articleId,
-			@RequestBody AdminStudioArticleSubmitRequest body, Authentication authentication) {
-		var document = saveDocument(articleId, "draft", body, null);
-		audit(authentication, "ARTICLE_DRAFT_SAVED", articleId, null, "APPLIED");
-		return AdminStudioArticleDocumentResponse.from(document);
-	}
+    @PostMapping
+    public ResponseEntity<ArticleSubmittedResponse> submitArticle(@RequestBody ArticleDraftRequest body,
+                                                                   Authentication authentication) {
+        var result = submit.execute(body.toSubmission());
+        record(authentication, "ARTICLE_SUBMITTED", result.articleId(), result.commandId(), result.status());
+        return ResponseEntity.accepted().body(ArticleSubmittedResponse.from(result));
+    }
 
-	public AdminStudioArticleDocumentResponse saveDraft(UUID articleId, AdminStudioArticleSubmitRequest body) {
-		return AdminStudioArticleDocumentResponse.from(saveDocument(articleId, "draft", body, null));
-	}
+    @DeleteMapping("/{articleId}")
+    public ResponseEntity<CommandAccepted> archiveArticle(@PathVariable UUID articleId,
+                                                           Authentication authentication) {
+        UUID commandId = archive.execute(articleId);
+        record(authentication, "ARTICLE_ARCHIVED", articleId, commandId, "APPLIED");
+        return ResponseEntity.accepted().body(new CommandAccepted(commandId, articleId, "PENDING"));
+    }
 
-	@DeleteMapping("/{articleId}")
-	public ResponseEntity<AdminStudioArticleDocumentResponse> deleteArticle(@PathVariable UUID articleId, Authentication authentication) {
-		Instant now = dateTimeProvider.now();
-		StudioArticleDocument existing = studioArticleDocumentRepository.findById(articleId)
-				.orElseGet(() -> new StudioArticleDocument(articleId, "draft", "{}", now, now, null, null, null));
-		StudioArticleDocument deleted = new StudioArticleDocument(
-				articleId,
-				"deleted",
-				existing.payloadJson(),
-				existing.createdAt(),
-				now,
-				existing.publishedAt(),
-				now,
-				existing.lastCommandId());
-		studioArticleDocumentRepository.save(deleted);
-		audit(authentication, "ARTICLE_DELETED", articleId, existing.lastCommandId(), "APPLIED");
-		return ResponseEntity.accepted().body(AdminStudioArticleDocumentResponse.from(deleted));
-	}
+    @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ArticleImageResponse> uploadImage(@RequestPart("articleId") String rawArticleId,
+                                                             @RequestPart(value = "alt", required = false) String alt,
+                                                             @RequestPart("image") MultipartFile image,
+                                                             Authentication authentication) throws IOException {
+        var asset = storeImage.execute(UUID.fromString(rawArticleId), image.getOriginalFilename(),
+                image.getContentType(), image.getBytes(), alt);
+        record(authentication, "ARTICLE_IMAGE_UPLOADED", asset.assetId(), null, "APPLIED");
+        return ResponseEntity.status(HttpStatus.CREATED).body(ArticleImageResponse.from(asset));
+    }
 
-	public ResponseEntity<AdminStudioArticleDocumentResponse> deleteArticle(UUID articleId) {
-		return deleteArticle(articleId, null);
-	}
+    private void record(Authentication authentication, String action, UUID targetId,
+                        UUID commandId, String outcome) {
+        if (authentication != null) {
+            audit.execute(UUID.fromString(authentication.getName()), action, "ARTICLE", targetId,
+                    commandId, outcome, clock.now());
+        }
+    }
 
-	@PostMapping
-	public ResponseEntity<AdminStudioArticleSubmittedResponse> submitArticle(
-			@RequestBody AdminStudioArticleSubmitRequest body, Authentication authentication) {
-		StudioArticleCreationResult result = submitStudioArticle.execute(new StudioArticleSubmission(
-				body.articleId(),
-				body.slug(),
-				body.locale(),
-				body.authorId(),
-				body.authorName(),
-				body.title(),
-				body.intro(),
-				body.blocks() == null ? List.of() : body.blocks().stream().map(AdminStudioArticleBlockRequest::toDomain).toList(),
-				body.conclusion(),
-				body.cover() == null ? null : body.cover().toDomain(),
-				body.tags() == null ? List.of() : body.tags(),
-				body.readingTimeMin(),
-				body.coffeeIds() == null ? List.of() : body.coffeeIds()
-		));
-		saveDocument(result.articleId(), "published", body.withArticleId(result.articleId()), result.commandId());
-		audit(authentication, "ARTICLE_SUBMITTED", result.articleId(), result.commandId(), result.status());
-		return ResponseEntity.status(HttpStatus.ACCEPTED)
-				.body(AdminStudioArticleSubmittedResponse.from(result));
-	}
+    public record ArticleDraftRequest(UUID articleId, UUID revisionId, String slug, String locale,
+                                      UUID authorId, String authorName, String title, String intro,
+                                      List<BlockRequest> blocks, String conclusion, ImageRequest cover,
+                                      List<String> tags, Integer readingTimeMin, List<UUID> coffeeIds) {
+        ArticleDraftRequest withArticleId(UUID id) {
+            return new ArticleDraftRequest(id, revisionId, slug, locale, authorId, authorName, title,
+                    intro, blocks, conclusion, cover, tags, readingTimeMin, coffeeIds);
+        }
+        StudioArticleSubmission toSubmission() {
+            return new StudioArticleSubmission(articleId, revisionId, slug, locale, authorId, authorName,
+                    title, intro, blocks == null ? List.of() : blocks.stream().map(BlockRequest::toModel).toList(),
+                    conclusion, cover == null ? null : cover.toModel(), tags == null ? List.of() : tags,
+                    readingTimeMin, coffeeIds == null ? List.of() : coffeeIds);
+        }
+        static ArticleDraftRequest from(StudioArticleSubmission source) {
+            return new ArticleDraftRequest(source.articleId(), source.revisionId(), source.slug(), source.locale(),
+                    source.authorId(), source.authorName(), source.title(), source.intro(),
+                    source.blocks().stream().map(BlockRequest::from).toList(), source.conclusion(),
+                    ImageRequest.from(source.cover()), source.tags(), source.readingTimeMin(), source.coffeeIds());
+        }
+    }
 
-	public ResponseEntity<AdminStudioArticleSubmittedResponse> submitArticle(AdminStudioArticleSubmitRequest body) {
-		return submitArticle(body, null);
-	}
+    public record BlockRequest(String heading, String paragraph, ImageRequest photo) {
+        StudioArticleBlock toModel() {
+            return new StudioArticleBlock(heading, paragraph, photo == null ? null : photo.toModel());
+        }
+        static BlockRequest from(StudioArticleBlock source) {
+            return new BlockRequest(source.heading(), source.paragraph(), ImageRequest.from(source.photo()));
+        }
+    }
 
-	@PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<AdminStudioArticleImageResponse> uploadImage(
-			@RequestPart("articleId") String rawArticleId,
-			@RequestPart(value = "alt", required = false) String alt,
-			@RequestPart("image") MultipartFile image, Authentication authentication) throws IOException {
-		StudioArticleImageAsset asset = storeStudioArticleImage.execute(
-				UUID.fromString(rawArticleId),
-				image.getOriginalFilename(),
-				image.getContentType(),
-				image.getBytes(),
-				alt);
-		audit(authentication, "ARTICLE_IMAGE_UPLOADED", asset.assetId(), null, "APPLIED");
-		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(AdminStudioArticleImageResponse.from(asset));
-	}
+    public record ImageRequest(UUID assetId, String url, String previewUrl,
+                               Integer width, Integer height, String alt) {
+        StudioArticleImageRef toModel() { return new StudioArticleImageRef(url, previewUrl, width, height, alt); }
+        static ImageRequest from(StudioArticleImageRef source) {
+            return source == null ? null : new ImageRequest(
+                    null, source.url(), source.previewUrl(), source.width(), source.height(), source.alt());
+        }
+    }
 
-	public ResponseEntity<AdminStudioArticleImageResponse> uploadImage(String rawArticleId, String alt, MultipartFile image) throws IOException {
-		return uploadImage(rawArticleId, alt, image, null);
-	}
+    public record ArticleDocumentResponse(UUID articleId, UUID revisionId, String status,
+                                          ArticleDraftRequest draft, Instant createdAt, Instant updatedAt,
+                                          Instant publishedAt, UUID lastCommandId) {
+        static ArticleDocumentResponse from(StudioArticleDraftDocument source) { return from(source, null); }
+        static ArticleDocumentResponse from(StudioArticleDraftDocument source, UUID commandId) {
+            return new ArticleDocumentResponse(source.articleId(), source.revisionId(), source.status(),
+                    ArticleDraftRequest.from(source.draft()), source.createdAt(), source.updatedAt(),
+                    source.publishedAt(), commandId);
+        }
+    }
 
-	private void audit(Authentication authentication, String action, UUID targetId, UUID commandId, String outcome) {
-		if (authentication != null) {
-			recordAdminAudit.execute(UUID.fromString(authentication.getName()), action, "ARTICLE", targetId,
-					commandId, outcome, dateTimeProvider.now());
-		}
-	}
-
-	public record AdminStudioArticleSubmitRequest(
-			UUID articleId,
-			String slug,
-			String locale,
-			UUID authorId,
-			String authorName,
-			String title,
-			String intro,
-			List<AdminStudioArticleBlockRequest> blocks,
-			String conclusion,
-			AdminStudioArticleImageRequest cover,
-			List<String> tags,
-			Integer readingTimeMin,
-			List<UUID> coffeeIds) {
-		AdminStudioArticleSubmitRequest withArticleId(UUID articleId) {
-			return new AdminStudioArticleSubmitRequest(
-					articleId,
-					slug,
-					locale,
-					authorId,
-					authorName,
-					title,
-					intro,
-					blocks,
-					conclusion,
-					cover,
-					tags,
-					readingTimeMin,
-					coffeeIds);
-		}
-	}
-
-	public record AdminStudioArticleBlockRequest(
-			String heading,
-			String paragraph,
-			AdminStudioArticleImageRequest photo) {
-		StudioArticleBlock toDomain() {
-			return new StudioArticleBlock(
-					heading,
-					paragraph,
-					photo == null ? null : photo.toDomain());
-		}
-	}
-
-	public record AdminStudioArticleImageRequest(
-			UUID assetId,
-			String url,
-			String previewUrl,
-			Integer width,
-			Integer height,
-			String alt) {
-		StudioArticleImageRef toDomain() {
-			return new StudioArticleImageRef(url, width, height, alt);
-		}
-	}
-
-	public record AdminStudioArticleSubmittedResponse(
-			UUID commandId,
-			UUID articleId,
-			String slug,
-			String locale,
-			String status) {
-		static AdminStudioArticleSubmittedResponse from(StudioArticleCreationResult result) {
-			return new AdminStudioArticleSubmittedResponse(
-					result.commandId(),
-					result.articleId(),
-					result.slug(),
-					result.locale(),
-					result.status());
-		}
-	}
-
-	public record AdminStudioArticleImageResponse(
-			UUID assetId,
-			String url,
-			String previewUrl,
-			Integer width,
-			Integer height,
-			String alt) {
-		static AdminStudioArticleImageResponse from(StudioArticleImageAsset asset) {
-			return new AdminStudioArticleImageResponse(
-					asset.assetId(),
-					asset.url(),
-					asset.previewUrl(),
-					asset.width(),
-					asset.height(),
-					asset.alt());
-		}
-	}
-
-	public record AdminStudioArticleListResponse(
-			List<AdminStudioArticleDocumentResponse> items) {
-	}
-
-	public record AdminStudioArticleDocumentResponse(
-			UUID articleId,
-			String status,
-			AdminStudioArticleSubmitRequest draft,
-			Instant createdAt,
-			Instant updatedAt,
-			Instant publishedAt,
-			Instant deletedAt,
-			UUID lastCommandId) {
-		static AdminStudioArticleDocumentResponse from(StudioArticleDocument document) {
-			try {
-				return new AdminStudioArticleDocumentResponse(
-						document.articleId(),
-						document.status(),
-						new ObjectMapper().readValue(document.payloadJson(), AdminStudioArticleSubmitRequest.class),
-						document.createdAt(),
-						document.updatedAt(),
-						document.publishedAt(),
-						document.deletedAt(),
-						document.lastCommandId());
-			} catch (IOException exception) {
-				throw new IllegalStateException("Invalid Studio article payload", exception);
-			}
-		}
-	}
-
-	private StudioArticleDocument saveDocument(
-			UUID articleId,
-			String status,
-			AdminStudioArticleSubmitRequest body,
-			UUID commandId) {
-		Instant now = dateTimeProvider.now();
-		StudioArticleDocument existing = studioArticleDocumentRepository.findById(articleId).orElse(null);
-		StudioArticleDocument document = new StudioArticleDocument(
-				articleId,
-				status,
-				toJson(body.withArticleId(articleId)),
-				existing == null ? now : existing.createdAt(),
-				now,
-				"published".equals(status) ? now : existing == null ? null : existing.publishedAt(),
-				existing == null ? null : existing.deletedAt(),
-				commandId == null && existing != null ? existing.lastCommandId() : commandId);
-		studioArticleDocumentRepository.save(document);
-		return document;
-	}
-
-	private String toJson(AdminStudioArticleSubmitRequest body) {
-		try {
-			return objectMapper.writeValueAsString(body);
-		} catch (JsonProcessingException exception) {
-			throw new IllegalArgumentException("Invalid Studio article draft", exception);
-		}
-	}
+    public record ArticleListResponse(List<ArticleDocumentResponse> items) { }
+    public record CommandAccepted(UUID commandId, UUID articleId, String status) { }
+    public record ArticleSubmittedResponse(UUID commandId, UUID articleId, String slug,
+                                           String locale, String status) {
+        static ArticleSubmittedResponse from(StudioArticleCreationResult source) {
+            return new ArticleSubmittedResponse(source.commandId(), source.articleId(), source.slug(),
+                    source.locale(), source.status());
+        }
+    }
+    public record ArticleImageResponse(UUID assetId, String url, String previewUrl,
+                                       Integer width, Integer height, String alt) {
+        static ArticleImageResponse from(StudioArticleImageAsset source) {
+            return new ArticleImageResponse(source.assetId(), source.url(), source.previewUrl(),
+                    source.width(), source.height(), source.alt());
+        }
+    }
 }

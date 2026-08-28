@@ -33,4 +33,5 @@ Use this when creating or updating a read model from an event.
 - replay is harmless
 - read model belongs to consuming BC
 - query path does not load aggregates
-
+- process progress, when projected, remains distinct from command status
+- `projection.updated` contains only freshness metadata and triggers a GET

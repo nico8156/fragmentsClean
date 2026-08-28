@@ -8,9 +8,15 @@ import org.springframework.context.annotation.Configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusArticleAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusArticleGenerationAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusGeneratedArticleEditingPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationAuthoringPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GeneratedArticleEditingPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationReviewPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticlePublicationApprovalPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminUserAccessRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLogRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
@@ -25,7 +31,13 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdm
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SaveStudioArticleDraft;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudioGeneratedArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -64,13 +76,32 @@ public class AdminImportContextConfiguration {
 		return new CommandBusArticleAuthoringPort(commandBus);
 	}
 
+	@Bean ArticleGenerationAuthoringPort articleGenerationAuthoringPort(CommandBus commandBus) { return new CommandBusArticleGenerationAuthoringPort(commandBus); }
+	@Bean StartStudioArticleGeneration startStudioArticleGeneration(ArticleGenerationAuthoringPort port, UuidGenerator ids, DateTimeProvider clock) { return new StartStudioArticleGeneration(port,ids,clock); }
+	@Bean GeneratedArticleEditingPort generatedArticleEditingPort(CommandBus commandBus){return new CommandBusGeneratedArticleEditingPort(commandBus);}
+	@Bean EditStudioGeneratedArticle editStudioGeneratedArticle(GeneratedArticleEditingPort port,UuidGenerator ids,DateTimeProvider clock){return new EditStudioGeneratedArticle(port,ids,clock);}
+	@Bean GetStudioArticleGenerationReview getStudioArticleGenerationReview(ArticleGenerationReviewPort port){return new GetStudioArticleGenerationReview(port);}
+	@Bean ApproveStudioArticlePublication approveStudioArticlePublication(ArticlePublicationApprovalPort port){return new ApproveStudioArticlePublication(port);}
+
 	@Bean
 	SubmitStudioArticle submitStudioArticle(
 			ArticleAuthoringPort articleAuthoringPort,
 			UuidGenerator uuidGenerator,
-			DateTimeProvider dateTimeProvider,
-			ObjectMapper objectMapper) {
-		return new SubmitStudioArticle(articleAuthoringPort, uuidGenerator, dateTimeProvider, objectMapper);
+			DateTimeProvider dateTimeProvider) {
+		return new SubmitStudioArticle(articleAuthoringPort, uuidGenerator, dateTimeProvider);
+	}
+
+	@Bean
+	SaveStudioArticleDraft saveStudioArticleDraft(
+			ArticleAuthoringPort articleAuthoringPort,
+			UuidGenerator uuidGenerator,
+			DateTimeProvider dateTimeProvider) {
+		return new SaveStudioArticleDraft(articleAuthoringPort, uuidGenerator, dateTimeProvider);
+	}
+
+	@Bean ArchiveStudioArticle archiveStudioArticle(
+			ArticleAuthoringPort port, UuidGenerator ids, DateTimeProvider clock) {
+		return new ArchiveStudioArticle(port, ids, clock);
 	}
 
 	@Bean

@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -36,10 +35,8 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreat
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceSearchResult;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDocument;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageAsset;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDocumentRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
@@ -223,7 +220,7 @@ class AdminTokenSecurityTest {
 								}
 								"""))
 				.andExpect(status().isAccepted())
-				.andExpect(jsonPath("$.commandId").value("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"))
+				.andExpect(jsonPath("$.commandId").value("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"))
 				.andExpect(jsonPath("$.articleId").value("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
 	}
 
@@ -409,15 +406,21 @@ class AdminTokenSecurityTest {
 	}
 
 	private AdminStudioArticlesController adminStudioArticlesController() {
+		var clock = (com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider)
+				() -> Instant.parse("2026-07-10T10:15:30Z");
+		var ids = new SequenceUuidGenerator(
+				UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"));
+		var authoring = new com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort() {
+			public void saveDraft(com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand command) { }
+			public void submitForReview(UUID commandId, Instant clientAt, UUID articleId) { }
+			public void publish(UUID commandId, Instant clientAt, UUID articleId, UUID revisionId) { }
+			public void archive(UUID commandId, Instant clientAt, UUID articleId) { }
+		};
 		return new AdminStudioArticlesController(
-				new SubmitStudioArticle(
-						command -> {
-						},
-						new SequenceUuidGenerator(
-								UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-								UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")),
-						() -> Instant.parse("2026-07-10T10:15:30Z"),
-						new com.fasterxml.jackson.databind.ObjectMapper()),
+				new SubmitStudioArticle(authoring, ids, clock),
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SaveStudioArticleDraft(authoring, ids, clock),
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle(authoring, ids, clock),
 				new StoreStudioArticleImage((articleId, fileName, contentType, bytes, alt) ->
 						new StudioArticleImageAsset(
 								UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),
@@ -426,33 +429,18 @@ class AdminTokenSecurityTest {
 								null,
 								null,
 								alt)),
-				new InMemoryStudioArticleDocumentRepository(),
-				() -> Instant.parse("2026-07-10T10:15:30Z"),
-				new com.fasterxml.jackson.databind.ObjectMapper());
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog() {
+					public List<com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDraftDocument> list() { return List.of(); }
+					public Optional<com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDraftDocument> byId(UUID id) { return Optional.empty(); }
+				},
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit(entry -> { }),
+				clock);
 	}
 
 	private ProjectionSyncController projectionSyncController() {
 		return new ProjectionSyncController(new FakeProjectionSyncDispatcher());
 	}
 
-	private static class InMemoryStudioArticleDocumentRepository implements StudioArticleDocumentRepository {
-		private final Map<UUID, StudioArticleDocument> documents = new ConcurrentHashMap<>();
-
-		@Override
-		public List<StudioArticleDocument> list() {
-			return List.copyOf(documents.values());
-		}
-
-		@Override
-		public Optional<StudioArticleDocument> findById(UUID articleId) {
-			return Optional.ofNullable(documents.get(articleId));
-		}
-
-		@Override
-		public void save(StudioArticleDocument document) {
-			documents.put(document.articleId(), document);
-		}
-	}
 
 	private static class FakeGooglePlacesGateway implements GooglePlacesGateway {
 		@Override

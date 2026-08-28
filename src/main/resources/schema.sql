@@ -282,7 +282,95 @@ CREATE TABLE IF NOT EXISTS articles (
                           published_at      TIMESTAMPTZ,
 
                           status            VARCHAR(32)    NOT NULL,
-                          version           BIGINT         NOT NULL
+                          version           BIGINT         NOT NULL,
+
+                          -- Compatibility pointers used during revision migration.
+                          working_revision_id   UUID,
+                          published_revision_id UUID
+);
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS working_revision_id UUID;
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS published_revision_id UUID;
+
+CREATE TABLE IF NOT EXISTS article_revisions (
+    revision_id       UUID PRIMARY KEY,
+    article_id        UUID         NOT NULL REFERENCES articles(article_id) ON DELETE CASCADE,
+    revision_number   INTEGER      NOT NULL,
+    title             TEXT         NOT NULL,
+    introduction      TEXT         NOT NULL,
+    conclusion        TEXT         NOT NULL,
+    cover_reference   TEXT,
+    cover_width       INTEGER,
+    cover_height      INTEGER,
+    cover_alt         TEXT,
+    reading_time_min  INTEGER      NOT NULL,
+    status            VARCHAR(32)  NOT NULL,
+    created_at        TIMESTAMPTZ  NOT NULL,
+    updated_at        TIMESTAMPTZ  NOT NULL,
+    published_at      TIMESTAMPTZ,
+    version           BIGINT       NOT NULL,
+
+    CONSTRAINT uq_article_revision_number UNIQUE (article_id, revision_number),
+    CONSTRAINT ck_article_revision_cover_dimensions CHECK (
+        (cover_reference IS NULL AND cover_width IS NULL AND cover_height IS NULL AND cover_alt IS NULL)
+        OR (cover_reference IS NOT NULL AND cover_width > 0 AND cover_height > 0 AND cover_alt IS NOT NULL)
+    )
+);
+
+CREATE INDEX IF NOT EXISTS idx_article_revisions_article_updated
+    ON article_revisions (article_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS article_revision_sections (
+    section_id   UUID PRIMARY KEY,
+    revision_id  UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    position     INTEGER      NOT NULL,
+    heading      VARCHAR(140) NOT NULL,
+
+    CONSTRAINT uq_article_revision_section_position UNIQUE (revision_id, position),
+    CONSTRAINT ck_article_revision_section_position CHECK (position >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS article_revision_paragraphs (
+    paragraph_id UUID PRIMARY KEY,
+    section_id   UUID         NOT NULL REFERENCES article_revision_sections(section_id) ON DELETE CASCADE,
+    position     INTEGER      NOT NULL,
+    body         TEXT         NOT NULL,
+
+    CONSTRAINT uq_article_section_paragraph_position UNIQUE (section_id, position),
+    CONSTRAINT ck_article_revision_paragraph_position CHECK (position >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS article_revision_images (
+    image_id           UUID PRIMARY KEY,
+    revision_id        UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    section_id         UUID         REFERENCES article_revision_sections(section_id) ON DELETE CASCADE,
+    position           INTEGER      NOT NULL,
+    storage_reference  TEXT         NOT NULL,
+    width              INTEGER      NOT NULL,
+    height             INTEGER      NOT NULL,
+    alt                TEXT         NOT NULL,
+    source             VARCHAR(64),
+    attribution        TEXT,
+
+    CONSTRAINT uq_article_revision_image_position UNIQUE (revision_id, section_id, position),
+    CONSTRAINT ck_article_revision_image_position CHECK (position >= 0),
+    CONSTRAINT ck_article_revision_image_dimensions CHECK (width > 0 AND height > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_article_revision_images_revision
+    ON article_revision_images (revision_id, section_id, position);
+
+CREATE TABLE IF NOT EXISTS article_revision_tags (
+    revision_id UUID         NOT NULL REFERENCES article_revisions(revision_id) ON DELETE CASCADE,
+    position    INTEGER      NOT NULL,
+    tag         VARCHAR(80)  NOT NULL,
+
+    PRIMARY KEY (revision_id, position),
+    CONSTRAINT uq_article_revision_tag_value UNIQUE (revision_id, tag),
+    CONSTRAINT ck_article_revision_tag_position CHECK (position >= 0)
 );
 
 CREATE TABLE IF NOT EXISTS articles_projection (
@@ -311,20 +399,6 @@ CREATE TABLE IF NOT EXISTS articles_projection (
 
                                      coffee_ids_json  TEXT         NOT NULL  -- UUID[] sérialisés en JSON
 );
-
-CREATE TABLE IF NOT EXISTS admin_studio_articles (
-                                     article_id       UUID PRIMARY KEY,
-                                     status           VARCHAR(32)  NOT NULL,
-                                     payload_json     TEXT         NOT NULL,
-                                     created_at       TIMESTAMPTZ  NOT NULL,
-                                     updated_at       TIMESTAMPTZ  NOT NULL,
-                                     published_at     TIMESTAMPTZ,
-                                     deleted_at       TIMESTAMPTZ,
-                                     last_command_id  UUID
-);
-
-CREATE INDEX IF NOT EXISTS idx_admin_studio_articles_status_updated_at
-    ON admin_studio_articles (status, updated_at DESC);
 
 --
 -- CREATE INDEX idx_articles_projection_slug_locale
@@ -515,3 +589,75 @@ create table if not exists user_entitlements_projection (
                                                             version bigint not null,
                                                             updated_at timestamptz not null
 );
+
+-- Durable process-manager state for long-running Studio article authoring.
+-- The saga is coordination state; article content remains owned by articleContext.
+create table if not exists article_authoring_sagas (
+    saga_id uuid primary key,
+    article_id uuid not null,
+    revision_id uuid not null,
+    theme text not null,
+    trigger varchar(32) not null,
+    state varchar(40) not null,
+    version bigint not null,
+    generation_attempts integer not null default 0,
+    lease_owner varchar(128),
+    lease_until timestamptz,
+    failure_category varchar(32),
+    created_at timestamptz not null,
+    updated_at timestamptz not null,
+    constraint article_authoring_saga_version_ck check (version >= 0),
+    constraint article_authoring_saga_attempts_ck check (generation_attempts >= 0)
+);
+create unique index if not exists uq_article_authoring_saga_revision on article_authoring_sagas(revision_id);
+create index if not exists idx_article_authoring_saga_state on article_authoring_sagas(state, updated_at);
+create index if not exists idx_article_authoring_saga_lease on article_authoring_sagas(lease_until);
+
+-- One immutable attempt record per saga attempt; provider payload is not stored here.
+create table if not exists article_generation_runs (
+    run_id uuid primary key,
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    attempt integer not null,
+    worker_id varchar(128) not null,
+    status varchar(16) not null,
+    provider_response_id varchar(256),
+    provider varchar(64),
+    model varchar(128),
+    schema_version varchar(64),
+    failure_category varchar(32),
+    started_at timestamptz not null,
+    completed_at timestamptz,
+    constraint article_generation_run_attempt_ck check (attempt > 0),
+    constraint article_generation_run_status_ck check (status in ('STARTED','SUCCEEDED','FAILED')),
+    unique (saga_id, attempt)
+);
+create index if not exists idx_article_generation_run_saga on article_generation_runs(saga_id, attempt);
+
+-- Normalized provider output awaiting relational revision materialisation.
+create table if not exists article_generation_artifacts (
+    run_id uuid primary key references article_generation_runs(run_id),
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    article_id uuid not null,
+    revision_id uuid not null,
+    schema_version varchar(64) not null,
+    draft_json text not null,
+    created_at timestamptz not null
+);
+create unique index if not exists uq_article_generation_artifact_revision on article_generation_artifacts(revision_id);
+
+-- Single-use, revision-bound publication approvals. Only the token hash is stored.
+create table if not exists article_review_approvals (
+    approval_id uuid primary key,
+    saga_id uuid not null references article_authoring_sagas(saga_id),
+    article_id uuid not null,
+    revision_id uuid not null,
+    token_hash varchar(128) not null unique,
+    expires_at timestamptz not null,
+    consumed_at timestamptz,
+    created_at timestamptz not null,
+    constraint article_review_approval_expiry_ck check (expires_at > created_at)
+);
+create unique index if not exists uq_article_review_approval_revision
+    on article_review_approvals(saga_id, revision_id);
+create index if not exists idx_article_review_approval_expiry
+    on article_review_approvals(expires_at, consumed_at);

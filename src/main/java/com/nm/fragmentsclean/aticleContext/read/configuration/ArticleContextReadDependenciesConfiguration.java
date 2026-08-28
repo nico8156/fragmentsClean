@@ -14,6 +14,9 @@ import com.nm.fragmentsclean.aticleContext.read.ArticleImageUriResolver;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
 import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.storage.DefaultArticleImageUriResolver;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCreatedEventHandler;
+import com.nm.fragmentsclean.aticleContext.read.projections.ArticleRevisionPublishedEventHandler;
+import com.nm.fragmentsclean.aticleContext.read.projections.ArticleArchivedEventHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.JpaArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
@@ -66,6 +69,20 @@ public class ArticleContextReadDependenciesConfiguration {
 	@Bean
 	ArticleCreatedEventHandler articleCreatedEventHandler(ArticleProjectionRepository articleRepository) {
 		return new ArticleCreatedEventHandler(articleRepository);
+	}
+
+	@Bean
+	ArticleRevisionPublishedEventHandler articleRevisionPublishedEventHandler(
+			ArticleProjectionRepository articleRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new ArticleRevisionPublishedEventHandler(articleRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	ArticleArchivedEventHandler articleArchivedEventHandler(
+			ArticleProjectionRepository articleRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new ArticleArchivedEventHandler(articleRepository, projectionSyncPublisher);
 	}
 
 	@Bean

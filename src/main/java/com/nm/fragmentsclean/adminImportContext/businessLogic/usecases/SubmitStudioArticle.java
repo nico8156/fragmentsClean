@@ -4,8 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCreationResult;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef;
@@ -18,36 +16,37 @@ public class SubmitStudioArticle {
 	private final ArticleAuthoringPort articleAuthoringPort;
 	private final UuidGenerator uuidGenerator;
 	private final DateTimeProvider dateTimeProvider;
-	private final ObjectMapper objectMapper;
 
 	public SubmitStudioArticle(
 			ArticleAuthoringPort articleAuthoringPort,
 			UuidGenerator uuidGenerator,
-			DateTimeProvider dateTimeProvider,
-			ObjectMapper objectMapper) {
+			DateTimeProvider dateTimeProvider) {
 		this.articleAuthoringPort = articleAuthoringPort;
 		this.uuidGenerator = uuidGenerator;
 		this.dateTimeProvider = dateTimeProvider;
-		this.objectMapper = objectMapper;
 	}
 
 	public StudioArticleCreationResult execute(StudioArticleSubmission submission) {
-		UUID commandId = uuidGenerator.generate();
+		UUID saveCommandId = uuidGenerator.generate();
+		UUID reviewCommandId = uuidGenerator.generate();
+		UUID publishCommandId = uuidGenerator.generate();
 		UUID articleId = submission.articleId() == null ? uuidGenerator.generate() : submission.articleId();
+		UUID revisionId = submission.revisionId() == null ? uuidGenerator.generate() : submission.revisionId();
 		Instant now = dateTimeProvider.now();
 		var cover = submission.cover();
 
 		var command = new StudioArticleCommand(
-				commandId,
+				saveCommandId,
 				now,
 				articleId,
+				revisionId,
 				requireText(submission.slug(), "slug"),
 				blankToDefault(submission.locale(), "fr-FR"),
 				requireUuid(submission.authorId(), "authorId"),
 				requireText(submission.authorName(), "authorName"),
 				requireText(submission.title(), "title"),
 				requireText(submission.intro(), "intro"),
-				toJson(submission.blocks() == null ? List.of() : submission.blocks()),
+				submission.blocks() == null ? java.util.List.of() : submission.blocks(),
 				requireText(submission.conclusion(), "conclusion"),
 				cover == null ? null : cover.url(),
 				cover == null ? null : cover.width(),
@@ -58,9 +57,11 @@ public class SubmitStudioArticle {
 				submission.coffeeIds() == null ? List.of() : submission.coffeeIds()
 		);
 
-		articleAuthoringPort.createArticle(command);
+		articleAuthoringPort.saveDraft(command);
+		articleAuthoringPort.submitForReview(reviewCommandId, now, articleId);
+		articleAuthoringPort.publish(publishCommandId, now, articleId, revisionId);
 
-		return new StudioArticleCreationResult(commandId, articleId, command.slug(), command.locale(), "SUBMITTED");
+		return new StudioArticleCreationResult(publishCommandId, articleId, command.slug(), command.locale(), "SUBMITTED");
 	}
 
 	private int estimateReadingTime(StudioArticleSubmission submission) {
@@ -80,14 +81,6 @@ public class SubmitStudioArticle {
 			return 0;
 		}
 		return value.trim().split("\\s+").length;
-	}
-
-	private String toJson(Object value) {
-		try {
-			return objectMapper.writeValueAsString(value);
-		} catch (JsonProcessingException exception) {
-			throw new IllegalArgumentException("Invalid article blocks", exception);
-		}
 	}
 
 	private String requireText(String value, String field) {

@@ -10,6 +10,10 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrat
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationRequestedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 
 import java.nio.charset.StandardCharsets;
@@ -43,6 +47,34 @@ public class IntegrationEventPayloadMapper {
                         uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
                         intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
+                case "article.revision.published" -> new ArticleRevisionPublishedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()),
+                        longValue(node, "version"),
+                        instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.archived" -> new ArticleArchivedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()),
+                        longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.generation.requested" -> new ArticleGenerationRequestedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "sagaId", event.getAggregateId()), uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()), text(node, "theme"), text(node, "locale"),
+                        text(node, "trigger"), longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.generation.completed" -> new ArticleGenerationCompletedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "sagaId", event.getAggregateId()), uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()), uuidOrFallback(node, "runId", event.getEventId()),
+                        text(node, "provider"), text(node, "providerResponseId"), text(node, "model"), text(node, "schemaVersion"),
+                        longValue(node, "sagaVersion"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
                 default -> null;
             };
 

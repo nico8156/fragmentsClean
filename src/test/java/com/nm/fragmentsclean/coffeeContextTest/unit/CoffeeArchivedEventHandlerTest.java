@@ -24,7 +24,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 
 class CoffeeArchivedEventHandlerTest {
 	@Test
-	void removes_coffee_from_read_projections_then_publishes_projection_updated_sync_event() {
+	void marks_coffee_archived_without_removing_studio_details_then_publishes_projection_updated_sync_event() {
 		var summaryRepository = new RecordingCoffeeProjectionRepository();
 		var photoRepository = new RecordingPhotoProjectionRepository();
 		var openingHoursRepository = new RecordingOpeningHoursProjectionRepository();
@@ -38,9 +38,11 @@ class CoffeeArchivedEventHandlerTest {
 
 		handler.handle(event);
 
-		assertThat(photoRepository.deletedCoffeeIds).containsExactly(event.coffeeId().value());
-		assertThat(openingHoursRepository.deletedCoffeeIds).containsExactly(event.coffeeId().value());
-		assertThat(summaryRepository.deletedCoffeeIds).containsExactly(event.coffeeId().value());
+		assertThat(summaryRepository.archived).containsExactly(
+				new ArchivedCoffee(event.coffeeId().value(), event.version(), event.occurredAt()));
+		assertThat(photoRepository.deletedCoffeeIds).isEmpty();
+		assertThat(openingHoursRepository.deletedCoffeeIds).isEmpty();
+		assertThat(summaryRepository.deletedCoffeeIds).isEmpty();
 		assertThat(syncPublisher.events).hasSize(1);
 		ProjectionSyncEvent syncEvent = syncPublisher.events.getFirst();
 		assertThat(syncEvent.eventName()).isEqualTo("projection.updated");
@@ -49,7 +51,7 @@ class CoffeeArchivedEventHandlerTest {
 		assertThat(syncEvent.entityId()).isEqualTo(event.coffeeId().value().toString());
 		assertThat(syncEvent.version()).isEqualTo((long) event.version());
 		assertThat(syncEvent.changedAt()).isEqualTo(event.occurredAt());
-		assertThat(syncEvent.hints()).containsExactly("archived", "summary", "photos", "openingHours");
+		assertThat(syncEvent.hints()).containsExactly("archived", "summary");
 	}
 
 	private CoffeeArchivedEvent coffeeArchivedEvent() {
@@ -64,6 +66,7 @@ class CoffeeArchivedEventHandlerTest {
 
 	private static class RecordingCoffeeProjectionRepository implements CoffeeProjectionRepository {
 		private final List<UUID> deletedCoffeeIds = new ArrayList<>();
+		private final List<ArchivedCoffee> archived = new ArrayList<>();
 
 		@Override
 		public void apply(CoffeeCreatedEvent event) {
@@ -72,6 +75,11 @@ class CoffeeArchivedEventHandlerTest {
 		@Override
 		public void deleteByCoffeeId(UUID coffeeId) {
 			deletedCoffeeIds.add(coffeeId);
+		}
+
+		@Override
+		public void markArchived(UUID coffeeId, long version, Instant updatedAt) {
+			archived.add(new ArchivedCoffee(coffeeId, version, updatedAt));
 		}
 
 		@Override
@@ -87,6 +95,9 @@ class CoffeeArchivedEventHandlerTest {
 		public long count() {
 			return 0;
 		}
+	}
+
+	private record ArchivedCoffee(UUID coffeeId, long version, Instant updatedAt) {
 	}
 
 	private static class RecordingPhotoProjectionRepository implements CoffeePhotoProjectionRepository {

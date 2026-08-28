@@ -145,7 +145,8 @@ reprendre un brouillon, sauvegarder sans publier, puis supprimer côté console.
 
 Le publish reste le seul passage vers l'app mobile : le boundary admin conserve
 l'`articleId` généré par le Studio, génère le `commandId`, construit
-`CreateArticleCommand`, puis délègue au command bus.
+`UpsertArticleDraftCommand`, puis délègue au command bus. La publication passe
+par la revue explicite de la révision et l'archivage est une transition métier.
 
 Les images article sont uploadées en multipart via
 `/api/admin/studio/articles/images`. L'adapter de stockage peut écrire en local
