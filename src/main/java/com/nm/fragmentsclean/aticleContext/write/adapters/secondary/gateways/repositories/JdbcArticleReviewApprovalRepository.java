@@ -57,10 +57,9 @@ public class JdbcArticleReviewApprovalRepository implements ArticleReviewApprova
 				approval.articleId(),
 				approval.revisionId(),
 				approval.tokenHash(),
-				Timestamp.from(approval.createdAt()),
-				Timestamp.from(approval.expiresAt()),
-				approval.consumedAt() == null ? null : Timestamp.from(approval.consumedAt()),
-				Timestamp.from(approval.createdAt()));
+					Timestamp.from(approval.createdAt()),
+					Timestamp.from(approval.expiresAt()),
+					approval.consumedAt() == null ? null : Timestamp.from(approval.consumedAt()));
 	}
 
 	@Override
