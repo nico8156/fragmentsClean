@@ -51,3 +51,12 @@ EDITORIAL_APPROVAL_TTL=PT24H
 
 It must not be placed in GitHub variables, the Studio bundle, an email body, or
 the repository. The email only carries the signed token in the Studio link.
+
+The staging bootstrap loads this secret directly from the encrypted SSM
+parameter `/fragments/staging/EDITORIAL_APPROVAL_SECRET`. It also enables the
+SES adapter and injects the non-secret sender, recipient, Studio URL, region and
+TTL settings into the runtime `.env`. Consequently, every successful OpenAI
+generation emits the same `article.generation.completed` integration event and
+produces one review email, whether the generation was requested manually from
+Studio or started by the weekly scheduler. The generation origin does not
+control notification delivery.
