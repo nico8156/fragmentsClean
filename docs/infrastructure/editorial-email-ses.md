@@ -10,7 +10,8 @@ The email stack owns only:
 - the `anchor-event.fr` SES sending-domain identity;
 - the `nmaldiney@gmail.com` recipient identity required by the SES sandbox;
 - a scoped inline policy on `fragments-platform-staging-runtime` allowing SES
-  sends from that domain identity only.
+  sends for the domain identity and, while SES is sandboxed, the verified review
+  recipient identity.
 
 Easy DKIM exposes three CNAME records as CloudFormation outputs. Add them to the
 OVH DNS zone without changing the existing root MX records. OVH may separately
@@ -25,6 +26,8 @@ Reply-To: nmaldiney@gmail.com
 
 While SES remains in sandbox, the recipient must confirm the AWS verification
 email. Request production access before sending to unverified recipients.
+After production access is granted, remove the recipient identity resource from
+the runtime IAM policy; keep only the sending-domain identity.
 
 Runtime configuration is supplied through the deployment secret/configuration
 channel, never through the Studio bundle:

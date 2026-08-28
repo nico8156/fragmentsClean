@@ -1,9 +1,44 @@
 # Article Authoring and Generation Saga
 
-Status: accepted implementation baseline for the article authoring program.
+Status: implemented staging baseline as of 2026-08-28.
 
-This document defines the target architecture before implementation. It is
-subordinate to the root `AGENTS.md`; implementation must satisfy both.
+This document records the implemented architecture and its remaining evolution.
+It is subordinate to the root `AGENTS.md`; implementation must satisfy both.
+
+## Current end-to-end flow
+
+```text
+Studio subject or weekly scheduler (including one eligible run after deploy)
+-> RequestArticleGeneration command
+-> short transaction: Article shell + working revision id + saga + command status + outbox
+-> articles-events SQS
+-> inbox-idempotent generation consumer claims a durable lease
+-> OpenAI structured JSON generation outside the transaction
+-> strict versioned DTO validation -> ACL mapping -> rich domain validation
+-> cover image + one image per section generated outside the transaction
+-> stable media slots stored in Fragments S3
+-> normalized artifact persisted and relational revision materialized
+-> saga READY_FOR_REVIEW and completion event in outbox
+-> SQS notification consumer creates a single-use approval and sends SES email
+-> operator reviews/edits in Studio or opens the email CTA
+-> authenticated explicit POST consumes the signed approval token
+-> publication policy lock (warning 24, hard limit 30)
+-> revision published + saga PUBLISHED + command statuses + outbox in one transaction
+-> public article projection updated
+-> projection.updated/articles emitted over SSE
+-> Studio/mobile perform authoritative GET refreshes
+```
+
+Generation never publishes. Email GET never publishes. SSE never carries article
+state and never replaces an authoritative read. External calls to OpenAI, image
+generation, S3 and SES are outside business transactions. SQS redelivery is safe
+through inbox identity, stable generation/media identities and single-use approval
+records.
+
+The deployed editorial format is French `DISCOVERY_GUIDE`: one cover, an
+introduction, three or four ordered illustrated sections, a conclusion and tags.
+Generated content starts as a draft. Manual and scheduled requests use the same
+command/saga path; only their trigger metadata differs.
 
 ## Decision summary
 
@@ -147,7 +182,7 @@ Exceptional terminal states are `REJECTED`, `FAILED`, `EXPIRED`, and
 `CANCELLED`. Every transition is explicit and tested. Arbitrary state setters
 are forbidden.
 
-### Phase 9 implementation boundary
+### Phase 9 historical implementation boundary
 
 The first orchestration slice is wired through the existing command bus and
 `articles-events` SQS destination:
@@ -162,11 +197,9 @@ RequestArticleGeneration
 ```
 
 Each attempt is recorded in `article_generation_runs` with its worker lease,
-provider response metadata and schema version. The generated domain draft is
-validated by the provider boundary, but is deliberately not copied into this
-technical attempt table. Materialising it into an article revision is the next
-phase; this slice therefore cannot yet send the review email or expose a
-ready-to-review article in Studio.
+provider response metadata and schema version. This was the first orchestration
+slice; phases 11 through 16 subsequently closed materialisation, generated media,
+Studio review, notification and publication approval as described below.
 
 The persisted saga records only coordination information:
 
