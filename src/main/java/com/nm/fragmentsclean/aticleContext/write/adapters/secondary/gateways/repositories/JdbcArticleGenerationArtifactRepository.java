@@ -9,7 +9,10 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 @Repository
-public final class JdbcArticleGenerationArtifactRepository implements ArticleGenerationArtifactRepository {
+// Spring applies repository exception-translation proxies at runtime. This
+// adapter must remain proxyable because the production context enables class
+// based proxies for technical repositories.
+public class JdbcArticleGenerationArtifactRepository implements ArticleGenerationArtifactRepository {
     private final JdbcTemplate jdbc; private final ObjectMapper mapper;
     public JdbcArticleGenerationArtifactRepository(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc=jdbc; this.mapper=mapper; }
     @Override public void save(UUID runId, UUID sagaId, UUID articleId, UUID revisionId, String schemaVersion, GeneratedArticleDraft draft) {
