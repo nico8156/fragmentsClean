@@ -4,6 +4,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.core.JsonSchemaLocalValidation;
 import com.openai.errors.OpenAIException;
 import com.openai.errors.OpenAIRetryableException;
+import com.openai.models.ResponsesModel;
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.responses.ResponseCreateParams;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleGenerationProviderException;
@@ -33,7 +34,7 @@ final class SdkOpenAiArticleClient implements OpenAiArticleClient {
                     .flatMap(content -> content.outputText().stream())
                     .findFirst()
                     .orElseThrow(() -> new ArticleGenerationProviderException("OpenAI returned no structured article", false));
-            return new ArticleResponse(body, response.id(), response.model().asString());
+            return new ArticleResponse(body, response.id(), modelName(response.model(), textModel));
         } catch (ArticleGenerationProviderException error) { throw error; }
         catch (OpenAIException error) { throw providerFailure("OpenAI article generation failed", error); }
     }
@@ -57,5 +58,12 @@ final class SdkOpenAiArticleClient implements OpenAiArticleClient {
 
     private ArticleGenerationProviderException providerFailure(String message, RuntimeException error) {
         return new ArticleGenerationProviderException(message, error instanceof OpenAIRetryableException, error);
+    }
+
+    static String modelName(ResponsesModel model, String requestedModel) {
+        return model.string()
+                .or(() -> model.chat().map(chatModel -> chatModel.asString()))
+                .or(() -> model.only().map(responsesOnlyModel -> responsesOnlyModel.asString()))
+                .orElse(requestedModel);
     }
 }
