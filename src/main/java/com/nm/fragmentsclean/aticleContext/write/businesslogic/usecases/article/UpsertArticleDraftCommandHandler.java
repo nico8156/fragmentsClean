@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Transactional
-public final class UpsertArticleDraftCommandHandler implements CommandHandler<UpsertArticleDraftCommand> {
+public class UpsertArticleDraftCommandHandler implements CommandHandler<UpsertArticleDraftCommand> {
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;

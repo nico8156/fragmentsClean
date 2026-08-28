@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.sql.Timestamp;
 
 @Repository
-public final class JdbcArticleGenerationShellRepository implements ArticleGenerationShellRepository {
+public class JdbcArticleGenerationShellRepository implements ArticleGenerationShellRepository {
     private final JdbcTemplate jdbc;
     public JdbcArticleGenerationShellRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 

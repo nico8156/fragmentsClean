@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.UUID;
 
 @Repository
-public final class JdbcArticlePublicationCapacityAdapter implements ArticlePublicationCapacityPort {
+public class JdbcArticlePublicationCapacityAdapter implements ArticlePublicationCapacityPort {
     private final JdbcTemplate jdbc;
 
     public JdbcArticlePublicationCapacityAdapter(JdbcTemplate jdbc) {

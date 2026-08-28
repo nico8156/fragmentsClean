@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 
 @Component
-public final class ArticleGenerationCompletionHandler {
+public class ArticleGenerationCompletionHandler {
     private final ArticleAuthoringSagaRepository sagas; private final ArticleGenerationRunRepository runs; private final ArticleGenerationArtifactRepository artifacts; private final ArticleRevisionMaterializer materializer; private final DomainEventPublisher events; private final ArticleAuthoringObservability observability;
     public ArticleGenerationCompletionHandler(ArticleAuthoringSagaRepository sagas, ArticleGenerationRunRepository runs, ArticleGenerationArtifactRepository artifacts, ArticleRevisionMaterializer materializer, DomainEventPublisher events, ArticleAuthoringObservability observability) { this.sagas=sagas; this.runs=runs; this.artifacts=artifacts; this.materializer=materializer; this.events=events; this.observability=observability; }
     @Transactional

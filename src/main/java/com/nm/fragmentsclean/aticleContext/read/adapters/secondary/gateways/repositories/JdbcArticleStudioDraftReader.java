@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public final class JdbcArticleStudioDraftReader implements ArticleStudioDraftReader {
+public class JdbcArticleStudioDraftReader implements ArticleStudioDraftReader {
     private final JdbcTemplate jdbc;
     private final ObjectMapper mapper;
     private final ArticleImageUriResolver images;

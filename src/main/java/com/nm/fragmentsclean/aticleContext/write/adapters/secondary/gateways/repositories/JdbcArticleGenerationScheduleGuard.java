@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 
 @Repository
-public final class JdbcArticleGenerationScheduleGuard implements ArticleGenerationScheduleGuard {
+public class JdbcArticleGenerationScheduleGuard implements ArticleGenerationScheduleGuard {
     private final JdbcTemplate jdbc;
 
     public JdbcArticleGenerationScheduleGuard(JdbcTemplate jdbc) {

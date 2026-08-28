@@ -13,7 +13,7 @@ import java.util.Objects;
 
 @Component
 @Transactional
-public final class SubmitArticleRevisionForReviewCommandHandler
+public class SubmitArticleRevisionForReviewCommandHandler
         implements CommandHandler<SubmitArticleRevisionForReviewCommand> {
 
     private final ArticleAggregateRepository repository;

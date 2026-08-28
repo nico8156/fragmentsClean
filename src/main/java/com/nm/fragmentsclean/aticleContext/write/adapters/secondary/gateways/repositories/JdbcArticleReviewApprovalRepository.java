@@ -12,7 +12,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleR
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalRepository;
 
 @Repository
-public final class JdbcArticleReviewApprovalRepository implements ArticleReviewApprovalRepository {
+public class JdbcArticleReviewApprovalRepository implements ArticleReviewApprovalRepository {
 	private final JdbcTemplate jdbcTemplate;
 
 	public JdbcArticleReviewApprovalRepository(JdbcTemplate jdbcTemplate) {

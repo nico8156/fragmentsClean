@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Transactional
-public final class ArchiveArticleCommandHandler implements CommandHandler<ArchiveArticleCommand> {
+public class ArchiveArticleCommandHandler implements CommandHandler<ArchiveArticleCommand> {
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;

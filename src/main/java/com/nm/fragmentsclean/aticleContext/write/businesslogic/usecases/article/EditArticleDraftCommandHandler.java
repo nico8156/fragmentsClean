@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Transactional
-public final class EditArticleDraftCommandHandler implements CommandHandler<EditArticleDraftCommand> {
+public class EditArticleDraftCommandHandler implements CommandHandler<EditArticleDraftCommand> {
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;

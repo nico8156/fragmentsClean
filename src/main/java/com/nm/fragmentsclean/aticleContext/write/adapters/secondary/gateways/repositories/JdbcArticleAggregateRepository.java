@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public final class JdbcArticleAggregateRepository implements ArticleAggregateRepository {
+public class JdbcArticleAggregateRepository implements ArticleAggregateRepository {
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
 

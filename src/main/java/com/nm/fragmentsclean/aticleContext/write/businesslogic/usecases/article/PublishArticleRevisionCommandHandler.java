@@ -15,7 +15,7 @@ import java.util.Objects;
 
 @Component
 @Transactional
-public final class PublishArticleRevisionCommandHandler implements CommandHandler<PublishArticleRevisionCommand> {
+public class PublishArticleRevisionCommandHandler implements CommandHandler<PublishArticleRevisionCommand> {
 
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher eventPublisher;

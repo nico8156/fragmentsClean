@@ -8,7 +8,7 @@ import java.time.*;
 import java.util.UUID;
 
 @Component
-public final class ArticleGenerationLeaseClaimer {
+public class ArticleGenerationLeaseClaimer {
     private final ArticleAuthoringSagaRepository sagas; private final ArticleGenerationRunRepository runs;
     private final ArticleAuthoringObservability observability;
     public ArticleGenerationLeaseClaimer(ArticleAuthoringSagaRepository sagas, ArticleGenerationRunRepository runs,

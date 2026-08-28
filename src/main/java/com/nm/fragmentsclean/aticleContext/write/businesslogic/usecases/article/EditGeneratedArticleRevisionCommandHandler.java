@@ -26,7 +26,7 @@ import jakarta.transaction.Transactional;
 
 @Component
 @Transactional
-public final class EditGeneratedArticleRevisionCommandHandler
+public class EditGeneratedArticleRevisionCommandHandler
 		implements CommandHandler<EditGeneratedArticleRevisionCommand> {
 	private final ArticleAuthoringSagaRepository sagas;
 	private final GeneratedArticleRevisionRepository revisions;

@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
 @Repository
-public final class JdbcArticleRevisionMaterializer implements ArticleRevisionMaterializer {
+public class JdbcArticleRevisionMaterializer implements ArticleRevisionMaterializer {
     private final JdbcTemplate jdbc; private final ObjectMapper mapper;
     public JdbcArticleRevisionMaterializer(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc=jdbc; this.mapper=mapper; }
     @Override public void materialize(UUID articleId, UUID revisionId, GeneratedArticleDraft draft, Instant now) {

@@ -17,7 +17,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticlePar
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag;
 
 @Repository
-public final class JdbcGeneratedArticleRevisionRepository implements GeneratedArticleRevisionRepository {
+public class JdbcGeneratedArticleRevisionRepository implements GeneratedArticleRevisionRepository {
 	private final JdbcTemplate jdbcTemplate;
 	private final ObjectMapper objectMapper;
 

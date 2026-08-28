@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public final class ArticleRevisionPublishedEventHandler {
+public class ArticleRevisionPublishedEventHandler {
 
     private final ArticleProjectionRepository repository;
     private final ProjectionSyncPublisher syncPublisher;

@@ -13,7 +13,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import jakarta.transaction.Transactional;
 
 @Component
-public final class ApproveArticlePublication {
+public class ApproveArticlePublication {
 	private final ArticleReviewApprovalValidator approvalTokens;
 	private final CommandBus commandBus;
 	private final DateTimeProvider clock;

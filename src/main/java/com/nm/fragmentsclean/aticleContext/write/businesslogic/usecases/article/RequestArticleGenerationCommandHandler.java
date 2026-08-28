@@ -18,7 +18,7 @@ import java.util.UUID;
 
 @Component
 @Transactional
-public final class RequestArticleGenerationCommandHandler implements CommandHandler<RequestArticleGenerationCommand> {
+public class RequestArticleGenerationCommandHandler implements CommandHandler<RequestArticleGenerationCommand> {
     private final ArticleAuthoringSagaRepository sagas;
     private final ArticleGenerationShellRepository articles;
     private final DomainEventPublisher events;
