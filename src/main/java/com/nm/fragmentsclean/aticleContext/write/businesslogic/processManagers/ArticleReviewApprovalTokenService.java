@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApproval;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalRepository;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalIssuer;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalValidator;
 
 @Component
-public final class ArticleReviewApprovalTokenService implements ArticleReviewApprovalIssuer {
+public final class ArticleReviewApprovalTokenService implements ArticleReviewApprovalIssuer, ArticleReviewApprovalValidator {
 	private static final String VERSION = "v1";
 	private final ArticleReviewApprovalRepository approvals;
 	private final ArticleReviewApprovalProperties properties;
@@ -42,6 +43,7 @@ public final class ArticleReviewApprovalTokenService implements ArticleReviewApp
 		return token;
 	}
 
+	@Override
 	public ArticleReviewApproval validate(String token, Instant now) {
 		if (properties.secret() == null || properties.secret().isBlank() || token == null || token.isBlank()) {
 			throw new IllegalArgumentException("Approval token is invalid");
@@ -89,6 +91,7 @@ public final class ArticleReviewApprovalTokenService implements ArticleReviewApp
 		}
 	}
 
+	@Override
 	public boolean consume(UUID approvalId, Instant consumedAt) {
 		return approvals.consume(approvalId, consumedAt);
 	}

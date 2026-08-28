@@ -386,6 +386,17 @@ setters or Lombok `@Data`. The final verification gate combines these boundary
 tests with the saga, scheduling, publication-capacity and notification suites
 before the accumulated branches are merged.
 
+### Publication runtime closure
+
+The signed approval use case now completes one transaction across approval
+consumption, saga identity validation, revision submission, publication
+capacity locking, revision publication, command statuses, outbox events and the
+final saga transition to `PUBLISHED`. Both editorial handlers are registered in
+the runtime command bus and use the JDBC rich-aggregate repository. Publication
+capacity uses a PostgreSQL transaction advisory lock so concurrent publication
+requests remain serialized even when the published catalogue is initially
+empty.
+
 ### Phase 15 review notification
 
 When the generation completion event is consumed from the `articles-events` SQS

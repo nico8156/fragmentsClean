@@ -16,9 +16,11 @@ public final class JdbcArticlePublicationCapacityAdapter implements ArticlePubli
 
     @Override
     public int countPublishedExcluding(UUID articleId) {
-        // Lock each candidate row, not the aggregate COUNT(*) result.
-        return jdbc.query(
-                "SELECT article_id FROM articles WHERE status = 'PUBLISHED' AND article_id <> ? FOR UPDATE",
-                (rs, rowNum) -> rs.getObject("article_id", UUID.class), articleId).size();
+        // A transaction-scoped advisory lock also protects the empty-catalogue case.
+        jdbc.query("SELECT pg_advisory_xact_lock(191, 30)", resultSet -> null);
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM articles WHERE status = 'PUBLISHED' AND article_id <> ?",
+                Integer.class, articleId);
+        return count == null ? 0 : count;
     }
 }

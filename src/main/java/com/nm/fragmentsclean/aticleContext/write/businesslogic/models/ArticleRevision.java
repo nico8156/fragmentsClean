@@ -25,6 +25,16 @@ public final class ArticleRevision {
         return new ArticleRevision(revisionId, content, now);
     }
 
+    public static ArticleRevision reconstitute(UUID revisionId, ArticleContent content,
+                                               ArticleRevisionStatus status, Instant createdAt,
+                                               Instant updatedAt, Instant publishedAt) {
+        var revision = new ArticleRevision(revisionId, content, createdAt);
+        revision.status = Objects.requireNonNull(status, "Le statut de révision est obligatoire.");
+        revision.updatedAt = Objects.requireNonNull(updatedAt, "La date de modification est obligatoire.");
+        revision.publishedAt = publishedAt;
+        return revision;
+    }
+
     public void replaceContent(ArticleContent replacement, Instant now) {
         ensureEditable();
         this.content = Objects.requireNonNull(replacement, "Le contenu est obligatoire.");

@@ -75,7 +75,7 @@ public final class ArticleAuthoringSaga {
     public void requestNotification(Instant now) { transition(ArticleAuthoringSagaState.READY_FOR_REVIEW, ArticleAuthoringSagaState.NOTIFICATION_PENDING, now); }
     public void markNotified(Instant now) { transition(ArticleAuthoringSagaState.NOTIFICATION_PENDING, ArticleAuthoringSagaState.NOTIFIED, now); }
     public void beginEditing(Instant now) { if (state != ArticleAuthoringSagaState.NOTIFIED && state != ArticleAuthoringSagaState.READY_FOR_REVIEW) reject("Cannot edit from " + state); state = ArticleAuthoringSagaState.EDITING; touch(now); }
-    public void requestPublication(Instant now) { if (state != ArticleAuthoringSagaState.EDITING && state != ArticleAuthoringSagaState.NOTIFIED) reject("Cannot publish from " + state); state = ArticleAuthoringSagaState.PUBLICATION_REQUESTED; touch(now); }
+    public void requestPublication(Instant now) { if (state != ArticleAuthoringSagaState.EDITING && state != ArticleAuthoringSagaState.NOTIFIED && state != ArticleAuthoringSagaState.READY_FOR_REVIEW) reject("Cannot publish from " + state); state = ArticleAuthoringSagaState.PUBLICATION_REQUESTED; touch(now); }
     public void markPublished(Instant now) { transition(ArticleAuthoringSagaState.PUBLICATION_REQUESTED, ArticleAuthoringSagaState.PUBLISHED, now); }
     public void markFailed(ArticleAuthoringFailureCategory category, Instant now) { Objects.requireNonNull(category); if (terminal()) reject("Saga is terminal"); state = ArticleAuthoringSagaState.FAILED; failureCategory = category; clearLease(); touch(now); }
     public void reject(Instant now) { if (terminal()) reject("Saga is terminal"); state = ArticleAuthoringSagaState.REJECTED; clearLease(); touch(now); }

@@ -54,6 +54,24 @@ public final class ArticleAggregate extends AggregateRoot {
         this.lifecycle = ArticleLifecycle.DRAFT;
     }
 
+    private ArticleAggregate(UUID articleId, String slug, String locale, UUID authorId,
+                             String authorName, Instant createdAt, List<ArticleRevision> revisions,
+                             UUID workingRevisionId, UUID publishedRevisionId,
+                             ArticleLifecycle lifecycle, long version) {
+        super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
+        this.slug = requireText(slug, "Le slug est obligatoire.");
+        this.locale = requireText(locale, "La locale est obligatoire.");
+        this.authorId = Objects.requireNonNull(authorId, "L'auteur est obligatoire.");
+        this.authorName = requireText(authorName, "Le nom de l'auteur est obligatoire.");
+        this.createdAt = Objects.requireNonNull(createdAt, "La date de création est obligatoire.");
+        this.revisions.addAll(List.copyOf(Objects.requireNonNull(revisions, "Les révisions sont obligatoires.")));
+        this.workingRevisionId = workingRevisionId;
+        this.publishedRevisionId = publishedRevisionId;
+        this.lifecycle = Objects.requireNonNull(lifecycle, "Le cycle de vie est obligatoire.");
+        if (version < 0) throw new ArticleDomainException("La version article est invalide.");
+        this.version = version;
+    }
+
     public static ArticleAggregate draft(UUID articleId,
                                          String slug,
                                          String locale,
@@ -67,6 +85,15 @@ public final class ArticleAggregate extends AggregateRoot {
     public static ArticleAggregate awaitingGeneration(UUID articleId, String slug, String locale,
                                                        UUID authorId, String authorName, Instant now) {
         return new ArticleAggregate(articleId, slug, locale, authorId, authorName, now);
+    }
+
+    public static ArticleAggregate reconstitute(UUID articleId, String slug, String locale,
+                                                UUID authorId, String authorName, Instant createdAt,
+                                                List<ArticleRevision> revisions, UUID workingRevisionId,
+                                                UUID publishedRevisionId, ArticleLifecycle lifecycle,
+                                                long version) {
+        return new ArticleAggregate(articleId, slug, locale, authorId, authorName, createdAt,
+                revisions, workingRevisionId, publishedRevisionId, lifecycle, version);
     }
 
     public boolean awaitsGeneratedRevision() {

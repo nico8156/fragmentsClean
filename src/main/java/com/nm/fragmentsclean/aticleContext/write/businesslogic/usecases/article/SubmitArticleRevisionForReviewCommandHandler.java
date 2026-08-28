@@ -7,9 +7,11 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
+@Component
 @Transactional
 public final class SubmitArticleRevisionForReviewCommandHandler
         implements CommandHandler<SubmitArticleRevisionForReviewCommand> {
