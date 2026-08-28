@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.art
 import java.util.Objects;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -42,8 +43,8 @@ public class S3ArticleImageStorageConfiguration {
 	@Bean
 	ArticleImageStorage s3ArticleImageStorage(
 			ArticleImageStorageProperties properties,
-			S3Client articleImageS3Client,
-			S3Presigner articleImageS3Presigner) {
+			@Qualifier("articleImageS3Client") S3Client articleImageS3Client,
+			@Qualifier("articleImageS3Presigner") S3Presigner articleImageS3Presigner) {
 		return new S3ArticleImageStorage(properties, articleImageS3Client, articleImageS3Presigner);
 	}
 
