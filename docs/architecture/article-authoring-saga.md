@@ -365,9 +365,10 @@ The provider lease remains the concurrency and restart safety boundary; the
 schedule only creates work when the configured budget allows it.
 
 The default cadence is weekly (`604800000` ms). Staging explicitly enables the
-schedule with an initial delay of `0`, so each backend deployment requests one
-generation immediately when the budget and seven-day subject deduplication
-guard allow it. Subsequent attempts run seven days after the previous execution
+schedule. Its first request is triggered by `ApplicationReadyEvent`, after the
+command bus is fully registered, when the budget and seven-day subject
+deduplication guard allow it. The recurring scheduler waits one full cadence
+before its first tick, then runs seven days after the previous execution
 finishes.
 
 ### Phase 19 recovery and observability

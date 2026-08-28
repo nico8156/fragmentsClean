@@ -1,8 +1,10 @@
 package com.nm.fragmentsclean.aticleContext.write.adapters.primary.springboot.scheduling;
 
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ScheduleArticleGeneration;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -30,8 +32,13 @@ public final class ScheduledArticleGenerationRequester {
 
     @Scheduled(
             fixedDelayString = "${fragments.article.generation.schedule.delay-ms:604800000}",
-            initialDelayString = "${fragments.article.generation.schedule.initial-delay-ms:0}")
+            initialDelayString = "${fragments.article.generation.schedule.delay-ms:604800000}")
     public void requestIfConfigured() {
         schedule.execute(subject, locale, maxPending, deduplicationHours);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void requestOnApplicationReady(ApplicationReadyEvent event) {
+        requestIfConfigured();
     }
 }
