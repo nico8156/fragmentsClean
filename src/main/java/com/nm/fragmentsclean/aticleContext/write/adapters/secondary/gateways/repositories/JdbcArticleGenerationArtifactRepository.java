@@ -17,7 +17,7 @@ public class JdbcArticleGenerationArtifactRepository implements ArticleGeneratio
     public JdbcArticleGenerationArtifactRepository(JdbcTemplate jdbc, ObjectMapper mapper) { this.jdbc=jdbc; this.mapper=mapper; }
     @Override public void save(UUID runId, UUID sagaId, UUID articleId, UUID revisionId, String schemaVersion, GeneratedArticleDraft draft) {
         final String json;
-        try { json=mapper.writeValueAsString(draft); } catch (JsonProcessingException e) { throw new IllegalStateException("Cannot serialize normalized article draft", e); }
+        try { json=mapper.writeValueAsString(ArticleGenerationArtifactDraftV1.fromDomain(draft)); } catch (JsonProcessingException e) { throw new IllegalStateException("Cannot serialize normalized article draft", e); }
         jdbc.update("INSERT INTO article_generation_artifacts (run_id,saga_id,article_id,revision_id,schema_version,draft_json,created_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT (run_id) DO UPDATE SET draft_json=EXCLUDED.draft_json,schema_version=EXCLUDED.schema_version",runId,sagaId,articleId,revisionId,schemaVersion,json,Timestamp.from(Instant.now()));
     }
 }
