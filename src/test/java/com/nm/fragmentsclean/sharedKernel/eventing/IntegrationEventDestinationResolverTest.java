@@ -39,6 +39,14 @@ class IntegrationEventDestinationResolverTest {
                 .containsExactly("ticket-events");
     }
 
+    @Test
+    void routes_article_authoring_saga_events_to_article_worker_queue() {
+        assertThat(destinations("ArticleAuthoringSaga", "com.example.ArticleGenerationRequestedEvent"))
+                .containsExactly("articles-events");
+        assertThat(destinations("ArticleAuthoringSaga", "com.example.ArticleGenerationCompletedEvent"))
+                .containsExactly("articles-events");
+    }
+
     private List<String> destinations(String aggregateType, String eventType) {
         var event = new OutboxEventJpaEntity();
         event.setAggregateType(aggregateType);
