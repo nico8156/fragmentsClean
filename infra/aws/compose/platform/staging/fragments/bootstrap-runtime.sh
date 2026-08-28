@@ -11,6 +11,7 @@ runtime_google_places_key=$(aws ssm get-parameter --region "$aws_region" --name 
 runtime_google_studio_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/GOOGLE_STUDIO_CLIENT_SECRET --with-decryption --query Parameter.Value --output text)
 runtime_openai_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_API_KEY --with-decryption --query Parameter.Value --output text)
 runtime_openai_project_id=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_PROJECT_ID --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
+runtime_editorial_approval_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/EDITORIAL_APPROVAL_SECRET --with-decryption --query Parameter.Value --output text)
 # This is deliberately a normal SSM String, not a secret: it identifies the
 # operator account allowed to bootstrap an otherwise empty admin allow-list.
 runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
@@ -36,6 +37,13 @@ write_env ARTICLE_GENERATION_SCHEDULE_SUBJECT "Découverte hebdomadaire autour d
 write_env ARTICLE_GENERATION_SCHEDULE_LOCALE fr-FR
 write_env ARTICLE_GENERATION_SCHEDULE_MAX_PENDING 2
 write_env ARTICLE_GENERATION_SCHEDULE_DEDUPLICATION_HOURS 168
+write_env EDITORIAL_EMAIL_ENABLED true
+write_env EDITORIAL_EMAIL_FROM studio@anchor-event.fr
+write_env EDITORIAL_EMAIL_RECIPIENT nmaldiney@gmail.com
+write_env EDITORIAL_EMAIL_STUDIO_BASE_URL https://studio-staging.anchor-event.fr
+write_env EDITORIAL_EMAIL_REGION "$aws_region"
+write_env EDITORIAL_APPROVAL_SECRET "$runtime_editorial_approval_secret"
+write_env EDITORIAL_APPROVAL_TTL PT24H
 write_env SPRING_PROFILES_ACTIVE prod
 write_env AWS_REGION "$aws_region"
 write_env FRAGMENTS_EDGE_NETWORK fragments-staging-edge
@@ -67,4 +75,4 @@ write_env ARTICLE_IMAGES_S3_PREFIX fragments/staging/articles
 write_env ARTICLE_IMAGES_S3_REGION "$aws_region"
 write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.fr
 
-unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_admin_bootstrap_user_ids
+unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_admin_bootstrap_user_ids
