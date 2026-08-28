@@ -29,7 +29,7 @@ public class IntegrationEventDestinationResolver {
         }
 
         return switch (aggregateType) {
-            case "Article" -> List.of(ARTICLES_EVENTS);
+            case "Article", "ArticleAuthoringSaga" -> List.of(ARTICLES_EVENTS);
             case "AuthUser" -> List.of(AUTH_USERS_EVENTS);
             case "AppUser", "SavedCoffee" -> List.of(APP_USERS_EVENTS);
             case "Comment", "Like" -> List.of(DOMAIN_EVENTS);
