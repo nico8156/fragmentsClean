@@ -5,6 +5,7 @@ import java.util.UUID;
 
 public record StudioArticleSubmission(
 		UUID articleId,
+		UUID revisionId,
 		String slug,
 		String locale,
 		UUID authorId,

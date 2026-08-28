@@ -137,7 +137,19 @@ public final class ArticleAggregate extends AggregateRoot {
 
     public void registerRevisionPublished(UUID commandId, Instant clientAt, Instant now) {
         registerEvent(new ArticleRevisionPublishedEvent(
-                UUID.randomUUID(), commandId, id, publishedRevisionId, now, clientAt));
+                UUID.randomUUID(), commandId, id, publishedRevisionId, version, now, clientAt));
+    }
+
+    public void archive(Instant now) {
+        if (lifecycle == ArticleLifecycle.ARCHIVED) return;
+        workingRevision().archive(now);
+        lifecycle = ArticleLifecycle.ARCHIVED;
+        version++;
+    }
+
+    public void registerArchived(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleArchivedEvent(
+                UUID.randomUUID(), commandId, id, workingRevisionId, version, now, clientAt));
     }
 
     public UUID startWorkingRevision(UUID revisionId, ArticleRevisionDraft draft, Instant now) {

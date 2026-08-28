@@ -7,6 +7,7 @@ import com.nm.fragmentsclean.aticleContext.read.projections.ArticleProjectionRow
 import com.nm.fragmentsclean.aticleContext.read.projections.ImageRefView;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -170,6 +171,14 @@ public class JdbcArticleProjectionRepository implements ArticleProjectionReposit
 	private record PublishedRevisionSource(UUID articleId, String slug, String locale, UUID authorId,
 			String authorName, String coffeeIdsJson, String title, String introduction, String conclusion,
 			String coverReference, Integer coverWidth, Integer coverHeight, String coverAlt, int readingTimeMin) { }
+
+	@Override
+	public void apply(ArticleArchivedIntegrationEvent event) {
+		jdbcTemplate.update("""
+				UPDATE articles_projection SET status = 'archived', updated_at = ?, version = ?
+				WHERE id = ? AND version < ?
+				""", Timestamp.from(event.occurredAt()), event.version(), event.articleId(), event.version());
+	}
 
 	@Override
 	public long count() {

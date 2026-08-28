@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegra
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationRequestedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -53,6 +54,13 @@ public class IntegrationEventPayloadMapper {
                         uuidOrFallback(node, "revisionId", event.getAggregateId()),
                         longValue(node, "version"),
                         instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        instantOrFallback(node, "clientAt", event.getOccurredAt()));
+                case "article.archived" -> new ArticleArchivedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidOrFallback(node, "articleId", event.getAggregateId()),
+                        uuidOrFallback(node, "revisionId", event.getAggregateId()),
+                        longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                         instantOrFallback(node, "clientAt", event.getOccurredAt()));
                 case "article.generation.requested" -> new ArticleGenerationRequestedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()),

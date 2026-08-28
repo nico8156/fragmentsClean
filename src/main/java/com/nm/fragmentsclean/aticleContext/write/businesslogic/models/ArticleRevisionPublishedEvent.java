@@ -10,6 +10,7 @@ public record ArticleRevisionPublishedEvent(
         UUID commandId,
         UUID articleId,
         UUID revisionId,
+        long version,
         Instant occurredAt,
         Instant clientAt
 ) implements DomainEvent {

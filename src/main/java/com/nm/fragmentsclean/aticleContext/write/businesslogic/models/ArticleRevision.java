@@ -56,7 +56,7 @@ public final class ArticleRevision {
     }
 
     public void archive(Instant now) {
-        ensureStatus(ArticleRevisionStatus.PUBLISHED, "Seule une révision publiée peut être archivée.");
+        if (status == ArticleRevisionStatus.ARCHIVED) return;
         this.status = ArticleRevisionStatus.ARCHIVED;
         this.updatedAt = Objects.requireNonNull(now, "La date d'archivage est obligatoire.");
     }
