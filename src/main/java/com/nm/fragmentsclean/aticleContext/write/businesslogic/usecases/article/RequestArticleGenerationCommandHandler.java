@@ -48,6 +48,9 @@ public class RequestArticleGenerationCommandHandler implements CommandHandler<Re
                 command.authorId(), command.authorName(), now));
         var saga = ArticleAuthoringSaga.request(command.sagaId(), command.articleId(), command.revisionId(),
                 command.theme(), command.trigger(), now);
+        // Persist the REQUESTED snapshot first. The transition increments the
+        // optimistic version and must therefore be persisted as an UPDATE.
+        sagas.save(saga);
         saga.enqueueGeneration(now);
         sagas.save(saga);
         var s = saga.snapshot();
