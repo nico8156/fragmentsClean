@@ -364,6 +364,12 @@ does not call OpenAI, create revisions directly, or bypass the outbox/SQS flow.
 The provider lease remains the concurrency and restart safety boundary; the
 schedule only creates work when the configured budget allows it.
 
+The default cadence is weekly (`604800000` ms). Staging explicitly enables the
+schedule with an initial delay of `0`, so each backend deployment requests one
+generation immediately when the budget and seven-day subject deduplication
+guard allow it. Subsequent attempts run seven days after the previous execution
+finishes.
+
 ### Phase 19 recovery and observability
 
 Saga recovery remains lease-based: an SQS redelivery may reclaim a generation

@@ -28,7 +28,9 @@ public final class ScheduledArticleGenerationRequester {
         this.deduplicationHours = deduplicationHours;
     }
 
-    @Scheduled(fixedDelayString = "${fragments.article.generation.schedule.delay-ms:86400000}")
+    @Scheduled(
+            fixedDelayString = "${fragments.article.generation.schedule.delay-ms:604800000}",
+            initialDelayString = "${fragments.article.generation.schedule.initial-delay-ms:0}")
     public void requestIfConfigured() {
         schedule.execute(subject, locale, maxPending, deduplicationHours);
     }
