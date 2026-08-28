@@ -66,7 +66,8 @@ class RichArticleDomainTest {
         var content = ArticleContent.draft(
                 ArticleTitle.from("Titre"),
                 ArticleIntroduction.from("Introduction"),
-                List.of(emptySection),
+                List.of(emptySection,
+                        sectionWithContent("Deuxième"), sectionWithContent("Troisième")),
                 ArticleParagraph.from("Conclusion"));
         var article = ArticleAggregate.draft(
                 ARTICLE_ID,
@@ -123,12 +124,20 @@ class RichArticleDomainTest {
     }
 
     private ArticleContent content(String title) {
-        var section = ArticleSection.draft("Comprendre").withParagraph(ArticleParagraph.from("Un paragraphe."));
+        var section = sectionWithContent("Comprendre");
+        var second = sectionWithContent("Explorer");
+        var third = sectionWithContent("Partager");
         return ArticleContent.draft(
                 ArticleTitle.from(title),
                 ArticleIntroduction.from("Une introduction."),
-                List.of(section),
+                List.of(section, second, third),
                 ArticleParagraph.from("Une conclusion."));
+    }
+
+    private ArticleSection sectionWithContent(String heading) {
+        return ArticleSection.draft(heading)
+                .withParagraph(ArticleParagraph.from("Un paragraphe."))
+                .withImage(ArticleImageRef.from("s3://articles/" + heading.toLowerCase() + ".jpg", 1200, 800, heading));
     }
 
     private ArticleRevisionDraft draft(ArticleContent content) {

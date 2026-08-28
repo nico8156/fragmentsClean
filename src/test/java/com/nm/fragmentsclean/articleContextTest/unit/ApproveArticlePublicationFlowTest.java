@@ -53,8 +53,14 @@ class ApproveArticlePublicationFlowTest {
 
     private static ArticleContent content() {
         return ArticleContent.draft(ArticleTitle.from("Le café filtre"), ArticleIntroduction.from("Introduction"),
-                java.util.List.of(ArticleSection.draft("Méthode").withParagraph(ArticleParagraph.from("Paragraphe"))),
+                java.util.List.of(section("Méthode"), section("Origines"), section("Dégustation")),
                 ArticleParagraph.from("Conclusion"));
+    }
+
+    private static ArticleSection section(String heading) {
+        return ArticleSection.draft(heading)
+                .withParagraph(ArticleParagraph.from("Paragraphe"))
+                .withImage(ArticleImageRef.from("s3://articles/" + heading.toLowerCase() + ".jpg", 1200, 800, heading));
     }
 
     private static ArticleRevisionDraft draft() {

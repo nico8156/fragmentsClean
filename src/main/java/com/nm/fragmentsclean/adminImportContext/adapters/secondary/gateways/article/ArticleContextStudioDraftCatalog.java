@@ -4,11 +4,13 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.*;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog;
 import com.nm.fragmentsclean.aticleContext.read.ArticleStudioDraftReader;
 import com.nm.fragmentsclean.aticleContext.read.ArticleStudioDraftView;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Component
 public final class ArticleContextStudioDraftCatalog implements StudioArticleDraftCatalog {
     private final ArticleStudioDraftReader reader;
 

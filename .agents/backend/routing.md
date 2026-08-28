@@ -58,7 +58,9 @@ when an admin workflow spans UI input, object storage, and a bounded-context
 command.
 
 Examples:
-- Studio article submission -> `CreateArticleCommand`
+- Studio article draft save -> `UpsertArticleDraftCommand`
+- Studio article review/publication -> revision review then publication commands
+- Studio article archive -> `ArchiveArticleCommand`
 - Studio image upload -> article image storage adapter
 - cafe import search/preview/import flow
 

@@ -486,8 +486,10 @@ weakening domain encapsulation.
 
 ## Migration strategy
 
-Current implementation debt includes immediate publication, write-side
-`blocksJson`, and a durable Studio document in `adminImportContext`.
+The durable Studio document and its `admin_studio_articles` table have been
+removed. Studio drafts now belong to `articleContext` and are persisted as
+structured revisions. `blocks_json` remains only as a compatibility/read-model
+denormalization for the public mobile contract.
 
 Migration is incremental:
 
@@ -498,7 +500,7 @@ Migration is incremental:
 4. project structured revisions to the current mobile block response;
 5. migrate useful existing data with explicit mapping;
 6. remove the parallel Studio document only after all commands and reads use
-   the owning context;
+   the owning context; completed for Studio article authoring;
 7. remove legacy fields/routes in a separate reviewed cleanup.
 
 No implementation task may silently combine migration cleanup with a behavior
@@ -540,6 +542,8 @@ change.
 - retryable failure remains on the queue and reaches DLQ policy;
 - projection update precedes `projection.updated` publication;
 - current mobile response remains compatible.
+- publication and archive are idempotent, versioned transitions; freshness is
+  emitted only after the projection write succeeds.
 
 ### Architecture
 

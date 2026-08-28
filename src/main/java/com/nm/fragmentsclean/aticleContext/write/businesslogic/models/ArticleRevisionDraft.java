@@ -29,6 +29,16 @@ public final class ArticleRevisionDraft {
 
     public void validateForReview() {
         content.validateForReview();
+        int sectionCount = content.sections().size();
+        if (sectionCount < 3 || sectionCount > 4) {
+            throw new ArticleDomainException("Un article contient 3 ou 4 sections avant revue.");
+        }
+        if (content.sections().stream().anyMatch(section -> section.paragraphs().size() != 1)) {
+            throw new ArticleDomainException("Chaque section contient exactement un paragraphe avant revue.");
+        }
+        if (content.sections().stream().anyMatch(section -> section.images().size() != 1)) {
+            throw new ArticleDomainException("Chaque section contient exactement une image avant revue.");
+        }
         if (cover == null) {
             throw new ArticleDomainException("La couverture est obligatoire avant revue.");
         }

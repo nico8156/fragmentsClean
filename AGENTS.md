@@ -171,7 +171,9 @@ Rollback is allowed only when:
 
 Fragments Studio uses admin primary adapters and application use cases to turn
 operator input into bounded-context commands. Studio controllers must not mutate
-business tables or read models directly.
+business tables or read models directly. Article drafts, revisions, publication
+and archive belong to `articleContext`; `adminImportContext` exposes only ACL
+models and command dispatch.
 
 The target flow is:
 
@@ -187,6 +189,14 @@ Studio UI
 -> projection
 -> mobile read API
 ```
+
+Article contract hardening:
+- Studio drafts carry explicit `articleId` and `revisionId` and use structured
+  sections; the removed `admin_studio_articles` JSON document is forbidden.
+- Mobile consumes `ArticleView` through an explicit transport mapper and must
+  never cast backend/provider JSON directly to `Article`.
+- `blocks_json` is a read-side compatibility representation only.
+- Archive is a domain transition and projection update, not a physical delete.
 
 Admin/editorial tokens are secrets. They must come from runtime operator input,
 environment variables, or a future admin auth flow; never from Expo config or

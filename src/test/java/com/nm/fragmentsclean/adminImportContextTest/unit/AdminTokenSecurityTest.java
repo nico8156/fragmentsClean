@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -36,10 +35,8 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.models.CoffeeCreat
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeeImportStatus;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceCoffeePreview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.GooglePlaceSearchResult;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDocument;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageAsset;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDocumentRepository;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
@@ -444,24 +441,6 @@ class AdminTokenSecurityTest {
 		return new ProjectionSyncController(new FakeProjectionSyncDispatcher());
 	}
 
-	private static class InMemoryStudioArticleDocumentRepository implements StudioArticleDocumentRepository {
-		private final Map<UUID, StudioArticleDocument> documents = new ConcurrentHashMap<>();
-
-		@Override
-		public List<StudioArticleDocument> list() {
-			return List.copyOf(documents.values());
-		}
-
-		@Override
-		public Optional<StudioArticleDocument> findById(UUID articleId) {
-			return Optional.ofNullable(documents.get(articleId));
-		}
-
-		@Override
-		public void save(StudioArticleDocument document) {
-			documents.put(document.articleId(), document);
-		}
-	}
 
 	private static class FakeGooglePlacesGateway implements GooglePlacesGateway {
 		@Override

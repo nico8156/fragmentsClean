@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticl
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +26,7 @@ public final class AdminStudioArticlesController {
     private final RecordAdminAudit audit;
     private final DateTimeProvider clock;
 
+    @Autowired
     public AdminStudioArticlesController(SubmitStudioArticle submit, SaveStudioArticleDraft save,
                                          ArchiveStudioArticle archive, StoreStudioArticleImage storeImage,
                                          StudioArticleDraftCatalog catalog, RecordAdminAudit audit,

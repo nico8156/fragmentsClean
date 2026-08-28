@@ -23,6 +23,8 @@ class ArticleEditorialPolicyTest {
     }
 
     private GeneratedArticleSection section(int index) {
-        return GeneratedArticleSection.from("Section " + index, "Paragraphe éditorial " + index, "Illustration " + index);
+        return GeneratedArticleSection.from("Section " + index, "Paragraphe éditorial " + index, "Illustration " + index)
+                .withImage(com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleImageRef.from(
+                        "s3://articles/section-" + index + ".jpg", 1200, 800, "Section " + index));
     }
 }

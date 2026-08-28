@@ -53,6 +53,11 @@ class ArticleRevisionPublishedEventHandlerTest {
             this.publishedEvent = event;
         }
 
+		@Override
+		public void apply(com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent event) {
+			throw new AssertionError("archive projection path must not be used");
+		}
+
         @Override
         public long count() {
             return 0;

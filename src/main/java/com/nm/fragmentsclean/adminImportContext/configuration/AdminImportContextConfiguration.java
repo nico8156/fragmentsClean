@@ -38,9 +38,6 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudi
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle;
-import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.ArticleContextStudioDraftCatalog;
-import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog;
-import com.nm.fragmentsclean.aticleContext.read.ArticleStudioDraftReader;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -100,10 +97,6 @@ public class AdminImportContextConfiguration {
 			UuidGenerator uuidGenerator,
 			DateTimeProvider dateTimeProvider) {
 		return new SaveStudioArticleDraft(articleAuthoringPort, uuidGenerator, dateTimeProvider);
-	}
-
-	@Bean StudioArticleDraftCatalog studioArticleDraftCatalog(ArticleStudioDraftReader reader) {
-		return new ArticleContextStudioDraftCatalog(reader);
 	}
 
 	@Bean ArchiveStudioArticle archiveStudioArticle(

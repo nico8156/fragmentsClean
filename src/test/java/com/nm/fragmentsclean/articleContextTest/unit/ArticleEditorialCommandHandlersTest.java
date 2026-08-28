@@ -19,6 +19,7 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.PublishArticleRevisionCommandHandler;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommand;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommandHandler;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionPublishedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -66,6 +67,9 @@ class ArticleEditorialCommandHandlersTest {
         assertThat(article.publishedRevisionId()).isEqualTo(REVISION_ID);
         assertThat(article.publishedRevision().content().title().value()).isEqualTo("Guide café corrigé");
         assertThat(publisher.events).hasSize(4);
+        assertThat(publisher.events).filteredOn(ArticleRevisionPublishedEvent.class::isInstance)
+                .singleElement().extracting(event -> ((ArticleRevisionPublishedEvent) event).version())
+                .isEqualTo(2L);
         assertThat(status.applied).containsExactly(
                 CREATE_COMMAND_ID, EDIT_COMMAND_ID, REVIEW_COMMAND_ID, PUBLISH_COMMAND_ID);
     }
@@ -78,9 +82,14 @@ class ArticleEditorialCommandHandlersTest {
         return ArticleContent.draft(
                 ArticleTitle.from(title),
                 ArticleIntroduction.from("Une introduction."),
-                List.of(ArticleSection.draft("Comprendre")
-                        .withParagraph(ArticleParagraph.from("Un paragraphe."))),
+                List.of(section("Comprendre"), section("Explorer"), section("Partager")),
                 ArticleParagraph.from("Une conclusion."));
+    }
+
+    private ArticleSection section(String heading) {
+        return ArticleSection.draft(heading)
+                .withParagraph(ArticleParagraph.from("Un paragraphe."))
+                .withImage(ArticleImageRef.from("s3://articles/" + heading.toLowerCase() + ".jpg", 1200, 800, heading));
     }
 
     private ArticleRevisionDraft draft(ArticleContent content) {
