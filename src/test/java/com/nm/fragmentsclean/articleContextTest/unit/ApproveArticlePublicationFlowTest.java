@@ -27,7 +27,7 @@ class ApproveArticlePublicationFlowTest {
         var revisionId = UUID.randomUUID();
         var sagaId = UUID.randomUUID();
         var article = ArticleAggregate.draft(articleId, "cafe-filtre", "fr-FR", UUID.randomUUID(), "Studio",
-                ArticleRevision.draft(revisionId, content(), now.minusSeconds(60)), now.minusSeconds(60));
+                ArticleRevision.draft(revisionId, draft(), now.minusSeconds(60)), now.minusSeconds(60));
         var saga = readySaga(sagaId, articleId, revisionId, now.minusSeconds(30));
         var articles = new FakeArticles(article);
         var sagas = new FakeSagas(saga);
@@ -55,6 +55,12 @@ class ApproveArticlePublicationFlowTest {
         return ArticleContent.draft(ArticleTitle.from("Le café filtre"), ArticleIntroduction.from("Introduction"),
                 java.util.List.of(ArticleSection.draft("Méthode").withParagraph(ArticleParagraph.from("Paragraphe"))),
                 ArticleParagraph.from("Conclusion"));
+    }
+
+    private static ArticleRevisionDraft draft() {
+        return ArticleRevisionDraft.editable(content(),
+                ArticleImageRef.from("s3://articles/cover.jpg", 1200, 800, "Couverture"),
+                java.util.List.of(com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag.DECOUVERTE));
     }
 
     private static ArticleAuthoringSaga readySaga(UUID sagaId, UUID articleId, UUID revisionId, Instant now) {

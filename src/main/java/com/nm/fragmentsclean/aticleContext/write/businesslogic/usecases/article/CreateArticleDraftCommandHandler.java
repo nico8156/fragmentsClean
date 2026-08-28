@@ -8,10 +8,12 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import jakarta.transaction.Transactional;
+import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
 @Transactional
+@Component
 public final class CreateArticleDraftCommandHandler implements CommandHandler<CreateArticleDraftCommand> {
 
     private final ArticleAggregateRepository repository;
@@ -40,7 +42,7 @@ public final class CreateArticleDraftCommandHandler implements CommandHandler<Cr
         }
 
         var now = clock.now();
-        var revision = ArticleRevision.draft(command.revisionId(), command.content(), now);
+        var revision = ArticleRevision.draft(command.revisionId(), command.draft(), now);
         var article = ArticleAggregate.draft(
                 command.articleId(), command.slug(), command.locale(), command.authorId(),
                 command.authorName(), revision, now);

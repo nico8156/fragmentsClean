@@ -10,6 +10,9 @@ import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRev
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleSection;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleTitle;
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleLifecycle;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleImageRef;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionDraft;
+import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -46,13 +49,13 @@ class RichArticleDomainTest {
         article.submitForReview(NOW.plusSeconds(60));
         article.publishWorkingRevision(NOW.plusSeconds(120));
 
-        article.startWorkingRevision(NEXT_REVISION_ID, content("Version corrigée"), NOW.plusSeconds(180));
+        article.startWorkingRevision(NEXT_REVISION_ID, draft(content("Version corrigée")), NOW.plusSeconds(180));
 
         assertThat(article.lifecycle()).isEqualTo(ArticleLifecycle.DRAFT);
         assertThat(article.workingRevisionId()).isEqualTo(NEXT_REVISION_ID);
         assertThat(article.publishedRevisionId()).isEqualTo(REVISION_ID);
         assertThat(article.publishedRevision().content().title().value()).isEqualTo("Version initiale");
-        assertThatThrownBy(() -> article.publishedRevision().replaceContent(content("Interdit"), NOW.plusSeconds(240)))
+        assertThatThrownBy(() -> article.publishedRevision().replaceDraft(draft(content("Interdit")), NOW.plusSeconds(240)))
                 .isInstanceOf(ArticleDomainException.class)
                 .hasMessage("Une révision non brouillon est immuable.");
     }
@@ -71,13 +74,24 @@ class RichArticleDomainTest {
                 "fr-FR",
                 AUTHOR_ID,
                 "Fragments Studio",
-                ArticleRevision.draft(REVISION_ID, content, NOW),
+                ArticleRevision.draft(REVISION_ID, draft(content), NOW),
                 NOW);
 
         assertThatThrownBy(() -> article.submitForReview(NOW.plusSeconds(60)))
                 .isInstanceOf(ArticleDomainException.class)
                 .hasMessage("Chaque section doit contenir au moins un paragraphe.");
         assertThat(article.lifecycle()).isEqualTo(ArticleLifecycle.DRAFT);
+    }
+
+    @Test
+    void review_rejects_a_revision_without_cover_or_editorial_tag() {
+        var revisionDraft = ArticleRevisionDraft.editable(content("Titre incomplet"), null, List.of());
+        var article = ArticleAggregate.draft(ARTICLE_ID, "article-incomplet", "fr-FR", AUTHOR_ID,
+                "Fragments Studio", ArticleRevision.draft(REVISION_ID, revisionDraft, NOW), NOW);
+
+        assertThatThrownBy(() -> article.submitForReview(NOW.plusSeconds(60)))
+                .isInstanceOf(ArticleDomainException.class)
+                .hasMessage("La couverture est obligatoire avant revue.");
     }
 
     @Test
@@ -104,7 +118,7 @@ class RichArticleDomainTest {
                 "fr-FR",
                 AUTHOR_ID,
                 "Fragments Studio",
-                ArticleRevision.draft(REVISION_ID, content("Version initiale"), NOW),
+                ArticleRevision.draft(REVISION_ID, draft(content("Version initiale")), NOW),
                 NOW);
     }
 
@@ -115,5 +129,11 @@ class RichArticleDomainTest {
                 ArticleIntroduction.from("Une introduction."),
                 List.of(section),
                 ArticleParagraph.from("Une conclusion."));
+    }
+
+    private ArticleRevisionDraft draft(ArticleContent content) {
+        return ArticleRevisionDraft.editable(content,
+                ArticleImageRef.from("s3://articles/cover.jpg", 1200, 800, "Couverture"),
+                List.of(ArticleEditorialTag.DECOUVERTE));
     }
 }

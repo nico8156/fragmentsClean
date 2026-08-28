@@ -7,43 +7,43 @@ import java.util.UUID;
 public final class ArticleRevision {
 
     private final UUID revisionId;
-    private ArticleContent content;
+    private ArticleRevisionDraft draft;
     private ArticleRevisionStatus status;
     private final Instant createdAt;
     private Instant updatedAt;
     private Instant publishedAt;
 
-    private ArticleRevision(UUID revisionId, ArticleContent content, Instant now) {
+    private ArticleRevision(UUID revisionId, ArticleRevisionDraft draft, Instant now) {
         this.revisionId = Objects.requireNonNull(revisionId, "L'identifiant de révision est obligatoire.");
-        this.content = Objects.requireNonNull(content, "Le contenu est obligatoire.");
+        this.draft = Objects.requireNonNull(draft, "Le brouillon est obligatoire.");
         this.createdAt = Objects.requireNonNull(now, "La date de création est obligatoire.");
         this.updatedAt = now;
         this.status = ArticleRevisionStatus.DRAFT;
     }
 
-    public static ArticleRevision draft(UUID revisionId, ArticleContent content, Instant now) {
-        return new ArticleRevision(revisionId, content, now);
+    public static ArticleRevision draft(UUID revisionId, ArticleRevisionDraft draft, Instant now) {
+        return new ArticleRevision(revisionId, draft, now);
     }
 
-    public static ArticleRevision reconstitute(UUID revisionId, ArticleContent content,
+    public static ArticleRevision reconstitute(UUID revisionId, ArticleRevisionDraft draft,
                                                ArticleRevisionStatus status, Instant createdAt,
                                                Instant updatedAt, Instant publishedAt) {
-        var revision = new ArticleRevision(revisionId, content, createdAt);
+        var revision = new ArticleRevision(revisionId, draft, createdAt);
         revision.status = Objects.requireNonNull(status, "Le statut de révision est obligatoire.");
         revision.updatedAt = Objects.requireNonNull(updatedAt, "La date de modification est obligatoire.");
         revision.publishedAt = publishedAt;
         return revision;
     }
 
-    public void replaceContent(ArticleContent replacement, Instant now) {
+    public void replaceDraft(ArticleRevisionDraft replacement, Instant now) {
         ensureEditable();
-        this.content = Objects.requireNonNull(replacement, "Le contenu est obligatoire.");
+        this.draft = Objects.requireNonNull(replacement, "Le brouillon est obligatoire.");
         this.updatedAt = Objects.requireNonNull(now, "La date de modification est obligatoire.");
     }
 
     public void submitForReview(Instant now) {
         ensureStatus(ArticleRevisionStatus.DRAFT, "Seule une révision brouillon peut être soumise.");
-        content.validateForReview();
+        draft.validateForReview();
         this.status = ArticleRevisionStatus.IN_REVIEW;
         this.updatedAt = Objects.requireNonNull(now, "La date de modification est obligatoire.");
     }
@@ -74,7 +74,8 @@ public final class ArticleRevision {
     }
 
     public UUID revisionId() { return revisionId; }
-    public ArticleContent content() { return content; }
+    public ArticleRevisionDraft draft() { return draft; }
+    public ArticleContent content() { return draft.content(); }
     public ArticleRevisionStatus status() { return status; }
     public Instant createdAt() { return createdAt; }
     public Instant updatedAt() { return updatedAt; }

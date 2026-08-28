@@ -111,6 +111,17 @@ public final class ArticleAggregate extends AggregateRoot {
                 UUID.randomUUID(), commandId, id, workingRevisionId, slug, locale, now, clientAt));
     }
 
+    public void replaceWorkingDraft(ArticleRevisionDraft replacement, Instant now) {
+        ensureLifecycle(ArticleLifecycle.DRAFT, "Seul un article brouillon peut être modifié.");
+        workingRevision().replaceDraft(replacement, now);
+        version++;
+    }
+
+    public void registerDraftEdited(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleDraftEditedEvent(
+                UUID.randomUUID(), commandId, id, workingRevisionId, now, clientAt));
+    }
+
     public void publishWorkingRevision(Instant now) {
         ensureLifecycle(ArticleLifecycle.IN_REVIEW, "Seul un article en revue peut être publié.");
         workingRevision().publish(now);
@@ -129,11 +140,11 @@ public final class ArticleAggregate extends AggregateRoot {
                 UUID.randomUUID(), commandId, id, publishedRevisionId, now, clientAt));
     }
 
-    public UUID startWorkingRevision(UUID revisionId, ArticleContent content, Instant now) {
+    public UUID startWorkingRevision(UUID revisionId, ArticleRevisionDraft draft, Instant now) {
         if (lifecycle != ArticleLifecycle.PUBLISHED) {
             throw new ArticleDomainException("Une nouvelle révision démarre depuis un article publié.");
         }
-        var revision = ArticleRevision.draft(revisionId, content, now);
+        var revision = ArticleRevision.draft(revisionId, draft, now);
         revisions.add(revision);
         workingRevisionId = revisionId;
         lifecycle = ArticleLifecycle.DRAFT;

@@ -6,15 +6,10 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
 import java.time.Instant;
 import java.util.UUID;
 
-public record CreateArticleDraftCommand(
+public record EditArticleDraftCommand(
         UUID commandId,
         Instant clientAt,
         UUID articleId,
         UUID revisionId,
-        String slug,
-        String locale,
-        UUID authorId,
-        String authorName,
         ArticleRevisionDraft draft
-) implements Command {
-}
+) implements Command { }
