@@ -23,7 +23,11 @@ public class ArticleGenerationCompletionHandler {
         var run=runs.byId(work.run().runId()).orElseThrow(); run.succeed(provider,responseId,model,schemaVersion,now);
         artifacts.save(run.snapshot().runId(), current.sagaId(), current.articleId(), current.revisionId(), schemaVersion, draft);
         materializer.materialize(current.articleId(), current.revisionId(), draft, now);
-        saga.startValidation(now); saga.markReadyForReview(now); sagas.save(saga); runs.save(run);
+        saga.startValidation(now);
+        sagas.save(saga);
+        saga.markReadyForReview(now);
+        sagas.save(saga);
+        runs.save(run);
         var s=saga.snapshot(); events.publish(new ArticleGenerationCompletedEvent(java.util.UUID.randomUUID(), s.sagaId(), s.articleId(), s.revisionId(), work.run().runId(), provider,responseId,model,schemaVersion,s.version(),now));
         observability.generationCompleted();
     }
