@@ -38,7 +38,11 @@ Resources:
             Action:
               - ses:SendEmail
               - ses:SendRawEmail
-            Resource: !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${EmailDomain}
+            Resource:
+              - !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${EmailDomain}
+              # SES sandbox requires the verified recipient identity to be authorized too.
+              # Remove this entry after the account is granted production access.
+              - !Sub arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${ReviewRecipient}
 
 Outputs:
   SendingDomain:
