@@ -13,14 +13,14 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import org.springframework.stereotype.Component;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 /** Keeps the provider call outside the transaction that claims the saga lease. */
 @Component
-@ConditionalOnBean(ArticleGenerationProvider.class)
+@ConditionalOnProperty(name = "fragments.article.generation.openai.enabled", havingValue = "true")
 public final class ArticleGenerationRequestedSqsIntegrationEventHandler implements SqsIntegrationEventHandler {
     private final SqsIntegrationEventPayloadReader payloadReader;
     private final ArticleGenerationLeaseClaimer claimer;
