@@ -326,8 +326,10 @@ DELETE /api/admin/coffees/{coffeeId}
 -> CoffeeArchivedEvent
 -> Outbox/SQS
 -> CoffeeArchivedEventHandler
--> retrait summary/photos/openingHours projections
--> projection.updated hints:["archived","summary","photos","openingHours"]
+-> passage de la summary projection à ARCHIVED
+-> conservation des photos et horaires pour Fragments Studio
+-> exclusion des lectures mobiles publishedOnly
+-> projection.updated hints:["archived","summary"]
 ```
 
 `DeleteCoffeeCommand` / `CoffeeDeletedEvent` reste réservé à un hard delete technique explicite. Pour le catalogue mobile, le comportement produit par défaut est l'archive.
