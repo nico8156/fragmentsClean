@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.st
 import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.GeneratedArticleImageStorage;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -12,7 +13,8 @@ import java.util.UUID;
 @ConditionalOnProperty(prefix="article.images.storage",name="backend",havingValue="s3")
 public final class S3GeneratedArticleImageStorage implements GeneratedArticleImageStorage {
     private final ArticleImageStorageProperties properties; private final S3Client s3;
-    public S3GeneratedArticleImageStorage(ArticleImageStorageProperties properties,S3Client s3){this.properties=properties;this.s3=s3;}
+    public S3GeneratedArticleImageStorage(ArticleImageStorageProperties properties,
+                                         @Qualifier("articleImageS3Client") S3Client s3){this.properties=properties;this.s3=s3;}
     @Override public StoredImage store(UUID articleId,UUID imageId,String mediaType,byte[] bytes){
         String bucket=require(properties.getS3Bucket()); String prefix=properties.getS3Prefix().replaceAll("^/+|/+$","");
         String extension="image/webp".equals(mediaType)?".webp":"image/png".equals(mediaType)?".png":".jpg";
