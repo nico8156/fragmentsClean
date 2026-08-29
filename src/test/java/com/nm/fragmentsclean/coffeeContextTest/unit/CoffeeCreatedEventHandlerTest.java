@@ -46,6 +46,18 @@ class CoffeeCreatedEventHandlerTest {
 		assertThat(syncEvent.hints()).containsExactly("summary");
 	}
 
+	@Test
+	void ignores_stale_event_without_publishing_projection_sync() {
+		var projectionRepository = new RecordingCoffeeProjectionRepository();
+		projectionRepository.ignoreMutations = true;
+		var syncPublisher = new RecordingProjectionSyncPublisher();
+		var handler = new CoffeeCreatedEventHandler(projectionRepository, syncPublisher);
+
+		handler.handle(coffeeCreatedEvent());
+
+		assertThat(syncPublisher.events).isEmpty();
+	}
+
 	private CoffeeCreatedEvent coffeeCreatedEvent() {
 		return new CoffeeCreatedEvent(
 				UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
@@ -65,6 +77,15 @@ class CoffeeCreatedEventHandlerTest {
 
 	private static class RecordingCoffeeProjectionRepository implements CoffeeProjectionRepository {
 		private final List<CoffeeCreatedEvent> appliedEvents = new ArrayList<>();
+		private boolean ignoreMutations;
+
+		@Override
+		public CoffeeProjectionMutation applyIfNewer(CoffeeCreatedEvent event) {
+			if (ignoreMutations) {
+				return CoffeeProjectionMutation.ignored(event.version() + 1L, event.occurredAt().plusSeconds(1));
+			}
+			return CoffeeProjectionRepository.super.applyIfNewer(event);
+		}
 
 		@Override
 		public void apply(CoffeeCreatedEvent event) {

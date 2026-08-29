@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,9 +28,28 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 	}
 
 	@Override
+	@Transactional
 	public void apply(CoffeeCreatedEvent event) {
-		upsert(
-				event.coffeeId().value(),
+		applyIfNewer(event);
+	}
+
+	@Override
+	@Transactional
+	public CoffeeProjectionMutation applyIfNewer(CoffeeCreatedEvent event) {
+		UUID coffeeId = event.coffeeId().value();
+		ensureCheckpoint(coffeeId, event.version(), event.publicationStatus().name(), false, event.occurredAt());
+		Checkpoint checkpoint = lockCheckpoint(coffeeId);
+		if (checkpoint.deleted() && checkpoint.latestVersion() >= event.version()) {
+			return CoffeeProjectionMutation.ignored(checkpoint.latestVersion(), checkpoint.changedAt());
+		}
+
+		if (event.version() > checkpoint.latestVersion()) {
+			updateCheckpoint(coffeeId, event.version(), event.publicationStatus().name(), false, event.occurredAt());
+			checkpoint = new Checkpoint(event.version(), event.publicationStatus().name(), false, event.occurredAt());
+		}
+
+		int changed = upsert(
+				coffeeId,
 				event.googlePlaceId() != null ? event.googlePlaceId().value() : null,
 				event.name().value(),
 				event.location().lat(),
@@ -41,32 +61,73 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				event.phoneNumber() != null ? event.phoneNumber().value() : null,
 				event.website() != null ? event.website().value() : null,
 				toTagsJsonFromEvent(event),
-				event.publicationStatus().name(),
+				checkpoint.publicationStatus(),
 				null, // rating future
-				event.version(),
-				Timestamp.from(event.occurredAt()));
+				Math.toIntExact(checkpoint.latestVersion()),
+				Timestamp.from(checkpoint.changedAt()));
+		return changed == 0
+				? CoffeeProjectionMutation.ignored(checkpoint.latestVersion(), checkpoint.changedAt())
+				: CoffeeProjectionMutation.applied(checkpoint.latestVersion(), checkpoint.changedAt());
 	}
 
 	@Override
+	@Transactional
 	public void deleteByCoffeeId(UUID coffeeId) {
 		jdbcTemplate.update("DELETE FROM coffee_summaries_projection WHERE id = ?", coffeeId);
 	}
 
 	@Override
+	@Transactional
+	public CoffeeProjectionMutation deleteIfNewer(UUID coffeeId, long version, java.time.Instant changedAt) {
+		CoffeeProjectionMutation mutation = recordLifecycleIfNewer(coffeeId, version, "ARCHIVED", true, changedAt);
+		if (!mutation.applied()) return mutation;
+		jdbcTemplate.update("DELETE FROM coffee_summaries_projection WHERE id = ?", coffeeId);
+		return mutation;
+	}
+
+	@Override
+	@Transactional
 	public void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt) {
-		jdbcTemplate.update("UPDATE coffee_summaries_projection SET publication_status = 'ARCHIVED', version = ?, updated_at = ? WHERE id = ?",
-				version, Timestamp.from(updatedAt), coffeeId);
+		markArchivedIfNewer(coffeeId, version, updatedAt);
 	}
 
 	@Override
+	@Transactional
+	public CoffeeProjectionMutation markArchivedIfNewer(UUID coffeeId, long version, java.time.Instant changedAt) {
+		return applyLifecycleIfNewer(coffeeId, version, "ARCHIVED", changedAt);
+	}
+
+	@Override
+	@Transactional
 	public void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt) {
-		jdbcTemplate.update("UPDATE coffee_summaries_projection SET publication_status = 'PUBLISHED', version = ?, updated_at = ? WHERE id = ?",
-				version, Timestamp.from(updatedAt), coffeeId);
+		markPublishedIfNewer(coffeeId, version, updatedAt);
 	}
 
 	@Override
+	@Transactional
+	public CoffeeProjectionMutation markPublishedIfNewer(UUID coffeeId, long version, java.time.Instant changedAt) {
+		return applyLifecycleIfNewer(coffeeId, version, "PUBLISHED", changedAt);
+	}
+
+	@Override
+	@Transactional
 	public void insertSeed(CoffeeSummaryView view) {
-		upsert(
+		applyIfNewer(view);
+	}
+
+	@Override
+	@Transactional
+	public CoffeeProjectionMutation applyIfNewer(CoffeeSummaryView view) {
+		ensureCheckpoint(view.id(), view.version(), view.publicationStatus(), false, view.updatedAt());
+		Checkpoint checkpoint = lockCheckpoint(view.id());
+		if (checkpoint.deleted() && checkpoint.latestVersion() >= view.version()) {
+			return CoffeeProjectionMutation.ignored(checkpoint.latestVersion(), checkpoint.changedAt());
+		}
+		if (view.version() > checkpoint.latestVersion()) {
+			updateCheckpoint(view.id(), view.version(), view.publicationStatus(), false, view.updatedAt());
+			checkpoint = new Checkpoint(view.version(), view.publicationStatus(), false, view.updatedAt());
+		}
+		int changed = upsert(
 				view.id(),
 				view.googleId(),
 				view.name(),
@@ -79,10 +140,13 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				view.phoneNumber(),
 				view.website(),
 				toTagsJson(view.tags()),
-				view.publicationStatus(),
+				checkpoint.publicationStatus(),
 				null, // rating future
-				(int) view.version(),
-				Timestamp.from(view.updatedAt()));
+				Math.toIntExact(checkpoint.latestVersion()),
+				Timestamp.from(checkpoint.changedAt()));
+		return changed == 0
+				? CoffeeProjectionMutation.ignored(checkpoint.latestVersion(), checkpoint.changedAt())
+				: CoffeeProjectionMutation.applied(checkpoint.latestVersion(), checkpoint.changedAt());
 	}
 
 	@Override
@@ -117,7 +181,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 
 	// ----------------- private -----------------
 
-	private void upsert(
+	private int upsert(
 			UUID id,
 			String googlePlaceId,
 			String name,
@@ -134,7 +198,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 			Double rating,
 			int version,
 			Timestamp updatedAt) {
-		jdbcTemplate.update(
+		return jdbcTemplate.update(
 				"""
 						INSERT INTO coffee_summaries_projection (
 						    id,
@@ -170,6 +234,7 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 						    rating = EXCLUDED.rating,
 						    version = EXCLUDED.version,
 						    updated_at = EXCLUDED.updated_at
+						WHERE coffee_summaries_projection.version < EXCLUDED.version
 						""",
 				id,
 				googlePlaceId,
@@ -188,6 +253,64 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				version,
 				updatedAt);
 	}
+
+	private CoffeeProjectionMutation applyLifecycleIfNewer(UUID coffeeId, long version, String status,
+			java.time.Instant changedAt) {
+		CoffeeProjectionMutation mutation = recordLifecycleIfNewer(coffeeId, version, status, false, changedAt);
+		if (!mutation.applied()) return mutation;
+		jdbcTemplate.update("""
+				UPDATE coffee_summaries_projection
+				SET publication_status = ?, version = ?, updated_at = ?
+				WHERE id = ? AND version < ?
+				""", status, version, Timestamp.from(changedAt), coffeeId, version);
+		return mutation;
+	}
+
+	private CoffeeProjectionMutation recordLifecycleIfNewer(UUID coffeeId, long version, String status,
+			boolean deleted, java.time.Instant changedAt) {
+		ensureCheckpoint(coffeeId, -1, status, false, changedAt);
+		Checkpoint checkpoint = lockCheckpoint(coffeeId);
+		if (version <= checkpoint.latestVersion()) {
+			return CoffeeProjectionMutation.ignored(checkpoint.latestVersion(), checkpoint.changedAt());
+		}
+		updateCheckpoint(coffeeId, version, status, deleted, changedAt);
+		return CoffeeProjectionMutation.applied(version, changedAt);
+	}
+
+	private void ensureCheckpoint(UUID coffeeId, long version, String status, boolean deleted,
+			java.time.Instant changedAt) {
+		jdbcTemplate.update("""
+				INSERT INTO coffee_projection_checkpoints
+				    (coffee_id, latest_version, publication_status, deleted, changed_at)
+				VALUES (?, ?, ?, ?, ?)
+				ON CONFLICT (coffee_id) DO NOTHING
+				""", coffeeId, version, status, deleted, Timestamp.from(changedAt));
+	}
+
+	private Checkpoint lockCheckpoint(UUID coffeeId) {
+		return jdbcTemplate.queryForObject("""
+				SELECT latest_version, publication_status, deleted, changed_at
+				FROM coffee_projection_checkpoints
+				WHERE coffee_id = ?
+				FOR UPDATE
+				""", (rs, rowNum) -> new Checkpoint(
+				rs.getLong("latest_version"),
+				rs.getString("publication_status"),
+				rs.getBoolean("deleted"),
+				rs.getTimestamp("changed_at").toInstant()), coffeeId);
+	}
+
+	private void updateCheckpoint(UUID coffeeId, long version, String status, boolean deleted,
+			java.time.Instant changedAt) {
+		jdbcTemplate.update("""
+				UPDATE coffee_projection_checkpoints
+				SET latest_version = ?, publication_status = ?, deleted = ?, changed_at = ?
+				WHERE coffee_id = ?
+				""", version, status, deleted, Timestamp.from(changedAt), coffeeId);
+	}
+
+	private record Checkpoint(long latestVersion, String publicationStatus, boolean deleted,
+			java.time.Instant changedAt) { }
 
 	private CoffeeSummaryView mapRow(ResultSet rs, int rowNum) throws SQLException {
 		UUID id = rs.getObject("id", UUID.class);

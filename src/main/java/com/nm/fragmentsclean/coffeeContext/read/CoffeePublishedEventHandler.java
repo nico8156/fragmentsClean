@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandle
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
 public class CoffeePublishedEventHandler implements EventHandler<CoffeePublishedEvent> {
     private final CoffeeProjectionRepository repository;
@@ -13,9 +14,12 @@ public class CoffeePublishedEventHandler implements EventHandler<CoffeePublished
     public CoffeePublishedEventHandler(CoffeeProjectionRepository repository, ProjectionSyncPublisher syncPublisher) {
         this.repository = repository; this.syncPublisher = syncPublisher;
     }
-    @Override public void handle(CoffeePublishedEvent event) {
-        repository.markPublished(event.coffeeId().value(), event.version(), event.occurredAt());
+	@Override
+	@Transactional
+	public void handle(CoffeePublishedEvent event) {
+		var mutation = repository.markPublishedIfNewer(event.coffeeId().value(), event.version(), event.occurredAt());
+		if (!mutation.applied()) return;
         syncPublisher.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity",
-                event.coffeeId().value().toString(), (long) event.version(), event.occurredAt(), List.of("summary", "publicationStatus")));
+				event.coffeeId().value().toString(), mutation.version(), mutation.changedAt(), List.of("summary", "publicationStatus")));
     }
 }

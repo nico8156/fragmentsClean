@@ -27,8 +27,9 @@ public class CoffeeCreatedIntegrationEventHandler {
 	public void handle(CoffeeCreatedIntegrationEvent event) {
 		var view = projectionSource.findByCoffeeId(event.coffeeId())
 				.orElseThrow(() -> new IllegalStateException("Coffee source is missing for " + event.coffeeId()));
-		projectionRepository.apply(view);
+		var mutation = projectionRepository.applyIfNewer(view);
+		if (!mutation.applied()) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
-				"coffees", "entity", view.id().toString(), view.version(), view.updatedAt(), List.of("summary")));
+				"coffees", "entity", view.id().toString(), mutation.version(), mutation.changedAt(), List.of("summary")));
 	}
 }

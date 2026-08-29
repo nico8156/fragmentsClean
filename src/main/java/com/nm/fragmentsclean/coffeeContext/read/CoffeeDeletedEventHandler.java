@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDele
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 public class CoffeeDeletedEventHandler implements EventHandler<CoffeeDeletedEvent> {
 
@@ -29,17 +30,19 @@ public class CoffeeDeletedEventHandler implements EventHandler<CoffeeDeletedEven
 	}
 
 	@Override
+	@Transactional
 	public void handle(CoffeeDeletedEvent event) {
 		var coffeeId = event.coffeeId().value();
+		var mutation = projectionRepository.deleteIfNewer(coffeeId, event.version(), event.occurredAt());
+		if (!mutation.applied()) return;
 		photoProjectionRepository.deleteForCoffee(coffeeId);
 		openingHoursProjectionRepository.deleteForCoffee(coffeeId);
-		projectionRepository.deleteByCoffeeId(coffeeId);
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),
-				(long) event.version(),
-				event.occurredAt(),
+				mutation.version(),
+				mutation.changedAt(),
 				List.of("deleted", "summary", "photos", "openingHours")
 		));
 	}
