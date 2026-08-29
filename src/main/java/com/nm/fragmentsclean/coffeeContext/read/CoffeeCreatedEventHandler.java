@@ -32,13 +32,18 @@ public class CoffeeCreatedEventHandler implements EventHandler<CoffeeCreatedEven
     @Transactional
     public void handle(CoffeeCreatedEvent event) {
         log.info("Applying CoffeeCreatedEvent to projection for coffeeId={}", event.coffeeId().value());
-        projectionRepository.apply(event);
+		var mutation = projectionRepository.applyIfNewer(event);
+		if (!mutation.applied()) {
+			log.info("Ignoring stale CoffeeCreatedEvent for coffeeId={}, eventVersion={}, projectionVersion={}",
+					event.coffeeId().value(), event.version(), mutation.version());
+			return;
+		}
         projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
                 "coffees",
                 "entity",
                 event.coffeeId().value().toString(),
-                (long) event.version(),
-                event.occurredAt(),
+				mutation.version(),
+				mutation.changedAt(),
                 List.of("summary")));
     }
 }

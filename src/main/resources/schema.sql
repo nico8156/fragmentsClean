@@ -68,6 +68,15 @@ CREATE TABLE IF NOT EXISTS coffee_summaries_projection (
 );
 ALTER TABLE IF EXISTS coffee_summaries_projection
     ADD COLUMN IF NOT EXISTS publication_status VARCHAR(32) NOT NULL DEFAULT 'PUBLISHED';
+
+CREATE TABLE IF NOT EXISTS coffee_projection_checkpoints (
+    coffee_id           UUID PRIMARY KEY,
+    latest_version      BIGINT NOT NULL,
+    publication_status  VARCHAR(32) NOT NULL,
+    deleted             BOOLEAN NOT NULL DEFAULT FALSE,
+    changed_at          TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS coffee_photos_projection (
   id         UUID PRIMARY KEY,
   coffee_id  UUID NOT NULL,

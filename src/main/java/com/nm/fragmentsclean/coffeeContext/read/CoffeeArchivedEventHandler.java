@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArch
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEvent> {
 
@@ -29,15 +30,17 @@ public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEv
 	}
 
 	@Override
+	@Transactional
 	public void handle(CoffeeArchivedEvent event) {
 		var coffeeId = event.coffeeId().value();
-		projectionRepository.markArchived(coffeeId, event.version(), event.occurredAt());
+		var mutation = projectionRepository.markArchivedIfNewer(coffeeId, event.version(), event.occurredAt());
+		if (!mutation.applied()) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),
-				(long) event.version(),
-				event.occurredAt(),
+				mutation.version(),
+				mutation.changedAt(),
 				List.of("archived", "summary")
 		));
 	}

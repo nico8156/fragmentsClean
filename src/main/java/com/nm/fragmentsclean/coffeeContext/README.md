@@ -318,6 +318,25 @@ COFFEE_READ_SEED_ENABLED=true
 ➡️ Synchronisation write → read par événements.
 Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
 
+#### Monotonie et atomicité
+
+SQS ne garantit pas que deux événements métier distincts seront reçus dans
+l'ordre de leur version. La projection café conserve donc un checkpoint durable
+par `coffeeId` dans `coffee_projection_checkpoints` : dernière version connue,
+statut de publication, tombstone de suppression et date du changement.
+
+Règles :
+
+* une transition de version inférieure ou égale au checkpoint est ignorée ;
+* une publication ou un archivage reçu avant la création est conservé, puis
+  fusionné lorsque les données descriptives arrivent ;
+* une suppression garde sa tombstone afin qu'un ancien `coffee.created` ne
+  puisse pas ressusciter le café ;
+* aucun `projection.updated` n'est écrit pour un événement ignoré ;
+* résumé, enfants supprimés et `projection_sync_events` sont écrits dans la
+  même transaction locale. Un échec provoque un rollback et laisse SQS rejouer
+  le message.
+
 La suppression admin visible dans Fragments Studio archive le café. Elle ne supprime pas physiquement le write model.
 
 ```text
