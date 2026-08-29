@@ -301,6 +301,21 @@ GET /api/coffees/photos
 GET /api/coffees/opening-hours
 ```
 
+Le catalogue public accepte une recherche et une pagination opaque sans changer
+la forme historique du tableau JSON :
+
+```text
+GET /api/coffees?query=rennes&cursor={opaque}&limit=20
+ETag: "coffee-catalogue-..."
+X-Next-Cursor: {opaque}
+```
+
+Le client peut renvoyer `If-None-Match`; une projection inchangée répond `304`
+sans corps. Le curseur repose sur l'ordre stable `LOWER(name), id`. Les limites
+acceptées vont de 1 à 100 et une recherche porte sur le nom, la ville, le code
+postal et l'adresse. Le Studio conserve sa query administrative non paginée et
+incluant les brouillons.
+
 Le détail passe par `GetCoffeeQuery -> GetCoffeeQueryHandler ->
 CoffeeProjectionRepository`. Les endpoints enfants joignent la summary
 projection afin de ne jamais exposer les photos ou horaires d'un brouillon ou

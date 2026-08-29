@@ -14,6 +14,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
+import com.nm.fragmentsclean.coffeeContext.read.SearchPublicCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.storage.DefaultCoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
@@ -114,6 +115,12 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	ListCoffeesQueryHandler listCoffeesQueryHandler(CoffeeProjectionRepository coffeeProjectionRepository) {
 		return new ListCoffeesQueryHandler(coffeeProjectionRepository);
+	}
+
+	@Bean
+	SearchPublicCoffeesQueryHandler searchPublicCoffeesQueryHandler(
+			CoffeeProjectionRepository coffeeProjectionRepository) {
+		return new SearchPublicCoffeesQueryHandler(coffeeProjectionRepository);
 	}
 
 	@Bean

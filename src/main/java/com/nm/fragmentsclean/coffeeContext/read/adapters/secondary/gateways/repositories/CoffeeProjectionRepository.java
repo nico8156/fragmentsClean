@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories;
 
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCataloguePage;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 
 import java.util.List;
@@ -55,6 +56,24 @@ public interface CoffeeProjectionRepository {
 
 	default boolean isPublished(UUID coffeeId) {
 		return findById(coffeeId, true).isPresent();
+	}
+
+	default CoffeeCataloguePage searchPublished(String search, String cursor, int limit) {
+		if (cursor != null) throw new IllegalArgumentException("cursor is not supported by this repository");
+		List<CoffeeSummaryView> allMatches = findAll(true).stream()
+				.filter(view -> matches(view, search))
+				.toList();
+		List<CoffeeSummaryView> page = allMatches.stream().limit(limit).toList();
+		return new CoffeeCataloguePage(page, null, CoffeeCatalogueEtag.from(search, allMatches));
+	}
+
+	private static boolean matches(CoffeeSummaryView view, String search) {
+		if (search == null) return true;
+		String expected = search.toLowerCase(java.util.Locale.ROOT);
+		return java.util.stream.Stream.of(view.name(), view.city(), view.postalCode(), view.addressLine())
+				.filter(java.util.Objects::nonNull)
+				.map(value -> value.toLowerCase(java.util.Locale.ROOT))
+				.anyMatch(value -> value.contains(expected));
 	}
 
 	// ✅ seed : insert direct d'une view (idempotent via ON CONFLICT)
