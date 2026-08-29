@@ -179,6 +179,30 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 		return findAll(true);
 	}
 
+	@Override
+	public Optional<CoffeeSummaryView> findById(UUID coffeeId, boolean publishedOnly) {
+		String publicationFilter = publishedOnly ? " AND publication_status = 'PUBLISHED'" : "";
+		return jdbcTemplate.query("""
+				SELECT id,
+				       google_place_id,
+				       name,
+				       lat,
+				       lon,
+				       address_line1,
+				       city,
+				       postal_code,
+				       country,
+				       phone_number,
+				       website,
+				       tags_json,
+				       publication_status,
+				       version,
+				       updated_at
+				FROM coffee_summaries_projection
+				WHERE id = ?
+				""" + publicationFilter, this::mapRow, coffeeId).stream().findFirst();
+	}
+
 	// ----------------- private -----------------
 
 	private int upsert(

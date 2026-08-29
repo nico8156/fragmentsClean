@@ -10,17 +10,21 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.nm.fragmentsclean.TestContainers;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.JdbcCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublicationStatus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Address;
@@ -31,9 +35,11 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GoogleP
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 
-@SpringBootTest
-@ActiveProfiles("database")
-@Import(CoffeeProjectionMonotonicityIT.FailingSyncConfiguration.class)
+@JdbcTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = "spring.sql.init.mode=always")
+@Import({JdbcCoffeeProjectionRepository.class, CoffeeCreatedEventHandler.class,
+		CoffeeProjectionMonotonicityIT.FailingSyncConfiguration.class})
 class CoffeeProjectionMonotonicityIT extends TestContainers {
 
 	private static final UUID COFFEE_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -58,6 +64,7 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 	}
 
 	@Test
+	@Transactional(propagation = Propagation.NOT_SUPPORTED)
 	void projection_and_checkpoint_are_rolled_back_when_sync_append_fails() {
 		syncPublisher.fail = true;
 
@@ -154,6 +161,7 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 		FailingProjectionSyncPublisher failingProjectionSyncPublisher() {
 			return new FailingProjectionSyncPublisher();
 		}
+
 	}
 
 	static class FailingProjectionSyncPublisher implements ProjectionSyncPublisher {

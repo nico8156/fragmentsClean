@@ -21,7 +21,7 @@ class CoffeePhotosReadController {
 
 	@GetMapping("/api/coffees/photos")
 	public List<CoffeePhotoResponse> listAllPhotos() {
-		return repo.findAll().stream()
+		return repo.findAll(true).stream()
 				.map(photo -> new CoffeePhotoResponse(
 						photo.id(),
 						photo.coffeeId(),

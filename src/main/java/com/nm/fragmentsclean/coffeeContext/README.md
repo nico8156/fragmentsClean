@@ -292,6 +292,21 @@ Elle consomme des **vues optimisées** :
 
 ➡️ Vue orientée affichage carte / liste.
 
+Les lectures publiques mobiles sont limitées aux cafés `PUBLISHED` :
+
+```text
+GET /api/coffees
+GET /api/coffees/{coffeeId}
+GET /api/coffees/photos
+GET /api/coffees/opening-hours
+```
+
+Le détail passe par `GetCoffeeQuery -> GetCoffeeQueryHandler ->
+CoffeeProjectionRepository`. Les endpoints enfants joignent la summary
+projection afin de ne jamais exposer les photos ou horaires d'un brouillon ou
+d'un café archivé. Les lectures Studio utilisent les méthodes administratives
+non filtrées et restent capables de gérer ces contenus.
+
 ### Seed read model
 
 `CoffeeReadSeedRunner` est désactivé par défaut.
