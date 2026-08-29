@@ -68,7 +68,7 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 	void projection_and_checkpoint_are_rolled_back_when_sync_append_fails() {
 		syncPublisher.fail = true;
 
-		assertThatThrownBy(() -> createdEventHandler.handle(createdEvent(1)))
+		assertThatThrownBy(() -> createdEventHandler.handle(createdEvent(1, CoffeePublicationStatus.PUBLISHED)))
 				.isInstanceOf(IllegalStateException.class)
 				.hasMessage("sync append failed");
 
@@ -125,6 +125,10 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 	}
 
 	private CoffeeCreatedEvent createdEvent(int version) {
+		return createdEvent(version, CoffeePublicationStatus.DRAFT);
+	}
+
+	private CoffeeCreatedEvent createdEvent(int version, CoffeePublicationStatus publicationStatus) {
 		return new CoffeeCreatedEvent(
 				UUID.randomUUID(),
 				UUID.randomUUID(),
@@ -136,7 +140,7 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 				null,
 				null,
 				List.of(),
-				CoffeePublicationStatus.DRAFT,
+				publicationStatus,
 				version,
 				instant(version),
 				instant(version));
