@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublicationStatus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Address;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeName;
@@ -58,6 +59,24 @@ class CoffeeCreatedEventHandlerTest {
 		assertThat(syncPublisher.events).isEmpty();
 	}
 
+	@Test
+	void materializes_draft_without_notifying_the_public_mobile_catalogue() {
+		var projectionRepository = new RecordingCoffeeProjectionRepository();
+		projectionRepository.published = false;
+		var syncPublisher = new RecordingProjectionSyncPublisher();
+		var handler = new CoffeeCreatedEventHandler(projectionRepository, syncPublisher);
+		var published = coffeeCreatedEvent();
+		var draft = new CoffeeCreatedEvent(
+				published.eventId(), published.commandId(), published.coffeeId(), published.googlePlaceId(),
+				published.name(), published.address(), published.location(), published.phoneNumber(), published.website(),
+				published.tags(), CoffeePublicationStatus.DRAFT, published.version(), published.occurredAt(), published.clientAt());
+
+		handler.handle(draft);
+
+		assertThat(projectionRepository.appliedEvents).containsExactly(draft);
+		assertThat(syncPublisher.events).isEmpty();
+	}
+
 	private CoffeeCreatedEvent coffeeCreatedEvent() {
 		return new CoffeeCreatedEvent(
 				UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
@@ -78,6 +97,12 @@ class CoffeeCreatedEventHandlerTest {
 	private static class RecordingCoffeeProjectionRepository implements CoffeeProjectionRepository {
 		private final List<CoffeeCreatedEvent> appliedEvents = new ArrayList<>();
 		private boolean ignoreMutations;
+		private boolean published = true;
+
+		@Override
+		public boolean isPublished(UUID coffeeId) {
+			return published;
+		}
 
 		@Override
 		public CoffeeProjectionMutation applyIfNewer(CoffeeCreatedEvent event) {

@@ -197,8 +197,10 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler(
 			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeeOpeningHoursImportedEventHandler(openingHoursProjectionRepository, projectionSyncPublisher);
+		return new CoffeeOpeningHoursImportedEventHandler(
+				openingHoursProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
@@ -213,22 +215,28 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotosImportedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotosImportedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
 	CoffeePhotoAddedEventHandler coffeePhotoAddedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoAddedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotoAddedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
 	CoffeePhotoDeletedEventHandler coffeePhotoDeletedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoDeletedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotoDeletedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean

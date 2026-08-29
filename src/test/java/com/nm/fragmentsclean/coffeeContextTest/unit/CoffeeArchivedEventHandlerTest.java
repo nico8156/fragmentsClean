@@ -69,6 +69,11 @@ class CoffeeArchivedEventHandlerTest {
 		private final List<ArchivedCoffee> archived = new ArrayList<>();
 
 		@Override
+		public boolean isPublished(UUID coffeeId) {
+			return true;
+		}
+
+		@Override
 		public void apply(CoffeeCreatedEvent event) {
 		}
 

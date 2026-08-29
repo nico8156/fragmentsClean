@@ -66,6 +66,11 @@ class CoffeeDeletedEventHandlerTest {
 		private final List<UUID> deletedCoffeeIds = new ArrayList<>();
 
 		@Override
+		public boolean isPublished(UUID coffeeId) {
+			return true;
+		}
+
+		@Override
 		public void apply(CoffeeCreatedEvent event) {
 		}
 

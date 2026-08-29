@@ -11,14 +11,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class CoffeePublishedEventHandler implements EventHandler<CoffeePublishedEvent> {
     private final CoffeeProjectionRepository repository;
     private final ProjectionSyncPublisher syncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
     public CoffeePublishedEventHandler(CoffeeProjectionRepository repository, ProjectionSyncPublisher syncPublisher) {
         this.repository = repository; this.syncPublisher = syncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(repository);
     }
 	@Override
 	@Transactional
 	public void handle(CoffeePublishedEvent event) {
 		var mutation = repository.markPublishedIfNewer(event.coffeeId().value(), event.version(), event.occurredAt());
 		if (!mutation.applied()) return;
+		if (!publicChangePolicy.isPubliclyVisible(event.coffeeId().value())) return;
         syncPublisher.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity",
 				event.coffeeId().value().toString(), mutation.version(), mutation.changedAt(), List.of("summary", "publicationStatus")));
     }

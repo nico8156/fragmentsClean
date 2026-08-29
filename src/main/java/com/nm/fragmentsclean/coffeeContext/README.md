@@ -331,7 +331,12 @@ COFFEE_READ_SEED_ENABLED=true
 * `CoffeePhotosImportedEventHandler`
 
 ➡️ Synchronisation write → read par événements.
-Chaque handler publie ensuite un `projection.updated` orienté read model, jamais un Domain Event vers le frontend.
+Les handlers matérialisent aussi les brouillons pour le Studio, mais
+`CoffeePublicProjectionChangePolicy` réserve le `projection.updated/coffees`
+public aux changements réellement visibles par le mobile : publication,
+modification de contenu publié, archivage ou suppression d'un café publié.
+Les photos et horaires d'un brouillon sont projetés sans provoquer de GET mobile
+inutile. Le SSE reste orienté read model et ne transporte jamais un Domain Event.
 
 #### Monotonie et atomicité
 

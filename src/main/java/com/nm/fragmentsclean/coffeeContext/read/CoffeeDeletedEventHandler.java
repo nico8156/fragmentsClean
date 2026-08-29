@@ -17,6 +17,7 @@ public class CoffeeDeletedEventHandler implements EventHandler<CoffeeDeletedEven
 	private final CoffeePhotoProjectionRepository photoProjectionRepository;
 	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeeDeletedEventHandler(
 			CoffeeProjectionRepository projectionRepository,
@@ -27,16 +28,19 @@ public class CoffeeDeletedEventHandler implements EventHandler<CoffeeDeletedEven
 		this.photoProjectionRepository = photoProjectionRepository;
 		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(projectionRepository);
 	}
 
 	@Override
 	@Transactional
 	public void handle(CoffeeDeletedEvent event) {
 		var coffeeId = event.coffeeId().value();
+		boolean wasPubliclyVisible = publicChangePolicy.isPubliclyVisible(coffeeId);
 		var mutation = projectionRepository.deleteIfNewer(coffeeId, event.version(), event.occurredAt());
 		if (!mutation.applied()) return;
 		photoProjectionRepository.deleteForCoffee(coffeeId);
 		openingHoursProjectionRepository.deleteForCoffee(coffeeId);
+		if (!wasPubliclyVisible) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",

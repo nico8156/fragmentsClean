@@ -53,6 +53,10 @@ public interface CoffeeProjectionRepository {
 
 	default List<CoffeeSummaryView> findAll(boolean publishedOnly) { return findAll(); }
 
+	default boolean isPublished(UUID coffeeId) {
+		return findById(coffeeId, true).isPresent();
+	}
+
 	// ✅ seed : insert direct d'une view (idempotent via ON CONFLICT)
 	void insertSeed(CoffeeSummaryView view);
 

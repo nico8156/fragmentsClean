@@ -203,6 +203,18 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				""" + publicationFilter, this::mapRow, coffeeId).stream().findFirst();
 	}
 
+	@Override
+	public boolean isPublished(UUID coffeeId) {
+		Boolean published = jdbcTemplate.queryForObject("""
+				SELECT EXISTS (
+				    SELECT 1
+				    FROM coffee_summaries_projection
+				    WHERE id = ? AND publication_status = 'PUBLISHED'
+				)
+				""", Boolean.class, coffeeId);
+		return Boolean.TRUE.equals(published);
+	}
+
 	// ----------------- private -----------------
 
 	private int upsert(

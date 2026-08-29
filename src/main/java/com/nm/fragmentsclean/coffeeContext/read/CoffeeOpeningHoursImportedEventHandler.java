@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.read;
 
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
@@ -15,12 +16,15 @@ import java.util.stream.IntStream;
 public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<CoffeeOpeningHoursImportedEvent> {
 	private final CoffeeOpeningHoursProjectionRepository projectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeeOpeningHoursImportedEventHandler(
 			CoffeeOpeningHoursProjectionRepository projectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		this.projectionRepository = projectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(coffeeProjectionRepository);
 	}
 
 	@Override
@@ -28,6 +32,7 @@ public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<Coff
 	public void handle(CoffeeOpeningHoursImportedEvent event) {
 		var coffeeId = event.coffeeId().value();
 		projectionRepository.replaceForCoffee(coffeeId, toViews(coffeeId, event.weekdayDescriptions()));
+		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",
