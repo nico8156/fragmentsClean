@@ -18,6 +18,6 @@ class CoffeeOpeningHoursReadController {
 
 	@GetMapping("/api/coffees/opening-hours")
 	public List<CoffeeOpeningHoursView> listAllOpeningHours() {
-		return repo.findAll();
+		return repo.findAll(true);
 	}
 }

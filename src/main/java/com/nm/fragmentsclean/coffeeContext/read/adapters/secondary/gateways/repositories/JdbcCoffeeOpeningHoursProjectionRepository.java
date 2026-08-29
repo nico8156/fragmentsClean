@@ -54,11 +54,20 @@ public class JdbcCoffeeOpeningHoursProjectionRepository implements CoffeeOpening
 
 	@Override
 	public List<CoffeeOpeningHoursView> findAll() {
+		return findAll(false);
+	}
+
+	@Override
+	public List<CoffeeOpeningHoursView> findAll(boolean publishedOnly) {
+		String publicationJoin = publishedOnly ? """
+				    JOIN coffee_summaries_projection summary
+				      ON summary.id = hours.coffee_id
+				     AND summary.publication_status = 'PUBLISHED'
+				""" : "";
 		return jdbc.query("""
-				    SELECT id, coffee_id, weekday_description
-				    FROM coffee_openinghours_projection
-				    ORDER BY coffee_id ASC
-				""", this::mapRow);
+				    SELECT hours.id, hours.coffee_id, hours.weekday_description
+				    FROM coffee_openinghours_projection hours
+				""" + publicationJoin + " ORDER BY hours.coffee_id ASC", this::mapRow);
 	}
 
 	private CoffeeOpeningHoursView mapRow(ResultSet rs, int rowNum) throws SQLException {

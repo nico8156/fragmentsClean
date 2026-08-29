@@ -19,5 +19,9 @@ public interface CoffeePhotoProjectionRepository {
 
 	List<CoffeePhotoView> findAll();
 
+	default List<CoffeePhotoView> findAll(boolean publishedOnly) {
+		return findAll();
+	}
+
 	long count();
 }

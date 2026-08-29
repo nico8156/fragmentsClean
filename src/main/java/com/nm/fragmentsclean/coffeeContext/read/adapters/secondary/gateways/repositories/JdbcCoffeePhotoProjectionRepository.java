@@ -61,11 +61,20 @@ public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectio
 
 	@Override
 	public List<CoffeePhotoView> findAll() {
+		return findAll(false);
+	}
+
+	@Override
+	public List<CoffeePhotoView> findAll(boolean publishedOnly) {
+		String publicationJoin = publishedOnly ? """
+				    JOIN coffee_summaries_projection summary
+				      ON summary.id = photo.coffee_id
+				     AND summary.publication_status = 'PUBLISHED'
+				""" : "";
 		return jdbc.query("""
-				    SELECT id, coffee_id, photo_uri
-				    FROM coffee_photos_projection
-				    ORDER BY coffee_id ASC
-				""", this::mapRow);
+				    SELECT photo.id, photo.coffee_id, photo.photo_uri
+				    FROM coffee_photos_projection photo
+				""" + publicationJoin + " ORDER BY photo.coffee_id ASC", this::mapRow);
 	}
 
 	private CoffeePhotoView mapRow(ResultSet rs, int rowNum) throws SQLException {

@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCrea
 
 import java.util.List;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CoffeeProjectionRepository {
@@ -45,6 +46,10 @@ public interface CoffeeProjectionRepository {
 	}
 
 	List<CoffeeSummaryView> findAll();
+
+	default Optional<CoffeeSummaryView> findById(UUID coffeeId, boolean publishedOnly) {
+		return findAll(publishedOnly).stream().filter(view -> view.id().equals(coffeeId)).findFirst();
+	}
 
 	default List<CoffeeSummaryView> findAll(boolean publishedOnly) { return findAll(); }
 

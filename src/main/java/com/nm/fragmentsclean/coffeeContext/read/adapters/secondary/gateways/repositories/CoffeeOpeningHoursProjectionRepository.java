@@ -15,5 +15,9 @@ public interface CoffeeOpeningHoursProjectionRepository {
 
 	List<CoffeeOpeningHoursView> findAll();
 
+	default List<CoffeeOpeningHoursView> findAll(boolean publishedOnly) {
+		return findAll();
+	}
+
 	long count();
 }

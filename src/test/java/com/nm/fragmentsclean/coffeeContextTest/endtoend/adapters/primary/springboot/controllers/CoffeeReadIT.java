@@ -39,7 +39,10 @@ public class CoffeeReadIT extends AbstractBaseE2E {
 
 	@BeforeEach
 	void setup() {
+		jdbcTemplate.update("DELETE FROM coffee_photos_projection");
+		jdbcTemplate.update("DELETE FROM coffee_openinghours_projection");
 		jdbcTemplate.update("DELETE FROM coffee_summaries_projection");
+		jdbcTemplate.update("DELETE FROM coffee_projection_checkpoints");
 		outboxEventRepository.deleteAll();
 	}
 
@@ -103,4 +106,5 @@ public class CoffeeReadIT extends AbstractBaseE2E {
 		assertThat(row.get("id").toString()).isEqualTo(COFFEE_ID.toString());
 		assertThat(row.get("name")).isEqualTo("Fragments Café");
 	}
+
 }
