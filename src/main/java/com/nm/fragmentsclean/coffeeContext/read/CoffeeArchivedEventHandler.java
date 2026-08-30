@@ -17,6 +17,7 @@ public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEv
 	private final CoffeePhotoProjectionRepository photoProjectionRepository;
 	private final CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeeArchivedEventHandler(
 			CoffeeProjectionRepository projectionRepository,
@@ -27,14 +28,16 @@ public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEv
 		this.photoProjectionRepository = photoProjectionRepository;
 		this.openingHoursProjectionRepository = openingHoursProjectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(projectionRepository);
 	}
 
 	@Override
 	@Transactional
 	public void handle(CoffeeArchivedEvent event) {
 		var coffeeId = event.coffeeId().value();
+		boolean wasPubliclyVisible = publicChangePolicy.isPubliclyVisible(coffeeId);
 		var mutation = projectionRepository.markArchivedIfNewer(coffeeId, event.version(), event.occurredAt());
-		if (!mutation.applied()) return;
+		if (!mutation.applied() || !wasPubliclyVisible) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",

@@ -15,12 +15,14 @@ public class CoffeeCreatedIntegrationEventHandler {
 	private final CoffeeProjectionSource projectionSource;
 	private final CoffeeProjectionRepository projectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeeCreatedIntegrationEventHandler(CoffeeProjectionSource projectionSource,
 			CoffeeProjectionRepository projectionRepository, ProjectionSyncPublisher projectionSyncPublisher) {
 		this.projectionSource = projectionSource;
 		this.projectionRepository = projectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(projectionRepository);
 	}
 
 	@Transactional
@@ -29,6 +31,7 @@ public class CoffeeCreatedIntegrationEventHandler {
 				.orElseThrow(() -> new IllegalStateException("Coffee source is missing for " + event.coffeeId()));
 		var mutation = projectionRepository.applyIfNewer(view);
 		if (!mutation.applied()) return;
+		if (!publicChangePolicy.isPubliclyVisible(view.id())) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees", "entity", view.id().toString(), mutation.version(), mutation.changedAt(), List.of("summary")));
 	}

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
@@ -15,12 +16,15 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 public class CoffeePhotoAddedEventHandler implements EventHandler<CoffeePhotoAddedEvent> {
 	private final CoffeePhotoProjectionRepository projectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeePhotoAddedEventHandler(
 			CoffeePhotoProjectionRepository projectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		this.projectionRepository = projectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(coffeeProjectionRepository);
 	}
 
 	@Override
@@ -39,6 +43,7 @@ public class CoffeePhotoAddedEventHandler implements EventHandler<CoffeePhotoAdd
 				photoId,
 				coffeeId,
 				photoUri));
+		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",

@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventH
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
+import com.nm.fragmentsclean.coffeeContextTest.support.PublishedCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
@@ -23,7 +24,7 @@ class CoffeeOpeningHoursImportedEventHandlerTest {
 	void replaces_opening_hours_projection_then_publishes_projection_updated_sync_event() {
 		var repository = new RecordingOpeningHoursProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeeOpeningHoursImportedEventHandler(repository, syncPublisher);
+		var handler = new CoffeeOpeningHoursImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
 		var event = openingHoursImportedEvent(List.of(
 				"Monday: 8:00 AM - 6:00 PM",
 				"Tuesday: 8:00 AM - 6:00 PM"));
@@ -53,7 +54,7 @@ class CoffeeOpeningHoursImportedEventHandlerTest {
 	void replaces_with_empty_list_and_still_publishes_projection_sync() {
 		var repository = new RecordingOpeningHoursProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeeOpeningHoursImportedEventHandler(repository, syncPublisher);
+		var handler = new CoffeeOpeningHoursImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
 		var event = openingHoursImportedEvent(List.of());
 
 		handler.handle(event);

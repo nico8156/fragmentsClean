@@ -68,6 +68,26 @@ class CoffeePublicProjectionRepositoryIT extends TestContainers {
 		assertThat(hours.findAll(false)).hasSize(2);
 	}
 
+	@Test
+	void public_catalogue_supports_search_cursor_pagination_and_stable_etags() {
+		UUID secondPublishedId = UUID.fromString("44444444-4444-4444-4444-444444444444");
+		insertSummary(secondPublishedId, "Roaster Rennes", "PUBLISHED");
+
+		var firstPage = summaries.searchPublished("rennes", null, 1);
+		assertThat(firstPage.items()).hasSize(1);
+		assertThat(firstPage.nextCursor()).isNotBlank();
+		assertThat(firstPage.etag()).startsWith("\"coffee-catalogue-");
+
+		var replay = summaries.searchPublished("rennes", null, 1);
+		assertThat(replay.etag()).isEqualTo(firstPage.etag());
+
+		var secondPage = summaries.searchPublished("rennes", firstPage.nextCursor(), 1);
+		assertThat(secondPage.items()).hasSize(1);
+		assertThat(secondPage.items().getFirst().id()).isNotEqualTo(firstPage.items().getFirst().id());
+		assertThat(secondPage.nextCursor()).isNull();
+		assertThat(secondPage.items()).extracting(view -> view.publicationStatus()).containsOnly("PUBLISHED");
+	}
+
 	private void insertSummary(UUID coffeeId, String name, String status) {
 		jdbc.update("""
 				INSERT INTO coffee_summaries_projection (

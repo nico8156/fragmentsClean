@@ -19,12 +19,14 @@ public class CoffeeCreatedEventHandler implements EventHandler<CoffeeCreatedEven
 
     private final CoffeeProjectionRepository projectionRepository;
     private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
     public CoffeeCreatedEventHandler(
             CoffeeProjectionRepository projectionRepository,
             ProjectionSyncPublisher projectionSyncPublisher) {
         this.projectionRepository = projectionRepository;
         this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(projectionRepository);
     }
 
 
@@ -38,6 +40,7 @@ public class CoffeeCreatedEventHandler implements EventHandler<CoffeeCreatedEven
 					event.coffeeId().value(), event.version(), mutation.version());
 			return;
 		}
+		if (!publicChangePolicy.isPubliclyVisible(event.coffeeId().value())) return;
         projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
                 "coffees",
                 "entity",

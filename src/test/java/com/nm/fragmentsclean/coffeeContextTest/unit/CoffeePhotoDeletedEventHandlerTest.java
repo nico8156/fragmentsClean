@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
+import com.nm.fragmentsclean.coffeeContextTest.support.PublishedCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
@@ -23,7 +24,7 @@ class CoffeePhotoDeletedEventHandlerTest {
 	void deletes_photo_projection_and_publishes_projection_sync_event() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotoDeletedEventHandler(repository, syncPublisher);
+		var handler = new CoffeePhotoDeletedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("22222222-2222-2222-2222-222222222222");
 

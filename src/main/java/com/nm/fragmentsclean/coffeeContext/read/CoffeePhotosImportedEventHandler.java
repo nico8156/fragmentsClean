@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.read;
 
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
+import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
@@ -14,12 +15,15 @@ import java.util.List;
 public class CoffeePhotosImportedEventHandler implements EventHandler<CoffeePhotosImportedEvent> {
 	private final CoffeePhotoProjectionRepository projectionRepository;
 	private final ProjectionSyncPublisher projectionSyncPublisher;
+	private final CoffeePublicProjectionChangePolicy publicChangePolicy;
 
 	public CoffeePhotosImportedEventHandler(
 			CoffeePhotoProjectionRepository projectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		this.projectionRepository = projectionRepository;
 		this.projectionSyncPublisher = projectionSyncPublisher;
+		this.publicChangePolicy = new CoffeePublicProjectionChangePolicy(coffeeProjectionRepository);
 	}
 
 	@Override
@@ -40,6 +44,7 @@ public class CoffeePhotosImportedEventHandler implements EventHandler<CoffeePhot
 	private void replace(java.util.UUID coffeeId, java.util.List<CoffeePhotoView> photos, long version,
 			java.time.Instant occurredAt) {
 		projectionRepository.replaceForCoffee(coffeeId, photos);
+		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
 				"entity",

@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories;
 
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeSummaryView;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeCataloguePage;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -203,7 +204,114 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 				""" + publicationFilter, this::mapRow, coffeeId).stream().findFirst();
 	}
 
+	@Override
+	public boolean isPublished(UUID coffeeId) {
+		Boolean published = jdbcTemplate.queryForObject("""
+				SELECT EXISTS (
+				    SELECT 1
+				    FROM coffee_summaries_projection
+				    WHERE id = ? AND publication_status = 'PUBLISHED'
+				)
+				""", Boolean.class, coffeeId);
+		return Boolean.TRUE.equals(published);
+	}
+
+	@Override
+	public CoffeeCataloguePage searchPublished(String search, String cursor, int limit) {
+		CatalogueCursor decodedCursor = CatalogueCursor.decode(cursor);
+		StringBuilder sql = new StringBuilder("""
+				SELECT id,
+				       google_place_id,
+				       name,
+				       lat,
+				       lon,
+				       address_line1,
+				       city,
+				       postal_code,
+				       country,
+				       phone_number,
+				       website,
+				       tags_json,
+				       publication_status,
+				       version,
+				       updated_at
+				FROM coffee_summaries_projection
+				WHERE publication_status = 'PUBLISHED'
+				""");
+		List<Object> arguments = new ArrayList<>();
+		if (search != null) {
+			sql.append("""
+					 AND (LOWER(name) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(city, '')) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(postal_code, '')) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(address_line1, '')) LIKE ? ESCAPE '\\')
+					""");
+			String pattern = "%" + escapeLike(search.toLowerCase(Locale.ROOT)) + "%";
+			arguments.addAll(List.of(pattern, pattern, pattern, pattern));
+		}
+		if (decodedCursor != null) {
+			sql.append(" AND (LOWER(name), id) > (?, ?)\n");
+			arguments.add(decodedCursor.normalizedName());
+			arguments.add(decodedCursor.id());
+		}
+		sql.append(" ORDER BY LOWER(name) ASC, id ASC LIMIT ?");
+		arguments.add(limit + 1);
+
+		List<CoffeeSummaryView> fetched = jdbcTemplate.query(sql.toString(), this::mapRow, arguments.toArray());
+		boolean hasMore = fetched.size() > limit;
+		List<CoffeeSummaryView> items = hasMore ? List.copyOf(fetched.subList(0, limit)) : List.copyOf(fetched);
+		String nextCursor = hasMore ? CatalogueCursor.encode(items.getLast()) : null;
+		return new CoffeeCataloguePage(items, nextCursor, catalogueEtag(search));
+	}
+
 	// ----------------- private -----------------
+
+	private static String escapeLike(String value) {
+		return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+	}
+
+	private String catalogueEtag(String search) {
+		StringBuilder sql = new StringBuilder("""
+				SELECT id, version, updated_at
+				FROM coffee_summaries_projection
+				WHERE publication_status = 'PUBLISHED'
+				""");
+		List<Object> arguments = new ArrayList<>();
+		if (search != null) {
+			sql.append("""
+					 AND (LOWER(name) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(city, '')) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(postal_code, '')) LIKE ? ESCAPE '\\'
+					      OR LOWER(COALESCE(address_line1, '')) LIKE ? ESCAPE '\\')
+					""");
+			String pattern = "%" + escapeLike(search.toLowerCase(Locale.ROOT)) + "%";
+			arguments.addAll(List.of(pattern, pattern, pattern, pattern));
+		}
+		sql.append(" ORDER BY id ASC");
+		List<String> revisionRows = jdbcTemplate.query(sql.toString(), (resultSet, rowNumber) ->
+				resultSet.getObject("id", UUID.class) + ":" + resultSet.getLong("version") + ":"
+						+ resultSet.getTimestamp("updated_at").toInstant(), arguments.toArray());
+		return CoffeeCatalogueEtag.fromRevisionRows(search, revisionRows);
+	}
+
+	private record CatalogueCursor(String normalizedName, UUID id) {
+		private static String encode(CoffeeSummaryView view) {
+			String raw = view.name().toLowerCase(Locale.ROOT) + "\0" + view.id();
+			return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		}
+
+		private static CatalogueCursor decode(String cursor) {
+			if (cursor == null) return null;
+			try {
+				String raw = new String(Base64.getUrlDecoder().decode(cursor), java.nio.charset.StandardCharsets.UTF_8);
+				int separator = raw.lastIndexOf('\0');
+				if (separator < 1) throw new IllegalArgumentException("invalid coffee catalogue cursor");
+				return new CatalogueCursor(raw.substring(0, separator), UUID.fromString(raw.substring(separator + 1)));
+			} catch (IllegalArgumentException invalid) {
+				throw new IllegalArgumentException("invalid coffee catalogue cursor", invalid);
+			}
+		}
+	}
 
 	private int upsert(
 			UUID id,

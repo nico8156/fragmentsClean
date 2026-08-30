@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
+import com.nm.fragmentsclean.coffeeContextTest.support.PublishedCoffeeProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.ImportedCoffeePhoto;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
@@ -26,7 +27,7 @@ class CoffeePhotosImportedEventHandlerTest {
 	void replaces_photo_projection_and_publishes_projection_sync_event() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotosImportedEventHandler(repository, syncPublisher);
+		var handler = new CoffeePhotosImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
 		var event = photosImportedEvent(List.of(
 				new ImportedCoffeePhoto(
 						UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"),
@@ -61,7 +62,7 @@ class CoffeePhotosImportedEventHandlerTest {
 	void replaces_photo_projection_from_primitive_sqs_contract() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotosImportedEventHandler(repository, syncPublisher);
+		var handler = new CoffeePhotosImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
 

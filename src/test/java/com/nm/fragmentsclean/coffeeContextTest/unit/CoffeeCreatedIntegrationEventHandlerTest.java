@@ -50,6 +50,7 @@ class CoffeeCreatedIntegrationEventHandlerTest {
 
 	private static class RecordingProjectionRepository implements CoffeeProjectionRepository {
 		private final List<CoffeeSummaryView> appliedViews = new ArrayList<>();
+		@Override public boolean isPublished(UUID coffeeId) { return true; }
 		@Override public void apply(CoffeeCreatedEvent event) { }
 		@Override public void apply(CoffeeSummaryView view) { appliedViews.add(view); }
 		@Override public void deleteByCoffeeId(UUID coffeeId) { }

@@ -14,6 +14,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
+import com.nm.fragmentsclean.coffeeContext.read.SearchPublicCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.storage.DefaultCoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeeOpeningHoursProjectionRepository;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionRepository;
@@ -117,6 +118,12 @@ public class CoffeeContextDependenciesConfiguration {
 	}
 
 	@Bean
+	SearchPublicCoffeesQueryHandler searchPublicCoffeesQueryHandler(
+			CoffeeProjectionRepository coffeeProjectionRepository) {
+		return new SearchPublicCoffeesQueryHandler(coffeeProjectionRepository);
+	}
+
+	@Bean
 	CoffeeCreatedEventHandler coffeeCreatedEventHandler(
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
@@ -197,8 +204,10 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	CoffeeOpeningHoursImportedEventHandler coffeeOpeningHoursImportedEventHandler(
 			CoffeeOpeningHoursProjectionRepository openingHoursProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeeOpeningHoursImportedEventHandler(openingHoursProjectionRepository, projectionSyncPublisher);
+		return new CoffeeOpeningHoursImportedEventHandler(
+				openingHoursProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
@@ -213,22 +222,28 @@ public class CoffeeContextDependenciesConfiguration {
 	@Bean
 	CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotosImportedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotosImportedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
 	CoffeePhotoAddedEventHandler coffeePhotoAddedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoAddedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotoAddedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
 	CoffeePhotoDeletedEventHandler coffeePhotoDeletedEventHandler(
 			CoffeePhotoProjectionRepository photoProjectionRepository,
+			CoffeeProjectionRepository coffeeProjectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoDeletedEventHandler(photoProjectionRepository, projectionSyncPublisher);
+		return new CoffeePhotoDeletedEventHandler(
+				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean
