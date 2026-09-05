@@ -48,7 +48,6 @@ must use its OAuth session and must not embed a backend service token.
 
 ## Migration rule
 
-During the shared-host migration, existing `.env` files may remain as a
-temporary runtime mechanism, but they are not the long-term source of truth.
-Phase 5 must move secret ownership to AWS SSM Parameter Store or Secrets
-Manager, with documented parameter names and IAM access boundaries.
+The deployment renders the runtime `.env` from AWS SSM values on the host.
+Committed files remain non-secret templates only. Secret ownership, parameter
+names and IAM access boundaries are documented in `secrets-contract.md`.

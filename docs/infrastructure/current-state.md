@@ -52,26 +52,26 @@ can be deleted wholesale because it still owns active application resources.
 - GitHub Actions has an OIDC deploy role for Fragments restricted to the
   `main` branch. Backend deployment targets the shared platform instance through
   SSM Run Command; it does not open port 22 or carry an SSH private key.
-- Anchor still uses static AWS credentials in its deployment workflow and must
-  be aligned with OIDC before the hosts are consolidated.
+- Anchor deployment credentials and current IAM ownership must be verified in
+  the Anchor repository before its legacy role is removed.
 - No Fragments RDS instance was observed; PostgreSQL currently runs inside
   Docker on the shared platform. A tested logical backup and restore procedure
   remains mandatory before long-lived data is accepted.
 
-## Constraints for the next phase
+## Active platform constraints
 
-1. Do not run the two existing Caddy services on one host: only one process may
-   bind ports 80 and 443.
+1. Keep a single platform-owned Caddy process on ports 80 and 443.
 2. Keep Anchor and Fragments PostgreSQL data directories and credentials
    separate.
 3. Do not expose either backend directly on the public interface.
 4. Do not merge the two application IAM policies into wildcard permissions.
-5. Keep the existing stacks and volumes recoverable until the shared-host
-   migration has passed smoke tests and a rollback rehearsal.
+5. Keep legacy volumes recoverable until logical restore and rollback drills
+   have passed.
 
-## Target ownership split
+## Ownership split
 
-The future platform stack should own the shared EC2 host, networking, SSM,
-host-level storage, and the single Caddy instance. Application stacks should
-continue to own their ECR repositories, SQS queues, application parameters,
-and application-specific IAM permissions.
+The platform stack owns the shared EC2 host, networking, SSM, host-level
+storage and the single Caddy instance. Application stacks own ECR, SQS,
+application parameters and application-specific IAM permissions. The legacy
+minimal stacks have not yet completed that separation and must be refactored
+through resource import/change sets before compute cleanup.

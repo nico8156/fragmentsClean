@@ -1,7 +1,8 @@
 # Shared platform staging stack
 
-`infra/aws/cloudformation/platform-staging.yaml` is the proposed CloudFormation
-stack for the future mutualised Anchor and Fragments staging host.
+`infra/aws/cloudformation/platform-staging.yaml` describes the deployed
+mutualised Anchor and Fragments staging host. The observed stack is
+`platform-staging`, currently `UPDATE_COMPLETE`.
 
 ## Scope
 
@@ -43,25 +44,28 @@ aws cloudformation validate-template \
   --template-body file://infra/aws/cloudformation/platform-staging.yaml
 ```
 
-It must then be deployed in a change set, never directly over an existing
-application stack. Existing Anchor and Fragments stacks remain the rollback
-reference until application data and smoke tests have been validated on the
-new host.
+Every update must use a reviewed change set. The legacy stacks remain partial
+resource owners and rollback references; they are not the active runtime.
 
 The data volume has `DeletionPolicy: Snapshot` and
 `UpdateReplacePolicy: Snapshot`, but snapshots are not a substitute for a
 tested PostgreSQL backup and restore procedure.
 
-## Known follow-up work
+## Completed runtime work
 
-- install and harden Docker through idempotent bootstrap or image baking;
-- mount the data volume without formatting an existing disk;
-- create the platform-owned Caddy runtime;
-- move application secrets to SSM Parameter Store or Secrets Manager;
-- pass the existing `alias/aws/ssm` key ARN for the initial staging migration;
-- migrate Anchor deployment credentials to GitHub OIDC;
-- add CloudWatch alarms and deployment locking;
-- decide whether `t4g.medium` is sufficient after observing both applications
-  under load.
+- Docker and isolated Compose runtimes are active;
+- the shared data volume is mounted;
+- platform Caddy owns ingress;
+- Fragments secrets come from SSM;
+- Fragments deployment targets the platform through SSM Run Command and OIDC.
 
-No AWS deployment is authorized by this file or by the phase 2 commit.
+## Remaining work
+
+- deploy and confirm queue/DLQ alarms and operator SNS subscription;
+- execute and record the PostgreSQL restore drill;
+- add deployment locking;
+- verify Anchor OIDC/IAM ownership in the Anchor repository;
+- separate active application resources from legacy compute stacks;
+- observe memory, disk and CPU before changing `t4g.medium`.
+
+No AWS mutation is authorized by this document.
