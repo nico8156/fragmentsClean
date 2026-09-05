@@ -1,93 +1,94 @@
 package com.nm.fragmentsclean.aticleContext.read;
 
+import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCursor;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleListView;
 import com.nm.fragmentsclean.aticleContext.read.projections.ArticleView;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import java.util.List;
-
 public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery, ArticleListView> {
-
     private static final int DEFAULT_LIMIT = 10;
+    private static final int MAX_LIMIT = 50;
 
     private final JdbcTemplate jdbcTemplate;
-    private final GetArticleBySlugQueryHandler getArticleBySlugQueryHandler;
+    private final GetArticleBySlugQueryHandler articleRowMapper;
 
-
-    public ListArticlesQueryHandler(JdbcTemplate jdbcTemplate, GetArticleBySlugQueryHandler getArticleBySlugQueryHandler) {
+    public ListArticlesQueryHandler(JdbcTemplate jdbcTemplate, GetArticleBySlugQueryHandler articleRowMapper) {
         this.jdbcTemplate = jdbcTemplate;
-        this.getArticleBySlugQueryHandler = getArticleBySlugQueryHandler;
+        this.articleRowMapper = articleRowMapper;
     }
 
     @Override
     public ArticleListView handle(ListArticlesQuery query) {
-        int limit = query.limit() != null ? query.limit() : DEFAULT_LIMIT;
-
-        // TODO: décoder le cursor pour retrouver la position (offset, lastId, etc.)
-        int offset = decodeCursorToOffset(query.cursor());
-
-        List<ArticleView> items = jdbcTemplate.query(
-                """
-                SELECT
-                    id,
-                    slug,
-                    locale,
-                    title,
-                    intro,
-                    blocks_json,
-                    conclusion,
-                    cover_json,
-                    tags_json,
-                    author_id,
-                    author_name,
-                    reading_time_min,
-                    published_at,
-                    updated_at,
-                    version,
-                    status,
-                    coffee_ids_json
+        int limit = normalizeLimit(query.limit());
+        ArticleCursor cursor = ArticleCursor.decode(query.cursor()).orElse(null);
+        boolean previous = cursor != null && cursor.direction() == ArticleCursor.Direction.PREVIOUS;
+        StringBuilder sql = new StringBuilder("""
+                SELECT id, slug, locale, title, intro, blocks_json, conclusion,
+                       cover_json, tags_json, author_id, author_name,
+                       reading_time_min, published_at, updated_at, version,
+                       status, coffee_ids_json
                 FROM articles_projection
                 WHERE locale = ? AND status = 'published'
-                ORDER BY published_at DESC
-                LIMIT ? OFFSET ?
-                """,
-                (rs, rowNum) -> getArticleBySlugQueryHandler.mapRowToArticleView(rs),
-                query.locale(),
-                limit,
-                offset
-        );
+                """);
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(query.locale());
 
-        String nextCursor = items.size() == limit
-                ? encodeOffsetToCursor(offset + limit)
-                : null;
-        String prevCursor = offset > 0
-                ? encodeOffsetToCursor(Math.max(offset - limit, 0))
-                : null;
+        if (cursor != null) {
+            String comparison = previous ? ">" : "<";
+            sql.append(" AND (published_at ").append(comparison)
+                    .append(" ? OR (published_at = ? AND id ").append(comparison).append(" ?))");
+            parameters.add(Timestamp.from(cursor.publishedAt()));
+            parameters.add(Timestamp.from(cursor.publishedAt()));
+            parameters.add(cursor.articleId());
+        }
+        sql.append(previous
+                ? " ORDER BY published_at ASC, id ASC LIMIT ?"
+                : " ORDER BY published_at DESC, id DESC LIMIT ?");
+        parameters.add(limit + 1);
 
-        // ETag de liste : simpliste → basé sur locale + offset
-        String etag = "articles-" + query.locale() + "-offset-" + offset;
+        List<ArticleView> items = new ArrayList<>(jdbcTemplate.query(
+                sql.toString(), (rs, rowNum) -> articleRowMapper.mapRowToArticleView(rs), parameters.toArray()));
+        boolean hasMore = items.size() > limit;
+        if (hasMore) items.remove(items.size() - 1);
+        if (previous) Collections.reverse(items);
 
         return new ArticleListView(
-                items,
-                nextCursor,
-                prevCursor,
-                etag
-        );
+                List.copyOf(items),
+                nextCursor(items, cursor, hasMore),
+                previousCursor(items, cursor, hasMore),
+                listEtag(query.locale(), items));
     }
 
-    private int decodeCursorToOffset(String cursor) {
-        if (cursor == null || cursor.isBlank()) {
-            return 0;
-        }
-        try {
-            return Integer.parseInt(cursor);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+    private int normalizeLimit(Integer requested) {
+        return requested == null ? DEFAULT_LIMIT : Math.max(1, Math.min(requested, MAX_LIMIT));
     }
 
-    private String encodeOffsetToCursor(int offset) {
-        return String.valueOf(offset);
+    private String nextCursor(List<ArticleView> items, ArticleCursor cursor, boolean hasMore) {
+        if (items.isEmpty() || (!hasMore && (cursor == null || cursor.direction() != ArticleCursor.Direction.PREVIOUS))) {
+            return null;
+        }
+        ArticleView last = items.get(items.size() - 1);
+        return ArticleCursor.next(last.publishedAt(), last.id()).encode();
+    }
+
+    private String previousCursor(List<ArticleView> items, ArticleCursor cursor, boolean hasMore) {
+        if (items.isEmpty() || cursor == null
+                || (cursor.direction() == ArticleCursor.Direction.PREVIOUS && !hasMore)) {
+            return null;
+        }
+        ArticleView first = items.get(0);
+        return ArticleCursor.previous(first.publishedAt(), first.id()).encode();
+    }
+
+    private String listEtag(String locale, List<ArticleView> items) {
+        long fingerprint = items.stream()
+                .mapToLong(item -> 31L * item.version() + item.id().hashCode())
+                .reduce(1L, (left, right) -> 31L * left + right);
+        return "articles-" + locale + '-' + Long.toUnsignedString(fingerprint, 36);
     }
 }
