@@ -102,8 +102,47 @@ aws sqs get-queue-attributes \
   --attribute-names ApproximateNumberOfMessages ApproximateNumberOfMessagesNotVisible
 ```
 
-DLQ redrive must be explicit and should be preceded by reading backend logs for
-the failed event ids.
+Each source queue has its own DLQ. The historical shared DLQ is deliberately
+retained under the `legacy-awaiting-triage` lifecycle tag until every existing
+message has been classified. New failures must not be routed to it.
+
+List queue-to-DLQ bindings without reading message bodies:
+
+```bash
+for queue_url in $(aws sqs list-queues \
+  --queue-name-prefix fragments-staging- \
+  --query 'QueueUrls[?ends_with(@, `-events`) || ends_with(@, `-requested`)]' \
+  --output text); do
+  aws sqs get-queue-attributes \
+    --queue-url "$queue_url" \
+    --attribute-names QueueArn RedrivePolicy
+done
+```
+
+DLQ triage order:
+
+1. Record queue URL, message id, event type, event id, receive count and sent
+   timestamp. Do not copy the full payload into a ticket or shared log.
+2. Correlate the event id with backend and inbox logs.
+3. Fix or explicitly accept the cause before any redrive.
+4. Redrive to the original source queue in a bounded batch.
+5. Verify inbox state, projection convergence and DLQ depth.
+
+Do not redrive the legacy shared DLQ as one batch: messages there belong to
+different source queues. Classify and replay them individually through the
+correct source queue. Deletion is allowed only after the effect is proven to
+have converged or the event has been explicitly declared obsolete.
+
+CloudWatch alarms cover:
+
+- any visible message in every per-queue DLQ;
+- any visible message remaining in the legacy shared DLQ;
+- source messages older than the configured threshold for three of five
+  consecutive one-minute periods.
+
+The optional `OperationsAlarmEmail` CloudFormation parameter creates an SNS
+email subscription. AWS sends a confirmation message; alarms are not delivered
+to that address until the subscription is confirmed.
 
 ## Projection Sync / SSE
 

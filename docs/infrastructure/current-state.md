@@ -3,7 +3,7 @@
 This document is the non-secret baseline for the Fragments / Anchor staging
 infrastructure. It is an inventory, not an authorization to change AWS.
 
-Audit date: 2026-08-25.
+Audit date: 2026-09-05.
 
 ## AWS resources observed
 
@@ -11,12 +11,13 @@ AWS region: `eu-west-3`.
 
 | Scope | Stack | Observed state | Runtime model |
 | --- | --- | --- | --- |
-| Anchor staging | `anchor-staging-minimal` | `UPDATE_COMPLETE` | One ARM64 EC2 host, Docker Compose, PostgreSQL on an attached encrypted EBS volume |
-| Fragments staging | `fragments-staging-minimal` | `UPDATE_COMPLETE` | One ARM64 EC2 host, Docker Compose, PostgreSQL on an attached encrypted EBS volume |
+| Shared platform | `platform-staging` | `UPDATE_COMPLETE` | One mutualised ARM64 EC2 host, SSM-managed deployment, Docker Compose and isolated application runtimes |
+| Anchor legacy rollback | `anchor-staging-minimal` | `UPDATE_COMPLETE` | Retained pending an explicit cleanup decision |
+| Fragments resource owner / legacy rollback | `fragments-staging-minimal` | `UPDATE_COMPLETE` | Owns Fragments ECR and SQS resources; its former host remains a rollback/cleanup concern |
 
-Both staging EC2 instances were intentionally stopped during the holiday
-period. They must not be deleted or replaced as part of the first migration
-step.
+The shared platform is now the active staging host. Legacy resources must not
+be removed until their volumes, costs and rollback value have been inventoried
+and an explicit cleanup decision has been recorded.
 
 ## Anchor staging
 
@@ -44,7 +45,9 @@ step.
 ## Shared AWS observations
 
 - ECR repositories have scan-on-push enabled.
-- SQS queues use a shared staging DLQ and a five-attempt redrive policy.
+- The deployed SQS queues still use a shared staging DLQ and a five-attempt
+  redrive policy. The next infrastructure change set introduces one DLQ per
+  source queue and retains the shared DLQ only for historical triage.
 - EC2 instance metadata requires IMDSv2.
 - S3 public access block is enabled on the shared asset bucket.
 - GitHub Actions has an OIDC deploy role for Fragments restricted to the
@@ -52,8 +55,9 @@ step.
   SSM Run Command; it does not open port 22 or carry an SSH private key.
 - Anchor still uses static AWS credentials in its deployment workflow and must
   be aligned with OIDC before the hosts are consolidated.
-- No Fragments RDS instance was observed; both applications currently use
-  PostgreSQL inside Docker.
+- No Fragments RDS instance was observed; PostgreSQL currently runs inside
+  Docker on the shared platform. A tested logical backup and restore procedure
+  remains mandatory before long-lived data is accepted.
 
 ## Constraints for the next phase
 
