@@ -181,6 +181,51 @@ If a photo is visible in S3 but not in the UI, check:
 - latest `projection_sync_events` for `projection='coffees'` and hints
   containing `photos`.
 
+## PostgreSQL Backup And Restore Drill
+
+The active runtime installs a daily systemd timer. A deployment also performs
+a synchronous backup before applying `schema.sql`; schema mutation is refused
+if the backup cannot be uploaded.
+
+Backups are custom-format `pg_dump` artifacts with a SHA-256 sidecar under:
+
+```text
+s3://anchor-assets-prod-851725375299/fragments/staging/backups/postgres/
+```
+
+S3 server-side encryption is explicitly requested. Never download an artifact
+to an operator workstation unless an incident requires it.
+
+Inspect the timer and recent backups:
+
+```bash
+systemctl status fragments-postgres-backup.timer
+journalctl -u fragments-postgres-backup.service --since '2 days ago'
+aws s3 ls s3://anchor-assets-prod-851725375299/fragments/staging/backups/postgres/
+```
+
+Run an on-demand backup:
+
+```bash
+sudo systemctl start fragments-postgres-backup.service
+sudo systemctl status fragments-postgres-backup.service
+```
+
+The restore drill never overwrites the live database. It downloads one
+allow-listed artifact, verifies its checksum, restores it into a uniquely named
+temporary database, verifies that public tables exist, then removes that
+temporary database:
+
+```bash
+sudo /srv/fragments/staging/restore-postgres-drill.sh \
+  s3://anchor-assets-prod-851725375299/fragments/staging/backups/postgres/fragments-YYYYMMDDTHHMMSSZ.dump
+```
+
+A successful upload is not proof of recoverability. Run and record a restore
+drill after this mechanism is first deployed, then at least monthly and after a
+PostgreSQL image upgrade. A live restore remains a separate incident procedure
+requiring an explicit recovery decision and maintenance window.
+
 ## Schema Policy For Release 1
 
 Current staging applies `schema.sql` directly. This is acceptable only while

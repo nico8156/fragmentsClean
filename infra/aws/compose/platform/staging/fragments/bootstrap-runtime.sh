@@ -74,5 +74,7 @@ write_env ARTICLE_IMAGES_S3_BUCKET anchor-assets-prod-851725375299
 write_env ARTICLE_IMAGES_S3_PREFIX fragments/staging/articles
 write_env ARTICLE_IMAGES_S3_REGION "$aws_region"
 write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.fr
+write_env POSTGRES_BACKUP_S3_BUCKET anchor-assets-prod-851725375299
+write_env POSTGRES_BACKUP_S3_PREFIX fragments/staging/backups/postgres
 
 unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_admin_bootstrap_user_ids

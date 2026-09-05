@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Fragments PostgreSQL backup schedule
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=fragments-postgres-backup.service
+
+[Install]
+WantedBy=timers.target

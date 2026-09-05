@@ -31,13 +31,23 @@ download() {
 mkdir -p "$runtime_root/db" "$runtime_root/coffee-photos"
 download infra/aws/compose/platform/staging/fragments/docker-compose.yml "$deployment_tmp/docker-compose.yml"
 download infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh "$deployment_tmp/bootstrap-runtime.sh"
+download infra/aws/compose/platform/staging/fragments/backup-postgres.sh "$deployment_tmp/backup-postgres.sh"
+download infra/aws/compose/platform/staging/fragments/restore-postgres-drill.sh "$deployment_tmp/restore-postgres-drill.sh"
+download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.service "$deployment_tmp/fragments-postgres-backup.service"
+download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.timer "$deployment_tmp/fragments-postgres-backup.timer"
 download src/main/resources/schema.sql "$deployment_tmp/schema.sql"
 
 install -m 0644 "$deployment_tmp/docker-compose.yml" "$runtime_root/docker-compose.yml"
 install -m 0644 "$deployment_tmp/schema.sql" "$runtime_root/db/schema.sql"
 install -m 0700 "$deployment_tmp/bootstrap-runtime.sh" "$runtime_root/bootstrap-runtime.sh"
+install -m 0700 "$deployment_tmp/backup-postgres.sh" "$runtime_root/backup-postgres.sh"
+install -m 0700 "$deployment_tmp/restore-postgres-drill.sh" "$runtime_root/restore-postgres-drill.sh"
+install -m 0644 "$deployment_tmp/fragments-postgres-backup.service" /etc/systemd/system/fragments-postgres-backup.service
+install -m 0644 "$deployment_tmp/fragments-postgres-backup.timer" /etc/systemd/system/fragments-postgres-backup.timer
 
 "$runtime_root/bootstrap-runtime.sh" "$backend_image"
+systemctl daemon-reload
+systemctl enable --now fragments-postgres-backup.timer
 
 registry=${backend_image%%/*}
 aws ecr get-login-password --region "$aws_region" \
@@ -51,6 +61,10 @@ if [[ -z "$postgres_container" ]]; then
   echo "The existing Fragments PostgreSQL container is not running." >&2
   exit 1
 fi
+
+# A deployment is a natural recovery boundary. Refuse to mutate the schema if
+# the pre-deployment backup cannot be produced and uploaded.
+systemctl start fragments-postgres-backup.service
 
 docker exec -i "$postgres_container" sh -lc \
   'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
