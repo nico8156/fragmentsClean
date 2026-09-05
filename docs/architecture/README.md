@@ -15,5 +15,6 @@ Read in order:
 9. [AWS MVP policy](aws-mvp-policy.md)
 10. [Release 1.0 architecture readiness](release-1-readiness.md)
 11. [Article authoring and generation saga](article-authoring-saga.md)
+12. [Integration event contracts and incoming ACLs](integration-event-contracts.md)
 
 The `AGENTS.md` file remains the normative doctrine. These documents explain the doctrine in operational terms.

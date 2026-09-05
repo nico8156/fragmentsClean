@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

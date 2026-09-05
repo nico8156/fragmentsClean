@@ -2,9 +2,9 @@ package com.nm.fragmentsclean.sharedKernel.eventing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.eventing.ArticleOutboxEventMetadataContributor;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleStatus;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.eventing.ArticleOutboxEventMetadataContributor;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleStatus;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.eventing.AuthOutboxEventMetadataContributor;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthProvider;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent;

@@ -1,9 +1,9 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
-import com.nm.fragmentsclean.aticleContext.read.projections.ArticleRevisionPublishedEventHandler;
-import com.nm.fragmentsclean.aticleContext.read.projections.ArticleProjectionRow;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
+import com.nm.fragmentsclean.articleContext.read.projections.ArticleRevisionPublishedEventHandler;
+import com.nm.fragmentsclean.articleContext.read.projections.ArticleProjectionRow;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;

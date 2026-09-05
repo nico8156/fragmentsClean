@@ -54,9 +54,19 @@ Parameters:
     Type: String
     Default: ''
     Description: Existing token.actions.githubusercontent.com OIDC provider ARN. Leave empty in a fresh AWS account.
+  OperationsAlarmEmail:
+    Type: String
+    Default: ''
+    Description: Optional operator email subscribed to staging CloudWatch alarms. The subscription must be confirmed.
+  QueueOldestMessageAlarmSeconds:
+    Type: Number
+    Default: 300
+    MinValue: 60
+    Description: Alarm threshold for the age of the oldest message on a source queue.
 
 Conditions:
   CreateGitHubOidcProvider: !Equals [!Ref ExistingGitHubOidcProviderArn, '']
+  HasOperationsAlarmEmail: !Not [!Equals [!Ref OperationsAlarmEmail, '']]
 
 Resources:
   BackendRepository:
@@ -71,6 +81,51 @@ Resources:
     Properties:
       QueueName: !Sub ${ProjectName}-${EnvironmentName}-shared-dlq
       MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: lifecycle
+          Value: legacy-awaiting-triage
+
+  ArticlesEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-articles-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  AuthUsersEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-auth-users-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  AppUsersEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-app-users-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  CoffeesEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-coffees-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  DomainEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-domain-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  TicketEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-ticket-events-dlq
+      MessageRetentionPeriod: 1209600
+
+  TicketVerificationRequestedDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-ticket-verification-requested-dlq
+      MessageRetentionPeriod: 1209600
 
   ArticlesEventsQueue:
     Type: AWS::SQS::Queue
@@ -79,7 +134,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt ArticlesEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   AuthUsersEventsQueue:
@@ -89,7 +144,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt AuthUsersEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   AppUsersEventsQueue:
@@ -99,7 +154,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt AppUsersEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   CoffeesEventsQueue:
@@ -109,7 +164,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt CoffeesEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   DomainEventsQueue:
@@ -119,7 +174,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt DomainEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   TicketEventsQueue:
@@ -129,7 +184,7 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt TicketEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   TicketVerificationRequestedQueue:
@@ -139,8 +194,323 @@ Resources:
       VisibilityTimeout: 120
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
-        deadLetterTargetArn: !GetAtt SharedDeadLetterQueue.Arn
+        deadLetterTargetArn: !GetAtt TicketVerificationRequestedDeadLetterQueue.Arn
         maxReceiveCount: 5
+
+  OperationsAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${ProjectName}-${EnvironmentName}-operations-alarms
+
+  OperationsAlarmEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Condition: HasOperationsAlarmEmail
+    Properties:
+      Protocol: email
+      Endpoint: !Ref OperationsAlarmEmail
+      TopicArn: !Ref OperationsAlarmTopic
+
+  LegacySharedDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-legacy-shared-dlq-not-empty
+      AlarmDescription: Legacy shared DLQ still contains messages requiring explicit triage.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt SharedDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref OperationsAlarmTopic
+      OKActions:
+        - !Ref OperationsAlarmTopic
+
+  ArticlesEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-articles-events-dlq-not-empty
+      AlarmDescription: Articles events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ArticlesEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  AuthUsersEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-auth-users-events-dlq-not-empty
+      AlarmDescription: Authentication user events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AuthUsersEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  AppUsersEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-app-users-events-dlq-not-empty
+      AlarmDescription: Application user events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AppUsersEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  CoffeesEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-coffees-events-dlq-not-empty
+      AlarmDescription: Coffee events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt CoffeesEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  DomainEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-domain-events-dlq-not-empty
+      AlarmDescription: Domain events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DomainEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  TicketEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-ticket-events-dlq-not-empty
+      AlarmDescription: Ticket events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt TicketEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  TicketVerificationRequestedDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-ticket-verification-requested-dlq-not-empty
+      AlarmDescription: Ticket verification requests reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt TicketVerificationRequestedDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  ArticlesEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-articles-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ArticlesEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  AuthUsersEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-auth-users-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AuthUsersEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  AppUsersEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-app-users-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt AppUsersEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  CoffeesEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-coffees-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt CoffeesEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  DomainEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-domain-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt DomainEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  TicketEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-ticket-events-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt TicketEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  TicketVerificationRequestedOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-ticket-verification-requested-oldest-message
+      AlarmDescription: A source queue contains an old message and may be blocked.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt TicketVerificationRequestedQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -425,5 +795,22 @@ Outputs:
     Value: !Ref TicketVerificationRequestedQueue
   SharedDeadLetterQueueUrl:
     Value: !Ref SharedDeadLetterQueue
+    Description: Legacy shared DLQ retained until its historical messages have been triaged.
+  ArticlesEventsDeadLetterQueueUrl:
+    Value: !Ref ArticlesEventsDeadLetterQueue
+  AuthUsersEventsDeadLetterQueueUrl:
+    Value: !Ref AuthUsersEventsDeadLetterQueue
+  AppUsersEventsDeadLetterQueueUrl:
+    Value: !Ref AppUsersEventsDeadLetterQueue
+  CoffeesEventsDeadLetterQueueUrl:
+    Value: !Ref CoffeesEventsDeadLetterQueue
+  DomainEventsDeadLetterQueueUrl:
+    Value: !Ref DomainEventsDeadLetterQueue
+  TicketEventsDeadLetterQueueUrl:
+    Value: !Ref TicketEventsDeadLetterQueue
+  TicketVerificationRequestedDeadLetterQueueUrl:
+    Value: !Ref TicketVerificationRequestedDeadLetterQueue
+  OperationsAlarmTopicArn:
+    Value: !Ref OperationsAlarmTopic
   GitHubDeployRoleArn:
     Value: !GetAtt GitHubDeployRole.Arn

@@ -506,6 +506,22 @@ No generated article is automatically published. Scheduled generation also
 obeys generation budgets, pending-review capacity, topic deduplication and a
 single-run lease.
 
+## Public catalogue pagination
+
+`GET /api/articles` orders published articles by `(published_at DESC, id DESC)`
+and uses an opaque, versioned keyset cursor. The cursor carries the direction,
+publication timestamp and article id; clients must only store and return it.
+They must never parse or manufacture it.
+
+The repository asks for `limit + 1` rows to determine whether another page
+exists. This avoids offset drift when an article is published while a client is
+walking the catalogue. A malformed or obsolete cursor restarts from the first
+page for backward compatibility. The public page size is bounded to 50.
+
+The supporting read index is `(locale, status, published_at DESC, id DESC)`.
+It is read-side infrastructure and does not participate in write-side domain
+decisions.
+
 ## Persistence target
 
 The target write schema separates:

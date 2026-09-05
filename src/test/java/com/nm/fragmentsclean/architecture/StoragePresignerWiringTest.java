@@ -7,7 +7,7 @@ import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Qualifier;
 
-import com.nm.fragmentsclean.aticleContext.read.configuration.ArticleContextReadDependenciesConfiguration;
+import com.nm.fragmentsclean.articleContext.read.configuration.ArticleContextReadDependenciesConfiguration;
 import com.nm.fragmentsclean.coffeeContext.read.configuration.CoffeeContextDependenciesConfiguration;
 
 class StoragePresignerWiringTest {

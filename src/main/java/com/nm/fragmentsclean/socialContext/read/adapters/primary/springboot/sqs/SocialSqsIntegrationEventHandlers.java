@@ -14,10 +14,8 @@ import com.nm.fragmentsclean.socialContext.read.projections.CommentCreatedEventH
 import com.nm.fragmentsclean.socialContext.read.projections.CommentDeletedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentUpdatedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.LikeSetEventHandler;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
-import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
+import com.nm.fragmentsclean.platform.eventing.contracts.SocialLikeSetIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,25 +31,29 @@ public class SocialSqsIntegrationEventHandlers {
     @Bean
     SqsIntegrationEventHandler socialCommentCreatedSqsIntegrationEventHandler(CommentCreatedEventHandler handler) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.created",
-                envelope -> handler.handle(payloadReader.read(envelope, CommentCreatedEvent.class)));
+                envelope -> handler.handle(SocialIntegrationEventAcl.created(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Created.class))));
     }
 
     @Bean
     SqsIntegrationEventHandler socialCommentUpdatedSqsIntegrationEventHandler(CommentUpdatedEventHandler handler) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.updated",
-                envelope -> handler.handle(payloadReader.read(envelope, CommentUpdatedEvent.class)));
+                envelope -> handler.handle(SocialIntegrationEventAcl.updated(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Updated.class))));
     }
 
     @Bean
     SqsIntegrationEventHandler socialCommentDeletedSqsIntegrationEventHandler(CommentDeletedEventHandler handler) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.deleted",
-                envelope -> handler.handle(payloadReader.read(envelope, CommentDeletedEvent.class)));
+                envelope -> handler.handle(SocialIntegrationEventAcl.deleted(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Deleted.class))));
     }
 
     @Bean
     SqsIntegrationEventHandler socialLikeSetSqsIntegrationEventHandler(LikeSetEventHandler handler) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.like.set",
-                envelope -> handler.handle(payloadReader.read(envelope, LikeSetEvent.class)));
+                envelope -> handler.handle(SocialIntegrationEventAcl.likeSet(
+                        payloadReader.read(envelope, SocialLikeSetIntegrationEvent.class))));
     }
 
     @Bean

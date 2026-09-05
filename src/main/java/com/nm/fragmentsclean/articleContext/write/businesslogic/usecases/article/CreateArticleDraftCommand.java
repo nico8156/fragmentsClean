@@ -1,0 +1,20 @@
+package com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article;
+
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionDraft;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public record CreateArticleDraftCommand(
+        UUID commandId,
+        Instant clientAt,
+        UUID articleId,
+        UUID revisionId,
+        String slug,
+        String locale,
+        UUID authorId,
+        String authorName,
+        ArticleRevisionDraft draft
+) implements Command {
+}

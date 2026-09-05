@@ -1,13 +1,13 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApproval;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleReviewApprovalValidator;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleAggregateRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleAuthoringSagaRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.*;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.*;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleReviewApproval;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleReviewApprovalValidator;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleAggregateRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleAuthoringSagaRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.*;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.*;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -66,7 +66,7 @@ class ApproveArticlePublicationFlowTest {
     private static ArticleRevisionDraft draft() {
         return ArticleRevisionDraft.editable(content(),
                 ArticleImageRef.from("s3://articles/cover.jpg", 1200, 800, "Couverture"),
-                java.util.List.of(com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag.DECOUVERTE));
+                java.util.List.of(com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleEditorialTag.DECOUVERTE));
     }
 
     private static ArticleAuthoringSaga readySaga(UUID sagaId, UUID articleId, UUID revisionId, Instant now) {

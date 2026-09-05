@@ -2,8 +2,8 @@ package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.art
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleGenerationReview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationReviewPort;
-import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReview;
-import com.nm.fragmentsclean.aticleContext.read.GetArticleGenerationReviewQueryHandler;
+import com.nm.fragmentsclean.articleContext.read.GetArticleGenerationReview;
+import com.nm.fragmentsclean.articleContext.read.GetArticleGenerationReviewQueryHandler;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 

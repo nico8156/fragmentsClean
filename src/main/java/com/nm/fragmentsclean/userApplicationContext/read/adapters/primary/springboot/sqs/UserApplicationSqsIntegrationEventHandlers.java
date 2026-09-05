@@ -10,7 +10,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.userApplicationContext.read.projectors.SavedCoffeeCafeProjectionProjector;
 import com.nm.fragmentsclean.userApplicationContext.read.projections.SavedCoffeeSetEventHandler;
-import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.SavedCoffeeSetEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,7 +25,8 @@ public class UserApplicationSqsIntegrationEventHandlers {
 	@Bean
 	SqsIntegrationEventHandler savedCoffeeSetSqsIntegrationEventHandler(SavedCoffeeSetEventHandler handler) {
 		return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "user.saved_coffee.set",
-				envelope -> handler.handle(payloadReader.read(envelope, SavedCoffeeSetEvent.class)));
+                envelope -> handler.handle(UserApplicationIntegrationEventAcl.savedCoffeeSet(
+                        payloadReader.read(envelope, SavedCoffeeSetIntegrationEvent.class))));
 	}
 
 	@Bean

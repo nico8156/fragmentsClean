@@ -9,11 +9,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.fake.FakeArticleRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleStatus;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
+import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.fake.FakeArticleRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleStatus;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.CreateArticleCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.CreateArticleCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;

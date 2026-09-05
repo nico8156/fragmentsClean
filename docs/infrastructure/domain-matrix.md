@@ -1,6 +1,7 @@
 # Domain and OAuth matrix
 
-This matrix separates observed values from the proposed shared-host target.
+This matrix records the deployed shared-host routing and the future production
+naming target.
 No DNS or OAuth provider configuration is changed by this document.
 
 ## Current / observed endpoints
@@ -10,12 +11,12 @@ No DNS or OAuth provider configuration is changed by this document.
 | Anchor staging | `api-staging.anchor-event.fr` | Anchor public/API host used by the current Compose example |
 | Fragments staging | `fragments-staging.anchor-event.fr` | Fragments API host used by mobile and Studio configuration |
 | Mobile | `com.googleusercontent.apps...:/oauthredirect` | Native Google OAuth callback |
-| Studio | Not deployed as a stable public host yet | Browser OAuth callback is not finalized |
+| Studio | `studio-staging.anchor-event.fr` | Static CloudFront Studio and browser OAuth origin |
 
 The mobile redirect is a native custom-scheme value and must remain distinct
 from browser redirects.
 
-## Target naming proposal
+## Deployed staging naming
 
 The preferred model uses subdomains rather than path prefixes:
 
@@ -26,8 +27,8 @@ The preferred model uses subdomains rather than path prefixes:
 | `fragments-staging.anchor-event.fr` | Mobile API and compatibility endpoint | Fragments backend |
 | `studio-staging.anchor-event.fr` | Studio browser | Studio frontend |
 
-This proposal preserves the existing Fragments staging API hostname and adds
-explicit Anchor and Studio subdomains. It must be confirmed before DNS changes.
+These names are now the staging contract. Changes require coordinated DNS,
+certificate, Caddy/CloudFront and OAuth updates.
 Existing production or staging URLs must not be repointed implicitly by a
 deployment workflow.
 
@@ -63,15 +64,13 @@ The backend compares the received redirect URI with
 ```text
 Studio browser
   -> Google
-  -> https://<confirmed-studio-host>/auth/callback
+  -> https://studio-staging.anchor-event.fr/
   -> POST /auth/google/studio
   -> Fragments admin JWT/session response
 ```
 
-The backend currently exposes `/auth/google/studio/config` and requires a
-configured `GOOGLE_STUDIO_REDIRECT_URI`. The callback host and path must be
-registered exactly in Google Console before enabling the production Studio
-build.
+The backend exposes `/auth/google/studio/config` and requires an exact
+`GOOGLE_STUDIO_REDIRECT_URI`. Staging currently uses the Studio root callback.
 
 ## Caddy rules for the target
 

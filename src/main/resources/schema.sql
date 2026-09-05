@@ -413,8 +413,8 @@ CREATE TABLE IF NOT EXISTS articles_projection (
 -- CREATE INDEX idx_articles_projection_slug_locale
 --     ON articles_projection (slug, locale);
 --
--- CREATE INDEX idx_articles_projection_published_at_desc
---     ON articles_projection (published_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_projection_public_page
+    ON articles_projection (locale, status, published_at DESC, id DESC);
 
 
 

@@ -12,12 +12,6 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
@@ -26,6 +20,9 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegratio
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoDeletedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -50,22 +47,21 @@ public class CoffeeSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler coffeeArchivedSqsIntegrationEventHandler(CoffeeArchivedEventHandler handler) {
-        return readAndHandle("coffee.archived", CoffeeArchivedEvent.class, handler::handle);
+        return readAndHandle("coffee.archived", CoffeeLifecycleIntegrationEvent.class,
+                event -> handler.handle(CoffeeIntegrationEventAcl.archived(event)));
     }
 
     @Bean
     SqsIntegrationEventHandler coffeePublishedSqsIntegrationEventHandler(CoffeePublishedEventHandler handler) {
-        return readAndHandle("coffee.published", CoffeePublishedIntegrationEvent.class, event ->
-                handler.handle(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublishedEvent(
-                        event.eventId(), event.commandId(),
-                        new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId(event.coffeeId()),
-                        event.version(), event.occurredAt(), null)));
+        return readAndHandle("coffee.published", CoffeePublishedIntegrationEvent.class,
+                event -> handler.handle(CoffeeIntegrationEventAcl.published(event)));
     }
 
     @Bean
     SqsIntegrationEventHandler coffeeDeletedSqsIntegrationEventHandler(CoffeeDeletedEventHandler handler,
             CoffeeDeletedMediaCleanupHandler mediaCleanupHandler) {
-        return readAndHandle("coffee.deleted", CoffeeDeletedEvent.class, event -> {
+        return readAndHandle("coffee.deleted", CoffeeLifecycleIntegrationEvent.class, integrationEvent -> {
+            var event = CoffeeIntegrationEventAcl.deleted(integrationEvent);
             handler.handle(event);
             mediaCleanupHandler.handle(event);
         });
@@ -74,7 +70,8 @@ public class CoffeeSqsIntegrationEventHandlers {
     @Bean
     SqsIntegrationEventHandler coffeeOpeningHoursImportedSqsIntegrationEventHandler(
             CoffeeOpeningHoursImportedEventHandler handler) {
-        return readAndHandle("coffee.opening_hours_imported", CoffeeOpeningHoursImportedEvent.class, handler::handle);
+        return readAndHandle("coffee.opening_hours_imported", CoffeeOpeningHoursImportedIntegrationEvent.class,
+                event -> handler.handle(CoffeeIntegrationEventAcl.openingHours(event)));
     }
 
     @Bean
@@ -89,7 +86,8 @@ public class CoffeeSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler coffeePhotoDeletedSqsIntegrationEventHandler(CoffeePhotoDeletedEventHandler handler) {
-        return readAndHandle("coffee.photo_deleted", CoffeePhotoDeletedEvent.class, handler::handle);
+        return readAndHandle("coffee.photo_deleted", CoffeePhotoDeletedIntegrationEvent.class,
+                event -> handler.handle(CoffeeIntegrationEventAcl.photoDeleted(event)));
     }
 
     private <T> SqsIntegrationEventHandler readAndHandle(

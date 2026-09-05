@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article;
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticlePublicationApprovalPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ApproveArticlePublication;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.ApproveArticlePublication;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
 

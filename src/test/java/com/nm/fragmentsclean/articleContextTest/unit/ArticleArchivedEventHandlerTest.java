@@ -1,8 +1,8 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
-import com.nm.fragmentsclean.aticleContext.read.projections.*;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
+import com.nm.fragmentsclean.articleContext.read.projections.*;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.*;
 import org.junit.jupiter.api.Test;
