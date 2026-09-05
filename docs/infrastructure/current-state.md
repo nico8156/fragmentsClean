@@ -19,28 +19,27 @@ The shared platform is now the active staging host. Legacy resources must not
 be removed until their volumes, costs and rollback value have been inventoried
 and an explicit cleanup decision has been recorded.
 
-## Anchor staging
+The read-only inventory is recorded in
+`docs/audits/aws-legacy-stacks-audit-2026-09.md`. The two stopped hosts retain
+120 GiB of gp3 storage and two billable public IPv4 addresses, for an estimated
+baseline of USD 18.44/month before snapshots, ECR, SQS and tax. Neither stack
+can be deleted wholesale because it still owns active application resources.
 
-- Instance type observed: `t4g.medium`.
-- Docker services: PostgreSQL, Spring Boot backend, Next.js web, Caddy.
-- Persistent PostgreSQL path: `/srv/anchor-postgres/postgres-data`.
-- Caddy currently owns ports 80 and 443 on its host.
-- The current security group still exposes port 8080 publicly; this must be
-  removed before or during shared-host migration.
-- SQS is provisioned in CloudFormation, while the staging runtime currently
-  keeps the application SQS mode disabled in its documented environment.
+## Anchor legacy stack
 
-## Fragments staging
+- The `t4g.medium` instance is stopped.
+- Its two attached gp3 volumes total 60 GiB.
+- Its Elastic IP remains allocated.
+- The stack still owns active Anchor ECR and SQS resources, so deleting the
+  whole stack is unsafe.
 
-- Instance type observed: `t4g.small`.
-- Docker services: PostgreSQL, Spring Boot backend, Caddy.
-- Persistent PostgreSQL path: `/srv/fragments-postgres/postgres-data`.
-- Coffee photo working directory: `/srv/fragments/staging/coffee-photos`.
-- Caddy currently owns ports 80 and 443 on its host.
-- Runtime target: SQS enabled, local event bus disabled, S3 storage enabled for
-  coffee and article images.
-- The staging IAM role is scoped to the Fragments ECR repository, Fragments
-  queues, and the `fragments/staging/*` prefix in the shared asset bucket.
+## Fragments resource-owner / legacy stack
+
+- The `t4g.small` instance is stopped.
+- Its two attached gp3 volumes total 60 GiB.
+- Its Elastic IP remains allocated.
+- The stack still owns the active Fragments ECR repository, SQS queues and
+  historical DLQ; it cannot be deleted as a cleanup shortcut.
 
 ## Shared AWS observations
 
