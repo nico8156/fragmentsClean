@@ -1,10 +1,10 @@
 package com.nm.fragmentsclean.articleContextTest.integration.adapters.secondary.repositories;
 
 import com.nm.fragmentsclean.articleContextTest.integration.AbstractJpaIntegrationTest;
-import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.repositories.ArticleRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.Article;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleStatus;
+import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.Article;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

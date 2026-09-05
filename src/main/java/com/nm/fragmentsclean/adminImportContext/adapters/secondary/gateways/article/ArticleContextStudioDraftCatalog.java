@@ -2,8 +2,8 @@ package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.art
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.*;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog;
-import com.nm.fragmentsclean.aticleContext.read.ArticleStudioDraftReader;
-import com.nm.fragmentsclean.aticleContext.read.ArticleStudioDraftView;
+import com.nm.fragmentsclean.articleContext.read.ArticleStudioDraftReader;
+import com.nm.fragmentsclean.articleContext.read.ArticleStudioDraftView;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

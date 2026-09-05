@@ -1,18 +1,18 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleAggregate;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleContent;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleDomainException;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleIntroduction;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleParagraph;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevision;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionStatus;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleSection;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleTitle;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleLifecycle;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleImageRef;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleRevisionDraft;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleAggregate;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleContent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDomainException;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleIntroduction;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleParagraph;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevision;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionStatus;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleSection;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleTitle;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleLifecycle;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleImageRef;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionDraft;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleEditorialTag;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

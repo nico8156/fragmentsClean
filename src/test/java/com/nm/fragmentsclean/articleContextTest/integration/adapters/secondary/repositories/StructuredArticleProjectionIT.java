@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.articleContextTest.integration.adapters.secondary.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.articleContextTest.integration.AbstractJpaIntegrationTest;
-import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.JdbcArticleProjectionRepository;
+import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories.JdbcArticleProjectionRepository;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

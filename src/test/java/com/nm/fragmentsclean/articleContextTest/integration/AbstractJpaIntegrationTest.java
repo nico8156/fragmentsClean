@@ -14,8 +14,8 @@ import org.springframework.test.context.TestPropertySources;
 
 @DataJpaTest
 @EnableAutoConfiguration
-@EntityScan("com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.entities")
-@EnableJpaRepositories("com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa")
+@EntityScan("com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa.entities")
+@EnableJpaRepositories("com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = { JpaIntegrationTestConfiguration.class })
 @TestPropertySources(@TestPropertySource(locations = { "classpath:application.properties" }))

@@ -1,10 +1,10 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.adapters.primary.springboot.scheduling.ScheduledArticleGenerationRequester;
-import com.nm.fragmentsclean.aticleContext.write.adapters.primary.springboot.sqs.ArticleGenerationRequestedSqsIntegrationEventHandler;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleGenerationIdPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ScheduleArticleGeneration;
+import com.nm.fragmentsclean.articleContext.write.adapters.primary.springboot.scheduling.ScheduledArticleGenerationRequester;
+import com.nm.fragmentsclean.articleContext.write.adapters.primary.springboot.sqs.ArticleGenerationRequestedSqsIntegrationEventHandler;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleGenerationIdPort;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.ScheduleArticleGeneration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.UUID;

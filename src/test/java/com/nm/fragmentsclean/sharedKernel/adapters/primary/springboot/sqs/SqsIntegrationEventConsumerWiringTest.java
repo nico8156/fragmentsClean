@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Constructor;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -21,7 +22,8 @@ class SqsIntegrationEventConsumerWiringTest {
 						SqsClient.class,
 						SqsMessagingProperties.class,
 						ObjectMapper.class,
-						SqsIntegrationEventRouting.class);
+						SqsIntegrationEventRouting.class,
+						MeterRegistry.class);
 
 		assertThat(constructor).isNotNull();
 		assertThat(constructor.getAnnotation(Autowired.class)).isNotNull();

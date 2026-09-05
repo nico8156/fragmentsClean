@@ -16,8 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.TestContainers;
-import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.bootstrap.ArticleReadSeedRunner;
-import com.nm.fragmentsclean.aticleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
+import com.nm.fragmentsclean.articleContext.read.adapters.secondary.bootstrap.ArticleReadSeedRunner;
+import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories.ArticleProjectionRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;

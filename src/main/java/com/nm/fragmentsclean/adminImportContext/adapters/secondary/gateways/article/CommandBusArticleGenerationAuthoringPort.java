@@ -1,8 +1,8 @@
 package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleGenerationCommand;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationAuthoringPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 public final class CommandBusArticleGenerationAuthoringPort implements ArticleGenerationAuthoringPort {
     private final CommandBus bus; public CommandBusArticleGenerationAuthoringPort(CommandBus bus){this.bus=bus;}

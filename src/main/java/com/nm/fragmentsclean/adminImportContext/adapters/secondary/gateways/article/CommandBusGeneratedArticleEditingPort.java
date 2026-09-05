@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioGeneratedArticleEdit;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GeneratedArticleEditingPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.EditGeneratedArticleRevisionCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.EditGeneratedArticleRevisionCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 
 public final class CommandBusGeneratedArticleEditingPort implements GeneratedArticleEditingPort {

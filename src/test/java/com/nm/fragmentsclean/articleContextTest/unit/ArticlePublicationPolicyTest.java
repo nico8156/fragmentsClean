@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleDomainException;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticlePublicationPolicy;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDomainException;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticlePublicationPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

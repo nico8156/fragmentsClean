@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.observability.MicrometerArticleAuthoringObservability;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
+import com.nm.fragmentsclean.articleContext.write.adapters.secondary.observability.MicrometerArticleAuthoringObservability;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringTrigger;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 

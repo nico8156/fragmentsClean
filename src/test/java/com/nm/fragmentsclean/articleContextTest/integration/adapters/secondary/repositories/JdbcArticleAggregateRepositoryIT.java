@@ -2,9 +2,9 @@ package com.nm.fragmentsclean.articleContextTest.integration.adapters.secondary.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.articleContextTest.integration.AbstractJpaIntegrationTest;
-import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositories.JdbcArticleAggregateRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.*;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag;
+import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositories.JdbcArticleAggregateRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.*;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleEditorialTag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;

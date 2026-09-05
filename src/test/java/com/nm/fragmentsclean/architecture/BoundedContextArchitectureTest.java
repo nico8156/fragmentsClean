@@ -15,7 +15,7 @@ class BoundedContextArchitectureTest {
     private static final Path MAIN_JAVA = Path.of("src/main/java/com/nm/fragmentsclean");
     private static final Set<String> CONTEXTS = Set.of(
             "adminImportContext",
-            "aticleContext",
+            "articleContext",
             "authenticationContext",
             "coffeeContext",
             "socialContext",
@@ -108,7 +108,7 @@ class BoundedContextArchitectureTest {
     void admin_primary_adapters_do_not_import_article_context() throws IOException {
         List<String> violations = javaFiles(MAIN_JAVA.resolve("adminImportContext/adapters/primary")).stream()
                 .flatMap(file -> importsFrom(file).stream()
-                        .filter(imported -> imported.context().equals("aticleContext"))
+                        .filter(imported -> imported.context().equals("articleContext"))
                         .map(imported -> violation(file, imported)))
                 .sorted().toList();
 
@@ -119,7 +119,7 @@ class BoundedContextArchitectureTest {
 
     @Test
     void article_domain_has_no_lombok_data_or_public_setters() throws IOException {
-        List<String> violations = javaFiles(MAIN_JAVA.resolve("aticleContext/write/businesslogic/models")).stream()
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("articleContext/write/businesslogic/models")).stream()
                 .filter(file -> fileContains(file, "@Data") || fileMatches(file, "public\\s+void\\s+set[A-Z]"))
                 .map(BoundedContextArchitectureTest::normalize).sorted().toList();
 
@@ -134,12 +134,12 @@ class BoundedContextArchitectureTest {
 
         if ("adminImportContext".equals(sourceContext)) {
             if (sourcePath.contains("adminImportContext/adapters/secondary/gateways/article/")) {
-                return "aticleContext".equals(imported.context());
+                return "articleContext".equals(imported.context());
             }
             return importPath.equals("coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand")
                     || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort")
                     || (sourcePath.endsWith("adminImportContext/adapters/secondary/gateways/article/CommandBusArticleAuthoringPort.java")
-                            && importPath.equals("aticleContext.write.businesslogic.usecases.article.CreateArticleCommand"));
+                            && importPath.equals("articleContext.write.businesslogic.usecases.article.CreateArticleCommand"));
         }
 
         return false;

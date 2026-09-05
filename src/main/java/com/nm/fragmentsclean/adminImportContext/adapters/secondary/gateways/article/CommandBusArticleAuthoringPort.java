@@ -2,12 +2,12 @@ package com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.art
 
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.*;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.generation.ArticleEditorialTag;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.PublishArticleRevisionCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ArchiveArticleCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.UpsertArticleDraftCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.*;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleEditorialTag;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.PublishArticleRevisionCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.ArchiveArticleCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.UpsertArticleDraftCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 
 public class CommandBusArticleAuthoringPort implements ArticleAuthoringPort {

@@ -1,10 +1,10 @@
 package com.nm.fragmentsclean.articleContextTest.unit;
 
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleGenerationRequestPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleGenerationScheduleGuard;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.gateways.ArticleGenerationIdPort;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.usecases.article.ScheduleArticleGeneration;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleGenerationRequestPort;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleGenerationScheduleGuard;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleGenerationIdPort;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.RequestArticleGenerationCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.ScheduleArticleGeneration;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import org.junit.jupiter.api.Test;
 

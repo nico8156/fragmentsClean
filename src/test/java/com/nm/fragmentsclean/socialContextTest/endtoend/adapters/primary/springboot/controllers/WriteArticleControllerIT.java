@@ -1,8 +1,8 @@
 package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.springboot.controllers;
 
 import com.nm.fragmentsclean.articleContextTest.endtoend.AbstractBaseE2E;
-import com.nm.fragmentsclean.aticleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
-import com.nm.fragmentsclean.aticleContext.write.businesslogic.models.ArticleStatus;
+import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleStatus;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import org.junit.jupiter.api.BeforeEach;

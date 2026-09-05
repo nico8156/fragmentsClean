@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.articleContextTest.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.nm.fragmentsclean.aticleContext.read.projections.ArticleCursor;
+import com.nm.fragmentsclean.articleContext.read.projections.ArticleCursor;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
