@@ -1,6 +1,6 @@
 # sharedKernel
 
-> Le **sharedKernel** fournit les briques transverses nécessaires pour faire vivre l’architecture : **CQRS**, **event-driven**, **outbox**, **SQS**, **Projection Sync**, et des abstractions DDD communes.
+> Le **sharedKernel** fournit uniquement les contrats techniques transverses nécessaires aux bounded contexts : **CQRS**, **outbox/inbox**, enveloppes de messages, **Projection Sync**, et quelques abstractions DDD communes.
 >
 > Il n’est pas un « utilitaire fourre-tout » : c’est un **contrat d’architecture** partagé, volontairement minimal, qui permet aux bounded contexts d’évoluer sans dupliquer la plomberie.
 
@@ -11,7 +11,7 @@
 Le sharedKernel sert à :
 
 * standardiser la façon de traiter **commands / queries / events**
-* centraliser le **pipeline outbox** (fiabilité des événements)
+* définir les ports du **pipeline outbox/inbox** et ses adaptateurs techniques partagés
 * fournir des interfaces DDD communes (AggregateRoot, Entity, DomainEvent)
 * offrir une base d’infrastructure (SQS, Projection Sync) via adapters
 
@@ -82,11 +82,12 @@ Le write model publie des events → l’outbox persiste → un dispatcher envoi
 ### 4) Enveloppes d'intégration
 
 * `IntegrationEventEnvelope`
-* `IntegrationEventDestinationResolver`
-* `StableEnvelopeOutboxEventSender`
-* `SqsIntegrationEventRouter`
+* `IntegrationEventEnvelope`
+* ports techniques de publication et de consommation
 
-➡️ Objectif : publier des événements transport-neutral vers des destinations SQS stables.
+La composition, le catalogue de types, le routage et les contrats publics versionnés appartiennent à `platform/eventing`, pas au shared kernel. Les adaptateurs SQS désérialisent ces contrats puis passent par une ACL locale avant d’appeler le contexte consommateur.
+
+➡️ Objectif : partager la mécanique sans transformer le shared kernel en propriétaire des contrats métier.
 
 ---
 
@@ -154,7 +155,7 @@ Chaque bounded context :
 * consomme des events via handlers SQS
 * expose son read model via queries
 
-➡️ Le sharedKernel fournit la mécanique, les contexts fournissent le sens.
+➡️ Le sharedKernel fournit les ports et primitives techniques, `platform` compose le runtime, les contexts fournissent le sens et leurs ACL.
 
 ---
 

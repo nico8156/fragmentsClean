@@ -5,6 +5,10 @@ import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinationResolv
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory;
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
+import com.nm.fragmentsclean.platform.eventing.contracts.TicketIntegrationEvents;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -12,6 +16,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class IntegrationEventEnvelopeFactoryTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Test
     void buildsStableEnvelopeWithoutLeakingJavaClassAsEventType() {
@@ -371,5 +377,63 @@ class IntegrationEventEnvelopeFactoryTest {
         assertThat(payload).contains("\"coffeeId\":\"11111111-1111-1111-1111-111111111111\"")
                 .contains("\"photoId\":\"22222222-2222-2222-2222-222222222222\"")
                 .contains("s3://bucket/photo.jpg");
+    }
+
+    @Test
+    void article_created_payload_round_trips_through_the_public_contract() throws Exception {
+        var outbox = outbox("ArticleCreatedEvent", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", """
+                {"eventId":"11111111-1111-1111-1111-111111111111","commandId":"22222222-2222-2222-2222-222222222222",
+                 "articleId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","slug":"coffee-culture","locale":"fr-FR",
+                 "authorId":"33333333-3333-3333-3333-333333333333","authorName":"Fragments","title":"Culture café",
+                 "intro":"Intro","blocksJson":"[]","conclusion":"Conclusion","tags":["culture-cafe"],
+                 "coffeeIds":[],"status":"DRAFT","version":1,"occurredAt":"2026-09-05T08:00:00Z"}
+                """);
+
+        var envelope = new IntegrationEventEnvelopeFactory().from(outbox, IntegrationEventDestinations.ARTICLES_EVENTS);
+        var contract = objectMapper.readValue(envelope.payloadJson(), ArticleCreatedIntegrationEvent.class);
+
+        assertThat(contract.articleId()).isEqualTo(java.util.UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+        assertThat(contract.status()).isEqualTo("DRAFT");
+    }
+
+    @Test
+    void social_payload_round_trips_without_domain_enum_types() throws Exception {
+        var outbox = outbox("CommentCreatedEvent", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", """
+                {"eventId":"11111111-1111-1111-1111-111111111111","commandId":"22222222-2222-2222-2222-222222222222",
+                 "commentId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","targetId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                 "authorId":"cccccccc-cccc-cccc-cccc-cccccccccccc","body":"Très bon café","moderation":"VISIBLE",
+                 "version":2,"occurredAt":"2026-09-05T08:00:00Z"}
+                """);
+
+        var envelope = new IntegrationEventEnvelopeFactory().from(outbox, IntegrationEventDestinations.DOMAIN_EVENTS);
+        var contract = objectMapper.readValue(envelope.payloadJson(), SocialCommentIntegrationEvents.Created.class);
+
+        assertThat(contract.moderation()).isEqualTo("VISIBLE");
+        assertThat(contract.body()).isEqualTo("Très bon café");
+    }
+
+    @Test
+    void ticket_completed_payload_round_trips_with_primitive_line_items() throws Exception {
+        var outbox = outbox("TicketVerificationCompletedEvent", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", """
+                {"eventId":"11111111-1111-1111-1111-111111111111","commandId":"22222222-2222-2222-2222-222222222222",
+                 "ticketId":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                 "outcome":"APPROVED","version":3,"occurredAt":"2026-09-05T08:00:00Z",
+                 "approved":{"amountCents":450,"currency":"EUR","ticketDate":"2026-09-05T07:00:00Z",
+                 "merchantName":"Fragments","lineItems":[{"label":"Espresso","quantity":1,"amountCents":450}]}}
+                """);
+
+        var envelope = new IntegrationEventEnvelopeFactory().from(outbox, IntegrationEventDestinations.TICKET_EVENTS);
+        var contract = objectMapper.readValue(envelope.payloadJson(), TicketIntegrationEvents.VerificationCompleted.class);
+
+        assertThat(contract.outcome()).isEqualTo("APPROVED");
+        assertThat(contract.approved().lineItems()).containsExactly(new TicketIntegrationEvents.LineItem("Espresso", 1, 450));
+    }
+
+    private OutboxEventJpaEntity outbox(String simpleEventType, String aggregateId, String payload) {
+        return new OutboxEventJpaEntity("11111111-1111-1111-1111-111111111111",
+                "com.nm.fragmentsclean.context.write.businesslogic.models." + simpleEventType,
+                "Aggregate", aggregateId, "stream:" + aggregateId, payload,
+                Instant.parse("2026-09-05T08:00:00Z"), Instant.parse("2026-09-05T08:00:01Z"),
+                OutboxStatus.PENDING, 0);
     }
 }

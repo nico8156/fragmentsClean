@@ -3,7 +3,7 @@ package com.nm.fragmentsclean.articleContext.read.adapters.primary.springboot.sq
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.ARTICLES_EVENTS;
 
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleCreatedEventHandler;
-import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleCreatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
@@ -30,6 +30,7 @@ public class ArticleCreatedSqsIntegrationEventHandler implements SqsIntegrationE
 
     @Override
     public void handle(IntegrationEventEnvelope envelope) {
-        handler.handle(payloadReader.read(envelope, ArticleCreatedEvent.class));
+        ArticleCreatedIntegrationEvent event = payloadReader.read(envelope, ArticleCreatedIntegrationEvent.class);
+        handler.handle(ArticleIntegrationEventAcl.toLocalEvent(event));
     }
 }

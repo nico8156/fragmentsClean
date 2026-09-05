@@ -128,6 +128,28 @@ class BoundedContextArchitectureTest {
                 .isEmpty();
     }
 
+    @Test
+    void sqs_consumers_never_deserialize_domain_event_classes() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA).stream()
+                .filter(file -> fileContains(file, "payloadReader.read"))
+                .flatMap(file -> importsFrom(file).stream()
+                        .filter(imported -> imported.importPath().contains(".write."))
+                        .filter(imported -> imported.importPath().contains(".models."))
+                        .filter(imported -> {
+                            String simpleName = imported.importPath()
+                                    .substring(imported.importPath().lastIndexOf('.') + 1);
+                            return fileMatches(file, "payloadReader\\.read\\s*\\([^;]*\\b"
+                                    + Pattern.quote(simpleName) + "\\.class");
+                        })
+                        .map(imported -> violation(file, imported)))
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("SQS primary adapters must deserialize platform integration contracts, then cross a BC-local ACL")
+                .isEmpty();
+    }
+
     private static boolean isAllowedIntegrationEdge(String sourceContext, Path sourceFile, ImportedType imported) {
         String sourcePath = normalize(sourceFile);
         String importPath = imported.context() + "." + imported.importPath();
