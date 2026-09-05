@@ -15,6 +15,7 @@ import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
@@ -77,6 +78,30 @@ class SqsIntegrationEventConsumerTest {
 			assertThat(request.queueUrl()).isEqualTo("https://sqs.example/coffees");
 			assertThat(request.receiptHandle()).isEqualTo("receipt-1");
 		});
+	}
+
+	@Test
+	void successful_message_records_end_to_end_projection_delivery_latency() throws Exception {
+		var meters = new SimpleMeterRegistry();
+		var sqsClient = new FakeSqsClient();
+		var router = new RecordingRouter();
+		sqsClient.messages.add(Message.builder()
+				.messageId("message-1")
+				.receiptHandle("receipt-1")
+				.body(json(envelope("event-1")))
+				.build());
+		var consumer = new SqsIntegrationEventConsumer(
+				sqsClient,
+				properties(MapBuilder.queues().queue("coffees-events", "https://sqs.example/coffees").build()),
+				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
+				router,
+				workerCount -> new RecordingExecutorService(),
+				meters);
+
+		consumer.pollDestination("coffees-events", "https://sqs.example/coffees");
+
+		assertThat(meters.get("fragments.projection.delivery.latency")
+				.tag("destination", "coffees-events").timer().count()).isEqualTo(1);
 	}
 
 	@Test

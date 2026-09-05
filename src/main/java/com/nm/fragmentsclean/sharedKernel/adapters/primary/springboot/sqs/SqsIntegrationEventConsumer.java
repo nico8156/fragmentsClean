@@ -3,6 +3,9 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.transport.SqsMessagingProperties;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,6 +38,7 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
     private final ObjectMapper objectMapper;
     private final SqsIntegrationEventRouting router;
     private final ExecutorServiceFactory executorServiceFactory;
+    private final MeterRegistry meters;
     private final Object lifecycleMonitor = new Object();
 
     private volatile ExecutorService executorService;
@@ -44,7 +48,8 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
     public SqsIntegrationEventConsumer(SqsClient sqsClient,
                                        SqsMessagingProperties properties,
                                        ObjectMapper objectMapper,
-                                       SqsIntegrationEventRouting router) {
+                                       SqsIntegrationEventRouting router,
+                                       MeterRegistry meters) {
         this(
                 sqsClient,
                 properties,
@@ -57,7 +62,8 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
                     );
                     thread.setDaemon(true);
                     return thread;
-                })
+                }),
+                meters
         );
     }
 
@@ -66,11 +72,21 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
                                 ObjectMapper objectMapper,
                                 SqsIntegrationEventRouting router,
                                 ExecutorServiceFactory executorServiceFactory) {
+        this(sqsClient, properties, objectMapper, router, executorServiceFactory, null);
+    }
+
+    SqsIntegrationEventConsumer(SqsClient sqsClient,
+                                SqsMessagingProperties properties,
+                                ObjectMapper objectMapper,
+                                SqsIntegrationEventRouting router,
+                                ExecutorServiceFactory executorServiceFactory,
+                                MeterRegistry meters) {
         this.sqsClient = Objects.requireNonNull(sqsClient, "sqsClient is required");
         this.properties = Objects.requireNonNull(properties, "properties is required");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper is required");
         this.router = Objects.requireNonNull(router, "router is required");
         this.executorServiceFactory = Objects.requireNonNull(executorServiceFactory, "executorServiceFactory is required");
+        this.meters = meters;
     }
 
     @Override
@@ -181,6 +197,7 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
         try {
             IntegrationEventEnvelope envelope = objectMapper.readValue(message.body(), IntegrationEventEnvelope.class);
             router.route(envelope);
+            recordProjectionDeliveryLatency(envelope);
             sqsClient.deleteMessage(DeleteMessageRequest.builder()
                     .queueUrl(queueUrl)
                     .receiptHandle(message.receiptHandle())
@@ -189,6 +206,21 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
         } catch (Exception e) {
             log.error("[sqs] failed to process messageId={}", message.messageId(), e);
         }
+    }
+
+    private void recordProjectionDeliveryLatency(IntegrationEventEnvelope envelope) {
+        if (meters == null || envelope.occurredAt() == null) return;
+        Duration latency = Duration.between(envelope.occurredAt(), Instant.now());
+        if (latency.isNegative()) latency = Duration.ZERO;
+        meters.timer(
+                "fragments.projection.delivery.latency",
+                "destination", safeMetricTag(envelope.destination()))
+                .record(latency);
+    }
+
+    private String safeMetricTag(String value) {
+        if (value == null || value.isBlank()) return "unknown";
+        return value.toLowerCase().replaceAll("[^a-z0-9_-]", "_");
     }
 
     private void awaitTermination(ExecutorService currentExecutor) {

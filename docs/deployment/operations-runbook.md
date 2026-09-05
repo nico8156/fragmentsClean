@@ -50,6 +50,14 @@ the container manually as the normal path.
 
 ## Outbox Diagnostics
 
+The `messagingRuntimeHealth` actuator component reports pending, failed and
+stale outbox/inbox work plus the age of the latest Projection Sync event.
+Micrometer also registers `fragments.outbox.pending`,
+`fragments.outbox.failed`, `fragments.inbox.failed` and
+`fragments.projection.latest.age`. These meters remain internal unless a
+secured registry/exporter is configured; do not expose `/actuator/metrics`
+through the public reverse proxy.
+
 Inspect pending or failed events without dumping payloads:
 
 ```bash
