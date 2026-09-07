@@ -64,7 +64,12 @@ fi
 
 # A deployment is a natural recovery boundary. Refuse to mutate the schema if
 # the pre-deployment backup cannot be produced and uploaded.
-systemctl start fragments-postgres-backup.service
+if ! systemctl start fragments-postgres-backup.service; then
+  systemctl status fragments-postgres-backup.service --no-pager || true
+  journalctl -u fragments-postgres-backup.service --no-pager -n 80 || true
+  echo "Pre-deployment PostgreSQL backup failed; schema and backend were left unchanged." >&2
+  exit 1
+fi
 
 docker exec -i "$postgres_container" sh -lc \
   'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \

@@ -37,7 +37,12 @@ class PostgresRecoveryGuardrailTest {
         assertThat(backup)
                 .contains("pg_dump --format=custom")
                 .contains("--sse AES256")
-                .contains("sha256sum");
+                .contains("sha256sum")
+                .contains("read_environment_value")
+                .doesNotContain("source \"$environment_file\"");
+        assertThat(Files.readString(RUNTIME.resolve("deploy-via-ssm.sh")))
+                .contains("journalctl -u fragments-postgres-backup.service")
+                .contains("schema and backend were left unchanged");
         assertThat(restore)
                 .contains("expected_prefix=")
                 .contains("pg_restore")
