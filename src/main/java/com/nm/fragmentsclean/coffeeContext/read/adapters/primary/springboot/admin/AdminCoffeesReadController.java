@@ -33,6 +33,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCo
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.UpdateCoffeeOpeningHoursCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AdminAuditRecorder;
@@ -138,6 +139,19 @@ public class AdminCoffeesReadController {
 		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
+	@PutMapping("/api/admin/coffees/{coffeeId}/opening-hours")
+	public ResponseEntity<AdminCommandAcceptedResponse> updateOpeningHours(@PathVariable UUID coffeeId,
+			@RequestBody UpdateCoffeeOpeningHoursRequest request, Authentication authentication) {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
+		var schedules = request.schedules().stream().map(schedule -> new UpdateCoffeeOpeningHoursCommand.DaySchedule(
+				schedule.dayCode(), schedule.windows().stream().map(window -> new UpdateCoffeeOpeningHoursCommand.TimeWindow(
+						window.startMinute(), window.endMinute())).toList())).toList();
+		commandBus.dispatch(new UpdateCoffeeOpeningHoursCommand(commandId, coffeeId, schedules, now));
+		audit(authentication, "COFFEE_OPENING_HOURS_UPDATED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
+
 	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<AdminCommandAcceptedResponse> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo, Authentication authentication)
 			throws java.io.IOException {
@@ -238,6 +252,13 @@ public class AdminCoffeesReadController {
 	public record EditCoffeeDetailsRequest(String name, String addressLine1, String city, String postalCode,
 			String country, double latitude, double longitude, String phoneNumber, String website,
 			java.util.Set<String> tags) { }
+	public record UpdateCoffeeOpeningHoursRequest(List<DayScheduleRequest> schedules) {
+		public UpdateCoffeeOpeningHoursRequest { schedules = schedules == null ? List.of() : List.copyOf(schedules); }
+	}
+	public record DayScheduleRequest(int dayCode, List<TimeWindowRequest> windows) {
+		public DayScheduleRequest { windows = windows == null ? List.of() : List.copyOf(windows); }
+	}
+	public record TimeWindowRequest(int startMinute, int endMinute) { }
 
 	public record AdminCoffeeOpeningHoursResponse(UUID id, String weekdayDescription) {
 		static AdminCoffeeOpeningHoursResponse from(CoffeeOpeningHoursView view) {

@@ -7,6 +7,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHan
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDetailsEditedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursUpdatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
@@ -26,6 +27,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosArrangedInt
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoDeletedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -82,6 +84,12 @@ public class CoffeeSqsIntegrationEventHandlers {
             CoffeeOpeningHoursImportedEventHandler handler) {
         return readAndHandle("coffee.opening_hours_imported", CoffeeOpeningHoursImportedIntegrationEvent.class,
                 event -> handler.handle(CoffeeIntegrationEventAcl.openingHours(event)));
+    }
+
+    @Bean
+    SqsIntegrationEventHandler coffeeOpeningHoursUpdatedSqsIntegrationEventHandler(
+            CoffeeOpeningHoursUpdatedIntegrationEventHandler handler) {
+        return readAndHandle("coffee.opening_hours_updated", CoffeeOpeningHoursUpdatedIntegrationEvent.class, handler::handle);
     }
 
     @Bean

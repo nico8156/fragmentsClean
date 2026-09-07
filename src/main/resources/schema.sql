@@ -49,6 +49,15 @@ CREATE TABLE IF NOT EXISTS coffee_photos (
     UNIQUE (coffee_id, sort_order)
 );
 
+CREATE TABLE IF NOT EXISTS coffee_opening_hours (
+    coffee_id UUID NOT NULL REFERENCES coffees(id) ON DELETE CASCADE,
+    day_code INTEGER NOT NULL CHECK (day_code BETWEEN 0 AND 6),
+    start_minute INTEGER NOT NULL CHECK (start_minute BETWEEN 0 AND 1439),
+    end_minute INTEGER NOT NULL CHECK (end_minute BETWEEN 1 AND 1440),
+    PRIMARY KEY (coffee_id, day_code, start_minute),
+    CHECK (start_minute < end_minute)
+);
+
 -- CREATE INDEX ix_coffees_city ON coffees (city);
 -- CREATE INDEX ix_coffees_lat_lon ON coffees (lat, lon);
 --

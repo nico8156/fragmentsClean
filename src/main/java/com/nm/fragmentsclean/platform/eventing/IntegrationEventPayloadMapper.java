@@ -18,6 +18,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationReques
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoDeletedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
@@ -83,6 +84,10 @@ public class IntegrationEventPayloadMapper {
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), valueObjectText(node, "googlePlaceId"),
                         strings(node, "weekdayDescriptions"), longValue(node, "version"),
                         instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
+                case "coffee.opening_hours_updated" -> new CoffeeOpeningHoursUpdatedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), openingPeriods(node),
+                        intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
                 case "coffee.photo_deleted" -> new CoffeePhotoDeletedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
@@ -294,6 +299,15 @@ public class IntegrationEventPayloadMapper {
                 uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), photos,
                 intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                 nullableInstant(node, "clientAt"));
+    }
+
+    private List<CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod> openingPeriods(JsonNode node) {
+        JsonNode nodes = node == null ? null : node.get("periods");
+        if (nodes == null || !nodes.isArray()) return List.of();
+        var periods = new java.util.ArrayList<CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod>();
+        for (JsonNode period : nodes) periods.add(new CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod(
+                intValue(period, "dayCode"), intValue(period, "startMinute"), intValue(period, "endMinute")));
+        return List.copyOf(periods);
     }
 
     private TicketIntegrationEvents.VerificationCompleted ticketVerificationCompleted(

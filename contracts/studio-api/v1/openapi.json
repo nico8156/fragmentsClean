@@ -18,6 +18,14 @@
         "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
       }
     },
+    "/api/admin/coffees/{coffeeId}/opening-hours": {
+      "put": {
+        "operationId": "updateCoffeeOpeningHours",
+        "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCoffeeOpeningHours" } } } },
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
     "/api/admin/coffees/{coffeeId}": {
       "delete": { "operationId": "archiveCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
@@ -100,6 +108,18 @@
           "orderedPhotoIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
           "coverPhotoId": { "type": "string", "format": "uuid" }
         }
+      },
+      "UpdateCoffeeOpeningHours": {
+        "type": "object", "additionalProperties": false, "required": ["schedules"],
+        "properties": { "schedules": { "type": "array", "maxItems": 7, "items": { "$ref": "#/components/schemas/DaySchedule" } } }
+      },
+      "DaySchedule": {
+        "type": "object", "additionalProperties": false, "required": ["dayCode", "windows"],
+        "properties": { "dayCode": { "type": "integer", "minimum": 0, "maximum": 6 }, "windows": { "type": "array", "items": { "$ref": "#/components/schemas/TimeWindow" } } }
+      },
+      "TimeWindow": {
+        "type": "object", "additionalProperties": false, "required": ["startMinute", "endMinute"],
+        "properties": { "startMinute": { "type": "integer", "minimum": 0, "maximum": 1439 }, "endMinute": { "type": "integer", "minimum": 1, "maximum": 1440 } }
       },
       "Location": { "type": "object", "additionalProperties": false, "required": ["lat", "lon"], "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } } },
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
