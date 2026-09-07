@@ -9,9 +9,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 class MessagingRuntimeHealthIndicatorTest {
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+            .withBean(JdbcTemplate.class, StubJdbcTemplate::new)
+            .withBean(SimpleMeterRegistry.class, SimpleMeterRegistry::new)
+            .withUserConfiguration(MessagingRuntimeHealthIndicator.class);
+
+    @Test
+    void spring_selects_the_runtime_constructor() {
+        contextRunner.run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context).hasSingleBean(MessagingRuntimeHealthIndicator.class);
+        });
+    }
 
     @Test
     void reports_degraded_health_when_durable_messages_are_failed_or_stale() {
@@ -59,6 +73,11 @@ class MessagingRuntimeHealthIndicatorTest {
         long inboxFailed;
         long inboxStale;
         Instant latestProjection;
+
+        @Override
+        public void afterPropertiesSet() {
+            // This wiring test does not execute SQL and therefore needs no DataSource.
+        }
 
         @Override
         @SuppressWarnings("unchecked")
