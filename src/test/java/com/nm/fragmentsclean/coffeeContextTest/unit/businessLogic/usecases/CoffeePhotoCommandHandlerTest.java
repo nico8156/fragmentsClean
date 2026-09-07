@@ -90,6 +90,9 @@ class CoffeePhotoCommandHandlerTest {
 
 	@Test
 	void delete_photo_publishes_photo_deleted_event() {
+		new AddCoffeePhotoCommandHandler(coffeeRepository, photoStorage, new FakeDomainEventPublisher(), dateTimeProvider)
+				.execute(new AddCoffeePhotoCommand(UUID.randomUUID(), COFFEE_ID, "photo.jpg", "image/jpeg",
+						"bytes".getBytes(), dateTimeProvider.now()));
 		var handler = new DeleteCoffeePhotoCommandHandler(
 				coffeeRepository,
 				eventPublisher,

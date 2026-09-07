@@ -39,6 +39,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_coffees_google_place_id
     ON coffees (google_place_id)
     WHERE google_place_id IS NOT NULL;
 
+CREATE TABLE IF NOT EXISTS coffee_photos (
+    coffee_id UUID NOT NULL REFERENCES coffees(id) ON DELETE CASCADE,
+    photo_id UUID NOT NULL,
+    photo_uri VARCHAR(2000) NOT NULL,
+    is_cover BOOLEAN NOT NULL DEFAULT FALSE,
+    sort_order INTEGER NOT NULL,
+    PRIMARY KEY (coffee_id, photo_id),
+    UNIQUE (coffee_id, sort_order)
+);
+
 -- CREATE INDEX ix_coffees_city ON coffees (city);
 -- CREATE INDEX ix_coffees_lat_lon ON coffees (lat, lon);
 --
@@ -85,6 +95,14 @@ CREATE TABLE IF NOT EXISTS coffee_photos_projection (
 
 CREATE INDEX IF NOT EXISTS idx_coffee_photos_coffee_id
   ON coffee_photos_projection(coffee_id);
+
+INSERT INTO coffee_photos (coffee_id, photo_id, photo_uri, is_cover, sort_order)
+SELECT projection.coffee_id, projection.id, projection.photo_uri,
+       ROW_NUMBER() OVER (PARTITION BY projection.coffee_id ORDER BY projection.id) = 1,
+       ROW_NUMBER() OVER (PARTITION BY projection.coffee_id ORDER BY projection.id) - 1
+FROM coffee_photos_projection projection
+JOIN coffees coffee ON coffee.id = projection.coffee_id
+ON CONFLICT (coffee_id, photo_id) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS coffee_openinghours_projection (
   id                  UUID PRIMARY KEY,

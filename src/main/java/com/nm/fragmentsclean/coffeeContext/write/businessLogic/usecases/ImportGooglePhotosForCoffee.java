@@ -6,6 +6,9 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCrea
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -23,16 +26,19 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 	private final CoffeePhotoStorage photoStorage;
 	private final DomainEventPublisher domainEventPublisher;
 	private final DateTimeProvider dateTimeProvider;
+	private final CoffeeRepository coffeeRepository;
 
 	public ImportGooglePhotosForCoffee(
 			GooglePlacePhotosGateway photosGateway,
 			CoffeePhotoStorage photoStorage,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
+			DateTimeProvider dateTimeProvider,
+			CoffeeRepository coffeeRepository) {
 		this.photosGateway = photosGateway;
 		this.photoStorage = photoStorage;
 		this.domainEventPublisher = domainEventPublisher;
 		this.dateTimeProvider = dateTimeProvider;
+		this.coffeeRepository = coffeeRepository;
 	}
 
 	@Override
@@ -69,6 +75,15 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 		}
 
 		var now = dateTimeProvider.now();
+		var coffee = coffeeRepository.findById(coffeeId)
+				.orElseThrow(() -> new IllegalStateException("Coffee source is missing for " + coffeeId.value()));
+		var photos = new java.util.ArrayList<Photo>();
+		for (int index = 0; index < importedPhotos.size(); index++) {
+			var imported = importedPhotos.get(index);
+			photos.add(new Photo(new PhotoId(imported.photoId()), coffeeId, imported.photoUri(), index == 0, index));
+		}
+		coffee.replacePhotos(photos, now);
+		coffeeRepository.save(coffee);
 		log.info("Publishing CoffeePhotosImportedEvent for coffeeId={} importedPhotos={}", coffeeId.value(), importedPhotos.size());
 		domainEventPublisher.publish(new CoffeePhotosImportedEvent(
 				UUID.randomUUID(),
@@ -76,7 +91,7 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 				coffeeId,
 				googlePlaceId,
 				importedPhotos,
-				version,
+				coffee.version(),
 				now,
 				clientAt
 		));

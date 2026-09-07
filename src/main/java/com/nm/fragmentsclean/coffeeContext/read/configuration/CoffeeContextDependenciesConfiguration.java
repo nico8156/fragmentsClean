@@ -230,8 +230,9 @@ public class CoffeeContextDependenciesConfiguration {
 			GooglePlacePhotosGateway photosGateway,
 			CoffeePhotoStorage photoStorage,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
-		return new ImportGooglePhotosForCoffee(photosGateway, photoStorage, domainEventPublisher, dateTimeProvider);
+			DateTimeProvider dateTimeProvider, CoffeeRepository coffeeRepository) {
+		return new ImportGooglePhotosForCoffee(photosGateway, photoStorage, domainEventPublisher, dateTimeProvider,
+				coffeeRepository);
 	}
 
 	@Bean

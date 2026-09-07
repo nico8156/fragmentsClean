@@ -240,8 +240,55 @@ public final class Coffee extends AggregateRoot {
 	}
 
 	public void replacePhotos(List<Photo> newPhotos, Instant now) {
-		this.photos = new ArrayList<>(newPhotos != null ? newPhotos : List.of());
+		this.photos = normalizePhotos(newPhotos);
 		touch(now);
+	}
+
+	public void addPhoto(Photo photo, Instant now) {
+		Objects.requireNonNull(photo, "photo required");
+		if (!photo.coffeeId().equals(coffeeId)) throw new IllegalArgumentException("Photo belongs to another coffee");
+		if (photos.stream().anyMatch(existing -> existing.id().equals(photo.id()))) return;
+		var next = new ArrayList<>(photos);
+		next.add(new Photo(photo.id(), coffeeId, photo.uri(), next.isEmpty(), next.size()));
+		this.photos = normalizePhotos(next);
+		touch(now);
+	}
+
+	public void removePhoto(PhotoId photoId, Instant now) {
+		var next = photos.stream().filter(photo -> !photo.id().equals(photoId)).toList();
+		if (next.size() == photos.size()) throw new IllegalArgumentException("Photo not found: " + photoId.value());
+		this.photos = normalizePhotos(next);
+		touch(now);
+	}
+
+	public void arrangePhotos(List<PhotoId> orderedPhotoIds, PhotoId coverPhotoId, Instant now) {
+		Objects.requireNonNull(orderedPhotoIds, "ordered photo ids required");
+		if (orderedPhotoIds.size() != photos.size() || new HashSet<>(orderedPhotoIds).size() != photos.size())
+			throw new IllegalArgumentException("Photo order must contain every photo exactly once");
+		var byId = photos.stream().collect(java.util.stream.Collectors.toMap(Photo::id, photo -> photo));
+		if (!byId.keySet().equals(new HashSet<>(orderedPhotoIds))) throw new IllegalArgumentException("Unknown photo in order");
+		if (coverPhotoId != null && !byId.containsKey(coverPhotoId)) throw new IllegalArgumentException("Unknown cover photo");
+		var cover = coverPhotoId != null ? coverPhotoId : orderedPhotoIds.stream().findFirst().orElse(null);
+		var next = new ArrayList<Photo>();
+		for (int index = 0; index < orderedPhotoIds.size(); index++) {
+			var photo = byId.get(orderedPhotoIds.get(index));
+			next.add(new Photo(photo.id(), coffeeId, photo.uri(), photo.id().equals(cover), index));
+		}
+		this.photos = next;
+		touch(now);
+	}
+
+	private ArrayList<Photo> normalizePhotos(List<Photo> source) {
+		var ordered = new ArrayList<>(source == null ? List.<Photo>of() : source);
+		ordered.sort(Comparator.comparingInt(Photo::sortOrder));
+		var normalized = new ArrayList<Photo>();
+		var requestedCover = ordered.stream().filter(Photo::isCover).findFirst().map(Photo::id).orElse(null);
+		for (int index = 0; index < ordered.size(); index++) {
+			var photo = ordered.get(index);
+			normalized.add(new Photo(photo.id(), coffeeId, photo.uri(),
+					requestedCover == null ? index == 0 : photo.id().equals(requestedCover), index));
+		}
+		return normalized;
 	}
 
 	public void setOpeningHours(OpeningHours newOpeningHours, Instant now) {

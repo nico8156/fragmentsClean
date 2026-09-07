@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "coffees")
@@ -59,6 +61,11 @@ public class CoffeeJpaEntity {
     @Column(name = "publication_status", nullable = false)
     private String publicationStatus;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "coffee_photos", joinColumns = @JoinColumn(name = "coffee_id"))
+    @OrderBy("sortOrder ASC")
+    private List<CoffeePhotoJpaEmbeddable> photos = new ArrayList<>();
+
     protected CoffeeJpaEntity() {
         // for JPA
     }
@@ -102,6 +109,10 @@ public class CoffeeJpaEntity {
         this.updatedAt = updatedAt;
         this.archivedAt = archivedAt;
         this.publicationStatus = publicationStatus;
+    }
+
+    public void replacePhotos(List<CoffeePhotoJpaEmbeddable> photos) {
+        this.photos = new ArrayList<>(photos == null ? List.of() : photos);
     }
 
     public UUID getId() {
@@ -165,6 +176,7 @@ public class CoffeeJpaEntity {
     }
 
     public String getPublicationStatus() { return publicationStatus; }
+    public List<CoffeePhotoJpaEmbeddable> getPhotos() { return List.copyOf(photos); }
 
     public void setVersion(int version) {
         this.version = version;
