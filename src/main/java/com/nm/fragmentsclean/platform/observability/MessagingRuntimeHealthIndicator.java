@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -18,6 +19,7 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
     private final Clock clock;
     private final Duration staleAfter;
 
+    @Autowired
     public MessagingRuntimeHealthIndicator(
             JdbcTemplate jdbc,
             MeterRegistry meters,
