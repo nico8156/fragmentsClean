@@ -9,10 +9,32 @@ if [[ ! -r "$environment_file" ]]; then
   exit 1
 fi
 
-set -a
-# shellcheck disable=SC1090
-source "$environment_file"
-set +a
+read_environment_value() {
+  local key=$1
+  local value
+
+  value=$(awk -v key="$key" '
+    index($0, key "=") == 1 {
+      print substr($0, length(key) + 2)
+      found = 1
+      exit
+    }
+    END { if (!found) exit 1 }
+  ' "$environment_file") || {
+    echo "$key is missing from the Fragments runtime environment." >&2
+    return 1
+  }
+  printf '%s' "$value"
+}
+
+# The runtime file follows Docker Compose dotenv syntax, not shell syntax.
+# Reading only the required keys prevents spaces or shell metacharacters in an
+# unrelated value from being interpreted as commands by this root service.
+POSTGRES_USER=$(read_environment_value POSTGRES_USER)
+POSTGRES_DB=$(read_environment_value POSTGRES_DB)
+POSTGRES_BACKUP_S3_BUCKET=$(read_environment_value POSTGRES_BACKUP_S3_BUCKET)
+POSTGRES_BACKUP_S3_PREFIX=$(read_environment_value POSTGRES_BACKUP_S3_PREFIX)
+AWS_REGION=$(read_environment_value AWS_REGION)
 
 : "${POSTGRES_USER:?POSTGRES_USER is required}"
 : "${POSTGRES_DB:?POSTGRES_DB is required}"
