@@ -30,19 +30,19 @@ public class CoffeePhotoAddedEventHandler implements EventHandler<CoffeePhotoAdd
 	@Override
 	@Transactional
 	public void handle(CoffeePhotoAddedEvent event) {
-		append(event.coffeeId().value(), event.photo().photoId(), event.photo().photoUri(), event.version(), event.occurredAt());
+		append(event.coffeeId().value(), event.photo().photoId(), event.photo().photoUri(), event.cover(), event.sortOrder(), event.version(), event.occurredAt());
 	}
 
 	public void handle(CoffeePhotoAddedIntegrationEvent event) {
-		append(event.coffeeId(), event.photoId(), event.photoUri(), event.version(), event.occurredAt());
+		append(event.coffeeId(), event.photoId(), event.photoUri(), event.cover(), event.sortOrder(), event.version(), event.occurredAt());
 	}
 
-	private void append(java.util.UUID coffeeId, java.util.UUID photoId, String photoUri, long version,
+	private void append(java.util.UUID coffeeId, java.util.UUID photoId, String photoUri, boolean cover, int sortOrder, long version,
 			java.time.Instant occurredAt) {
 		projectionRepository.append(new CoffeePhotoView(
 				photoId,
 				coffeeId,
-				photoUri));
+				photoUri, cover, sortOrder));
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",

@@ -31,13 +31,15 @@ public class DeleteCoffeePhotoCommandHandler implements CommandHandler<DeleteCof
 				.orElseThrow(() -> new CoffeePhotoCommandException("Coffee does not exist: " + coffeeId.value()));
 		var photoId = new PhotoId(command.photoId());
 		var now = dateTimeProvider.now();
+		coffee.removePhoto(photoId, now);
+		coffeeRepository.save(coffee);
 
 		eventPublisher.publish(new CoffeePhotoDeletedEvent(
 				UUID.randomUUID(),
 				command.commandId(),
 				coffeeId,
 				photoId,
-				coffee.version() + 1,
+				coffee.version(),
 				now,
 				command.clientAt()));
 	}

@@ -5,10 +5,13 @@ import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinatio
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeDetailsEditedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursUpdatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosArrangedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
@@ -17,11 +20,14 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRoute;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeDetailsEditedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosArrangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoDeletedIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,6 +49,12 @@ public class CoffeeSqsIntegrationEventHandlers {
             coffeeCreatedIntegrationEventHandler.handle(event);
             coffeeCreatedIntegrationEnrichmentHandler.handle(event);
         });
+    }
+
+    @Bean
+    SqsIntegrationEventHandler coffeeDetailsEditedSqsIntegrationEventHandler(
+            CoffeeDetailsEditedIntegrationEventHandler handler) {
+        return readAndHandle("coffee.details_edited", CoffeeDetailsEditedIntegrationEvent.class, handler::handle);
     }
 
     @Bean
@@ -75,8 +87,18 @@ public class CoffeeSqsIntegrationEventHandlers {
     }
 
     @Bean
+    SqsIntegrationEventHandler coffeeOpeningHoursUpdatedSqsIntegrationEventHandler(
+            CoffeeOpeningHoursUpdatedIntegrationEventHandler handler) {
+        return readAndHandle("coffee.opening_hours_updated", CoffeeOpeningHoursUpdatedIntegrationEvent.class, handler::handle);
+    }
+
+    @Bean
     SqsIntegrationEventHandler coffeePhotosImportedSqsIntegrationEventHandler(CoffeePhotosImportedEventHandler handler) {
         return readAndHandle("coffee.photos_imported", CoffeePhotosImportedIntegrationEvent.class, handler::handle);
+    }
+
+    @Bean SqsIntegrationEventHandler coffeePhotosArrangedSqsIntegrationEventHandler(CoffeePhotosArrangedEventHandler handler) {
+        return readAndHandle("coffee.photos_arranged", CoffeePhotosArrangedIntegrationEvent.class, handler::handle);
     }
 
     @Bean

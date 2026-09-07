@@ -27,7 +27,8 @@ final class CoffeeIntegrationEventAcl {
     }
     static CoffeeOpeningHoursImportedEvent openingHours(CoffeeOpeningHoursImportedIntegrationEvent e) {
         return new CoffeeOpeningHoursImportedEvent(e.eventId(), e.commandId(), new CoffeeId(e.coffeeId()),
-                new GooglePlaceId(e.googlePlaceId()), e.weekdayDescriptions(), e.version(), e.occurredAt(), e.clientAt());
+                new GooglePlaceId(e.googlePlaceId()), e.periods().stream().map(period -> new CoffeeOpeningHoursImportedEvent.OpeningPeriod(
+                        period.dayCode(), period.startMinute(), period.endMinute())).toList(), e.weekdayDescriptions(), e.version(), e.occurredAt(), e.clientAt());
     }
     static CoffeePhotoDeletedEvent photoDeleted(CoffeePhotoDeletedIntegrationEvent e) {
         return new CoffeePhotoDeletedEvent(e.eventId(), e.commandId(), new CoffeeId(e.coffeeId()), new PhotoId(e.photoId()),

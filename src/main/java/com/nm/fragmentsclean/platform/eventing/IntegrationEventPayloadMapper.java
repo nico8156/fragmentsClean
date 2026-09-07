@@ -6,9 +6,11 @@ import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrati
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserProfileUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeDetailsEditedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosArrangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
@@ -16,6 +18,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationReques
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoDeletedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
@@ -64,16 +67,27 @@ public class IntegrationEventPayloadMapper {
                 case "app.user.created" -> appUserCreated(node, event);
                 case "app.user.profile_updated" -> appUserProfileUpdated(node, event);
                 case "coffee.created", "coffee.saved_coffee_projection.created" -> coffeeCreated(node, event);
+                case "coffee.details_edited" -> new CoffeeDetailsEditedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                        intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        nullableInstant(node, "clientAt"));
                 case "coffee.archived", "coffee.deleted",
                         "coffee.saved_coffee_projection.archived",
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
                 case "coffee.photo_added" -> coffeePhotoAdded(node, event);
                 case "coffee.photos_imported" -> coffeePhotosImported(node, event);
+                case "coffee.photos_arranged" -> coffeePhotosArranged(node, event);
                 case "coffee.opening_hours_imported" -> new CoffeeOpeningHoursImportedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), valueObjectText(node, "googlePlaceId"),
-                        strings(node, "weekdayDescriptions"), longValue(node, "version"),
+                        importedOpeningPeriods(node), strings(node, "weekdayDescriptions"), longValue(node, "version"),
                         instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
+                case "coffee.opening_hours_updated" -> new CoffeeOpeningHoursUpdatedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), openingPeriods(node),
+                        intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
                 case "coffee.photo_deleted" -> new CoffeePhotoDeletedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
@@ -247,6 +261,8 @@ public class IntegrationEventPayloadMapper {
                 uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
                 uuidFromValueObjectOrFallback(photo, "photoId", event.getEventId()),
                 text(photo, "photoUri"),
+                bool(node, "cover"),
+                intValue(node, "sortOrder"),
                 intValue(node, "version"),
                 instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                 instantOrFallback(node, "clientAt", event.getOccurredAt()));
@@ -270,6 +286,37 @@ public class IntegrationEventPayloadMapper {
                 longValue(node, "version"),
                 instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                 instantOrFallback(node, "clientAt", event.getOccurredAt()));
+    }
+
+    private CoffeePhotosArrangedIntegrationEvent coffeePhotosArranged(JsonNode node, OutboxEventJpaEntity event) {
+        List<CoffeePhotosArrangedIntegrationEvent.Photo> photos = new java.util.ArrayList<>();
+        JsonNode nodes = node.get("photos");
+        if (nodes != null && nodes.isArray()) for (JsonNode photo : nodes) photos.add(
+                new CoffeePhotosArrangedIntegrationEvent.Photo(uuid(photo, "photoId"), text(photo, "photoUri"),
+                        bool(photo, "cover"), intValue(photo, "sortOrder")));
+        return new CoffeePhotosArrangedIntegrationEvent(uuidOrFallback(node, "eventId", event.getEventId()),
+                uuidOrFallback(node, "commandId", event.getEventId()),
+                uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), photos,
+                intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                nullableInstant(node, "clientAt"));
+    }
+
+    private List<CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod> openingPeriods(JsonNode node) {
+        JsonNode nodes = node == null ? null : node.get("periods");
+        if (nodes == null || !nodes.isArray()) return List.of();
+        var periods = new java.util.ArrayList<CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod>();
+        for (JsonNode period : nodes) periods.add(new CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod(
+                intValue(period, "dayCode"), intValue(period, "startMinute"), intValue(period, "endMinute")));
+        return List.copyOf(periods);
+    }
+
+    private List<CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod> importedOpeningPeriods(JsonNode node) {
+        JsonNode nodes = node == null ? null : node.get("periods");
+        if (nodes == null || !nodes.isArray()) return List.of();
+        var periods = new java.util.ArrayList<CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod>();
+        for (JsonNode period : nodes) periods.add(new CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod(
+                intValue(period, "dayCode"), intValue(period, "startMinute"), intValue(period, "endMinute")));
+        return List.copyOf(periods);
     }
 
     private TicketIntegrationEvents.VerificationCompleted ticketVerificationCompleted(

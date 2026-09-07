@@ -12,10 +12,16 @@ public record CoffeePhotoAddedEvent(
 		UUID commandId,
 		CoffeeId coffeeId,
 		ImportedCoffeePhoto photo,
+		boolean cover,
+		int sortOrder,
 		int version,
 		Instant occurredAt,
 		Instant clientAt
 ) implements DomainEvent {
+	public CoffeePhotoAddedEvent(UUID eventId, UUID commandId, CoffeeId coffeeId, ImportedCoffeePhoto photo,
+			int version, Instant occurredAt, Instant clientAt) {
+		this(eventId, commandId, coffeeId, photo, false, 0, version, occurredAt, clientAt);
+	}
 	public CoffeePhotoAddedEvent {
 		Objects.requireNonNull(eventId, "eventId is required");
 		Objects.requireNonNull(commandId, "commandId is required");

@@ -65,6 +65,20 @@ class CoffeeOpeningHoursImportedEventHandlerTest {
 		assertThat(syncPublisher.events.getFirst().hints()).containsExactly("openingHours");
 	}
 
+	@Test
+	void prefers_structured_google_periods_and_materializes_closed_days() {
+		var repository = new RecordingOpeningHoursProjectionRepository();
+		var handler = new CoffeeOpeningHoursImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), new RecordingProjectionSyncPublisher());
+		var event = new CoffeeOpeningHoursImportedEvent(UUID.randomUUID(), UUID.randomUUID(),
+				new CoffeeId(UUID.fromString("11111111-1111-1111-1111-111111111111")), new GooglePlaceId("places/google-1"),
+				List.of(new CoffeeOpeningHoursImportedEvent.OpeningPeriod(0, 540, 720), new CoffeeOpeningHoursImportedEvent.OpeningPeriod(0, 840, 1080)),
+				List.of("legacy label"), 43, Instant.parse("2026-07-04T10:30:00Z"), null);
+		handler.handle(event);
+		assertThat(repository.replacedOpeningHours).hasSize(7);
+		assertThat(repository.replacedOpeningHours.getFirst().weekdayDescription()).isEqualTo("Lundi: 09:00–12:00, 14:00–18:00");
+		assertThat(repository.replacedOpeningHours.get(1).weekdayDescription()).isEqualTo("Mardi: Fermé");
+	}
+
 	private static CoffeeOpeningHoursImportedEvent openingHoursImportedEvent(List<String> weekdayDescriptions) {
 		return new CoffeeOpeningHoursImportedEvent(
 				UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),

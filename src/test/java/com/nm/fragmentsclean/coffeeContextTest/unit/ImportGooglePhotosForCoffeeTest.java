@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoStorage;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlacePhotosGateway;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublicationStatus;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.GooglePlacePhoto;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.ImportedCoffeePhoto;
@@ -24,6 +27,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhoneNu
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Tag;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.WebsiteUrl;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
+import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeeRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -39,8 +43,9 @@ class ImportGooglePhotosForCoffeeTest {
 				UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"),
 				"https://cdn.fragments.test/coffees/coffee-1/photo-1.jpg")));
 		var publisher = new RecordingDomainEventPublisher();
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock());
 		var created = coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
+		var repository = repositoryFor(created);
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repository);
 
 		useCase.handle(created);
 
@@ -56,7 +61,8 @@ class ImportGooglePhotosForCoffeeTest {
 		assertThat(imported.photos()).containsExactly(new ImportedCoffeePhoto(
 				UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"),
 				"https://cdn.fragments.test/coffees/coffee-1/photo-1.jpg"));
-		assertThat(imported.version()).isEqualTo(created.version());
+		assertThat(imported.version()).isEqualTo(created.version() + 1);
+		assertThat(repository.findById(created.coffeeId()).orElseThrow().photos()).hasSize(1);
 		assertThat(imported.occurredAt()).isEqualTo(NOW);
 		assertThat(imported.clientAt()).isEqualTo(created.clientAt());
 	}
@@ -66,9 +72,10 @@ class ImportGooglePhotosForCoffeeTest {
 		var gateway = new RecordingPhotosGateway(List.of(new GooglePlacePhoto("photo", "image/jpeg", "bytes".getBytes())));
 		var storage = new RecordingPhotoStorage(List.of());
 		var publisher = new RecordingDomainEventPublisher();
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock());
+		var created = coffeeCreatedEvent(null);
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created));
 
-		useCase.handle(coffeeCreatedEvent(null));
+		useCase.handle(created);
 
 		assertThat(gateway.requestedPlaceIds).isEmpty();
 		assertThat(storage.storedPhotos).isEmpty();
@@ -80,9 +87,10 @@ class ImportGooglePhotosForCoffeeTest {
 		var gateway = new RecordingPhotosGateway(List.of());
 		var storage = new RecordingPhotoStorage(List.of());
 		var publisher = new RecordingDomainEventPublisher();
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock());
+		var created = coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created));
 
-		useCase.handle(coffeeCreatedEvent(new GooglePlaceId("places/google-1")));
+		useCase.handle(created);
 
 		assertThat(gateway.requestedPlaceIds).hasSize(1);
 		assertThat(storage.storedPhotos).isEmpty();
@@ -91,6 +99,14 @@ class ImportGooglePhotosForCoffeeTest {
 
 	private static DateTimeProvider fixedClock() {
 		return () -> NOW;
+	}
+
+	private static FakeCoffeeRepository repositoryFor(CoffeeCreatedEvent event) {
+		var repository = new FakeCoffeeRepository();
+		repository.save(Coffee.rehydrate(event.coffeeId(), event.googlePlaceId(), event.name(), event.address(),
+				event.location(), event.phoneNumber(), event.website(), Set.copyOf(event.tags()), List.of(), null,
+				event.version(), event.occurredAt(), null, CoffeePublicationStatus.PUBLISHED));
+		return repository;
 	}
 
 	private static CoffeeCreatedEvent coffeeCreatedEvent(GooglePlaceId googlePlaceId) {

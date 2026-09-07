@@ -10,6 +10,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.GooglePlaceOpeningHoursGateway;
+import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeeRepository;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Coffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.Address;
@@ -30,12 +32,12 @@ class ImportGoogleOpeningHoursForCoffeeTest {
 
 	@Test
 	void imports_google_opening_hours_after_coffee_created_and_publishes_domain_event() {
-		var gateway = new RecordingOpeningHoursGateway(List.of(
-				"Monday: 8:00 AM - 6:00 PM",
-				"Tuesday: 8:00 AM - 6:00 PM"));
+		var gateway = new RecordingOpeningHoursGateway(new GooglePlaceOpeningHoursGateway.ImportedOpeningHours(List.of(
+				new GooglePlaceOpeningHoursGateway.OpeningPeriod(0, 480, 1080)), List.of("Monday: 8:00 AM - 6:00 PM")));
 		var publisher = new RecordingDomainEventPublisher();
-		var useCase = new ImportGoogleOpeningHoursForCoffee(gateway, publisher, fixedClock());
 		var created = coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
+		var coffees = coffeesContaining(created);
+		var useCase = new ImportGoogleOpeningHoursForCoffee(gateway, publisher, fixedClock(), coffees);
 
 		useCase.handle(created);
 
@@ -46,19 +48,19 @@ class ImportGoogleOpeningHoursForCoffeeTest {
 		assertThat(imported.commandId()).isEqualTo(created.commandId());
 		assertThat(imported.coffeeId()).isEqualTo(created.coffeeId());
 		assertThat(imported.googlePlaceId()).isEqualTo(created.googlePlaceId());
-		assertThat(imported.weekdayDescriptions()).containsExactly(
-				"Monday: 8:00 AM - 6:00 PM",
-				"Tuesday: 8:00 AM - 6:00 PM");
-		assertThat(imported.version()).isEqualTo(created.version());
+		assertThat(imported.periods()).containsExactly(new CoffeeOpeningHoursImportedEvent.OpeningPeriod(0, 480, 1080));
+		assertThat(imported.weekdayDescriptions()).containsExactly("Monday: 8:00 AM - 6:00 PM");
+		assertThat(imported.version()).isEqualTo(created.version() + 1);
+		assertThat(coffees.findById(created.coffeeId()).orElseThrow().openingHours().windowsFor(com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.DayOfWeekShort.MONDAY)).hasSize(1);
 		assertThat(imported.occurredAt()).isEqualTo(NOW);
 		assertThat(imported.clientAt()).isEqualTo(created.clientAt());
 	}
 
 	@Test
 	void ignores_coffees_without_google_place_id() {
-		var gateway = new RecordingOpeningHoursGateway(List.of("Monday: 8:00 AM - 6:00 PM"));
+		var gateway = new RecordingOpeningHoursGateway(new GooglePlaceOpeningHoursGateway.ImportedOpeningHours(List.of(), List.of("Monday: 8:00 AM - 6:00 PM")));
 		var publisher = new RecordingDomainEventPublisher();
-		var useCase = new ImportGoogleOpeningHoursForCoffee(gateway, publisher, fixedClock());
+		var useCase = new ImportGoogleOpeningHoursForCoffee(gateway, publisher, fixedClock(), new FakeCoffeeRepository());
 
 		useCase.handle(coffeeCreatedEvent(null));
 
@@ -87,18 +89,25 @@ class ImportGoogleOpeningHoursForCoffeeTest {
 				Instant.parse("2026-07-04T09:59:59Z"));
 	}
 
+	private static FakeCoffeeRepository coffeesContaining(CoffeeCreatedEvent event) {
+		var result = new FakeCoffeeRepository();
+		result.save(Coffee.createNew(event.coffeeId(), event.googlePlaceId(), event.name(), event.address(), event.location(),
+				event.phoneNumber(), event.website(), java.util.Set.copyOf(event.tags()), event.occurredAt()));
+		return result;
+	}
+
 	private static class RecordingOpeningHoursGateway implements GooglePlaceOpeningHoursGateway {
-		private final List<String> weekdayDescriptions;
+		private final ImportedOpeningHours openingHours;
 		private final List<GooglePlaceId> requestedPlaceIds = new ArrayList<>();
 
-		RecordingOpeningHoursGateway(List<String> weekdayDescriptions) {
-			this.weekdayDescriptions = weekdayDescriptions;
+		RecordingOpeningHoursGateway(ImportedOpeningHours openingHours) {
+			this.openingHours = openingHours;
 		}
 
 		@Override
-		public List<String> findWeekdayDescriptions(GooglePlaceId googlePlaceId) {
+		public ImportedOpeningHours findOpeningHours(GooglePlaceId googlePlaceId) {
 			requestedPlaceIds.add(googlePlaceId);
-			return weekdayDescriptions;
+			return openingHours;
 		}
 	}
 

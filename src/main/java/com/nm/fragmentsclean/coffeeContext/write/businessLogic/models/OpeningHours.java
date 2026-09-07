@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Objects;
 
 public final class OpeningHours {
 
@@ -23,8 +26,15 @@ public final class OpeningHours {
                     tmp.put(day, List.of());
                     continue;
                 }
-                // tu peux plus tard vérifier l’absence de chevauchement
-                tmp.put(day, List.copyOf(windows));
+                Objects.requireNonNull(day, "opening-hours day required");
+                var normalized = new ArrayList<>(windows);
+                normalized.sort(Comparator.comparingInt(TimeWindowMinutes::start));
+                for (int index = 1; index < normalized.size(); index++) {
+                    if (normalized.get(index - 1).end() > normalized.get(index).start()) {
+                        throw new IllegalArgumentException("opening-hours windows must not overlap for " + day);
+                    }
+                }
+                tmp.put(day, List.copyOf(normalized));
             }
         }
         this.windowsByDay = Collections.unmodifiableMap(tmp);

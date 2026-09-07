@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "coffees")
@@ -59,6 +61,16 @@ public class CoffeeJpaEntity {
     @Column(name = "publication_status", nullable = false)
     private String publicationStatus;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "coffee_photos", joinColumns = @JoinColumn(name = "coffee_id"))
+    @OrderBy("sortOrder ASC")
+    private List<CoffeePhotoJpaEmbeddable> photos = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "coffee_opening_hours", joinColumns = @JoinColumn(name = "coffee_id"))
+    @OrderBy("dayCode ASC, startMinute ASC")
+    private List<CoffeeOpeningHourJpaEmbeddable> openingHours = new ArrayList<>();
+
     protected CoffeeJpaEntity() {
         // for JPA
     }
@@ -102,6 +114,13 @@ public class CoffeeJpaEntity {
         this.updatedAt = updatedAt;
         this.archivedAt = archivedAt;
         this.publicationStatus = publicationStatus;
+    }
+
+    public void replacePhotos(List<CoffeePhotoJpaEmbeddable> photos) {
+        this.photos = new ArrayList<>(photos == null ? List.of() : photos);
+    }
+    public void replaceOpeningHours(List<CoffeeOpeningHourJpaEmbeddable> openingHours) {
+        this.openingHours = new ArrayList<>(openingHours == null ? List.of() : openingHours);
     }
 
     public UUID getId() {
@@ -165,6 +184,8 @@ public class CoffeeJpaEntity {
     }
 
     public String getPublicationStatus() { return publicationStatus; }
+    public List<CoffeePhotoJpaEmbeddable> getPhotos() { return List.copyOf(photos); }
+    public List<CoffeeOpeningHourJpaEmbeddable> getOpeningHours() { return List.copyOf(openingHours); }
 
     public void setVersion(int version) {
         this.version = version;

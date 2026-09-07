@@ -1,6 +1,9 @@
 package com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa;
 
 import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeJpaEntity;
+import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeePhotoJpaEmbeddable;
+import com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.jpa.entities.CoffeeOpeningHourJpaEmbeddable;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.OpeningHours;
 
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
@@ -12,6 +15,8 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
+import java.util.EnumMap;
+import java.util.List;
 
 import java.util.stream.Collectors;
 
@@ -63,7 +68,7 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
         var loc = c.location();
         String googlePlaceId = c.googleId().map(GooglePlaceId::value).orElse(null);
 
-        return new CoffeeJpaEntity(
+        var entity = new CoffeeJpaEntity(
                 c.coffeeId().value(),
                 googlePlaceId,
                 c.name().value(),
@@ -81,6 +86,13 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
                 c.archivedAt().orElse(null),
                 c.publicationStatus().name()
         );
+        entity.replacePhotos(c.photos().stream().map(photo -> new CoffeePhotoJpaEmbeddable(
+                photo.id().value(), photo.uri(), photo.isCover(), photo.sortOrder())).toList());
+        entity.replaceOpeningHours(c.openingHours().asMap().entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(window -> new CoffeeOpeningHourJpaEmbeddable(
+                        entry.getKey().code(), window.start(), window.end())))
+                .toList());
+        return entity;
     }
 
     // ========= Mapping JPA -> domain =========
@@ -119,7 +131,11 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
                 .map(Tag::new)
                 .collect(Collectors.toUnmodifiableSet());
 
-        // on ne reconstruit pas encore photos / openingHours : ce sera une étape suivante
+        var photos = e.getPhotos().stream().map(photo -> new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo(
+                new PhotoId(photo.photoId()), id, photo.photoUri(), photo.cover(), photo.sortOrder())).toList();
+        var openingHoursByDay = new EnumMap<DayOfWeekShort, List<TimeWindowMinutes>>(DayOfWeekShort.class);
+        e.getOpeningHours().forEach(hour -> openingHoursByDay.computeIfAbsent(DayOfWeekShort.fromCode(hour.dayCode()), ignored -> new java.util.ArrayList<>())
+                .add(new TimeWindowMinutes(hour.startMinute(), hour.endMinute())));
         return Coffee.rehydrate(
                 id,
                 googlePlaceId,
@@ -129,8 +145,8 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
                 phone,
                 website,
                 tags,
-                /* photos */ null,
-                /* openingHours */ null,
+                photos,
+                new OpeningHours(openingHoursByDay),
                 e.getVersion(),
                 e.getUpdatedAt(),
                 e.getArchivedAt(),

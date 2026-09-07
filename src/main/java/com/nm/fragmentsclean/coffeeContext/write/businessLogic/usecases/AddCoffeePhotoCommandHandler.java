@@ -6,7 +6,9 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePh
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.repositories.CoffeeRepository;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.GooglePlacePhoto;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
@@ -40,13 +42,19 @@ public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePho
 				coffeeId,
 				coffee.googleId().orElse(null),
 				new GooglePlacePhoto(sourceName, command.contentType(), command.bytes()));
+		coffee.addPhoto(new Photo(new PhotoId(storedPhoto.photoId()), coffeeId, storedPhoto.photoUri(),
+				coffee.photos().isEmpty(), coffee.photos().size()), now);
+		coffeeRepository.save(coffee);
 
+		var addedPhoto = coffee.photos().stream().filter(photo -> photo.id().value().equals(storedPhoto.photoId())).findFirst().orElseThrow();
 		eventPublisher.publish(new CoffeePhotoAddedEvent(
 				UUID.randomUUID(),
 				command.commandId(),
 				coffeeId,
 				storedPhoto,
-				coffee.version() + 1,
+				addedPhoto.isCover(),
+				addedPhoto.sortOrder(),
+				coffee.version(),
 				now,
 				command.clientAt()));
 	}

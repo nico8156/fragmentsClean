@@ -10,6 +10,22 @@
     "/api/admin/coffees/{coffeeId}/publish": {
       "post": { "operationId": "publishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
+    "/api/admin/coffees/{coffeeId}/details": {
+      "put": {
+        "operationId": "editCoffeeDetails",
+        "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EditCoffeeDetails" } } } },
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
+    "/api/admin/coffees/{coffeeId}/opening-hours": {
+      "put": {
+        "operationId": "updateCoffeeOpeningHours",
+        "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCoffeeOpeningHours" } } } },
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
     "/api/admin/coffees/{coffeeId}": {
       "delete": { "operationId": "archiveCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
@@ -28,6 +44,13 @@
       "delete": {
         "operationId": "deleteCoffeePhoto",
         "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }, { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
+    "/api/admin/coffees/{coffeeId}/photos/order": {
+      "put": {
+        "operationId": "arrangeCoffeePhotos", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArrangeCoffeePhotos" } } } },
         "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
       }
     },
@@ -66,9 +89,41 @@
           "openingHours": { "type": "array", "items": { "$ref": "#/components/schemas/CoffeeOpeningHours" } }
         }
       },
+      "EditCoffeeDetails": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "latitude", "longitude", "tags"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "addressLine1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] },
+          "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"], "maxLength": 3 },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+          "phoneNumber": { "type": ["string", "null"] }, "website": { "type": ["string", "null"], "format": "uri" },
+          "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+        }
+      },
+      "ArrangeCoffeePhotos": {
+        "type": "object", "additionalProperties": false, "required": ["orderedPhotoIds", "coverPhotoId"],
+        "properties": {
+          "orderedPhotoIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+          "coverPhotoId": { "type": "string", "format": "uuid" }
+        }
+      },
+      "UpdateCoffeeOpeningHours": {
+        "type": "object", "additionalProperties": false, "required": ["schedules"],
+        "properties": { "schedules": { "type": "array", "maxItems": 7, "items": { "$ref": "#/components/schemas/DaySchedule" } } }
+      },
+      "DaySchedule": {
+        "type": "object", "additionalProperties": false, "required": ["dayCode", "windows"],
+        "properties": { "dayCode": { "type": "integer", "minimum": 0, "maximum": 6 }, "windows": { "type": "array", "items": { "$ref": "#/components/schemas/TimeWindow" } } }
+      },
+      "TimeWindow": {
+        "type": "object", "additionalProperties": false, "required": ["startMinute", "endMinute"],
+        "properties": { "startMinute": { "type": "integer", "minimum": 0, "maximum": 1439 }, "endMinute": { "type": "integer", "minimum": 1, "maximum": 1440 } }
+      },
       "Location": { "type": "object", "additionalProperties": false, "required": ["lat", "lon"], "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } } },
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
-      "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" } } },
+      "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri", "cover", "sortOrder"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" }, "cover": { "type": "boolean" }, "sortOrder": { "type": "integer", "minimum": 0 } } },
       "CoffeeOpeningHours": { "type": "object", "additionalProperties": false, "required": ["id", "weekdayDescription"], "properties": { "id": { "type": "string", "format": "uuid" }, "weekdayDescription": { "type": "string" } } }
     }
   }
