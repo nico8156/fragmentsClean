@@ -82,7 +82,7 @@ public class IntegrationEventPayloadMapper {
                 case "coffee.opening_hours_imported" -> new CoffeeOpeningHoursImportedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), valueObjectText(node, "googlePlaceId"),
-                        strings(node, "weekdayDescriptions"), longValue(node, "version"),
+                        importedOpeningPeriods(node), strings(node, "weekdayDescriptions"), longValue(node, "version"),
                         instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
                 case "coffee.opening_hours_updated" -> new CoffeeOpeningHoursUpdatedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
@@ -306,6 +306,15 @@ public class IntegrationEventPayloadMapper {
         if (nodes == null || !nodes.isArray()) return List.of();
         var periods = new java.util.ArrayList<CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod>();
         for (JsonNode period : nodes) periods.add(new CoffeeOpeningHoursUpdatedIntegrationEvent.OpeningPeriod(
+                intValue(period, "dayCode"), intValue(period, "startMinute"), intValue(period, "endMinute")));
+        return List.copyOf(periods);
+    }
+
+    private List<CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod> importedOpeningPeriods(JsonNode node) {
+        JsonNode nodes = node == null ? null : node.get("periods");
+        if (nodes == null || !nodes.isArray()) return List.of();
+        var periods = new java.util.ArrayList<CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod>();
+        for (JsonNode period : nodes) periods.add(new CoffeeOpeningHoursImportedIntegrationEvent.OpeningPeriod(
                 intValue(period, "dayCode"), intValue(period, "startMinute"), intValue(period, "endMinute")));
         return List.copyOf(periods);
     }

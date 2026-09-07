@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import java.util.Comparator;
+import java.util.stream.Collectors;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.DayOfWeekShort;
 
 public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<CoffeeOpeningHoursImportedEvent> {
 	private final CoffeeOpeningHoursProjectionRepository projectionRepository;
@@ -31,7 +34,8 @@ public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<Coff
 	@Transactional
 	public void handle(CoffeeOpeningHoursImportedEvent event) {
 		var coffeeId = event.coffeeId().value();
-		projectionRepository.replaceForCoffee(coffeeId, toViews(coffeeId, event.weekdayDescriptions()));
+		projectionRepository.replaceForCoffee(coffeeId, event.periods().isEmpty()
+				? toViews(coffeeId, event.weekdayDescriptions()) : structuredViews(coffeeId, event.periods()));
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
 		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
 				"coffees",
@@ -50,4 +54,16 @@ public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<Coff
 						weekdayDescriptions.get(index)))
 				.toList();
 	}
+
+	private List<CoffeeOpeningHoursView> structuredViews(UUID coffeeId, List<CoffeeOpeningHoursImportedEvent.OpeningPeriod> periods) {
+		var byDay = periods.stream().collect(Collectors.groupingBy(CoffeeOpeningHoursImportedEvent.OpeningPeriod::dayCode));
+		return java.util.Arrays.stream(DayOfWeekShort.values()).map(day -> {
+			var windows = byDay.getOrDefault(day.code(), List.of()).stream().sorted(Comparator.comparingInt(CoffeeOpeningHoursImportedEvent.OpeningPeriod::startMinute)).toList();
+			var description = label(day) + ": " + (windows.isEmpty() ? "Fermé" : windows.stream()
+					.map(window -> format(window.startMinute()) + "–" + format(window.endMinute())).collect(Collectors.joining(", ")));
+			return new CoffeeOpeningHoursView(UUID.nameUUIDFromBytes((coffeeId + ":opening-hours:" + day.code()).getBytes(java.nio.charset.StandardCharsets.UTF_8)), coffeeId, description);
+		}).toList();
+	}
+	private String label(DayOfWeekShort day) { return switch (day) { case MONDAY -> "Lundi"; case TUESDAY -> "Mardi"; case WEDNESDAY -> "Mercredi"; case THURSDAY -> "Jeudi"; case FRIDAY -> "Vendredi"; case SATURDAY -> "Samedi"; case SUNDAY -> "Dimanche"; }; }
+	private String format(int minutes) { return String.format("%02d:%02d", minutes / 60, minutes % 60); }
 }

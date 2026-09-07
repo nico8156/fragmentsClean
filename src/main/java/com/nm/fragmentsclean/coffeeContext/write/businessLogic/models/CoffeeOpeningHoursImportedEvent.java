@@ -13,14 +13,21 @@ public record CoffeeOpeningHoursImportedEvent(
 		UUID commandId,
 		CoffeeId coffeeId,
 		GooglePlaceId googlePlaceId,
+		List<OpeningPeriod> periods,
 		List<String> weekdayDescriptions,
 		long version,
 		Instant occurredAt,
 		Instant clientAt
 ) implements DomainEvent {
 	public CoffeeOpeningHoursImportedEvent {
+		periods = periods == null ? List.of() : List.copyOf(periods);
 		weekdayDescriptions = weekdayDescriptions == null ? List.of() : List.copyOf(weekdayDescriptions);
 	}
+	public CoffeeOpeningHoursImportedEvent(UUID eventId, UUID commandId, CoffeeId coffeeId, GooglePlaceId googlePlaceId,
+			List<String> weekdayDescriptions, long version, Instant occurredAt, Instant clientAt) {
+		this(eventId, commandId, coffeeId, googlePlaceId, List.of(), weekdayDescriptions, version, occurredAt, clientAt);
+	}
+	public record OpeningPeriod(int dayCode, int startMinute, int endMinute) { }
 
 	@Override
 	public UUID eventId() {

@@ -227,8 +227,8 @@ public class CoffeeContextDependenciesConfiguration {
 	ImportGoogleOpeningHoursForCoffee importGoogleOpeningHoursForCoffee(
 			GooglePlaceOpeningHoursGateway openingHoursGateway,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
-		return new ImportGoogleOpeningHoursForCoffee(openingHoursGateway, domainEventPublisher, dateTimeProvider);
+			DateTimeProvider dateTimeProvider, CoffeeRepository coffees) {
+		return new ImportGoogleOpeningHoursForCoffee(openingHoursGateway, domainEventPublisher, dateTimeProvider, coffees);
 	}
 
 	@Bean
