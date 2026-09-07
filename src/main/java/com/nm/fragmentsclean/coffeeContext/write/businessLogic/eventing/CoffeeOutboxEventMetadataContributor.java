@@ -8,6 +8,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpen
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosImportedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotosArrangedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublishedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadata;
@@ -40,6 +41,9 @@ public class CoffeeOutboxEventMetadataContributor implements OutboxEventMetadata
 			return Optional.of(coffee(coffeeEvent.coffeeId()));
 		}
 		if (event instanceof CoffeePhotosImportedEvent coffeeEvent) {
+			return Optional.of(coffee(coffeeEvent.coffeeId()));
+		}
+		if (event instanceof CoffeePhotosArrangedEvent coffeeEvent) {
 			return Optional.of(coffee(coffeeEvent.coffeeId()));
 		}
 		if (event instanceof CoffeePhotoAddedEvent coffeeEvent) {

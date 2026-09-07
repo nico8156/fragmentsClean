@@ -46,11 +46,14 @@ public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePho
 				coffee.photos().isEmpty(), coffee.photos().size()), now);
 		coffeeRepository.save(coffee);
 
+		var addedPhoto = coffee.photos().stream().filter(photo -> photo.id().value().equals(storedPhoto.photoId())).findFirst().orElseThrow();
 		eventPublisher.publish(new CoffeePhotoAddedEvent(
 				UUID.randomUUID(),
 				command.commandId(),
 				coffeeId,
 				storedPhoto,
+				addedPhoto.isCover(),
+				addedPhoto.sortOrder(),
 				coffee.version(),
 				now,
 				command.clientAt()));

@@ -39,6 +39,13 @@
         "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
       }
     },
+    "/api/admin/coffees/{coffeeId}/photos/order": {
+      "put": {
+        "operationId": "arrangeCoffeePhotos", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ArrangeCoffeePhotos" } } } },
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
     "/api/admin/commands/{commandId}": {
       "get": {
         "operationId": "getAdminCommandStatus",
@@ -87,9 +94,16 @@
           "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
         }
       },
+      "ArrangeCoffeePhotos": {
+        "type": "object", "additionalProperties": false, "required": ["orderedPhotoIds", "coverPhotoId"],
+        "properties": {
+          "orderedPhotoIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+          "coverPhotoId": { "type": "string", "format": "uuid" }
+        }
+      },
       "Location": { "type": "object", "additionalProperties": false, "required": ["lat", "lon"], "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } } },
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
-      "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" } } },
+      "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri", "cover", "sortOrder"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" }, "cover": { "type": "boolean" }, "sortOrder": { "type": "integer", "minimum": 0 } } },
       "CoffeeOpeningHours": { "type": "object", "additionalProperties": false, "required": ["id", "weekdayDescription"], "properties": { "id": { "type": "string", "format": "uuid" }, "weekdayDescription": { "type": "string" } } }
     }
   }

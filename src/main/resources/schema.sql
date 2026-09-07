@@ -90,8 +90,12 @@ CREATE TABLE IF NOT EXISTS coffee_projection_checkpoints (
 CREATE TABLE IF NOT EXISTS coffee_photos_projection (
   id         UUID PRIMARY KEY,
   coffee_id  UUID NOT NULL,
-  photo_uri  VARCHAR(2000) NOT NULL
+  photo_uri  VARCHAR(2000) NOT NULL,
+  is_cover   BOOLEAN NOT NULL DEFAULT FALSE,
+  sort_order INTEGER NOT NULL DEFAULT 0
 );
+ALTER TABLE coffee_photos_projection ADD COLUMN IF NOT EXISTS is_cover BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE coffee_photos_projection ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_coffee_photos_coffee_id
   ON coffee_photos_projection(coffee_id);

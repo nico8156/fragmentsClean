@@ -10,6 +10,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventH
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosArrangedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
@@ -21,6 +22,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegratio
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeDetailsEditedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosArrangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeOpeningHoursImportedIntegrationEvent;
@@ -85,6 +87,10 @@ public class CoffeeSqsIntegrationEventHandlers {
     @Bean
     SqsIntegrationEventHandler coffeePhotosImportedSqsIntegrationEventHandler(CoffeePhotosImportedEventHandler handler) {
         return readAndHandle("coffee.photos_imported", CoffeePhotosImportedIntegrationEvent.class, handler::handle);
+    }
+
+    @Bean SqsIntegrationEventHandler coffeePhotosArrangedSqsIntegrationEventHandler(CoffeePhotosArrangedEventHandler handler) {
+        return readAndHandle("coffee.photos_arranged", CoffeePhotosArrangedIntegrationEvent.class, handler::handle);
     }
 
     @Bean

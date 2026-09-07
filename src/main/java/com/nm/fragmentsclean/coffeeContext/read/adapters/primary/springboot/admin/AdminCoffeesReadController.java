@@ -28,6 +28,7 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeeOpeningHoursVi
 import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArrangeCoffeePhotosCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommand;
@@ -166,6 +167,17 @@ public class AdminCoffeesReadController {
 		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
+	@PutMapping("/api/admin/coffees/{coffeeId}/photos/order")
+	public ResponseEntity<AdminCommandAcceptedResponse> arrangePhotos(@PathVariable UUID coffeeId,
+			@RequestBody ArrangeCoffeePhotosRequest request, Authentication authentication) {
+		var commandId=UUID.randomUUID(); var now=java.time.Instant.now();
+		commandBus.dispatch(new ArrangeCoffeePhotosCommand(commandId, coffeeId, request.orderedPhotoIds(), request.coverPhotoId(), now));
+		audit(authentication, "COFFEE_PHOTOS_ARRANGED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
+
+	public record ArrangeCoffeePhotosRequest(List<UUID> orderedPhotoIds, UUID coverPhotoId) { }
+
 	public ResponseEntity<AdminCommandAcceptedResponse> addPhoto(UUID coffeeId, MultipartFile photo) throws java.io.IOException {
 		return addPhoto(coffeeId, photo, null);
 	}
@@ -217,9 +229,9 @@ public class AdminCoffeesReadController {
 		}
 	}
 
-	public record AdminCoffeePhotoResponse(UUID id, String photoUri) {
+	public record AdminCoffeePhotoResponse(UUID id, String photoUri, boolean cover, int sortOrder) {
 		static AdminCoffeePhotoResponse from(CoffeePhotoView view, CoffeePhotoUriResolver photoUriResolver) {
-			return new AdminCoffeePhotoResponse(view.id(), photoUriResolver.resolve(view.photoUri()));
+			return new AdminCoffeePhotoResponse(view.id(), photoUriResolver.resolve(view.photoUri()), view.cover(), view.sortOrder());
 		}
 	}
 

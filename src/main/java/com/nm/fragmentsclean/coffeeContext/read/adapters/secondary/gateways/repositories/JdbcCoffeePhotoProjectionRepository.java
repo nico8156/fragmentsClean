@@ -28,12 +28,14 @@ public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectio
 	@Override
 	public void insertSeed(CoffeePhotoView view) {
 		jdbc.update("""
-				    INSERT INTO coffee_photos_projection (id, coffee_id, photo_uri)
-				    VALUES (?, ?, ?)
+				    INSERT INTO coffee_photos_projection (id, coffee_id, photo_uri, is_cover, sort_order)
+				    VALUES (?, ?, ?, ?, ?)
 				    ON CONFLICT (id) DO UPDATE SET
 				      coffee_id = EXCLUDED.coffee_id,
-				      photo_uri = EXCLUDED.photo_uri
-				""", view.id(), view.coffeeId(), view.photoUri());
+				      photo_uri = EXCLUDED.photo_uri,
+				      is_cover = EXCLUDED.is_cover,
+				      sort_order = EXCLUDED.sort_order
+				""", view.id(), view.coffeeId(), view.photoUri(), view.cover(), view.sortOrder());
 	}
 
 	@Override
@@ -72,15 +74,15 @@ public class JdbcCoffeePhotoProjectionRepository implements CoffeePhotoProjectio
 				     AND summary.publication_status = 'PUBLISHED'
 				""" : "";
 		return jdbc.query("""
-				    SELECT photo.id, photo.coffee_id, photo.photo_uri
+				    SELECT photo.id, photo.coffee_id, photo.photo_uri, photo.is_cover, photo.sort_order
 				    FROM coffee_photos_projection photo
-				""" + publicationJoin + " ORDER BY photo.coffee_id ASC", this::mapRow);
+		""" + publicationJoin + " ORDER BY photo.coffee_id ASC, photo.sort_order ASC", this::mapRow);
 	}
 
 	private CoffeePhotoView mapRow(ResultSet rs, int rowNum) throws SQLException {
 		UUID id = rs.getObject("id", UUID.class);
 		UUID coffeeId = rs.getObject("coffee_id", UUID.class);
 		String uri = rs.getString("photo_uri");
-		return new CoffeePhotoView(id, coffeeId, uri);
+		return new CoffeePhotoView(id, coffeeId, uri, rs.getBoolean("is_cover"), rs.getInt("sort_order"));
 	}
 }

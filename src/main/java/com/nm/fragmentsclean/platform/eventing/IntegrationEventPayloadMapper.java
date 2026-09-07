@@ -10,6 +10,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeDetailsEditedInte
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosArrangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
@@ -76,6 +77,7 @@ public class IntegrationEventPayloadMapper {
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
                 case "coffee.photo_added" -> coffeePhotoAdded(node, event);
                 case "coffee.photos_imported" -> coffeePhotosImported(node, event);
+                case "coffee.photos_arranged" -> coffeePhotosArranged(node, event);
                 case "coffee.opening_hours_imported" -> new CoffeeOpeningHoursImportedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), valueObjectText(node, "googlePlaceId"),
@@ -254,6 +256,8 @@ public class IntegrationEventPayloadMapper {
                 uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
                 uuidFromValueObjectOrFallback(photo, "photoId", event.getEventId()),
                 text(photo, "photoUri"),
+                bool(node, "cover"),
+                intValue(node, "sortOrder"),
                 intValue(node, "version"),
                 instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                 instantOrFallback(node, "clientAt", event.getOccurredAt()));
@@ -277,6 +281,19 @@ public class IntegrationEventPayloadMapper {
                 longValue(node, "version"),
                 instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                 instantOrFallback(node, "clientAt", event.getOccurredAt()));
+    }
+
+    private CoffeePhotosArrangedIntegrationEvent coffeePhotosArranged(JsonNode node, OutboxEventJpaEntity event) {
+        List<CoffeePhotosArrangedIntegrationEvent.Photo> photos = new java.util.ArrayList<>();
+        JsonNode nodes = node.get("photos");
+        if (nodes != null && nodes.isArray()) for (JsonNode photo : nodes) photos.add(
+                new CoffeePhotosArrangedIntegrationEvent.Photo(uuid(photo, "photoId"), text(photo, "photoUri"),
+                        bool(photo, "cover"), intValue(photo, "sortOrder")));
+        return new CoffeePhotosArrangedIntegrationEvent(uuidOrFallback(node, "eventId", event.getEventId()),
+                uuidOrFallback(node, "commandId", event.getEventId()),
+                uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()), photos,
+                intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                nullableInstant(node, "clientAt"));
     }
 
     private TicketIntegrationEvents.VerificationCompleted ticketVerificationCompleted(
