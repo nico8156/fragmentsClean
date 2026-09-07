@@ -10,6 +10,14 @@
     "/api/admin/coffees/{coffeeId}/publish": {
       "post": { "operationId": "publishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
+    "/api/admin/coffees/{coffeeId}/details": {
+      "put": {
+        "operationId": "editCoffeeDetails",
+        "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EditCoffeeDetails" } } } },
+        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+      }
+    },
     "/api/admin/coffees/{coffeeId}": {
       "delete": { "operationId": "archiveCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
@@ -64,6 +72,19 @@
           "version": { "type": "integer", "format": "int64", "minimum": 0 }, "updatedAt": { "type": "string", "format": "date-time" },
           "photos": { "type": "array", "items": { "$ref": "#/components/schemas/CoffeePhoto" } },
           "openingHours": { "type": "array", "items": { "$ref": "#/components/schemas/CoffeeOpeningHours" } }
+        }
+      },
+      "EditCoffeeDetails": {
+        "type": "object", "additionalProperties": false,
+        "required": ["name", "latitude", "longitude", "tags"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "addressLine1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] },
+          "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"], "maxLength": 3 },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+          "phoneNumber": { "type": ["string", "null"] }, "website": { "type": ["string", "null"], "format": "uri" },
+          "tags": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
         }
       },
       "Location": { "type": "object", "additionalProperties": false, "required": ["lat", "lon"], "properties": { "lat": { "type": "number" }, "lon": { "type": "number" } } },

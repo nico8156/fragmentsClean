@@ -7,6 +7,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeeArchivedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeCreatedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeDeletedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeDetailsEditedIntegrationEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeeOpeningHoursImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoAddedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
@@ -30,6 +31,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.reposito
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CreateCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommandHandler;
@@ -94,6 +96,12 @@ public class CoffeeContextDependenciesConfiguration {
 	}
 
 	@Bean
+	EditCoffeeDetailsCommandHandler editCoffeeDetailsCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
+		return new EditCoffeeDetailsCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
 	AddCoffeePhotoCommandHandler addCoffeePhotoCommandHandler(CoffeeRepository coffeeRepository,
 			CoffeePhotoStorage coffeePhotoStorage,
 			DomainEventPublisher domainEventPublisher,
@@ -142,6 +150,13 @@ public class CoffeeContextDependenciesConfiguration {
 			CoffeeProjectionRepository projectionRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new CoffeeCreatedIntegrationEventHandler(projectionSource, projectionRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	CoffeeDetailsEditedIntegrationEventHandler coffeeDetailsEditedIntegrationEventHandler(
+			CoffeeProjectionSource projectionSource, CoffeeProjectionRepository projectionRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new CoffeeDetailsEditedIntegrationEventHandler(projectionSource, projectionRepository, projectionSyncPublisher);
 	}
 
 	@Bean

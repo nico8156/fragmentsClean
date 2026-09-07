@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.write.businessLogic.eventing;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDetailsEditedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoAddedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
@@ -30,6 +31,9 @@ public class CoffeeOutboxEventMetadataContributor implements OutboxEventMetadata
 			return Optional.of(coffee(coffeeEvent.coffeeId()));
 		}
 		if (event instanceof CoffeeDeletedEvent coffeeEvent) {
+			return Optional.of(coffee(coffeeEvent.coffeeId()));
+		}
+		if (event instanceof CoffeeDetailsEditedEvent coffeeEvent) {
 			return Optional.of(coffee(coffeeEvent.coffeeId()));
 		}
 		if (event instanceof CoffeeOpeningHoursImportedEvent coffeeEvent) {

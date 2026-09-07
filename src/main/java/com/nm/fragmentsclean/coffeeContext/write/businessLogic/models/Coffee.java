@@ -227,6 +227,18 @@ public final class Coffee extends AggregateRoot {
 		touch(now);
 	}
 
+	public void editDetails(CoffeeName newName, Address newAddress, GeoPoint newLocation,
+			PhoneNumber newPhoneNumber, WebsiteUrl newWebsite, Set<Tag> newTags, Instant now) {
+		if (isArchived()) throw new IllegalStateException("Archived coffee cannot be edited");
+		this.name = Objects.requireNonNull(newName);
+		this.address = Objects.requireNonNull(newAddress);
+		this.location = Objects.requireNonNull(newLocation);
+		this.phoneNumber = newPhoneNumber;
+		this.website = newWebsite;
+		this.tags = newTags != null ? Set.copyOf(newTags) : Set.of();
+		touch(now);
+	}
+
 	public void replacePhotos(List<Photo> newPhotos, Instant now) {
 		this.photos = new ArrayList<>(newPhotos != null ? newPhotos : List.of());
 		touch(now);

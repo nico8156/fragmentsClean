@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +30,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveC
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
@@ -122,6 +125,18 @@ public class AdminCoffeesReadController {
 		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 
+	@PutMapping("/api/admin/coffees/{coffeeId}/details")
+	public ResponseEntity<AdminCommandAcceptedResponse> editDetails(@PathVariable UUID coffeeId,
+			@RequestBody EditCoffeeDetailsRequest request, Authentication authentication) {
+		var commandId = UUID.randomUUID();
+		var now = java.time.Instant.now();
+		commandBus.dispatch(new EditCoffeeDetailsCommand(commandId, coffeeId, request.name(),
+				request.addressLine1(), request.city(), request.postalCode(), request.country(),
+				request.latitude(), request.longitude(), request.phoneNumber(), request.website(), request.tags(), now));
+		audit(authentication, "COFFEE_DETAILS_EDITED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
+
 	@PostMapping(value = "/api/admin/coffees/{coffeeId}/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<AdminCommandAcceptedResponse> addPhoto(@PathVariable UUID coffeeId, @RequestPart("photo") MultipartFile photo, Authentication authentication)
 			throws java.io.IOException {
@@ -207,6 +222,10 @@ public class AdminCoffeesReadController {
 			return new AdminCoffeePhotoResponse(view.id(), photoUriResolver.resolve(view.photoUri()));
 		}
 	}
+
+	public record EditCoffeeDetailsRequest(String name, String addressLine1, String city, String postalCode,
+			String country, double latitude, double longitude, String phoneNumber, String website,
+			java.util.Set<String> tags) { }
 
 	public record AdminCoffeeOpeningHoursResponse(UUID id, String weekdayDescription) {
 		static AdminCoffeeOpeningHoursResponse from(CoffeeOpeningHoursView view) {

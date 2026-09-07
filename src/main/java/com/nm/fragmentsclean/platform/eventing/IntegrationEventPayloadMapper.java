@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrati
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserProfileUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeCreatedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeDetailsEditedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeLifecycleIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotoAddedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeePhotosImportedIntegrationEvent;
@@ -64,6 +65,12 @@ public class IntegrationEventPayloadMapper {
                 case "app.user.created" -> appUserCreated(node, event);
                 case "app.user.profile_updated" -> appUserProfileUpdated(node, event);
                 case "coffee.created", "coffee.saved_coffee_projection.created" -> coffeeCreated(node, event);
+                case "coffee.details_edited" -> new CoffeeDetailsEditedIntegrationEvent(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "commandId", event.getEventId()),
+                        uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
+                        intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                        nullableInstant(node, "clientAt"));
                 case "coffee.archived", "coffee.deleted",
                         "coffee.saved_coffee_projection.archived",
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
