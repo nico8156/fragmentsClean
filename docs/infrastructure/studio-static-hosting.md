@@ -33,6 +33,44 @@ and its content remain in `eu-west-3`.
 - no AWS credential or admin token enters the Studio bundle;
 - Vite production validation requires OAuth mode and HTTPS backend URL.
 
+## GitHub Actions deployment identity
+
+Studio releases use a dedicated GitHub OIDC role. It is intentionally not the
+backend SSM deployment role: the Studio workflow needs immutable object writes
+to its own bucket and CloudFront invalidation, whereas the backend workflow
+needs ECR and SSM only.
+
+Create or update the role after the bucket and distribution exist:
+
+```bash
+STUDIO_DISTRIBUTION_ID="$(aws cloudformation describe-stacks \
+  --region us-east-1 \
+  --stack-name fragments-studio-cloudfront-staging \
+  --query 'Stacks[0].Outputs[?OutputKey==`StudioDistributionId`].OutputValue' \
+  --output text)"
+
+aws cloudformation deploy \
+  --region eu-west-3 \
+  --stack-name fragments-studio-staging-github-deploy \
+  --template-file infra/aws/cloudformation/studio-github-deploy-role.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides StudioDistributionId="$STUDIO_DISTRIBUTION_ID"
+```
+
+Then configure the GitHub environment named `staging` in the
+`nico8156/fragmentsAdmin` repository. These are environment variables, not
+browser-visible Vite variables and not application secrets:
+
+| Name | Value |
+| --- | --- |
+| `AWS_DEPLOY_ROLE_ARN` | `GitHubStudioDeployRoleArn` output from the stack |
+| `STUDIO_S3_BUCKET` | `fragments-studio-staging-851725375299` |
+| `STUDIO_CLOUDFRONT_DISTRIBUTION_ID` | `StudioDistributionId` from the CloudFront stack |
+
+The role trust is restricted to the GitHub `staging` environment. Protect that
+environment so only the `main` branch may deploy. The workflow deliberately
+does not need static AWS access keys and never deletes S3 objects.
+
 ## SPA routing
 
 CloudFront maps 403/404 responses to `/index.html` for browser routes. API
