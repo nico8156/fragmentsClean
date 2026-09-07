@@ -17,4 +17,8 @@ Read in order:
 11. [Article authoring and generation saga](article-authoring-saga.md)
 12. [Integration event contracts and incoming ACLs](integration-event-contracts.md)
 
+The versioned Studio transport contract is server-owned at
+`contracts/studio-api/v1/openapi.json`. Browser DTOs are generated from it;
+bounded-context domain classes are never shared with client code.
+
 The `AGENTS.md` file remains the normative doctrine. These documents explain the doctrine in operational terms.
