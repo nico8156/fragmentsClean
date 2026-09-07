@@ -39,6 +39,9 @@ class PostgresRecoveryGuardrailTest {
                 .contains("--sse AES256")
                 .contains("sha256sum")
                 .contains("read_environment_value")
+                .contains("label=com.docker.compose.service=fragments-postgres")
+                .contains("docker exec -i \"$postgres_container\"")
+                .doesNotContain("docker compose exec")
                 .doesNotContain("source \"$environment_file\"");
         assertThat(Files.readString(RUNTIME.resolve("deploy-via-ssm.sh")))
                 .contains("journalctl -u fragments-postgres-backup.service")

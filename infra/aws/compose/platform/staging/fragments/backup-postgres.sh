@@ -53,8 +53,19 @@ artifact_path="$backup_tmp/$artifact"
 checksum_path="$artifact_path.sha256"
 destination="s3://${POSTGRES_BACKUP_S3_BUCKET}/${POSTGRES_BACKUP_S3_PREFIX%/}/$artifact"
 
-cd "$runtime_root"
-docker compose exec -T fragments-postgres \
+mapfile -t postgres_containers < <(
+  docker ps \
+    --filter label=com.docker.compose.service=fragments-postgres \
+    --format '{{.Names}}'
+)
+if [[ ${#postgres_containers[@]} -ne 1 ]]; then
+  echo "Expected exactly one running Fragments PostgreSQL container; found ${#postgres_containers[@]}." >&2
+  printf 'Candidate: %s\n' "${postgres_containers[@]}" >&2
+  exit 1
+fi
+postgres_container=${postgres_containers[0]}
+
+docker exec -i "$postgres_container" \
   pg_dump --format=custom --no-owner --no-privileges \
   --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" > "$artifact_path"
 
