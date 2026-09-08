@@ -57,19 +57,12 @@ aws cloudformation deploy \
   --parameter-overrides StudioDistributionId="$STUDIO_DISTRIBUTION_ID"
 ```
 
-Then configure the GitHub environment named `staging` in the
-`nico8156/fragmentsAdmin` repository. These are environment variables, not
-browser-visible Vite variables and not application secrets:
-
-| Name | Value |
-| --- | --- |
-| `AWS_DEPLOY_ROLE_ARN` | `GitHubStudioDeployRoleArn` output from the stack |
-| `STUDIO_S3_BUCKET` | `fragments-studio-staging-851725375299` |
-| `STUDIO_CLOUDFRONT_DISTRIBUTION_ID` | `StudioDistributionId` from the CloudFront stack |
-
-The role trust is restricted to the GitHub `staging` environment. Protect that
-environment so only the `main` branch may deploy. The workflow deliberately
-does not need static AWS access keys and never deletes S3 objects.
+The staging workflow deliberately carries the stable, non-secret resource
+identifiers in versioned CI configuration, like the backend deployment does.
+It therefore has no GitHub environment variables or static AWS credentials to
+maintain. The role trust is restricted to the GitHub `staging` environment;
+protect that environment so only the `main` branch may deploy. The role never
+deletes S3 objects.
 
 ## SPA routing
 
