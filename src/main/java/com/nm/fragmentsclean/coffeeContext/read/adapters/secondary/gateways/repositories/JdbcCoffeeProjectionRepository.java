@@ -112,6 +112,18 @@ public class JdbcCoffeeProjectionRepository implements CoffeeProjectionRepositor
 
 	@Override
 	@Transactional
+	public void markDraft(UUID coffeeId, long version, java.time.Instant updatedAt) {
+		markDraftIfNewer(coffeeId, version, updatedAt);
+	}
+
+	@Override
+	@Transactional
+	public CoffeeProjectionMutation markDraftIfNewer(UUID coffeeId, long version, java.time.Instant changedAt) {
+		return applyLifecycleIfNewer(coffeeId, version, "DRAFT", changedAt);
+	}
+
+	@Override
+	@Transactional
 	public void insertSeed(CoffeeSummaryView view) {
 		applyIfNewer(view);
 	}

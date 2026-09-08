@@ -33,6 +33,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCo
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.UnpublishCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.UpdateCoffeeOpeningHoursCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
@@ -124,6 +125,14 @@ public class AdminCoffeesReadController {
 		var commandId = UUID.randomUUID(); var now = java.time.Instant.now();
 		commandBus.dispatch(new PublishCoffeeCommand(commandId, coffeeId, now));
 		audit(authentication, "COFFEE_PUBLISHED", coffeeId, commandId, "ACCEPTED", now);
+		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+	}
+
+	@PostMapping("/api/admin/coffees/{coffeeId}/unpublish")
+	public ResponseEntity<AdminCommandAcceptedResponse> unpublishCoffee(@PathVariable UUID coffeeId, Authentication authentication) {
+		var commandId = UUID.randomUUID(); var now = java.time.Instant.now();
+		commandBus.dispatch(new UnpublishCoffeeCommand(commandId, coffeeId, now));
+		audit(authentication, "COFFEE_UNPUBLISHED", coffeeId, commandId, "ACCEPTED", now);
 		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
 	}
 

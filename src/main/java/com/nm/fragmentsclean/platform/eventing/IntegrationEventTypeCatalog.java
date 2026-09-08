@@ -27,6 +27,7 @@ public final class IntegrationEventTypeCatalog {
             Map.entry("CoffeePhotosImportedEvent", "coffee.photos_imported"),
             Map.entry("CoffeePhotosArrangedEvent", "coffee.photos_arranged"),
             Map.entry("CoffeePublishedEvent", "coffee.published"),
+            Map.entry("CoffeeUnpublishedEvent", "coffee.unpublished"),
             Map.entry("AppUserCreatedEvent", "app.user.created"),
             Map.entry("AppUserProfileUpdatedEvent", "app.user.profile_updated"),
             Map.entry("SavedCoffeeSetEvent", "user.saved_coffee.set"),

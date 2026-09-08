@@ -10,6 +10,12 @@
     "/api/admin/coffees/{coffeeId}/publish": {
       "post": { "operationId": "publishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
+    "/api/admin/coffees/{coffeeId}/operations": {
+      "get": { "operationId": "listCoffeeOperations", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }, { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 30 } }], "responses": { "200": { "description": "Durable Studio operation journal", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CoffeeOperation" } } } } } } }
+    },
+    "/api/admin/coffees/{coffeeId}/unpublish": {
+      "post": { "operationId": "unpublishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
+    },
     "/api/admin/coffees/{coffeeId}/details": {
       "put": {
         "operationId": "editCoffeeDetails",
@@ -125,6 +131,7 @@
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
       "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri", "cover", "sortOrder"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" }, "cover": { "type": "boolean" }, "sortOrder": { "type": "integer", "minimum": 0 } } },
       "CoffeeOpeningHours": { "type": "object", "additionalProperties": false, "required": ["id", "weekdayDescription"], "properties": { "id": { "type": "string", "format": "uuid" }, "weekdayDescription": { "type": "string" } } }
+      ,"CoffeeOperation": { "type": "object", "additionalProperties": false, "required": ["id", "actorUserId", "action", "outcome", "occurredAt"], "properties": { "id": { "type": "string", "format": "uuid" }, "actorUserId": { "type": "string", "format": "uuid" }, "action": { "type": "string" }, "commandId": { "type": ["string", "null"], "format": "uuid" }, "outcome": { "type": "string" }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } } }
     }
   }
 }

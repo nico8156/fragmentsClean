@@ -73,7 +73,7 @@ public class IntegrationEventPayloadMapper {
                         uuidFromValueObjectOrFallback(node, "coffeeId", event.getAggregateId()),
                         intValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                         nullableInstant(node, "clientAt"));
-                case "coffee.archived", "coffee.deleted",
+                case "coffee.archived", "coffee.deleted", "coffee.unpublished",
                         "coffee.saved_coffee_projection.archived",
                         "coffee.saved_coffee_projection.deleted" -> coffeeLifecycle(node, event);
                 case "coffee.photo_added" -> coffeePhotoAdded(node, event);
