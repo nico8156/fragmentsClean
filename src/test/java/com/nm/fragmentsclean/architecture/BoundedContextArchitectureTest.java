@@ -18,6 +18,7 @@ class BoundedContextArchitectureTest {
             "articleContext",
             "authenticationContext",
             "coffeeContext",
+			"editorialIntelligenceContext",
             "socialContext",
             "ticketContext",
             "userApplicationContext"
