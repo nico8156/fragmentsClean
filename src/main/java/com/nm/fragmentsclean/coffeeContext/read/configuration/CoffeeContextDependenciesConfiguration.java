@@ -16,6 +16,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoUriResolver;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosArrangedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeUnpublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.SearchPublicCoffeesQueryHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.storage.DefaultCoffeePhotoUriResolver;
@@ -39,6 +40,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffe
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArrangeCoffeePhotosCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommandHandler;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.UnpublishCoffeeCommandHandler;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGoogleOpeningHoursForCoffee;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ImportGooglePhotosForCoffee;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -90,6 +92,12 @@ public class CoffeeContextDependenciesConfiguration {
 	PublishCoffeeCommandHandler publishCoffeeCommandHandler(CoffeeRepository coffeeRepository,
 			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
 		return new PublishCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+	}
+
+	@Bean
+	UnpublishCoffeeCommandHandler unpublishCoffeeCommandHandler(CoffeeRepository coffeeRepository,
+			DomainEventPublisher domainEventPublisher, DateTimeProvider dateTimeProvider) {
+		return new UnpublishCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
 	}
 
 	@Bean
@@ -157,6 +165,12 @@ public class CoffeeContextDependenciesConfiguration {
 	CoffeePublishedEventHandler coffeePublishedEventHandler(CoffeeProjectionRepository repository,
 			ProjectionSyncPublisher syncPublisher) {
 		return new CoffeePublishedEventHandler(repository, syncPublisher);
+	}
+
+	@Bean
+	CoffeeUnpublishedEventHandler coffeeUnpublishedEventHandler(CoffeeProjectionRepository repository,
+			ProjectionSyncPublisher syncPublisher) {
+		return new CoffeeUnpublishedEventHandler(repository, syncPublisher);
 	}
 
 	@Bean

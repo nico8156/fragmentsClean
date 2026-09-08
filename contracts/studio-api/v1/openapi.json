@@ -10,6 +10,9 @@
     "/api/admin/coffees/{coffeeId}/publish": {
       "post": { "operationId": "publishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
     },
+    "/api/admin/coffees/{coffeeId}/unpublish": {
+      "post": { "operationId": "unpublishCoffee", "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }], "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } } }
+    },
     "/api/admin/coffees/{coffeeId}/details": {
       "put": {
         "operationId": "editCoffeeDetails",
