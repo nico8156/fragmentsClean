@@ -1,6 +1,7 @@
 # Editorial Intelligence and Article Lifecycle
 
-Status: approved foundation. No external source is enabled by this document.
+Status: RSS collection adapter implemented. No production editorial source is
+enabled by this document.
 
 ## Purpose
 
@@ -71,10 +72,12 @@ ConsultDueEditorialSourcesJob
 -> ConsultEditorialSource(sourceId)
 ```
 
-The command claims a short durable lease before external work. The remote call
-happens outside a database transaction. A second idempotent completion command
-persists new signals, advances the checkpoint and schedules the next check in a
-short transaction.
+The consultation command claims a short durable lease before external work. The
+remote call happens outside a database transaction. A second idempotent
+completion command persists new signals, advances the checkpoint and schedules
+the next check in a short transaction. A provider failure is also persisted in
+a separate short transaction, tied to the claiming worker; a stale worker cannot
+fail or complete another worker's lease.
 
 Each source owns its cadence. A source failure only changes that source's retry
 state; it never blocks another source.
@@ -94,6 +97,13 @@ provider XML/JSON
 Provider DTOs, XML parsers, HTTP clients and raw payloads remain secondary
 adapter details. Unsupported or malformed payloads are observable technical
 failures and never become domain content.
+
+The RSS adapter performs conditional HTTP requests with the source checkpoint's
+`ETag` and `Last-Modified` values. A `304 Not Modified` is a successful empty
+discovery, not a failure. Its XML parser rejects DTDs and external entities
+before the explicit RSS-to-`DiscoveredSourceItem` mapping. Fingerprints are
+SHA-256 values over the normalized provider fields; Java object hashes are not
+durable fingerprints.
 
 ## Idempotence and recovery
 

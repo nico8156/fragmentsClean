@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 import java.util.UUID;
 
-/** Scheduler application use case: discovers due work only; it never consults a provider. */
+/** Scheduler application use case: discovers due work only; it never calls a provider. */
 @Component
 public final class ScheduleDueEditorialSourceConsultations {
     private final EditorialSourceRepository sources; private final EditorialSourceConsultationRequestPort requests; private final DateTimeProvider clock;
@@ -16,7 +16,7 @@ public final class ScheduleDueEditorialSourceConsultations {
     public int execute(int limit, Duration leaseDuration, String workerId) {
         if (limit < 1 || leaseDuration == null || leaseDuration.isZero() || leaseDuration.isNegative() || workerId == null || workerId.isBlank()) return 0;
         var now = clock.now(); var due = sources.dueAt(now, limit);
-        due.forEach(source -> requests.request(new ClaimEditorialSourceConsultationCommand(source.snapshot().id(), workerId + "-" + UUID.randomUUID(), now.plus(leaseDuration))));
+        due.forEach(source -> requests.request(new ConsultEditorialSourceCommand(source.snapshot().id(), workerId + "-" + UUID.randomUUID(), now.plus(leaseDuration))));
         return due.size();
     }
 }

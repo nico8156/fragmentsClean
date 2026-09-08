@@ -40,10 +40,11 @@ class JdbcEditorialSourceRepositoryIT extends AbstractReadJdbcIntegrationTest {
         repository.save(source);
         assertThat(repository.dueAt(now.plusSeconds(1), 10)).isEmpty();
 
-        source.completeConsultation(2, "etag-1", "external-1", now.minusSeconds(5), now.plusSeconds(2));
+        source.completeConsultation(2, "etag-1", "Mon, 08 Sep 2026 10:00:00 GMT", "external-1", now.minusSeconds(5), now.plusSeconds(2));
         repository.save(source);
 
         var restored = repository.byId(sourceId).orElseThrow().snapshot();
+        assertThat(restored.checkpoint().lastModified()).isEqualTo("Mon, 08 Sep 2026 10:00:00 GMT");
         assertThat(restored.checkpoint().lastExternalId()).isEqualTo("external-1");
         assertThat(restored.lastSuccessfulCheckAt()).isEqualTo(now.plusSeconds(2));
         assertThat(restored.nextCheckAt()).isEqualTo(now.plus(Duration.ofHours(6)).plusSeconds(2));

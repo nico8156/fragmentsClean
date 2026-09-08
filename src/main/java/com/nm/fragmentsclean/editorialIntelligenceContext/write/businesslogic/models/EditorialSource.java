@@ -63,20 +63,24 @@ public final class EditorialSource {
         this.lastCheckedAt = now; touch();
     }
 
-    public void completeConsultation(int discoveredCount, String etag, String lastExternalId, Instant lastPublishedAt, Instant now) {
-        completeConsultation(leaseOwner, discoveredCount, etag, lastExternalId, lastPublishedAt, now);
+    public void completeConsultation(int discoveredCount, String etag, String lastModified, String lastExternalId, Instant lastPublishedAt, Instant now) {
+        completeConsultation(leaseOwner, discoveredCount, etag, lastModified, lastExternalId, lastPublishedAt, now);
     }
 
-    public void completeConsultation(String worker, int discoveredCount, String etag, String lastExternalId, Instant lastPublishedAt, Instant now) {
+    public void completeConsultation(String worker, int discoveredCount, String etag, String lastModified, String lastExternalId, Instant lastPublishedAt, Instant now) {
         verifyLeaseOwner(worker, now);
         if (discoveredCount < 0) throw new IllegalArgumentException("discoveredCount must not be negative");
-        checkpoint = new SourceCheckpoint(etag, lastExternalId, lastPublishedAt);
+        checkpoint = new SourceCheckpoint(etag, lastModified, lastExternalId, lastPublishedAt);
         lastSuccessfulCheckAt = now; nextCheckAt = now.plus(pollingFrequency); failureCount = 0;
         status = EditorialSourceStatus.HEALTHY; clearLease(); touch();
     }
 
     public void failConsultation(String failureCategory, Instant now) {
-        verifyLeaseOwner(leaseOwner, now); text(failureCategory, "failureCategory");
+        failConsultation(leaseOwner, failureCategory, now);
+    }
+
+    public void failConsultation(String worker, String failureCategory, Instant now) {
+        verifyLeaseOwner(worker, now); text(failureCategory, "failureCategory");
         failureCount++; status = EditorialSourceStatus.DEGRADED;
         nextCheckAt = now.plus(backoffFor(failureCount)); clearLease(); touch();
     }

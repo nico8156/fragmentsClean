@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways;
 
-import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.ClaimEditorialSourceConsultationCommand;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.ConsultEditorialSourceCommand;
 
 public interface EditorialSourceConsultationRequestPort {
-    void request(ClaimEditorialSourceConsultationCommand command);
+    void request(ConsultEditorialSourceCommand command);
 }

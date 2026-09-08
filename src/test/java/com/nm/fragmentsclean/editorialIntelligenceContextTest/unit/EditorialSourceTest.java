@@ -22,7 +22,7 @@ class EditorialSourceTest {
         var source = source();
 
         source.claimConsultation("worker-a", NOW, NOW.plusSeconds(60));
-        source.completeConsultation(3, "etag-42", "item-42", NOW.minusSeconds(60), NOW);
+        source.completeConsultation(3, "etag-42", "Mon, 08 Sep 2026 10:00:00 GMT", "item-42", NOW.minusSeconds(60), NOW);
 
         var snapshot = source.snapshot();
         assertThat(snapshot.status()).isEqualTo(EditorialSourceStatus.HEALTHY);
@@ -61,7 +61,7 @@ class EditorialSourceTest {
         var source = source();
         source.claimConsultation("worker-a", NOW, NOW.plusSeconds(60));
 
-        assertThatThrownBy(() -> source.completeConsultation("worker-b", 1, null, null, null, NOW))
+        assertThatThrownBy(() -> source.completeConsultation("worker-b", 1, null, null, null, null, NOW))
                 .hasMessageContaining("lease owner");
     }
 

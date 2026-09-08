@@ -8,7 +8,7 @@ import java.sql.Timestamp;
 import java.util.List;
 
 @Repository
-public final class JdbcSourceSignalRepository implements SourceSignalRepository {
+public class JdbcSourceSignalRepository implements SourceSignalRepository {
  private final JdbcTemplate jdbc; public JdbcSourceSignalRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}
  @Override public int saveIgnoringDuplicate(List<SourceSignal> signals) {
   int saved=0; for(var s:signals) saved+=jdbc.update("INSERT INTO editorial_source_signals (signal_id,source_id,external_id,title,summary,url,author,published_at,discovered_at,fingerprint) VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT (source_id,external_id) DO NOTHING",s.id(),s.sourceId(),s.externalId(),s.title(),s.summary(),s.url(),s.author(),timestamp(s.publishedAt()),timestamp(s.discoveredAt()),s.fingerprint()); return saved;

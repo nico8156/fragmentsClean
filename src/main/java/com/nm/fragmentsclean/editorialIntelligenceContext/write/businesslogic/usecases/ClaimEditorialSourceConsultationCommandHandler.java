@@ -7,7 +7,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Component;
 
 @Component
-public final class ClaimEditorialSourceConsultationCommandHandler implements CommandHandler<ClaimEditorialSourceConsultationCommand> {
+public class ClaimEditorialSourceConsultationCommandHandler implements CommandHandler<ClaimEditorialSourceConsultationCommand> {
     private final EditorialSourceRepository sources;
     private final DateTimeProvider clock;
     public ClaimEditorialSourceConsultationCommandHandler(EditorialSourceRepository sources, DateTimeProvider clock) { this.sources = sources; this.clock = clock; }

@@ -720,10 +720,12 @@ create table if not exists editorial_sources (
     lease_owner varchar(128),
     lease_until timestamptz,
     checkpoint_etag varchar(512),
+    checkpoint_last_modified varchar(512),
     checkpoint_external_id varchar(512),
     checkpoint_published_at timestamptz,
     version bigint not null check (version >= 0)
 );
+alter table editorial_sources add column if not exists checkpoint_last_modified varchar(512);
 create index if not exists idx_editorial_sources_due on editorial_sources(enabled, next_check_at);
 
 create table if not exists editorial_source_signals (

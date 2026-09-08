@@ -9,9 +9,9 @@ import java.time.*; import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ScheduleDueEditorialSourceConsultationsTest {
- @Test void submits_one_claim_per_due_source_without_consulting_them() {
+ @Test void submits_one_consultation_request_per_due_source_without_calling_them() {
   var source=EditorialSource.register(UUID.randomUUID(),"SCA",EditorialSourceAccessMode.RSS,EditorialAuthorityLevel.AUTHORITATIVE,"https://sca.coffee",Duration.ofHours(6),Instant.parse("2023-10-01T11:00:00Z"));
-  var requests=new ArrayList<ClaimEditorialSourceConsultationCommand>();
+  var requests=new ArrayList<ConsultEditorialSourceCommand>();
   EditorialSourceRepository repo=new EditorialSourceRepository(){ public Optional<EditorialSource> byId(UUID id){return Optional.empty();} public List<EditorialSource> dueAt(Instant now,int limit){return List.of(source);} public void save(EditorialSource s){} };
   var useCase=new ScheduleDueEditorialSourceConsultations(repo,requests::add,new DeterministicDateTimeProvider());
   assertThat(useCase.execute(20,Duration.ofMinutes(5),"scheduler")).isEqualTo(1);
