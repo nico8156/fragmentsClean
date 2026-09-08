@@ -725,3 +725,19 @@ create table if not exists editorial_sources (
     version bigint not null check (version >= 0)
 );
 create index if not exists idx_editorial_sources_due on editorial_sources(enabled, next_check_at);
+
+create table if not exists editorial_source_signals (
+    signal_id uuid primary key,
+    source_id uuid not null references editorial_sources(source_id),
+    external_id varchar(512) not null,
+    title text not null,
+    summary text,
+    url text not null,
+    author varchar(512),
+    published_at timestamptz,
+    discovered_at timestamptz not null,
+    fingerprint varchar(128) not null,
+    status varchar(32) not null default 'NEW',
+    unique (source_id, external_id)
+);
+create index if not exists idx_editorial_source_signals_new on editorial_source_signals(status, discovered_at);

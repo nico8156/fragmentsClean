@@ -5,6 +5,8 @@ import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.seconda
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.models.*;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.ClaimEditorialSourceConsultationCommand;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.ClaimEditorialSourceConsultationCommandHandler;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.repositories.JdbcSourceSignalRepository;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.models.SourceSignal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,10 +22,11 @@ class JdbcEditorialSourceRepositoryIT extends AbstractReadJdbcIntegrationTest {
     @Autowired JdbcEditorialSourceRepository repository;
     @Autowired JdbcTemplate jdbc;
     @Autowired ClaimEditorialSourceConsultationCommandHandler claimHandler;
+    @Autowired JdbcSourceSignalRepository signals;
     private final UUID sourceId = UUID.fromString("11111111-1111-4111-8111-111111111111");
     private final Instant now = Instant.parse("2026-09-08T10:00:00Z");
 
-    @AfterEach void cleanup() { jdbc.update("DELETE FROM editorial_sources WHERE source_id = ?", sourceId); }
+    @AfterEach void cleanup() { jdbc.update("DELETE FROM editorial_source_signals WHERE source_id = ?", sourceId); jdbc.update("DELETE FROM editorial_sources WHERE source_id = ?", sourceId); }
 
     @Test
     void persists_checkpoint_and_returns_only_due_unleased_sources() {
@@ -56,5 +59,20 @@ class JdbcEditorialSourceRepositoryIT extends AbstractReadJdbcIntegrationTest {
         claimHandler.execute(new ClaimEditorialSourceConsultationCommand(sourceId, "integration-worker", runtimeNow.plusSeconds(60)));
 
         assertThat(repository.byId(sourceId).orElseThrow().snapshot().leaseOwner()).isEqualTo("integration-worker");
+    }
+
+    @Test
+    void ignores_a_duplicate_provider_item_for_the_same_source() {
+        var source = EditorialSource.register(sourceId, "SCA", EditorialSourceAccessMode.RSS,
+                EditorialAuthorityLevel.AUTHORITATIVE, "https://sca.coffee/news", Duration.ofHours(6), now);
+        repository.save(source);
+        var first = new SourceSignal(UUID.randomUUID(), sourceId, "external-1", "Title", null,
+                "https://sca.coffee/news/1", null, now, now, "fingerprint-1");
+        var replay = new SourceSignal(UUID.randomUUID(), sourceId, "external-1", "Changed title", null,
+                "https://sca.coffee/news/1", null, now, now, "fingerprint-2");
+
+        assertThat(signals.saveIgnoringDuplicate(java.util.List.of(first))).isEqualTo(1);
+        assertThat(signals.saveIgnoringDuplicate(java.util.List.of(replay))).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM editorial_source_signals WHERE source_id = ?", Integer.class, sourceId)).isEqualTo(1);
     }
 }
