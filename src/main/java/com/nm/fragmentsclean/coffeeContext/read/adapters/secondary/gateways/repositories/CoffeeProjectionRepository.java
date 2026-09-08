@@ -35,6 +35,7 @@ public interface CoffeeProjectionRepository {
 
 	default void markArchived(UUID coffeeId, long version, java.time.Instant updatedAt) { }
 	default void markPublished(UUID coffeeId, long version, java.time.Instant updatedAt) { }
+	default void markDraft(UUID coffeeId, long version, java.time.Instant updatedAt) { }
 
 	default CoffeeProjectionMutation markArchivedIfNewer(UUID coffeeId, long version, Instant changedAt) {
 		markArchived(coffeeId, version, changedAt);
@@ -43,6 +44,11 @@ public interface CoffeeProjectionRepository {
 
 	default CoffeeProjectionMutation markPublishedIfNewer(UUID coffeeId, long version, Instant changedAt) {
 		markPublished(coffeeId, version, changedAt);
+		return CoffeeProjectionMutation.applied(version, changedAt);
+	}
+
+	default CoffeeProjectionMutation markDraftIfNewer(UUID coffeeId, long version, Instant changedAt) {
+		markDraft(coffeeId, version, changedAt);
 		return CoffeeProjectionMutation.applied(version, changedAt);
 	}
 

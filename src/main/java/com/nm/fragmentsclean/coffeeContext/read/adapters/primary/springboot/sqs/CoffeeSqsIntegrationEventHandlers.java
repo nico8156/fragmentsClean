@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoDeletedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosImportedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePhotosArrangedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.read.CoffeePublishedEventHandler;
+import com.nm.fragmentsclean.coffeeContext.read.CoffeeUnpublishedEventHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeDeletedMediaCleanupHandler;
 import com.nm.fragmentsclean.coffeeContext.businessLogic.processManagers.CoffeeCreatedIntegrationEnrichmentHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
@@ -67,6 +68,12 @@ public class CoffeeSqsIntegrationEventHandlers {
     SqsIntegrationEventHandler coffeePublishedSqsIntegrationEventHandler(CoffeePublishedEventHandler handler) {
         return readAndHandle("coffee.published", CoffeePublishedIntegrationEvent.class,
                 event -> handler.handle(CoffeeIntegrationEventAcl.published(event)));
+    }
+
+    @Bean
+    SqsIntegrationEventHandler coffeeUnpublishedSqsIntegrationEventHandler(CoffeeUnpublishedEventHandler handler) {
+        return readAndHandle("coffee.unpublished", CoffeeLifecycleIntegrationEvent.class,
+                event -> handler.handle(CoffeeIntegrationEventAcl.unpublished(event)));
     }
 
     @Bean

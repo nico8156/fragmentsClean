@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDele
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoDeletedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePublishedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeUnpublishedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GooglePlaceId;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId;
@@ -24,6 +25,9 @@ final class CoffeeIntegrationEventAcl {
     }
     static CoffeePublishedEvent published(CoffeePublishedIntegrationEvent e) {
         return new CoffeePublishedEvent(e.eventId(), e.commandId(), new CoffeeId(e.coffeeId()), e.version(), e.occurredAt(), null);
+    }
+    static CoffeeUnpublishedEvent unpublished(CoffeeLifecycleIntegrationEvent e) {
+        return new CoffeeUnpublishedEvent(e.eventId(), e.commandId(), new CoffeeId(e.coffeeId()), e.version(), e.occurredAt(), null);
     }
     static CoffeeOpeningHoursImportedEvent openingHours(CoffeeOpeningHoursImportedIntegrationEvent e) {
         return new CoffeeOpeningHoursImportedEvent(e.eventId(), e.commandId(), new CoffeeId(e.coffeeId()),
