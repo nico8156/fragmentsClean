@@ -8,11 +8,11 @@ import java.util.UUID;
 /** Owns cadence, local failure policy and the durable lease for one editorial source. */
 public final class EditorialSource {
     private final UUID id;
-    private final String name;
-    private final EditorialSourceAccessMode accessMode;
-    private final EditorialAuthorityLevel authorityLevel;
-    private final String endpoint;
-    private final Duration pollingFrequency;
+    private String name;
+    private EditorialSourceAccessMode accessMode;
+    private EditorialAuthorityLevel authorityLevel;
+    private String endpoint;
+    private Duration pollingFrequency;
     private boolean enabled;
     private EditorialSourceStatus status;
     private Instant lastCheckedAt;
@@ -83,6 +83,33 @@ public final class EditorialSource {
         verifyLeaseOwner(worker, now); text(failureCategory, "failureCategory");
         failureCount++; status = EditorialSourceStatus.DEGRADED;
         nextCheckAt = now.plus(backoffFor(failureCount)); clearLease(); touch();
+    }
+
+    /** Operator decision: changes the definition but never rewrites collected signals or checkpoints. */
+    public void revise(String name, EditorialSourceAccessMode accessMode,
+                       EditorialAuthorityLevel authorityLevel, String endpoint,
+                       Duration pollingFrequency, Instant now) {
+        if (hasActiveLeaseAt(required(now, "now"))) {
+            throw new IllegalStateException("A source being consulted cannot be revised");
+        }
+        this.name = text(name, "name");
+        this.accessMode = required(accessMode, "accessMode");
+        this.authorityLevel = required(authorityLevel, "authorityLevel");
+        this.endpoint = text(endpoint, "endpoint");
+        this.pollingFrequency = validFrequency(pollingFrequency);
+        this.nextCheckAt = now;
+        touch();
+    }
+
+    public void enable(Instant now) {
+        if (enabled) return;
+        enabled = true; status = EditorialSourceStatus.HEALTHY; nextCheckAt = required(now, "now");
+        touch();
+    }
+
+    public void disable() {
+        if (!enabled) return;
+        enabled = false; status = EditorialSourceStatus.DISABLED; clearLease(); touch();
     }
 
     public Snapshot snapshot() { return new Snapshot(id, name, accessMode, authorityLevel, endpoint, pollingFrequency, enabled, status, lastCheckedAt, lastSuccessfulCheckAt, nextCheckAt, failureCount, leaseOwner, leaseUntil, checkpoint, version); }

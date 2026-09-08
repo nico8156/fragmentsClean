@@ -42,6 +42,20 @@ It does not own sources, signals or candidates.
 `adminImportContext` remains the Studio ACL. Studio never writes editorial or
 article tables directly.
 
+## Studio source cockpit
+
+The phase-6 administrative contract exposes source definitions, operational
+state/checkpoints and immutable collected signals. A Studio request contains
+only primitives; `adminImportContext` maps it through an ACL port to a named
+`editorialIntelligenceContext` command. The controller neither sees the
+`EditorialSource` aggregate nor queries its tables directly.
+
+An operator may revise a source, pause it, or reactivate it. A source under an
+active collection lease cannot be revised, preventing a definition from changing
+while a provider response is being normalized. Pause preserves checkpoints and
+signals; reactivation makes the source due immediately. Signal classification,
+retention and topic grouping deliberately remain phase 7 responsibilities.
+
 ## Boundary contract
 
 A retained candidate can start authoring with a primitive-only `ArticleBrief`:

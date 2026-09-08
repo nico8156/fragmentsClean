@@ -36,8 +36,8 @@ public class JdbcEditorialSourceRepository implements EditorialSourceRepository 
                     s.id(), s.name(), s.accessMode().name(), s.authorityLevel().name(), s.endpoint(), s.pollingFrequency().toSeconds(), s.enabled(), s.status().name(), timestamp(s.nextCheckAt()), s.failureCount(), 0L);
             return;
         }
-        int updated = jdbc.update("UPDATE editorial_sources SET enabled=?,status=?,last_checked_at=?,last_successful_check_at=?,next_check_at=?,failure_count=?,lease_owner=?,lease_until=?,checkpoint_etag=?,checkpoint_last_modified=?,checkpoint_external_id=?,checkpoint_published_at=?,version=? WHERE source_id=? AND version=?",
-                s.enabled(), s.status().name(), timestamp(s.lastCheckedAt()), timestamp(s.lastSuccessfulCheckAt()), timestamp(s.nextCheckAt()), s.failureCount(), s.leaseOwner(), timestamp(s.leaseUntil()), s.checkpoint().etag(), s.checkpoint().lastModified(), s.checkpoint().lastExternalId(), timestamp(s.checkpoint().lastPublishedAt()), s.version(), s.id(), s.version()-1);
+        int updated = jdbc.update("UPDATE editorial_sources SET name=?,access_mode=?,authority_level=?,endpoint=?,polling_frequency_seconds=?,enabled=?,status=?,last_checked_at=?,last_successful_check_at=?,next_check_at=?,failure_count=?,lease_owner=?,lease_until=?,checkpoint_etag=?,checkpoint_last_modified=?,checkpoint_external_id=?,checkpoint_published_at=?,version=? WHERE source_id=? AND version=?",
+                s.name(), s.accessMode().name(), s.authorityLevel().name(), s.endpoint(), s.pollingFrequency().toSeconds(), s.enabled(), s.status().name(), timestamp(s.lastCheckedAt()), timestamp(s.lastSuccessfulCheckAt()), timestamp(s.nextCheckAt()), s.failureCount(), s.leaseOwner(), timestamp(s.leaseUntil()), s.checkpoint().etag(), s.checkpoint().lastModified(), s.checkpoint().lastExternalId(), timestamp(s.checkpoint().lastPublishedAt()), s.version(), s.id(), s.version()-1);
         if (updated != 1) throw new IllegalStateException("Editorial source version conflict: " + s.id());
     }
 

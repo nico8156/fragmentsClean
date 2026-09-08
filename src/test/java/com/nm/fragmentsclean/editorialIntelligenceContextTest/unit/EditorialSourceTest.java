@@ -65,6 +65,29 @@ class EditorialSourceTest {
                 .hasMessageContaining("lease owner");
     }
 
+    @Test
+    void lets_an_operator_pause_a_source_without_losing_its_checkpoint() {
+        var source = source();
+        source.claimConsultation("worker-a", NOW, NOW.plusSeconds(60));
+        source.completeConsultation(1, "etag", null, "entry", NOW, NOW);
+
+        source.disable();
+
+        assertThat(source.snapshot().enabled()).isFalse();
+        assertThat(source.snapshot().status()).isEqualTo(EditorialSourceStatus.DISABLED);
+        assertThat(source.snapshot().checkpoint().lastExternalId()).isEqualTo("entry");
+    }
+
+    @Test
+    void refuses_to_revise_a_source_while_a_collector_owns_its_lease() {
+        var source = source();
+        source.claimConsultation("worker-a", NOW, NOW.plusSeconds(60));
+
+        assertThatThrownBy(() -> source.revise("Renamed", EditorialSourceAccessMode.RSS,
+                EditorialAuthorityLevel.AUTHORITATIVE, "https://example.test/feed", Duration.ofHours(12), NOW))
+                .hasMessageContaining("being consulted");
+    }
+
     private EditorialSource source() {
         return EditorialSource.register(
                 SOURCE_ID,
