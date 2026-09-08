@@ -1,0 +1,6 @@
+package com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.*; import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.models.*; import org.springframework.stereotype.Component; import java.time.*; import java.util.*;
+/** Calls the analyzer outside its persistence transaction; completion is short and retry-safe. */
+@Component public final class AnalyzeNewEditorialSignals { private final EditorialSignalAnalysisRepository signals;private final EditorialAnalysisPort analysis;private final CompleteEditorialSignalAnalysis completion; public AnalyzeNewEditorialSignals(EditorialSignalAnalysisRepository s,EditorialAnalysisPort a,CompleteEditorialSignalAnalysis c){signals=s;analysis=a;completion=c;}
+ public int execute(int limit){var source=signals.newSignals(limit);if(source.isEmpty())return 0;var started=Instant.now();var result=analysis.analyze(source.stream().map(s->new EditorialAnalysisPort.Signal(s.id(),s.title(),s.summary(),s.url())).toList()); completion.execute(source,result,Duration.between(started,Instant.now()));return result.topics().size();}
+}

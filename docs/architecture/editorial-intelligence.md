@@ -138,11 +138,20 @@ Analysis is independent from collection and runs in batches, initially once a
 day. It classifies new signals, groups nearby themes, compares them with
 existing editorial references and creates or enriches `TopicCandidate`.
 
+`TopicCandidate` is a durable editorial decision object, not an article draft.
+It stores a suggested subject, an angle and immutable references to its source
+signals. Only an explicit human retention may later create an `ArticleBrief`.
+
 LLM calls belong only to this analysis boundary. Each call records a durable
 `GenerationExecution` with operation, model, input/output tokens, estimated
 cost, duration, result and safe failure category. The first release does not
 auto-generate an article: an operator retains, defers or ignores a candidate in
 Studio.
+
+Until the OpenAI analysis adapter is enabled, the MVP uses a deterministic
+adapter that proposes one attributable topic per new signal at zero external
+cost. This keeps the scheduled flow observable and reversible without claiming
+semantic clustering that has not yet been paid for or reviewed.
 
 Authority levels express intended use, not truth by themselves:
 

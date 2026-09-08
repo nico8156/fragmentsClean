@@ -743,3 +743,27 @@ create table if not exists editorial_source_signals (
     unique (source_id, external_id)
 );
 create index if not exists idx_editorial_source_signals_new on editorial_source_signals(status, discovered_at);
+
+-- Analysis output remains separate from article authoring until a human retains it.
+create table if not exists editorial_topic_candidates (
+    topic_candidate_id uuid primary key,
+    subject text not null,
+    suggested_angle text not null,
+    signal_ids_json text not null,
+    detected_at timestamptz not null,
+    status varchar(32) not null
+);
+create index if not exists idx_editorial_topic_candidates_status on editorial_topic_candidates(status, detected_at desc);
+
+create table if not exists editorial_generation_executions (
+    execution_id uuid primary key,
+    operation varchar(64) not null,
+    model varchar(128) not null,
+    input_tokens integer not null check (input_tokens >= 0),
+    output_tokens integer not null check (output_tokens >= 0),
+    estimated_cost numeric(12,6) not null check (estimated_cost >= 0),
+    duration_millis bigint not null check (duration_millis >= 0),
+    outcome varchar(32) not null,
+    occurred_at timestamptz not null
+);
+create index if not exists idx_editorial_generation_executions_occurred on editorial_generation_executions(occurred_at desc);
