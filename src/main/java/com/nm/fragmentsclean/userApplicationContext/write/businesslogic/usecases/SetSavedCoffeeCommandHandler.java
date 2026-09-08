@@ -37,7 +37,13 @@ public class SetSavedCoffeeCommandHandler implements CommandHandler<SetSavedCoff
 			return;
 		}
 
-		SavedCoffee savedCoffee = repository.byId(cmd.savedCoffeeId())
+		var savedCoffeeById = repository.byId(cmd.savedCoffeeId());
+		if (savedCoffeeById.isPresent() && !belongsTo(savedCoffeeById.get(), cmd)) {
+			throw new IllegalStateException("SavedCoffeeId mismatch with user/coffee");
+		}
+
+		SavedCoffee savedCoffee = repository.byUserIdAndCoffeeId(cmd.userId(), cmd.coffeeId())
+				.or(() -> savedCoffeeById)
 				.orElseGet(() -> SavedCoffee.createNew(
 						cmd.savedCoffeeId(),
 						cmd.userId(),
@@ -45,22 +51,24 @@ public class SetSavedCoffeeCommandHandler implements CommandHandler<SetSavedCoff
 						now));
 
 		var snapshot = savedCoffee.toSnapshot();
-		if (!snapshot.userId().equals(cmd.userId()) || !snapshot.coffeeId().equals(cmd.coffeeId())) {
-			throw new IllegalStateException("SavedCoffeeId mismatch with user/coffee");
+		if (savedCoffee.applyState(cmd.value(), now)) {
+			repository.save(savedCoffee);
+			savedCoffee.registerSavedCoffeeSetEvent(commandId, cmd.clientAt(), now);
+
+			savedCoffee.domainEvents().forEach(eventPublisher::publish);
+			savedCoffee.clearDomainEvents();
 		}
-
-		savedCoffee.applyState(cmd.value(), now);
-		repository.save(savedCoffee);
-		savedCoffee.registerSavedCoffeeSetEvent(commandId, cmd.clientAt(), now);
-
-		savedCoffee.domainEvents().forEach(eventPublisher::publish);
-		savedCoffee.clearDomainEvents();
 
 		commandStatusRecorder.markApplied(
 				commandId,
 				"SavedCoffee",
-				cmd.savedCoffeeId().toString(),
+				snapshot.savedCoffeeId().toString(),
 				"user.saved_coffee.set",
 				now);
+	}
+
+	private boolean belongsTo(SavedCoffee savedCoffee, SetSavedCoffeeCommand cmd) {
+		var snapshot = savedCoffee.toSnapshot();
+		return snapshot.userId().equals(cmd.userId()) && snapshot.coffeeId().equals(cmd.coffeeId());
 	}
 }
