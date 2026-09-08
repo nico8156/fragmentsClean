@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.editorialIntelligenceContext.configuration;
 
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.rss.RssEditorialSourceDiscoveryAdapter;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.youtube.YouTubeFeedEditorialSourceDiscoveryAdapter;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.EditorialSourceDiscoveryPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,5 +20,10 @@ public class EditorialIntelligenceConfiguration {
     @Bean
     EditorialSourceDiscoveryPort rssEditorialSourceDiscoveryPort(HttpClient editorialSourceHttpClient) {
         return new RssEditorialSourceDiscoveryAdapter(editorialSourceHttpClient);
+    }
+
+    @Bean
+    EditorialSourceDiscoveryPort youTubeFeedEditorialSourceDiscoveryPort(HttpClient editorialSourceHttpClient) {
+        return new YouTubeFeedEditorialSourceDiscoveryAdapter(editorialSourceHttpClient);
     }
 }

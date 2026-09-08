@@ -84,7 +84,9 @@ state; it never blocks another source.
 
 ## Provider ACL
 
-The initial access modes are RSS and YouTube channel feeds. All adapters follow:
+The initial access modes are RSS and YouTube channel feeds. RSS and YouTube
+Atom adapters are implemented; each remains independently selectable by source
+access mode. All adapters follow:
 
 ```text
 provider XML/JSON
