@@ -98,10 +98,12 @@ Le `userApplicationContext` réagit :
 * `AppUserRepository`
 * `SavedCoffeeRepository`
 
-## Saved coffees
+## Favoris (saved coffees)
 
-Un `SavedCoffee` représente une préférence privée utilisateur : “je veux retrouver
-ce café plus tard”. Il ne remplace pas le like.
+Un `SavedCoffee` représente un favori privé utilisateur : “je veux retrouver ce
+café plus tard”. Il ne remplace pas le like social. `SavedCoffee` reste le nom
+technique du concept pour conserver le contrat existant ; l'interface mobile le
+présente comme un « favori ».
 
 Différences avec `socialContext` :
 
@@ -109,6 +111,13 @@ Différences avec `socialContext` :
 * le saved coffee est une préférence personnelle attachée à un `AppUser` ;
 * il ne participe pas aux entitlements ;
 * il doit être disponible cross-device et offline-first côté mobile.
+
+L'identité métier d'un favori est le couple `(userId, coffeeId)`. Le
+`savedCoffeeId` transporté par un client est un identifiant technique : le use
+case retrouve toujours d'abord le favori existant pour ce couple. Deux appareils
+peuvent donc converger même si l'un d'eux utilise un identifiant différent. Une
+commande qui demande un état déjà atteint est acquittée sans nouvel événement de
+projection.
 
 Le flux mobile attendu est :
 

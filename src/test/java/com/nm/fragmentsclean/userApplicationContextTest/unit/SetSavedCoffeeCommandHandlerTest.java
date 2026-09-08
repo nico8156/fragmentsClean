@@ -21,6 +21,8 @@ class SetSavedCoffeeCommandHandlerTest {
 	private final UUID USER_ID = UUID.fromString("22222222-2222-4222-8222-222222222222");
 	private final UUID COFFEE_ID = UUID.fromString("33333333-3333-4333-8333-333333333333");
 	private final UUID COMMAND_ID = UUID.fromString("44444444-4444-4444-8444-444444444444");
+	private final UUID SECOND_COMMAND_ID = UUID.fromString("55555555-5555-4555-8555-555555555555");
+	private final UUID ANOTHER_CLIENT_SAVED_COFFEE_ID = UUID.fromString("66666666-6666-4666-8666-666666666666");
 
 	private FakeSavedCoffeeRepository repository;
 	private FakeDomainEventPublisher eventPublisher;
@@ -86,6 +88,64 @@ class SetSavedCoffeeCommandHandlerTest {
 		assertThat(repository.allSnapshots()).hasSize(1);
 	}
 
+	@Test
+	void reuses_the_existing_preference_when_another_client_provides_a_different_identifier() {
+		handler.execute(new SetSavedCoffeeCommand(
+				COMMAND_ID.toString(),
+				SAVED_COFFEE_ID,
+				USER_ID,
+				COFFEE_ID,
+				true,
+				Instant.parse("2026-01-01T09:59:00Z")));
+		eventPublisher.published.clear();
+
+		handler.execute(new SetSavedCoffeeCommand(
+				SECOND_COMMAND_ID.toString(),
+				ANOTHER_CLIENT_SAVED_COFFEE_ID,
+				USER_ID,
+				COFFEE_ID,
+				false,
+				Instant.parse("2026-01-01T10:00:00Z")));
+
+		assertThat(repository.allSnapshots()).containsExactly(
+				new SavedCoffee.SavedCoffeeSnapshot(
+						SAVED_COFFEE_ID,
+						USER_ID,
+						COFFEE_ID,
+						false,
+						Instant.parse("2023-10-01T11:00:00Z"),
+						2L));
+		assertThat(eventPublisher.published).hasSize(1);
+		assertThat(((SavedCoffeeSetEvent) eventPublisher.published.getFirst()).savedCoffeeId())
+				.isEqualTo(SAVED_COFFEE_ID);
+		assertThat(commandStatusRecorder.aggregateId).isEqualTo(SAVED_COFFEE_ID.toString());
+	}
+
+	@Test
+	void acknowledges_an_already_reached_desired_state_without_a_new_projection_event() {
+		var command = new SetSavedCoffeeCommand(
+				COMMAND_ID.toString(),
+				SAVED_COFFEE_ID,
+				USER_ID,
+				COFFEE_ID,
+				true,
+				Instant.parse("2026-01-01T09:59:00Z"));
+		handler.execute(command);
+		eventPublisher.published.clear();
+
+		handler.execute(new SetSavedCoffeeCommand(
+				SECOND_COMMAND_ID.toString(),
+				SAVED_COFFEE_ID,
+				USER_ID,
+				COFFEE_ID,
+				true,
+				Instant.parse("2026-01-01T10:00:00Z")));
+
+		assertThat(repository.allSnapshots().getFirst().version()).isEqualTo(1L);
+		assertThat(eventPublisher.published).isEmpty();
+		assertThat(commandStatusRecorder.isApplied(SECOND_COMMAND_ID)).isTrue();
+	}
+
 	private static class FakeSavedCoffeeRepository implements SavedCoffeeRepository {
 		private final Map<UUID, SavedCoffee> byId = new LinkedHashMap<>();
 
@@ -116,11 +176,13 @@ class SetSavedCoffeeCommandHandlerTest {
 
 	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
 		String eventType;
+		String aggregateId;
 		private final Set<UUID> applied = new HashSet<>();
 
 		@Override
 		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
 			this.eventType = eventType;
+			this.aggregateId = aggregateId;
 			applied.add(commandId);
 		}
 
