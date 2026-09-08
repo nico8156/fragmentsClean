@@ -497,6 +497,7 @@ ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS command_id UUID;
 ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS reason VARCHAR(240);
 
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
+CREATE INDEX IF NOT EXISTS ix_admin_audit_log_target_occurred_at ON admin_audit_log (target_type, target_id, occurred_at DESC);
 
 
 CREATE TABLE IF NOT EXISTS app_users (

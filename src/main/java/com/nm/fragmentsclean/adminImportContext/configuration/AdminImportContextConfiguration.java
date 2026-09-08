@@ -29,6 +29,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdmin
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.PreviewGooglePlaceCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RevokeAdminUser;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdminAudit;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ListAdminAuditEntriesForTarget;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGooglePlacesForCoffee;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SaveStudioArticleDraft;
@@ -131,4 +132,9 @@ public class AdminImportContextConfiguration {
 
 	@Bean
 	RecordAdminAudit recordAdminAudit(AdminAuditLogRepository repository) { return new RecordAdminAudit(repository); }
+
+	@Bean
+	ListAdminAuditEntriesForTarget listAdminAuditEntriesForTarget(AdminAuditLogRepository repository) {
+		return new ListAdminAuditEntriesForTarget(repository);
+	}
 }
