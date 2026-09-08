@@ -47,6 +47,13 @@ public final class EditorialSource {
                 null, null, SourceCheckpoint.empty(), 0);
     }
 
+    public static EditorialSource reconstitute(Snapshot snapshot) {
+        return new EditorialSource(snapshot.id(), snapshot.name(), snapshot.accessMode(), snapshot.authorityLevel(),
+                snapshot.endpoint(), snapshot.pollingFrequency(), snapshot.enabled(), snapshot.status(),
+                snapshot.lastCheckedAt(), snapshot.lastSuccessfulCheckAt(), snapshot.nextCheckAt(),
+                snapshot.failureCount(), snapshot.leaseOwner(), snapshot.leaseUntil(), snapshot.checkpoint(), snapshot.version());
+    }
+
     public boolean dueAt(Instant now) { return enabled && !now.isBefore(nextCheckAt) && !hasActiveLeaseAt(now); }
 
     public void claimConsultation(String worker, Instant now, Instant until) {

@@ -702,3 +702,26 @@ create unique index if not exists uq_article_review_approval_revision
     on article_review_approvals(saga_id, revision_id);
 create index if not exists idx_article_review_approval_expiry
     on article_review_approvals(expires_at, consumed_at);
+
+-- Editorial intelligence owns source cadence and provider-neutral checkpoints.
+create table if not exists editorial_sources (
+    source_id uuid primary key,
+    name varchar(255) not null,
+    access_mode varchar(32) not null,
+    authority_level varchar(32) not null,
+    endpoint text not null,
+    polling_frequency_seconds bigint not null check (polling_frequency_seconds > 0),
+    enabled boolean not null,
+    status varchar(32) not null,
+    last_checked_at timestamptz,
+    last_successful_check_at timestamptz,
+    next_check_at timestamptz not null,
+    failure_count integer not null default 0 check (failure_count >= 0),
+    lease_owner varchar(128),
+    lease_until timestamptz,
+    checkpoint_etag varchar(512),
+    checkpoint_external_id varchar(512),
+    checkpoint_published_at timestamptz,
+    version bigint not null check (version >= 0)
+);
+create index if not exists idx_editorial_sources_due on editorial_sources(enabled, next_check_at);
