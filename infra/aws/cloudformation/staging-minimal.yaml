@@ -512,6 +512,23 @@ Resources:
       AlarmActions: [!Ref OperationsAlarmTopic]
       OKActions: [!Ref OperationsAlarmTopic]
 
+  EditorialOperationsDegradedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-editorial-operations-degraded
+      AlarmDescription: Editorial sources, leases, analyses or scheduled article operations require attention.
+      Namespace: Fragments/Staging
+      MetricName: EditorialOperationsDegraded
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: breaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -593,6 +610,13 @@ Resources:
                   StringLike:
                     s3:prefix:
                       - fragments/staging/coffees/*
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: Fragments/Staging
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile

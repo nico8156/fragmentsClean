@@ -767,3 +767,26 @@ create table if not exists editorial_generation_executions (
     occurred_at timestamptz not null
 );
 create index if not exists idx_editorial_generation_executions_occurred on editorial_generation_executions(occurred_at desc);
+
+-- Editorial planning is a durable intent. Scheduler only advances due intents.
+create table if not exists editorial_publication_schedule (
+    schedule_id uuid primary key,
+    article_id uuid not null,
+    revision_id uuid,
+    operation varchar(32) not null check (operation in ('PUBLISH','ARCHIVE')),
+    due_at timestamptz not null,
+    status varchar(32) not null check (status in ('SCHEDULED','CLAIMED','DISPATCHED','COMPLETED','REJECTED','CANCELLED')),
+    lease_owner varchar(128), lease_until timestamptz,
+    rejection_reason text,
+    created_at timestamptz not null,
+    version bigint not null default 0
+);
+alter table editorial_publication_schedule add column if not exists revision_id uuid;
+alter table editorial_publication_schedule add column if not exists rejection_reason text;
+alter table editorial_publication_schedule drop constraint if exists editorial_publication_schedule_status_check;
+alter table editorial_publication_schedule add constraint editorial_publication_schedule_status_check
+    check (status in ('SCHEDULED','CLAIMED','DISPATCHED','COMPLETED','REJECTED','CANCELLED'));
+create index if not exists idx_editorial_publication_schedule_due on editorial_publication_schedule(status,due_at);
+create unique index if not exists uq_editorial_publication_schedule_active_operation
+    on editorial_publication_schedule(article_id, operation)
+    where status in ('SCHEDULED','CLAIMED','DISPATCHED');

@@ -10,10 +10,14 @@ import org.springframework.context.annotation.Configuration;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.ScheduledCommandOutcomePort;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.CommandStatusScheduledOutcomeAdapter;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.CommandStatusRepository;
 
 /** Wiring only: provider HTTP clients remain outside editorial application logic. */
 @Configuration
 public class EditorialIntelligenceConfiguration {
+    @Bean ScheduledCommandOutcomePort scheduledCommandOutcomePort(CommandStatusRepository statuses) { return new CommandStatusScheduledOutcomeAdapter(statuses); }
     @Bean EditorialAnalysisPort editorialAnalysisPort() { return new DeterministicEditorialAnalysisAdapter(); }
     @Bean
     HttpClient editorialSourceHttpClient() {

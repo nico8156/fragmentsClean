@@ -60,6 +60,19 @@
         "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
       }
     },
+    "/api/admin/editorial/topic-candidates": {
+      "get": { "operationId": "listEditorialTopicCandidates", "responses": { "200": { "description": "Editorial topic candidates", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/TopicCandidate" } } } } } } }
+    },
+    "/api/admin/editorial/topic-candidates/{candidateId}/start-authoring": {
+      "post": { "operationId": "startArticleAuthoringFromTopic", "parameters": [{ "name": "candidateId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "202": { "description": "Article authoring accepted" } } }
+    },
+    "/api/admin/editorial/calendar": {
+      "get": { "operationId": "getEditorialCalendarMonth", "parameters": [{ "name": "month", "in": "query", "required": true, "schema": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}$" } }], "responses": { "200": { "description": "Monthly editorial schedule", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EditorialCalendarItem" } } } } } } },
+      "post": { "operationId": "scheduleEditorialOperation", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScheduleEditorialOperation" } } } }, "responses": { "202": { "description": "Durable schedule accepted" } } }
+    },
+    "/api/admin/editorial/calendar/{scheduleId}/cancel": {
+      "post": { "operationId": "cancelEditorialOperation", "parameters": [{ "name": "scheduleId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "202": { "description": "Schedule cancelled" } } }
+    },
     "/api/admin/commands/{commandId}": {
       "get": {
         "operationId": "getAdminCommandStatus",
@@ -80,6 +93,18 @@
       "CommandStatus": {
         "type": "object", "additionalProperties": false, "required": ["commandId", "status"],
         "properties": { "commandId": { "type": "string", "format": "uuid" }, "status": { "type": "string", "enum": ["PENDING", "APPLIED", "REJECTED"] }, "reason": { "type": ["string", "null"] } }
+      },
+      "TopicCandidate": {
+        "type": "object", "additionalProperties": false, "required": ["id", "subject", "suggestedAngle", "signalIds", "status"],
+        "properties": { "id": { "type": "string", "format": "uuid" }, "subject": { "type": "string" }, "suggestedAngle": { "type": "string" }, "signalIds": { "type": "array", "items": { "type": "string", "format": "uuid" } }, "status": { "type": "string", "enum": ["DETECTED", "RETAINED", "DEFERRED", "IGNORED"] } }
+      },
+      "ScheduleEditorialOperation": {
+        "type": "object", "additionalProperties": false, "required": ["articleId", "operation", "dueAt"],
+        "properties": { "articleId": { "type": "string", "format": "uuid" }, "revisionId": { "type": ["string", "null"], "format": "uuid" }, "operation": { "type": "string", "enum": ["PUBLISH", "ARCHIVE"] }, "dueAt": { "type": "string", "format": "date-time" } }
+      },
+      "EditorialCalendarItem": {
+        "type": "object", "additionalProperties": false, "required": ["scheduleId", "articleId", "operation", "dueAt", "status"],
+        "properties": { "scheduleId": { "type": "string", "format": "uuid" }, "articleId": { "type": "string", "format": "uuid" }, "revisionId": { "type": ["string", "null"], "format": "uuid" }, "operation": { "type": "string", "enum": ["PUBLISH", "ARCHIVE"] }, "dueAt": { "type": "string", "format": "date-time" }, "status": { "type": "string", "enum": ["SCHEDULED", "CLAIMED", "DISPATCHED", "COMPLETED", "REJECTED", "CANCELLED"] }, "rejectionReason": { "type": ["string", "null"] } }
       },
       "AdminCoffee": {
         "type": "object", "additionalProperties": false,

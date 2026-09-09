@@ -147,10 +147,59 @@ CloudWatch alarms cover:
 - any visible message remaining in the legacy shared DLQ;
 - source messages older than the configured threshold for three of five
   consecutive one-minute periods.
+- editorial operational degradation, sampled every five minutes from the
+  backend health component; missing samples are also alarming.
 
 The optional `OperationsAlarmEmail` CloudFormation parameter creates an SNS
 email subscription. AWS sends a confirmation message; alarms are not delivered
 to that address until the subscription is confirmed.
+
+## Editorial operations
+
+Inspect the health summary without exposing article or source payloads:
+
+```bash
+curl --silent http://127.0.0.1:8080/actuator/health \
+  | jq '.components.editorialOperationsHealth'
+```
+
+Inspect only actionable state:
+
+```sql
+select source_id,name,status,failure_count,next_check_at,lease_until
+from editorial_sources
+where enabled = true and (status = 'DEGRADED' or lease_until < now());
+
+select schedule_id,article_id,operation,due_at,status,lease_until,rejection_reason
+from editorial_publication_schedule
+where status in ('SCHEDULED','CLAIMED','DISPATCHED','REJECTED')
+order by due_at;
+
+select operation,model,outcome,occurred_at
+from editorial_generation_executions
+where outcome = 'FAILED' and occurred_at >= now() - interval '24 hours'
+order by occurred_at desc;
+```
+
+Recovery rules:
+
+1. Do not edit a lease or schedule row manually.
+2. A failed source follows its persisted backoff. Correct its endpoint or
+   disable it from Studio if the provider is permanently unavailable.
+3. An expired source or schedule lease is reclaimable automatically.
+4. For `DISPATCHED`, inspect `/commands/{scheduleId}`; that endpoint is the
+   source of truth. Never infer publication from the scheduler log alone.
+5. `REJECTED` is a domain decision requiring editorial correction or a new
+   schedule; it must not be blindly retried.
+6. For an SQS DLQ incident, follow the queue-specific redrive procedure above.
+
+The staging probe is managed by `fragments-editorial-health.timer`. Verify it
+with:
+
+```bash
+systemctl status fragments-editorial-health.timer --no-pager
+journalctl -u fragments-editorial-health.service --no-pager -n 50
+```
 
 ## Projection Sync / SSE
 

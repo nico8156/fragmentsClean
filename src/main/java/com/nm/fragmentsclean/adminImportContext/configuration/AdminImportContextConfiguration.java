@@ -13,6 +13,8 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.arti
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.CommandBusEditorialSourceAdministrationAdapter;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.EditorialIntelligenceStudioCatalogAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.TopicCandidateDecisionAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.TopicCandidateStudioCatalogAdapter;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.google.GooglePlacesProperties;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleAuthoringPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleGenerationAuthoringPort;
@@ -25,6 +27,9 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImage
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialSourceAdministrationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialSourceStudioCatalog;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.TopicCandidateDecisionPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.TopicCandidateStudioCatalog;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.RetainedTopicCandidateBriefPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.GooglePlacesGateway;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.UuidGenerator;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportGooglePlaceCoffee;
@@ -44,6 +49,23 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudio
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ManageEditorialSource;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.DecideStudioTopicCandidate;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartArticleGenerationFromTopicCandidate;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.DecideTopicCandidate;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.TopicCandidateRepository;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.ArticleBriefEvidenceRepository;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.CreateArticleBriefFromRetainedCandidate;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.RetainedTopicCandidateBriefAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusScheduledArticleOperationAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.EditorialPlanningAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.EditorialCalendarStudioCatalogAdapter;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.ScheduledArticleOperationPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialPlanningPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialCalendarStudioCatalog;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ManageEditorialPlanning;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.ScheduleArticleOperation;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.CancelArticleOperation;
+import com.nm.fragmentsclean.editorialIntelligenceContext.read.EditorialCalendarCatalog;
 import com.nm.fragmentsclean.editorialIntelligenceContext.read.EditorialSourceCatalog;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort;
@@ -81,6 +103,16 @@ public class AdminImportContextConfiguration {
 	@Bean EditorialSourceAdministrationPort editorialSourceAdministrationPort(CommandBus commandBus) { return new CommandBusEditorialSourceAdministrationAdapter(commandBus); }
 	@Bean EditorialSourceStudioCatalog editorialSourceStudioCatalog(EditorialSourceCatalog catalog) { return new EditorialIntelligenceStudioCatalogAdapter(catalog); }
 	@Bean ManageEditorialSource manageEditorialSource(EditorialSourceAdministrationPort port, UuidGenerator ids) { return new ManageEditorialSource(port, ids); }
+	@Bean TopicCandidateDecisionPort topicCandidateDecisionPort(DecideTopicCandidate decisions) { return new TopicCandidateDecisionAdapter(decisions); }
+	@Bean DecideStudioTopicCandidate decideStudioTopicCandidate(TopicCandidateDecisionPort port) { return new DecideStudioTopicCandidate(port); }
+	@Bean TopicCandidateStudioCatalog topicCandidateStudioCatalog(TopicCandidateRepository candidates) { return new TopicCandidateStudioCatalogAdapter(candidates); }
+	@Bean CreateArticleBriefFromRetainedCandidate createArticleBriefFromRetainedCandidate(TopicCandidateRepository candidates, ArticleBriefEvidenceRepository evidence) { return new CreateArticleBriefFromRetainedCandidate(candidates, evidence); }
+	@Bean RetainedTopicCandidateBriefPort retainedTopicCandidateBriefPort(CreateArticleBriefFromRetainedCandidate briefs) { return new RetainedTopicCandidateBriefAdapter(briefs); }
+	@Bean StartArticleGenerationFromTopicCandidate startArticleGenerationFromTopicCandidate(RetainedTopicCandidateBriefPort briefs, StartStudioArticleGeneration articles) { return new StartArticleGenerationFromTopicCandidate(briefs, articles); }
+	@Bean ScheduledArticleOperationPort scheduledArticleOperationPort(CommandBus commandBus) { return new CommandBusScheduledArticleOperationAdapter(commandBus); }
+	@Bean EditorialPlanningPort editorialPlanningPort(ScheduleArticleOperation schedule, CancelArticleOperation cancel) { return new EditorialPlanningAdapter(schedule, cancel); }
+	@Bean EditorialCalendarStudioCatalog editorialCalendarStudioCatalog(EditorialCalendarCatalog catalog) { return new EditorialCalendarStudioCatalogAdapter(catalog); }
+	@Bean ManageEditorialPlanning manageEditorialPlanning(EditorialPlanningPort planning, UuidGenerator ids) { return new ManageEditorialPlanning(planning, ids); }
 
 	@Bean
 	ArticleAuthoringPort articleAuthoringPort(CommandBus commandBus) {

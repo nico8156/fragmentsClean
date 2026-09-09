@@ -1,7 +1,7 @@
 # Editorial Intelligence and Article Lifecycle
 
-Status: RSS collection adapter implemented. No production editorial source is
-enabled by this document.
+Status: phases 1 through 10 implemented locally. Runtime activation and the
+CloudFormation update remain deployment decisions.
 
 ## Purpose
 
@@ -75,6 +75,16 @@ immutable snapshot so that a future source or signal modification cannot change
 the explanation of an existing article. The implementation must use a versioned
 integration event or a documented ACL port; direct SQL and cross-context domain
 imports are forbidden.
+
+The first implementation uses `ArticleBriefV1`, a primitive-only immutable
+handoff object. It is constructed only after a candidate is `RETAINED`. Its
+evidence is resolved inside `editorialIntelligenceContext` by joining that
+context's own signal and source tables; missing evidence rejects the hand-off.
+The admin ACL copies subject, angle, candidate identity and attributable source
+references into the existing article-generation theme. `articleContext`
+therefore receives an immutable, source-grounded request, never the candidate,
+its repository, or an editorial domain object. Persisting provenance as a
+separately queryable article field remains a future compatible contract change.
 
 ## Collection flow
 
@@ -171,6 +181,100 @@ Authority levels express intended use, not truth by themselves:
 8. `ArticleBrief` refactor and retained-candidate hand-off to `articleContext`.
 9. Editorial calendar, scheduled publication/depublication and rotation.
 10. DLQ, metrics, alerts and operational hardening.
+
+## Operational hardening
+
+Editorial collection and planning currently run as durable database-backed
+jobs, not as SQS consumers. They therefore recover through optimistic versions,
+leases, persisted retry dates and canonical command status. Creating an
+editorial DLQ without an editorial queue would give a false recovery guarantee.
+All integration-event queues continue to use the platform rule: one source
+queue, one DLQ, inbox idempotence, no delete before successful handling, and a
+bounded operator-controlled redrive.
+
+`editorialOperationsHealth` observes only tables owned by
+`editorialIntelligenceContext`. It reports degraded sources, expired source and
+planning leases, overdue scheduled operations, stale dispatched commands,
+rejected operations and failed analyses during the last 24 hours. These are
+Micrometer gauges and Actuator health details; they never drive a domain
+transition.
+
+In staging, a five-minute systemd probe exports only the aggregate
+`EditorialOperationsDegraded` value to the `Fragments/Staging` CloudWatch
+namespace. CloudWatch alerts through the existing operations SNS topic. The EC2
+role can publish only to that namespace. Missing probe data is considered an
+alarm, because absence of monitoring is not healthy.
+
+Dispatch failure handling distinguishes two situations using the canonical
+command status:
+
+```text
+adapter throws + command PENDING
+-> retain CLAIMED state
+-> lease expires
+-> safe retry with the same scheduleId/commandId
+
+adapter throws + command APPLIED or REJECTED
+-> mark DISPATCHED
+-> normal reconciliation records the terminal result
+```
+
+The schedule id remains the idempotency key. A scheduler exception is isolated
+to reconciliation or dispatch and is logged with the worker identity; one half
+of the tick does not suppress the other.
+
+## Editorial planning
+
+Planning stores a durable `EditorialPublicationSchedule` intent with `PUBLISH`
+or `ARCHIVE`, a due date, optimistic version and a short execution lease. Its
+states are:
+
+```text
+SCHEDULED -> CLAIMED -> DISPATCHED -> COMPLETED
+                                `-> REJECTED
+SCHEDULED -> CANCELLED
+CLAIMED -- lease expiry --> CLAIMED by another worker
+```
+
+The scheduler runs every minute when
+`fragments.editorial.planning.schedule.enabled=true`. It first reconciles
+dispatched work, then claims at most twenty due operations for five minutes.
+Remote or cross-context work never happens in the claim transaction.
+
+`scheduleId` is also the article command id. A crash after dispatch and before
+the `DISPATCHED` transition can therefore resend the same command without
+duplicating the article transition. A schedule becomes `COMPLETED` only after
+the canonical command-status store reports `APPLIED`; a business rejection is
+persisted as `REJECTED` with its safe reason. Merely dispatching a command is
+never reported as publication success.
+
+The current transport is an explicit primitive ACL in `adminImportContext`:
+
+```text
+editorial schedule
+-> ScheduledArticleOperationPort (primitives)
+-> admin ACL adapter
+-> articleContext PublishArticleRevisionCommand / ArchiveArticleCommand
+-> article aggregate and publication policy
+-> command status
+-> schedule reconciliation
+```
+
+This is documented modular-monolith debt, isolated behind a replaceable port.
+The target when editorial planning is split operationally is a versioned
+integration command/event route with its own SQS destination and inbox. No
+editorial class imports an article class today.
+
+At execution time, `articleContext` remains the sole owner of approval,
+revision and capacity rules. Its hard limit of 30 published articles is the
+single invariant. Rotation is intentionally explicit: Studio schedules an
+`ARCHIVE` before or alongside a publication. Phase 9 never guesses which
+article should disappear and never physically deletes content.
+
+The Studio calendar is a GET-backed monthly read model. Redux listeners own
+side effects; the HTTP adapter performs strict transport validation. Operators
+can schedule publication/archive and cancel only `SCHEDULED` work. Claimed,
+dispatched and terminal operations remain visible for audit.
 
 ## Required tests
 

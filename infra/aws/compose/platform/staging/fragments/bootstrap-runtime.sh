@@ -44,6 +44,8 @@ write_env EDITORIAL_EMAIL_STUDIO_BASE_URL https://studio-staging.anchor-event.fr
 write_env EDITORIAL_EMAIL_REGION "$aws_region"
 write_env EDITORIAL_APPROVAL_SECRET "$runtime_editorial_approval_secret"
 write_env EDITORIAL_APPROVAL_TTL PT24H
+write_env EDITORIAL_PLANNING_SCHEDULE_ENABLED true
+write_env EDITORIAL_PLANNING_SCHEDULE_DELAY_MS 60000
 write_env SPRING_PROFILES_ACTIVE prod
 write_env AWS_REGION "$aws_region"
 write_env FRAGMENTS_EDGE_NETWORK fragments-staging-edge
