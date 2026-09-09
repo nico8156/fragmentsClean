@@ -18,6 +18,7 @@ class EditorialSchedulerRuntimeConfigurationTest {
                 .contains("EDITORIAL_DISCOVERY_SCHEDULE_ENABLED true")
                 .contains("EDITORIAL_DISCOVERY_SCHEDULE_DELAY_MS 900000")
                 .contains("EDITORIAL_ANALYSIS_SCHEDULE_ENABLED true")
+                .contains("EDITORIAL_ANALYSIS_SCHEDULE_INITIAL_DELAY_MS 300000")
                 .contains("EDITORIAL_ANALYSIS_SCHEDULE_DELAY_MS 86400000");
         assertThat(properties)
                 .contains("fragments.editorial.discovery.schedule.enabled=${EDITORIAL_DISCOVERY_SCHEDULE_ENABLED:false}")
