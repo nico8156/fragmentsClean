@@ -36,9 +36,13 @@ public final class ArticleGenerationRequestedSqsIntegrationEventHandler implemen
     @Override public SqsIntegrationEventRoute route() { return new SqsIntegrationEventRoute(ARTICLES_EVENTS, "article.generation.requested"); }
     @Override public void handle(IntegrationEventEnvelope envelope) {
         var request=payloadReader.read(envelope, ArticleGenerationRequestedIntegrationEvent.class);
+        // Keep malformed integration messages from claiming a durable lease.
+        // Normal write-side validation already rejects them before outbox; this
+        // remains a defensive transport boundary for replayed or malformed data.
+        var subject=ArticleSubject.from(request.theme());
         var now=Instant.now(); var work=claimer.claim(request.sagaId(), "article-generation-"+UUID.randomUUID(), now, Duration.ofMinutes(5));
         try {
-            var result=provider.generate(new ArticleGenerationProvider.Request(request.sagaId(), ArticleSubject.from(request.theme()), request.locale()));
+            var result=provider.generate(new ArticleGenerationProvider.Request(request.sagaId(), subject, request.locale()));
             var enriched=media.generate(request.sagaId(),request.articleId(),result.draft());
             completer.complete(work, "openai", result.providerResponseId(), result.model(), result.schemaVersion(), enriched, Instant.now());
         } catch (RuntimeException failure) {

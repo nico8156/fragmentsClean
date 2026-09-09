@@ -80,11 +80,13 @@ The first implementation uses `ArticleBriefV1`, a primitive-only immutable
 handoff object. It is constructed only after a candidate is `RETAINED`. Its
 evidence is resolved inside `editorialIntelligenceContext` by joining that
 context's own signal and source tables; missing evidence rejects the hand-off.
-The admin ACL copies subject, angle, candidate identity and attributable source
-references into the existing article-generation theme. `articleContext`
-therefore receives an immutable, source-grounded request, never the candidate,
-its repository, or an editorial domain object. Persisting provenance as a
-separately queryable article field remains a future compatible contract change.
+The admin ACL currently passes the retained candidate's canonical subject into
+the existing article-generation command. The subject is deliberately bounded by
+`articleContext`; provenance and the potentially large source summaries remain
+owned by `editorialIntelligenceContext` rather than being concatenated into a
+prompt-shaped theme. A future source-grounded generation contract must add a
+separate, versioned bounded brief field; it must not overload the article
+subject or cross the context boundary with editorial entities.
 
 ## Collection flow
 

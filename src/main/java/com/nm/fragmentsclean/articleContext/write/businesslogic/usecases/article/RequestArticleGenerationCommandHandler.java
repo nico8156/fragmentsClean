@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.reposit
 import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleAuthoringObservability;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleAggregate;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleGenerationRequestedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleSubject;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleAuthoringSaga;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -43,11 +44,14 @@ public class RequestArticleGenerationCommandHandler implements CommandHandler<Re
         Objects.requireNonNull(command, "command");
         if (statuses.isApplied(command.commandId())) return;
         if (sagas.byId(command.sagaId()).isPresent()) throw new IllegalStateException("Generation saga already exists");
+        // Validate before persisting or enqueueing. A malformed theme is a command
+        // rejection, never an asynchronous worker failure with a stranded lease.
+        var subject = ArticleSubject.from(command.theme());
         var now = clock.now();
         articles.save(ArticleAggregate.awaitingGeneration(command.articleId(), command.slug(), command.locale(),
                 command.authorId(), command.authorName(), now));
         var saga = ArticleAuthoringSaga.request(command.sagaId(), command.articleId(), command.revisionId(),
-                command.theme(), command.trigger(), now);
+                subject.value(), command.trigger(), now);
         // Persist the REQUESTED snapshot first. The transition increments the
         // optimistic version and must therefore be persisted as an UPDATE.
         sagas.save(saga);

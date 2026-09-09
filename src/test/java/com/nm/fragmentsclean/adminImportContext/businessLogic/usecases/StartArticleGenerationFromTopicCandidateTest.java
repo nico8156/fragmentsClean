@@ -27,10 +27,7 @@ class StartArticleGenerationFromTopicCandidateTest {
 
         useCase.execute(candidateId, "fr-FR", UUID.randomUUID(), "Nicolas");
 
-        assertThat(authoring.command.subject()).contains(
-                "Le climat transforme le café — Comprendre son influence sur le goût",
-                "Candidat éditorial: " + candidateId,
-                "SCA (AUTHORITATIVE): https://sca.coffee/climate");
+        assertThat(authoring.command.subject()).isEqualTo("Le climat transforme le café");
         assertThat(authoring.command.locale()).isEqualTo("fr-FR");
     }
 

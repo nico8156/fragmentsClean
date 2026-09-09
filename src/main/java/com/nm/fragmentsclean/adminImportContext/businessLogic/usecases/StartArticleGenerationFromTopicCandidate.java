@@ -18,13 +18,11 @@ public final class StartArticleGenerationFromTopicCandidate {
     public StudioArticleGenerationResult execute(UUID candidateId, String locale,
                                                   UUID operatorId, String operatorName) {
         var brief = briefs.load(candidateId, locale);
-        String sources = brief.provenance().stream()
-                .map(source -> "- " + source.sourceName() + " (" + source.authorityLevel() + "): " + source.sourceUrl())
-                .collect(java.util.stream.Collectors.joining("\n"));
-        String groundedSubject = brief.subject() + " — " + brief.editorialAngle()
-                + "\nCandidat éditorial: " + brief.candidateId()
-                + "\nSources à citer et vérifier:\n" + sources;
+        // The article command's theme is a bounded value (max 240 characters).
+        // Provenance remains owned by editorialIntelligenceContext; it must not be
+        // smuggled into the article subject as an unbounded prompt.
+        String subject = brief.subject();
         return articles.execute(new StudioArticleGenerationRequest(
-                groundedSubject, brief.locale(), operatorId, operatorName));
+                subject, brief.locale(), operatorId, operatorName));
     }
 }
