@@ -2,8 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configura
 
 import java.util.List;
 
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.stereotype.Component;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -15,7 +14,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandle
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
 @Component
-public class BusHandlerRegistrationListener {
+public class BusHandlerRegistrationListener implements SmartInitializingSingleton {
 	private final CommandBus commandBus;
 	private final QueryBus querryBus;
 	private final EventBus eventBus;
@@ -40,8 +39,15 @@ public class BusHandlerRegistrationListener {
 		this.eventHandlers = eventHandlers;
 	}
 
-	@EventListener
-	public void onApplicationReady(ApplicationReadyEvent event) {
+	/**
+	 * Registers handlers before the application context is refreshed.
+	 *
+	 * Scheduled jobs may run as soon as Spring activates scheduling; waiting for
+	 * {@code ApplicationReadyEvent} left a small startup window where a job could
+	 * dispatch a valid command before its handler was known by the bus.
+	 */
+	@Override
+	public void afterSingletonsInstantiated() {
 		commandBus.registerCommandHandlers(commandHandlers);
 		commandBus.registerCommandHandlersWithResult(commandHandlersWithResult);
 		querryBus.registerQueryHandlers(queryHandlers);

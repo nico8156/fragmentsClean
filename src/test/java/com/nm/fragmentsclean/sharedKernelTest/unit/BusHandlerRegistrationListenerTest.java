@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BusHandlerRegistrationListenerTest {
 	@Test
-	void registers_all_injected_handlers_on_application_ready() {
+	void registers_all_injected_handlers_before_scheduled_work_can_start() {
 		var commandBus = new CommandBus();
 		var queryBus = new QueryBus();
 		var eventBus = new EventBus();
@@ -40,7 +40,7 @@ class BusHandlerRegistrationListenerTest {
 				List.of(commandWithResultHandler),
 				List.of(queryHandler),
 				List.of(eventHandler))
-				.onApplicationReady(null);
+				.afterSingletonsInstantiated();
 
 		commandBus.dispatch(new TestCommand());
 		var result = commandBus.<String>dispatchWithResult(new TestCommandWithResult());
