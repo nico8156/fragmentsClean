@@ -18,6 +18,7 @@ class BoundedContextArchitectureTest {
             "articleContext",
             "authenticationContext",
             "coffeeContext",
+			"editorialIntelligenceContext",
             "socialContext",
             "ticketContext",
             "userApplicationContext"
@@ -155,8 +156,18 @@ class BoundedContextArchitectureTest {
         String importPath = imported.context() + "." + imported.importPath();
 
         if ("adminImportContext".equals(sourceContext)) {
+            if (sourcePath.endsWith("adminImportContext/configuration/AdminImportContextConfiguration.java")
+                    && "editorialIntelligenceContext".equals(imported.context())) {
+                return true;
+            }
+            if (sourcePath.endsWith("adminImportContext/adapters/secondary/gateways/article/CommandBusScheduledArticleOperationAdapter.java")) {
+                return "articleContext".equals(imported.context()) || "editorialIntelligenceContext".equals(imported.context());
+            }
             if (sourcePath.contains("adminImportContext/adapters/secondary/gateways/article/")) {
                 return "articleContext".equals(imported.context());
+            }
+            if (sourcePath.contains("adminImportContext/adapters/secondary/gateways/editorial/")) {
+                return "editorialIntelligenceContext".equals(imported.context());
             }
             return importPath.equals("coffeeContext.write.businessLogic.usecases.CreateCoffeeCommand")
                     || importPath.equals("coffeeContext.write.businessLogic.gateways.CoffeeGooglePlaceLookupPort")

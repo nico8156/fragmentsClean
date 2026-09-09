@@ -46,6 +46,24 @@ Owns editorial content:
 - publication state
 - article read models
 
+It may receive a primitive-only `ArticleBrief` whose provenance was copied from
+an editorial candidate. It must not read editorial source, signal or candidate
+tables and must not decide which external topics are retained.
+
+### editorialIntelligenceContext
+
+Owns editorial discovery and planning before article writing:
+- declared editorial sources and their polling cadence;
+- source checkpoints, consultation leases and consultation history;
+- immutable source signals and their idempotence;
+- topic candidates, their sources, relevance and human retention decision;
+- editorial planning read models.
+
+It does not own articles, revisions, article authoring sagas, approval or
+publication. It cannot publish, edit or archive an article. When an operator
+retains a candidate, the boundary exposes only a primitive snapshot suitable
+for an `ArticleBrief`; article creation remains an `articleContext` command.
+
 ### socialContext
 
 Owns social interactions:
@@ -88,9 +106,13 @@ producer BC domain event
 -> local read/reference model
 ```
 
+For the editorial hand-off, a retained candidate crosses the boundary through a
+versioned primitive integration contract or a documented ACL port. Neither
+context imports the other context's aggregate, repository, command handler or
+adapter.
+
 ## Temporary Exceptions
 
 Any cross-BC SQL must be documented near the adapter as debt and should expose primitive-only contracts.
 
 New features should not add cross-BC SQL as their default design.
-

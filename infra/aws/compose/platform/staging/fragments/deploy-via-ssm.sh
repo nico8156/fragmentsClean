@@ -35,6 +35,9 @@ download infra/aws/compose/platform/staging/fragments/backup-postgres.sh "$deplo
 download infra/aws/compose/platform/staging/fragments/restore-postgres-drill.sh "$deployment_tmp/restore-postgres-drill.sh"
 download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.service "$deployment_tmp/fragments-postgres-backup.service"
 download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.timer "$deployment_tmp/fragments-postgres-backup.timer"
+download infra/aws/compose/platform/staging/fragments/publish-editorial-health.sh "$deployment_tmp/publish-editorial-health.sh"
+download infra/aws/compose/platform/staging/fragments/fragments-editorial-health.service "$deployment_tmp/fragments-editorial-health.service"
+download infra/aws/compose/platform/staging/fragments/fragments-editorial-health.timer "$deployment_tmp/fragments-editorial-health.timer"
 download src/main/resources/schema.sql "$deployment_tmp/schema.sql"
 
 install -m 0644 "$deployment_tmp/docker-compose.yml" "$runtime_root/docker-compose.yml"
@@ -44,10 +47,14 @@ install -m 0700 "$deployment_tmp/backup-postgres.sh" "$runtime_root/backup-postg
 install -m 0700 "$deployment_tmp/restore-postgres-drill.sh" "$runtime_root/restore-postgres-drill.sh"
 install -m 0644 "$deployment_tmp/fragments-postgres-backup.service" /etc/systemd/system/fragments-postgres-backup.service
 install -m 0644 "$deployment_tmp/fragments-postgres-backup.timer" /etc/systemd/system/fragments-postgres-backup.timer
+install -m 0700 "$deployment_tmp/publish-editorial-health.sh" "$runtime_root/publish-editorial-health.sh"
+install -m 0644 "$deployment_tmp/fragments-editorial-health.service" /etc/systemd/system/fragments-editorial-health.service
+install -m 0644 "$deployment_tmp/fragments-editorial-health.timer" /etc/systemd/system/fragments-editorial-health.timer
 
 "$runtime_root/bootstrap-runtime.sh" "$backend_image"
 systemctl daemon-reload
 systemctl enable --now fragments-postgres-backup.timer
+systemctl enable --now fragments-editorial-health.timer
 
 registry=${backend_image%%/*}
 aws ecr get-login-password --region "$aws_region" \

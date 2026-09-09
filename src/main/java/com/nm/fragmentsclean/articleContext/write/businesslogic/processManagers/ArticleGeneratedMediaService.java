@@ -3,10 +3,12 @@ import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.*;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleImageRef;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.GeneratedArticleDraft;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Component
+@ConditionalOnProperty(name = "fragments.article.generation.openai.enabled", havingValue = "true")
 public final class ArticleGeneratedMediaService {
     private final ArticleImageGenerationProvider generator; private final GeneratedArticleImageStorage storage;
     public ArticleGeneratedMediaService(ArticleImageGenerationProvider generator,GeneratedArticleImageStorage storage){this.generator=generator;this.storage=storage;}

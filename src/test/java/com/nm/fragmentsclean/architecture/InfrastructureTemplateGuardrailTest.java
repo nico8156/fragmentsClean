@@ -51,4 +51,22 @@ class InfrastructureTemplateGuardrailTest {
                 .contains("MetricName: ApproximateAgeOfOldestMessage")
                 .contains("MetricName: ApproximateNumberOfMessagesVisible");
     }
+
+    @Test
+    void editorial_health_has_a_scoped_cloudwatch_metric_and_operator_alarm() throws IOException {
+        String template = Files.readString(STAGING_TEMPLATE);
+        String deployment = Files.readString(Path.of(
+                "infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh"));
+
+        assertThat(template)
+                .contains("EditorialOperationsDegradedAlarm:")
+                .contains("MetricName: EditorialOperationsDegraded")
+                .contains("cloudwatch:PutMetricData")
+                .contains("cloudwatch:namespace: Fragments/Staging")
+                .contains("TreatMissingData: breaching");
+        assertThat(deployment)
+                .contains("publish-editorial-health.sh")
+                .contains("fragments-editorial-health.timer")
+                .contains("systemctl enable --now fragments-editorial-health.timer");
+    }
 }

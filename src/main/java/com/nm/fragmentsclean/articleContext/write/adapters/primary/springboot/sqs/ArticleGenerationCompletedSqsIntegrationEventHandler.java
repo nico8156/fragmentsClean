@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Component;
 
 import com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers.ArticleReviewEmailNotificationService;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleReviewEmailPort;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventHandler;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventPayloadReader;
@@ -13,7 +14,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsInt
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 
 @Component
-@ConditionalOnBean(ArticleReviewEmailNotificationService.class)
+@ConditionalOnBean(ArticleReviewEmailPort.class)
 public final class ArticleGenerationCompletedSqsIntegrationEventHandler implements SqsIntegrationEventHandler {
 	private final SqsIntegrationEventPayloadReader payloadReader;
 	private final ArticleReviewEmailNotificationService notifications;

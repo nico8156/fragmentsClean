@@ -702,3 +702,91 @@ create unique index if not exists uq_article_review_approval_revision
     on article_review_approvals(saga_id, revision_id);
 create index if not exists idx_article_review_approval_expiry
     on article_review_approvals(expires_at, consumed_at);
+
+-- Editorial intelligence owns source cadence and provider-neutral checkpoints.
+create table if not exists editorial_sources (
+    source_id uuid primary key,
+    name varchar(255) not null,
+    access_mode varchar(32) not null,
+    authority_level varchar(32) not null,
+    endpoint text not null,
+    polling_frequency_seconds bigint not null check (polling_frequency_seconds > 0),
+    enabled boolean not null,
+    status varchar(32) not null,
+    last_checked_at timestamptz,
+    last_successful_check_at timestamptz,
+    next_check_at timestamptz not null,
+    failure_count integer not null default 0 check (failure_count >= 0),
+    lease_owner varchar(128),
+    lease_until timestamptz,
+    checkpoint_etag varchar(512),
+    checkpoint_last_modified varchar(512),
+    checkpoint_external_id varchar(512),
+    checkpoint_published_at timestamptz,
+    version bigint not null check (version >= 0)
+);
+alter table editorial_sources add column if not exists checkpoint_last_modified varchar(512);
+create index if not exists idx_editorial_sources_due on editorial_sources(enabled, next_check_at);
+
+create table if not exists editorial_source_signals (
+    signal_id uuid primary key,
+    source_id uuid not null references editorial_sources(source_id),
+    external_id varchar(512) not null,
+    title text not null,
+    summary text,
+    url text not null,
+    author varchar(512),
+    published_at timestamptz,
+    discovered_at timestamptz not null,
+    fingerprint varchar(128) not null,
+    status varchar(32) not null default 'NEW',
+    unique (source_id, external_id)
+);
+create index if not exists idx_editorial_source_signals_new on editorial_source_signals(status, discovered_at);
+
+-- Analysis output remains separate from article authoring until a human retains it.
+create table if not exists editorial_topic_candidates (
+    topic_candidate_id uuid primary key,
+    subject text not null,
+    suggested_angle text not null,
+    signal_ids_json text not null,
+    detected_at timestamptz not null,
+    status varchar(32) not null
+);
+create index if not exists idx_editorial_topic_candidates_status on editorial_topic_candidates(status, detected_at desc);
+
+create table if not exists editorial_generation_executions (
+    execution_id uuid primary key,
+    operation varchar(64) not null,
+    model varchar(128) not null,
+    input_tokens integer not null check (input_tokens >= 0),
+    output_tokens integer not null check (output_tokens >= 0),
+    estimated_cost numeric(12,6) not null check (estimated_cost >= 0),
+    duration_millis bigint not null check (duration_millis >= 0),
+    outcome varchar(32) not null,
+    occurred_at timestamptz not null
+);
+create index if not exists idx_editorial_generation_executions_occurred on editorial_generation_executions(occurred_at desc);
+
+-- Editorial planning is a durable intent. Scheduler only advances due intents.
+create table if not exists editorial_publication_schedule (
+    schedule_id uuid primary key,
+    article_id uuid not null,
+    revision_id uuid,
+    operation varchar(32) not null check (operation in ('PUBLISH','ARCHIVE')),
+    due_at timestamptz not null,
+    status varchar(32) not null check (status in ('SCHEDULED','CLAIMED','DISPATCHED','COMPLETED','REJECTED','CANCELLED')),
+    lease_owner varchar(128), lease_until timestamptz,
+    rejection_reason text,
+    created_at timestamptz not null,
+    version bigint not null default 0
+);
+alter table editorial_publication_schedule add column if not exists revision_id uuid;
+alter table editorial_publication_schedule add column if not exists rejection_reason text;
+alter table editorial_publication_schedule drop constraint if exists editorial_publication_schedule_status_check;
+alter table editorial_publication_schedule add constraint editorial_publication_schedule_status_check
+    check (status in ('SCHEDULED','CLAIMED','DISPATCHED','COMPLETED','REJECTED','CANCELLED'));
+create index if not exists idx_editorial_publication_schedule_due on editorial_publication_schedule(status,due_at);
+create unique index if not exists uq_editorial_publication_schedule_active_operation
+    on editorial_publication_schedule(article_id, operation)
+    where status in ('SCHEDULED','CLAIMED','DISPATCHED');

@@ -16,7 +16,10 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.RecordAdm
 		AdminImportPlacesController.class,
 		AdminAccessController.class,
 		AdminStudioArticlesController.class,
-		AdminCommandStatusController.class
+		AdminCommandStatusController.class,
+		AdminEditorialSourcesController.class,
+		AdminTopicCandidatesController.class,
+		AdminEditorialCalendarController.class
 })
 public class AdminImportExceptionHandler {
 	private final RecordAdminAudit audit;
