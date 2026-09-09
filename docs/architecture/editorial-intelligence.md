@@ -148,6 +148,11 @@ Analysis is independent from collection and runs in batches, initially once a
 day. It classifies new signals, groups nearby themes, compares them with
 existing editorial references and creates or enriches `TopicCandidate`.
 
+Staging explicitly enables both schedulers. The first run happens on process
+startup, then collection repeats every fifteen minutes and analysis every
+twenty-four hours. This makes a deployment a deterministic first-run boundary
+without turning editorial analysis into a high-frequency cost source.
+
 `TopicCandidate` is a durable editorial decision object, not an article draft.
 It stores a suggested subject, an angle and immutable references to its source
 signals. Only an explicit human retention may later create an `ArticleBrief`.
