@@ -66,6 +66,9 @@
     "/api/admin/editorial/topic-candidates/{candidateId}/start-authoring": {
       "post": { "operationId": "startArticleAuthoringFromTopic", "parameters": [{ "name": "candidateId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }], "responses": { "202": { "description": "Article authoring accepted" } } }
     },
+    "/api/admin/editorial/sources/analysis": {
+      "post": { "operationId": "analyzePendingEditorialSignals", "responses": { "204": { "description": "Pending editorial signals were analysed" } } }
+    },
     "/api/admin/editorial/calendar": {
       "get": { "operationId": "getEditorialCalendarMonth", "parameters": [{ "name": "month", "in": "query", "required": true, "schema": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}$" } }], "responses": { "200": { "description": "Monthly editorial schedule", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/EditorialCalendarItem" } } } } } } },
       "post": { "operationId": "scheduleEditorialOperation", "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ScheduleEditorialOperation" } } } }, "responses": { "202": { "description": "Durable schedule accepted" } } }

@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.arti
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.article.CommandBusGeneratedArticleEditingPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.coffee.CommandBusCoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.CommandBusEditorialSourceAdministrationAdapter;
+import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.CommandBusEditorialSignalAnalysisAdministrationAdapter;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.EditorialIntelligenceStudioCatalogAdapter;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.TopicCandidateDecisionAdapter;
 import com.nm.fragmentsclean.adminImportContext.adapters.secondary.gateways.editorial.TopicCandidateStudioCatalogAdapter;
@@ -26,6 +27,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.AdminAuditLo
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImageStorage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.CoffeeCreationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialSourceAdministrationPort;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialSignalAnalysisAdministrationPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.EditorialSourceStudioCatalog;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.TopicCandidateDecisionPort;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.TopicCandidateStudioCatalog;
@@ -49,6 +51,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudio
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ManageEditorialSource;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.AnalyzeStudioEditorialSignals;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.DecideStudioTopicCandidate;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartArticleGenerationFromTopicCandidate;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.usecases.DecideTopicCandidate;
@@ -101,8 +104,10 @@ public class AdminImportContextConfiguration {
 	}
 
 	@Bean EditorialSourceAdministrationPort editorialSourceAdministrationPort(CommandBus commandBus) { return new CommandBusEditorialSourceAdministrationAdapter(commandBus); }
+	@Bean EditorialSignalAnalysisAdministrationPort editorialSignalAnalysisAdministrationPort(CommandBus commandBus) { return new CommandBusEditorialSignalAnalysisAdministrationAdapter(commandBus); }
 	@Bean EditorialSourceStudioCatalog editorialSourceStudioCatalog(EditorialSourceCatalog catalog) { return new EditorialIntelligenceStudioCatalogAdapter(catalog); }
 	@Bean ManageEditorialSource manageEditorialSource(EditorialSourceAdministrationPort port, UuidGenerator ids) { return new ManageEditorialSource(port, ids); }
+	@Bean AnalyzeStudioEditorialSignals analyzeStudioEditorialSignals(EditorialSignalAnalysisAdministrationPort port) { return new AnalyzeStudioEditorialSignals(port); }
 	@Bean TopicCandidateDecisionPort topicCandidateDecisionPort(DecideTopicCandidate decisions) { return new TopicCandidateDecisionAdapter(decisions); }
 	@Bean DecideStudioTopicCandidate decideStudioTopicCandidate(TopicCandidateDecisionPort port) { return new DecideStudioTopicCandidate(port); }
 	@Bean TopicCandidateStudioCatalog topicCandidateStudioCatalog(TopicCandidateRepository candidates) { return new TopicCandidateStudioCatalogAdapter(candidates); }

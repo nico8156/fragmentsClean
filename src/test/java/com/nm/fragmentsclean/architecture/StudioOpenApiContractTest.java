@@ -33,6 +33,7 @@ class StudioOpenApiContractTest {
     void editorial_contract_exposes_retained_topic_handoff_and_durable_calendar() throws Exception {
         JsonNode root = new ObjectMapper().readTree(Files.readString(CONTRACT));
         assertThat(root.path("paths").has("/api/admin/editorial/topic-candidates/{candidateId}/start-authoring")).isTrue();
+        assertThat(root.path("paths").has("/api/admin/editorial/sources/analysis")).isTrue();
         assertThat(root.path("paths").has("/api/admin/editorial/calendar")).isTrue();
         assertThat(root.path("paths").has("/api/admin/editorial/calendar/{scheduleId}/cancel")).isTrue();
         assertThat(root.path("components").path("schemas").path("EditorialCalendarItem")

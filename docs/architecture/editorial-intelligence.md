@@ -153,6 +153,14 @@ startup, then collection repeats every fifteen minutes and analysis every
 twenty-four hours. This makes a deployment a deterministic first-run boundary
 without turning editorial analysis into a high-frequency cost source.
 
+Studio also exposes an explicit **Analyze pending signals** operator action.
+It is intended for editorial review and staging verification: Studio calls its
+admin application use case, crosses the primitive ACL, and dispatches
+`AnalyzeEditorialSignalsCommand` through the CommandBus. It invokes exactly
+the same batch use case as the scheduler; it never creates candidates in the
+controller or browser. Studio lists raw signals per source (`NEW` or
+`ANALYZED`) so collection can be verified before candidates exist.
+
 `TopicCandidate` is a durable editorial decision object, not an article draft.
 It stores a suggested subject, an angle and immutable references to its source
 signals. Only an explicit human retention may later create an `ArticleBrief`.
