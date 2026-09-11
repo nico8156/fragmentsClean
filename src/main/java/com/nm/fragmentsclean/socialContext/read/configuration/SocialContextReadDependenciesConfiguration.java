@@ -4,14 +4,22 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.read.GetLikeSummaryQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.ListCommentsQueryHandler;
+import com.nm.fragmentsclean.socialContext.read.ListBlockedUsersQueryHandler;
+import com.nm.fragmentsclean.socialContext.read.ListModerationReportsQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.adapters.secondary.repositories.JdbcLikeProjectionRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jdbc.JdbcSocialAccountDataEraser;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringLikeRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringContentReportRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringUserBlockRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaContentReportRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaUserBlockRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.ContentReportRepository;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.UserBlockRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.SocialAccountDataEraser;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.EraseSocialAccountData;
 import org.springframework.context.annotation.Bean;
@@ -32,6 +40,14 @@ public class SocialContextReadDependenciesConfiguration {
     return new ListCommentsQueryHandler(jdbcTemplate);
   }
 
+  @Bean ListBlockedUsersQueryHandler listBlockedUsersQueryHandler(JdbcTemplate jdbc) {
+    return new ListBlockedUsersQueryHandler(jdbc);
+  }
+
+  @Bean ListModerationReportsQueryHandler listModerationReportsQueryHandler(JdbcTemplate jdbc) {
+    return new ListModerationReportsQueryHandler(jdbc);
+  }
+
   @Bean
   public LikeRepository likeRepository(SpringLikeRepository springLikeRepository) {
     return new JpaLikeRepository(springLikeRepository);
@@ -40,6 +56,14 @@ public class SocialContextReadDependenciesConfiguration {
   @Bean
   public CommentRepository commentRepository(SpringCommentRepository springCommentRepository) {
     return new JpaCommentRepository(springCommentRepository);
+  }
+
+  @Bean public ContentReportRepository contentReportRepository(SpringContentReportRepository repository) {
+    return new JpaContentReportRepository(repository);
+  }
+
+  @Bean public UserBlockRepository userBlockRepository(SpringUserBlockRepository repository) {
+    return new JpaUserBlockRepository(repository);
   }
 
   @Bean

@@ -459,7 +459,7 @@ explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiem
 | 01 | P0 erreurs techniques, rejets métier, vérité et autorisation des statuts | Serveur + mobile + contrats admin concernés | Intégré localement ; aucun rollback sur panne, rejet durable, idempotence et statut réservé au demandeur |
 | 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile | Implémenté localement côté historique/Pass/contrats ; producteur Experience attendu au lot 05 ; justificatif facultatif non retenu à ce stade |
 | 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | Implémenté et testé localement ; activation Apple Developer/SSM et recette iOS signée externes ; extension Experience/media obligatoire aux lots 05/06 |
-| 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | 01 + contrats d'identité ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables |
+| 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | Implémenté et testé localement ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables. Contact public réel, opérateur/SLA et recette déployée restent externes |
 | 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | 02 + socle 03/04 ; brouillon, publication, édition, suppression, listes café/moi, synchronisation, modération et suppression de compte intégrées |
 | 06 | Photos d'expérience et avatar choisi | Serveur + mobile + Studio | 03/05 ; pipeline média sécurisé, upload/reprise, validation réelle, remplacement, modération et nettoyage |
 | 07 | Fondations UI, floating tab bar, carte et fiche café | Mobile, contrats serveur si manque constaté | Fondations préparables après 01 ; intégration finale avec 05/06, navigation et états complets |
@@ -592,14 +592,26 @@ Redux et lint sans erreur nouvelle (un warning historique). L'activation réelle
 du capability Apple, les secrets SSM et une recette de connexion/suppression sur
 build iOS signé restent des prérequis externes.
 
-**04 — Modération existante.** Couvrir les commentaires déjà publics : filtrage,
-motifs de signalement, masquage pour le signalant, blocage/déblocage et lectures
-filtrées, y compris cache/offline. Studio reçoit une file de signalements,
-aperçu/auteur/motif, actions masquer/restaurer et audit. Les opérations suivent
-UI → use case → commande du BC propriétaire → statut/projection ; aucun SQL
-métier direct depuis le contrôleur admin. Définir le responsable opérationnel,
-le contact public et le traitement effectif des signalements, pas seulement les
-boutons. Les règles de communauté et conditions accompagnent le parcours.
+**04 — Modération existante.** Implémenté localement sur les commentaires déjà
+publics : politique de contenu, motifs de signalement, masquage immédiat pour le
+signalant, blocage/déblocage et lectures filtrées, y compris cache/offline. Studio
+dispose d'une file avec aperçu/auteur/motif/compteur, décisions masquer/restaurer,
+motif opérateur, statut canonique et historique d'opération. Les opérations suivent
+UI → use case/listener → commande du `socialContext` propriétaire → outbox/SQS →
+projection ; aucun contrôleur admin ne mute une table ou un read model métier.
+Le runbook documente la prise en charge quotidienne et urgente, mais le vrai
+contact public, l'opérateur désigné et la preuve de traitement sur environnement
+déployé restent des prérequis humains, pas des valeurs à inventer dans le code.
+
+Preuves locales du lot 04 : 354 tests backend verts, dont règles de domaine,
+HTTP/JWT, PostgreSQL, transactional outbox, projection idempotente, restauration,
+effacement de compte et contrats Studio ; 67 suites et 264 tests mobile verts,
+dont outbox offline-first, classification des erreurs HTTP, filtrage personnel et
+rafraîchissement SSE par identité ; 30 fichiers et 143 tests Studio verts, dont
+gateway HTTP, workflow de décision/statut et rendu de la file. TypeScript, contrat
+OpenAPI généré, build Studio de production, configuration native, carte Redux et
+lint sont validés ; le lint mobile conserve un unique warning historique sans
+nouvelle erreur.
 
 **05 — Expériences texte.** Introduire `experienceContext` suivant le contrat
 validé, avec invariants de propriétaire/café,
@@ -693,7 +705,8 @@ simultanées ne doivent pas être additionnées deux fois.
 | 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
 | 02 | Clos et intégré localement ; Astra High puis Sol High | Fenêtre observée d'environ 14:39 à 15:54 CEST, incluant échanges, implémentation et attentes de tests ; temps actif non isolé | Backend `3ff0ca8`/merge `94d8082`, mobile `588f825`/merge `e4952fc` ; producteur Experience différé au lot 05 |
 | 03 | Implémenté et testé localement ; Sol High | Fenêtre observée d'environ 86 min, de 15:54 à 17:20 CEST, incluant exploration, implémentation et attentes de tests ; temps actif non isolé | Backend/mobile complets dans le périmètre actuel ; capability/SSM/build iOS externes, avatar et extensions Experience/media différés explicitement |
-| 04 à 08 | Planifiés, non démarrés | Non démarré | Modération, Experience, médias puis parcours UI/Home |
+| 04 | Implémentation locale en validation ; GPT-5.6 Sol High | Fenêtre observée depuis environ 17:20 CEST ; temps actif non isolé | Domaine et commandes `socialContext`, projections/lectures, outbox mobile, UI et file Studio présents ; suites complètes et intégration Git en cours |
+| 05 à 08 | Planifiés, non démarrés | Non démarré | Experience, médias puis parcours UI/Home |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
@@ -742,6 +755,8 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 2 — lot 02, premier point 2026-09-11 14:39 CEST, avant code fonctionnel | 02A cadrage, 02B historique, 02C Pass/doublons, 02D contrats | 30–60 min de cadrage ; 1–2 jours concentrés d'implémentation après validation | Exploration démarrée ; temps actif non isolé | Seuils/migration à valider puis slices testées | Référence 4–8 jours conservée, à recalculer après cadrage et première slice ; TestFlight/App Review séparés | Ticket retiré du chemin obligatoire ; nouvelle politique Pass, ownership et replay ajoutent du travail ; confiance faible |
 | Prévision 3 — lot 02, clôture 2026-09-11 15:54 CEST | 02A–02D, hors producteur Experience du lot 05 | Référence 1–2 jours après cadrage | Fenêtre observée d'environ 75 min depuis le premier point, incluant échanges et attentes Testcontainers ; temps actif non isolé | Zéro dans le périmètre 02 ; raccord producteur au lot 05 | 3–6 jours concentrés pour 03 à 09, puis délais TestFlight/App Review séparés | Socle eventing/inbox/projection largement réutilisable ; objectif quatre jours plausible, confiance moyenne-faible car médias, UGC, Apple et recette native restent plus incertains |
 | Prévision 4 — lot 03, clôture locale 2026-09-11 17:20 CEST | Profil, Apple, suppression coordonnée des données actuelles | Incluse dans la référence globale 3–6 jours ; pas de fourchette isolée enregistrée avant code | Fenêtre observée d'environ 86 min depuis la clôture 02, incluant exploration, dépendance Expo, implémentation et suites complètes ; temps actif non isolé | Zéro pour le code local du périmètre actuel ; activation Apple/SSM/recette signée externes ; extensions Experience/media prévues | 2–5 jours concentrés pour 04 à 09, puis délais TestFlight/App Review séparés | Forte réutilisation command/outbox/SQS/inbox ; Apple et le processus transverse ont néanmoins demandé une vraie verticale. Confiance moyenne-faible avant UGC/médias/UI |
+| Prévision 5 — lot 04, point avant suites complètes 2026-09-11 18:10 CEST | Modération commentaires, blocage personnel et file Studio | Incluse dans la référence globale 2–5 jours ; pas de fourchette isolée enregistrée avant code | Fenêtre observée d'environ 50 min depuis 17:20, incluant implémentation, génération de contrat, attentes Docker et tests ciblés ; temps actif non isolé | Suites complètes, revue architecturale et intégration Git | 1,5–4 jours concentrés pour 05 à 09, puis TestFlight/App Review séparés | Le socle command/outbox/projection a fortement accéléré la verticale ; médias et recette native restent les plus incertains. Confiance moyenne-faible |
+| Prévision 6 — lot 04, clôture locale 2026-09-11 18:35 CEST | Modération commentaires, blocage personnel et file Studio | Référence 2–5 jours globale conservée ; aucune estimation isolée reconstruite | Fenêtre observée d'environ 75 min depuis 17:20, incluant trois suites complètes, contrôles statiques/build et attentes Docker ; temps actif non isolé | Zéro pour le code local du périmètre ; contact/support réel, opérateur/SLA, migration et recette déployée externes | 1,5–3,5 jours concentrés pour 05 à 09, puis TestFlight/App Review séparés | Réutilisation forte du pipeline de commandes et des projections ; Experience texte est maintenant la prochaine incertitude métier, puis médias et recette native. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -764,6 +779,21 @@ lecture des sources utiles, revalidation après modification. Ses limites sur
 callbacks, middleware et Java imposent une vérification directe du code et des
 tests pour autorisation, transactions et concurrence. Ne pas refaire un audit
 global à chaque slice et ne pas promettre de pourcentage d'économie non mesuré.
+
+Retour lot 04 : FlowAtlas a reconstitué le parcours mobile
+`uiCommentReportRequested -> listener -> optimistic state/outbox -> processOutbox ->
+CommentsWlGateway` en 22 nœuds et 41 arêtes, contexte complet (9 491 octets).
+Il a donc permis de vérifier rapidement que l'intention de modération réutilise
+bien le pipeline offline-first existant. La projection mobile
+`blockedUsersRetrieval` (4 nœuds, 3 arêtes, 2 013 octets) retrouve le cycle du
+thunk, mais pas les dispatches ni l'appel gateway contenus dans son callback.
+Sur Studio, le graphe de la décision
+retrouve correctement événements, listener et état (7 nœuds, 11 arêtes), mais
+ne matérialise pas l'appel au `ModerationGateway` pourtant effectué par le
+listener. Les évolutions prioritaires sont donc la résolution des appels externes
+via paramètres de factory/interfaces injectées et l'analyse du corps des callbacks
+`createAsyncThunk` ; la future couverture Java devra
+ensuite relier contrôleur, commande, handler, agrégat, outbox, SQS et projection.
 
 ### Modèles Codex et niveau d'exigence
 

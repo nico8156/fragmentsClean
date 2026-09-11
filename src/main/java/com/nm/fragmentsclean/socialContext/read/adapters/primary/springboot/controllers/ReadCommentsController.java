@@ -6,6 +6,8 @@ import com.nm.fragmentsclean.socialContext.read.projections.CommentsListView;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @RestController
 @RequestMapping("/api/social/comments")
@@ -23,8 +25,10 @@ public class ReadCommentsController {
             @RequestParam(value = "cursor", required = false) String cursor,
             @RequestParam(value = "limit", defaultValue = "20") int limit,
             @RequestParam(value = "op", defaultValue = "retrieve") String op
+            , @AuthenticationPrincipal Jwt jwt
     ) {
         var query = new ListCommentsQuery(
+                UUID.fromString(jwt.getSubject()),
                 targetId,
                 cursor,
                 limit,

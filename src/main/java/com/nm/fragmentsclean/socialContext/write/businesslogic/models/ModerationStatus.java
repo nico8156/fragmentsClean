@@ -4,5 +4,6 @@ public enum ModerationStatus {
     PUBLISHED,
     PENDING,
     REJECTED,
+    HIDDEN,
     SOFT_DELETED
 }

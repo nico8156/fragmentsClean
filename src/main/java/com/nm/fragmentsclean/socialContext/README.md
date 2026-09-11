@@ -12,6 +12,8 @@ Ce context couvre :
 
 * poser / retirer un like
 * créer / modifier / supprimer un commentaire
+* signaler un commentaire et bloquer/débloquer un auteur pour soi
+* masquer/restaurer un commentaire par une décision opérateur auditée
 * exposer des résumés (count)
 * exposer le statut utilisateur (`me`) : « est-ce que *moi* j’ai liké ? »
 * exposer des listes paginées de commentaires
@@ -122,7 +124,7 @@ socialContext/
 
 * `Like`
 * `Comment`
-* `ModerationStatus`
+* `ModerationStatus`, `ContentReport`, `UserBlock`
 
 ### Events métier
 
@@ -130,6 +132,7 @@ socialContext/
 * `CommentCreatedEvent`
 * `CommentUpdatedEvent`
 * `CommentDeletedEvent`
+* `CommentReportedEvent`, `CommentModeratedEvent`, `UserBlockChangedEvent`
 
 ➡️ Les modifications sociales produisent des **faits métier**.
 
@@ -141,6 +144,7 @@ socialContext/
 * `CreateCommentCommand` / `CreateCommentCommandHandler`
 * `UpdateCommentCommand` / `UpdateCommentCommandHandler`
 * `DeleteCommentCommand` / `DeleteCommentCommandHandler`
+* `ReportCommentCommand`, `SetUserBlockCommand`, `ModerateCommentCommand`
 
 ➡️ Chaque intention UI correspond à un use case explicite.
 
@@ -150,6 +154,7 @@ socialContext/
 
 * `LikeRepository`
 * `CommentRepository`
+* `ContentReportRepository`, `UserBlockRepository`
 
 ➡️ Le domaine dépend d’abstractions.
 
@@ -199,6 +204,12 @@ Le read side ne lit pas le repository JPA write `likes`.
 * `GetLikeSummaryQuery` / handler
 * `GetLikeStatusQueryHandler`
 * `ListCommentsQuery` / handler
+* `ListBlockedUsersQueryHandler`, `ListModerationReportsQueryHandler`
+
+La liste publique reçoit l'identité authentifiée et filtre uniquement à partir
+des projections locales : contenus globalement masqués, commentaires déjà
+signalés par ce demandeur et auteurs bloqués par ce demandeur. Studio passe par
+les mêmes commandes métier ; il ne modifie jamais les tables de projection.
 
 ---
 

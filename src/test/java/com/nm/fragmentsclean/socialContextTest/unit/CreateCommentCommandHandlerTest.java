@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentContentPolicy;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -31,7 +33,20 @@ public class CreateCommentCommandHandlerTest {
     @BeforeEach
     void setup() {
         dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T10:00:00Z");
-        handler = new CreateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider);
+        handler = new CreateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider,
+                new CommentContentPolicy(Set.of("forbidden")));
+    }
+
+    @Test
+    void should_reject_forbidden_content_without_persisting_or_publishing() {
+        assertThatThrownBy(() -> handler.execute(new CreateCommentCommand(
+                CMD_ID, COMMENT_ID, USER_ID, TARGET_ID, null, "Contains FORBIDDEN term",
+                Instant.parse("2023-10-01T09:59:00Z"))))
+                .isInstanceOf(BusinessCommandRejectedException.class)
+                .extracting(error -> ((BusinessCommandRejectedException) error).rejectionCode())
+                .isEqualTo("COMMENT_BODY_FORBIDDEN_TERM");
+        assertThat(commentRepository.allSnapshots()).isEmpty();
+        assertThat(domainEventPublisher.published).isEmpty();
     }
 
     @Test

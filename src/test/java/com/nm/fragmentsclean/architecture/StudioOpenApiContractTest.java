@@ -40,4 +40,16 @@ class StudioOpenApiContractTest {
                 .path("properties").path("status").path("enum").toString())
                 .contains("\"DISPATCHED\"", "\"REJECTED\"", "\"COMPLETED\"");
     }
+
+    @Test
+    void moderation_contract_exposes_queue_decision_and_auditable_shapes() throws Exception {
+        JsonNode root = new ObjectMapper().readTree(Files.readString(CONTRACT));
+        assertThat(root.path("paths").has("/api/admin/moderation/reports")).isTrue();
+        assertThat(root.path("paths").has("/api/admin/moderation/reports/{reportId}/decision")).isTrue();
+        assertThat(root.path("components").path("schemas").path("ModerationReport")
+                .path("required").toString()).contains("\"reportCount\"", "\"actions\"");
+        assertThat(root.path("components").path("schemas").path("ModerateComment")
+                .path("properties").path("decision").path("enum").toString())
+                .isEqualTo("[\"HIDDEN\",\"PUBLISHED\"]");
+    }
 }

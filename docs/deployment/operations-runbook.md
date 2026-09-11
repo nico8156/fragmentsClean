@@ -219,6 +219,38 @@ curl -N -H "Authorization: Bearer $ADMIN_SECURITY_TOKEN" \
 
 SSE must emit projection-oriented events only. It must not emit Domain Events.
 
+## Social moderation
+
+The App Store release requires an explicitly assigned moderation operator and a
+real support address. Before enabling user-generated content in production:
+
+- set `EXPO_PUBLIC_SUPPORT_EMAIL` in the mobile release environment;
+- assign a named Studio operator with the `MODERATOR` or `SUPER_ADMIN` role;
+- review the `OPEN` moderation queue at least once per working day;
+- treat threats, harassment and personal-data exposure as urgent and review them
+  within 24 hours;
+- configure `FRAGMENTS_SOCIAL_MODERATION_FORBIDDEN_TERMS` as a comma-separated
+  list for additional high-confidence phrases. This first barrier supplements,
+  but never replaces, human review.
+
+Studio moderation decisions must go through the domain command endpoint. Their
+persisted Studio operation carries the `commandId`; `/commands/{commandId}` is
+the source of truth after a timeout. Do not edit comments, report projections,
+or moderation-action rows manually.
+
+To triage without exposing unnecessary user content, start with aggregate
+counts:
+
+```sql
+select status,count(*)
+from social_content_reports_projection
+group by status;
+```
+
+Every hide or restore decision is projected in
+`social_moderation_actions_projection`. A restore is a new audited domain
+transition; it must not delete prior history.
+
 ## Coffee Photos
 
 Read model stores stable photo references. S3 or local URLs are resolved at the
