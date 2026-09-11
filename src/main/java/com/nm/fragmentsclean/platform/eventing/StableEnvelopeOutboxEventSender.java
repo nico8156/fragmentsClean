@@ -36,7 +36,9 @@ public class StableEnvelopeOutboxEventSender implements OutboxEventSender {
 
     @Override
     public void send(OutboxEventJpaEntity event) throws Exception {
-        if (localEventBusEnabled) {
+        // Ticket consumers have completed the migration to stable envelopes and
+        // inbox idempotence; the in-process integration publisher handles them.
+        if (localEventBusEnabled && !"Ticket".equals(event.getAggregateType())) {
             eventBusSender.send(event);
         }
 

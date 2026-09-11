@@ -25,8 +25,8 @@ autorisé.
 
 Lot 02 démarré avec Astra High. Décisions produit explicites : **expériences
 possibles sans ticket**, **Pass repensé autour des visites/expériences**, avec
-**tickets nécessaires pour certains niveaux**. Le [cadrage du lot 02](../architecture/experience-pass-contracts.md)
-fait foi pour ces décisions et distingue les seuils encore proposés.
+**tickets nécessaires pour certains niveaux**. Le [contrat du lot 02](../architecture/experience-pass-contracts.md)
+fait foi : les seuils version 2 et la conservation des acquis ont été validés.
 
 ## Conclusion
 
@@ -302,13 +302,13 @@ parcours et participe à certains niveaux du Pass. Voir le
 | Vérification du ticket et déduplication | `ticketContext` | Résultat de vérification distinct d'une preuve de visite ; progression par événements, pas d'accès aux tables d'un autre BC |
 | Référence café | Référence locale du consommateur | Alimentée par événements café ; le rattachement d'un ticket reste conditionnel à une fonction justificatif validée |
 | Expérience et références de ses médias | `experienceContext` | Auteur, café, publication non vide et visibilité ; aucun ticket requis |
-| Progression Pass | Sous-module de `userApplicationContext` proposé | Politique versionnée, contributions locales ticket/experience, niveaux ; suppression du SQL transverse actuel |
+| Progression Pass | Sous-module de `userApplicationContext` | Politique versionnée, contributions locales ticket/experience, niveaux ; SQL transverse supprimé du fonctionnement normal |
 | Nom et avatar publics | `userApplicationContext` | Projection locale du profil dans les consommateurs |
 | Commentaire, like du lieu | `socialContext` | Ne deviennent pas automatiquement des visites |
 | Favori privé | `userApplicationContext` | Le produit possède déjà `savedCoffeeWl`, distinct du Like |
 | Stockage d'objets | Adaptateurs techniques | S3 ne devient pas un domaine ni une table métier partagée sans propriétaire |
 
-Contrats de progression proposés : faits versionnés de contribution Experience
+Contrats de progression implémentés côté consommateur : faits versionnés de contribution Experience
 (id, auteur, café, admissibilité, version) et de résultat ticket. Ne pas transmettre
 l'OCR ou les informations de paiement au Pass ou à Experience. Les références
 métier consommées sont distinctes des vues de feed et des compteurs affichés.
@@ -379,6 +379,8 @@ de l'expansion lorsque le territoire utile est identifié.
 | Studio `existingCoffeePublishRequested` | 13 nœuds, 23 relations, 6 969 octets ; budgets atteints, 12 relations de frontière omises | Bon point d'entrée ; factory regroupant plusieurs opérations, pas un scénario isolé |
 | Mobile `projectionSyncEventReceived` | Événement vers état technique uniquement | Ce Redux event n'est pas le déclencheur des GET ; ceux-ci partent aussi du callback |
 | Mobile `projection.updated`, puis handler de sync | Réception détectée ; sorties du helper de routage absentes | Le code contient des refresh que le graphe ne restitue pas ici |
+| Mobile `ticketRetrieval` | 6 nœuds, 7 relations, 2 474 octets | A ciblé le gateway, le thunk et le reducer avant l'ajout de l'historique paginé |
+| Mobile `entitlementsRetrieval` | 4 nœuds, 3 relations, 1 651 octets | A confirmé le chemin handler → gateway → action → reducer ; la lecture directe a ensuite révélé l'ancien fallback UI hors de ce trajet |
 | Recherches initiales `State:coffee`, `Handler:Home` | Aucun résultat | Recherche lexicale des nœuds ; les états peuvent s'appeler `cfState`, les écrans ne sont pas des handlers |
 
 Les premières recherches vides ne signifiaient donc pas que le connecteur était
@@ -437,7 +439,7 @@ explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiem
 | --- | --- | --- | --- |
 | 00 | Isolation comptes/outbox/cache/SSE, propriétaire ticket, permission | Serveur + mobile | Implémenté et testé localement ; reprise legacy et recette appareil restent ouvertes |
 | 01 | P0 erreurs techniques, rejets métier, vérité et autorisation des statuts | Serveur + mobile + contrats admin concernés | Intégré localement ; aucun rollback sur panne, rejet durable, idempotence et statut réservé au demandeur |
-| 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile + Studio si résolution opérateur | En cadrage ; seuils/migration à valider, historique fiable, références locales ; rattachement justificatif facultatif à confirmer |
+| 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile | Implémenté localement côté historique/Pass/contrats ; producteur Experience attendu au lot 05 ; justificatif facultatif non retenu à ce stade |
 | 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | 01 ; auth conforme au cas produit, nom public modifiable, suppression des données existantes et sessions, extension prévue aux nouveaux contenus |
 | 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | 01 + contrats d'identité ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables |
 | 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | 02 + socle 03/04 ; brouillon, publication, édition, suppression, listes café/moi, synchronisation, modération et suppression de compte intégrées |
@@ -534,13 +536,21 @@ de confondre implémentation locale et production.
 ### Lots 02 à 06 — Parcours métier complet et conformité intégrée
 
 **02 — Expériences libres et nouveau Pass.** Publication autorisée sans ticket ;
-certains niveaux du Pass nécessitent des tickets. Valider seuils, rôle des
-commentaires existants et conservation des acquis. Ajouter l'historique serveur
-paginé et sa consommation mobile, fiabiliser les projections ticket face au replay,
-définir déduplication et retrait des contributions. Déplacer la progression vers
-son propriétaire produit avec références locales et événements primitifs versionnés.
+certains niveaux du Pass nécessitent des tickets. Seuils et conservation des acquis
+validés. Historique serveur paginé et consommation mobile livrés, projections
+ticket fiabilisées face au replay, déduplication OCR exacte et retrait des
+contributions définis. La progression est déplacée vers son propriétaire produit
+avec références locales et événements primitifs versionnés.
 Un justificatif ticket/café, s'il est retenu, aura ses propres règles de
 rattachement/révocation ; il ne conditionne pas les expériences libres.
+
+Preuves locales du lot 02 : 313 tests backend distincts verts sur la régression
+complète et les suites ciblées PostgreSQL de migration, verrou, ordre/replay et identité des
+sources ; verticale enveloppe ticket stable → inbox → projection Pass → GET JWT ;
+60 suites et 246 tests mobile verts ; TypeScript, ESLint sans erreur (16 warnings
+préexistants), carte Redux et configuration native de release validés. La
+verticale issue d'un vrai producteur Experience reste explicitement une preuve
+du lot 05.
 
 **03 — Identité et compte.** Vérifier le cas Google/connexion Apple ou équivalent
 conforme et les prérequis de configuration. Garder profil produit dans
@@ -650,7 +660,7 @@ simultanées ne doivent pas être additionnées deux fois.
 | --- | --- | --- | --- |
 | 00 | Implémenté et testé localement | Non mesuré | 232 tests mobile, 41 backend ciblés, TypeScript/carte Redux OK ; legacy et appareil ouverts |
 | 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
-| 02 | Cadrage en cours, Astra High | Premier point mesuré 14:39 CEST ; exploration antérieure non chronométrée | Expériences sans ticket et tickets requis pour certains niveaux décidés ; contrat et seuils proposés, aucun code fonctionnel nouveau |
+| 02 | Implémentation et validation locales terminées ; intégration Git en cours ; Astra High puis Sol High | Fenêtre observée d'environ 14:39 à 15:48 CEST, incluant échanges, implémentation et attentes de tests ; temps actif non isolé | Historique privé, nouveau propriétaire Pass, politique v2, migration, déduplication exacte, contrats Experience et mobile sans politique locale ; producteur Experience différé au lot 05 |
 | 03 à 08 | Planifiés, non démarrés | Non démarré | Contrats métier puis fonctionnalités complètes |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
@@ -698,6 +708,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 0 — 2026-09-11 13:47 CEST | 01, erreurs/rejets/statuts | Non consignée avant le premier patch ; ne pas reconstruire a posteriori | Fenêtre écoulée mesurée depuis 13:47, incluant compilation et attentes Testcontainers ; temps actif non chronométré | Revue, documentation et intégration Git | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | Estimation encore peu fiable : le socle existant a accéléré 01, mais Experience, médias et modération sont plus larges |
 | Prévision 1 — 2026-09-11 14:30 CEST | 01 clos et intégré localement | Référence ci-dessus conservée | Fenêtre 43 min, incluant deux suites backend complètes, tests ciblés/Testcontainers, mobile, Studio et intégration Git ; temps actif non isolé | Zéro en implémentation locale ; migration/recette reportées au durcissement | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | 01 a été plus rapide grâce au socle existant et aux tests ; confiance faible à moyenne, sans extrapolation aux décisions Experience, médias, UGC et natif |
 | Prévision 2 — lot 02, premier point 2026-09-11 14:39 CEST, avant code fonctionnel | 02A cadrage, 02B historique, 02C Pass/doublons, 02D contrats | 30–60 min de cadrage ; 1–2 jours concentrés d'implémentation après validation | Exploration démarrée ; temps actif non isolé | Seuils/migration à valider puis slices testées | Référence 4–8 jours conservée, à recalculer après cadrage et première slice ; TestFlight/App Review séparés | Ticket retiré du chemin obligatoire ; nouvelle politique Pass, ownership et replay ajoutent du travail ; confiance faible |
+| Prévision 3 — lot 02, point 2026-09-11 15:48 CEST | 02A–02D, hors producteur Experience du lot 05 | Référence 1–2 jours après cadrage | Fenêtre observée d'environ 69 min depuis le premier point, incluant échanges et attentes Testcontainers ; temps actif non isolé | Revue finale et intégration Git | 3–6 jours concentrés pour 03 à 09, puis délais TestFlight/App Review séparés | Socle eventing/inbox/projection largement réutilisable ; objectif quatre jours plausible, confiance moyenne-faible car médias, UGC, Apple et recette native restent plus incertains |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -736,7 +747,7 @@ raisonnement monte seulement avec la complexité et les compromis du lot.
 | Audit et plan initial | GPT-6 Astra | High | Architecture, arbitrages et périmètre transverse ; réalisé |
 | 00 — isolation/confidentialité | GPT-6 Astra | High | Investigation et sécurisation transverse ; réalisé |
 | 01 — erreurs/rejets/statuts | GPT-5.6 Sol | High | Transactions, concurrence, sécurité et contrats offline ; utilisé du début d'implémentation à la revue et l'intégration |
-| 02 — contrats Experience/Pass/historique | GPT-6 Astra pour 02A ; Sol proposé pour l'implémentation | High | Astra sélectionné par l'utilisateur ; décisions produit, ownership Pass et contrats ; changement ultérieur à tracer |
+| 02 — contrats Experience/Pass/historique | GPT-6 Astra pour 02A ; GPT-5.6 Sol pour 02B–02D | High | Astra pour les décisions produit et frontières ; Sol sélectionné par l'utilisateur pour l'historique, la politique, les migrations, les tests et l'intégration |
 | 03 — identité/profil/suppression | GPT-5.6 Sol | High | Cycle de vie transverse et conformité ; Astra seulement pour une revue ciblée si nécessaire |
 | 04 — modération UGC | GPT-5.6 Sol | High | Autorisations, cohérence serveur/mobile/Studio et exploitation |
 | 05 — expériences texte | GPT-5.6 Sol | High | Verticale métier complète DDD/CQRS/offline |
@@ -802,6 +813,7 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lot 02 démarré avec Astra High. Expériences sans ticket et tickets
-nécessaires à certains niveaux actés ; seuils, migration des acquis et contrats
-proposés dans le cadrage 02A. Les slices suivantes restent à implémenter et tester.**
+**État actuel : lot 02 cadré avec Astra High puis implémenté avec Sol High.
+Expériences sans ticket, seuils version 2 et conservation des acquis sont actés.
+Historique ticket et Pass sont raccordés serveur/mobile ; le contrat Experience
+est prêt côté consommateur. Seul son producteur réel reste volontairement au lot 05.**

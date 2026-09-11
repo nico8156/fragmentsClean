@@ -5,6 +5,8 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake.FakeTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketSubmissionFingerprint;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommand;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +31,8 @@ public class VerifyTicketCommandHandlerTest {
 
 	@BeforeEach
 	void setup() {
-		handler = new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider);
+		handler = new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider,
+				(fingerprint, ticketId, userId, claimedAt) -> true);
 	}
 
 	@Test
@@ -72,5 +75,26 @@ public class VerifyTicketCommandHandlerTest {
 		assertThat(evt.version()).isEqualTo(0L);
 		assertThat(evt.occurredAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
 		assertThat(evt.clientAt()).isEqualTo(Instant.parse("2023-10-01T09:59:00Z"));
+	}
+
+	@Test
+	void rejects_an_exact_normalized_ocr_rescan_with_a_private_business_code() {
+		handler = new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider,
+				(fingerprint, ticketId, userId, claimedAt) -> false);
+
+		var rejection = catchThrowableOfType(() -> handler.execute(new VerifyTicketCommand(
+				CMD_ID, TICKET_ID, USER_ID, null, " CAFÉ\nTOTAL 4,00 EUR ",
+				Instant.parse("2023-10-01T09:59:00Z"))), BusinessCommandRejectedException.class);
+
+		assertThat(rejection.rejectionCode()).isEqualTo("TICKET_ALREADY_SUBMITTED");
+		assertThat(ticketRepository.allSnapshots()).isEmpty();
+		assertThat(domainEventPublisher.published).isEmpty();
+	}
+
+	@Test
+	void submission_fingerprint_is_stable_across_case_and_whitespace() {
+		assertThat(TicketSubmissionFingerprint.fromOcr(" CAFÉ\nTOTAL 4,00 EUR "))
+				.isEqualTo(TicketSubmissionFingerprint.fromOcr("café total   4,00 eur"));
+		assertThat(TicketSubmissionFingerprint.fromOcr(null)).isEmpty();
 	}
 }

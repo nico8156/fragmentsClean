@@ -69,6 +69,7 @@ class CommandReceiptSchemaUpgradeIT extends AbstractBaseE2E {
             }
         } finally {
             try (Connection connection = dataSource.getConnection(); var statement = connection.createStatement()) {
+                statement.execute("SET search_path TO public");
                 statement.execute("DROP SCHEMA IF EXISTS " + schema + " CASCADE");
             }
         }

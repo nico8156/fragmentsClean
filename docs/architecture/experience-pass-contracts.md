@@ -1,9 +1,9 @@
 # Lot 02 — Experience, tickets et progression du Pass
 
-Date : 11 septembre 2026. Cadrage par GPT-6 Astra High, modèle indiqué par
-l'utilisateur. Ce document distingue décisions produit acquises, recommandations
-d'architecture et propositions encore à valider. Aucun contrat décrit ici n'est
-présenté comme déjà implémenté.
+Date : 11 septembre 2026. Cadrage 02A par GPT-6 Astra High puis implémentation
+02B–02D par GPT-5.6 Sol High, modèles indiqués par l'utilisateur. Ce document
+distingue le contrat produit validé, sa réalisation actuelle et ce qui dépend
+encore du futur producteur `experienceContext`.
 
 ## Décisions produit acquises
 
@@ -15,9 +15,10 @@ présenté comme déjà implémenté.
   reste dans le périmètre. Le ticket n'en est plus une étape obligatoire.
 
 L'absence de ticket n'empêchera dans aucun cas la publication d'une expérience.
-Les niveaux concernés et les seuils exacts restent à valider avec la table proposée.
+Les seuils du Pass et la conservation des niveaux acquis après une suppression
+ordinaire ont été validés ; fraude ou modération peuvent les révoquer.
 
-## Ce que le code établit aujourd'hui
+## État initial constaté avant l'implémentation
 
 | Source | Fait constaté | Conséquence |
 | --- | --- | --- |
@@ -98,7 +99,7 @@ Une révocation retire le justificatif ; elle ne supprime pas mécaniquement une
 expérience dont la publication est autorisée sans ticket. Les infractions au
 contenu restent du ressort de la modération.
 
-## Pass : proposition produit à discuter
+## Pass : contrat produit validé
 
 Les niveaux indiqueraient une progression, sans conditionner l'accès aux actions
 nécessaires pour les obtenir. Publier une expérience serait possible dès le
@@ -113,7 +114,7 @@ Trois compteurs distincts :
 - `validatedTickets` : tickets confirmés admissibles, non supprimés et sans
   doublon établi. Un rescan du même reçu ne doit pas ajouter de progression.
 
-Proposition de seuils, **non validée et non codée** :
+Seuils validés et codés dans la politique serveur version 2 :
 
 | Niveau | Expériences publiées | Cafés distincts | Tickets validés |
 | --- | ---: | ---: | ---: |
@@ -122,10 +123,10 @@ Proposition de seuils, **non validée et non codée** :
 | Social Bean | 5 | 3 | 1 |
 | Fragments Master | 10 | 5 | 3 |
 
-Cette proposition permet de commencer immédiatement, valorise découverte et
-retours dans les lieux appréciés, et rend le dernier niveau explicite. Elle
-reste ajustable avant implémentation. Les deux derniers niveaux exigeraient
-ainsi des tickets, tout en gardant un premier parcours accessible sans scanner.
+Cette politique permet de commencer immédiatement, valorise découverte et
+retours dans les lieux appréciés, et rend le dernier niveau explicite. Les deux
+derniers niveaux exigent des tickets, tout en gardant un premier parcours
+accessible sans scanner.
 
 Ne pas nommer `verifiedVisits` un compteur calculé à partir des expériences
 libres. Le compteur de tickets n'est pas additionné aux expériences pour
@@ -144,11 +145,11 @@ concurrente, traitement privé d'un conflit entre comptes et résolution d'ambig
 L'empreinte OCR seule ne garantit pas l'unicité du reçu physique ; cette limite
 doit rester visible tant que le moteur ne fournit pas de preuve plus forte.
 
-Proposition pour les retraits : compteurs recalculés sur les contributions
+Règle validée pour les retraits : compteurs recalculés sur les contributions
 actuellement admissibles ; badges déjà acquis conservés après suppression
 ordinaire, révocables en cas de fraude ou décision de modération motivée.
-Cette conservation, encore à valider, exige une distinction entre progression
-courante et niveaux acquis, persistés avec la version de politique appliquée.
+La progression courante et les niveaux acquis sont distincts et persistés avec
+la version de politique appliquée.
 Un blocage personnel n'est pas une décision de modération globale et ne modifie
 pas le Pass public de l'auteur.
 
@@ -170,12 +171,17 @@ plus ancien ne réactive pas la contribution ; deux événements concurrents son
 sérialisés par utilisateur ou protégés par verrou optimiste et retry transactionnel.
 La révision du Pass est propre au Pass, pas un maximum des versions des tickets.
 
-Les noms et payloads définitifs seront inscrits au catalogue d'événements avant
-le premier producteur. Déclarer les nouvelles destinations SQS/DLQ et consommateurs
-inbox ; ne pas modifier silencieusement un payload existant. La fraîcheur mobile
-reste `projection.updated` puis GET ; aucun état métier envoyé directement en SSE.
+Le contrat primitif versionné `experience.lifecycle.changed` est inscrit
+au catalogue et routé vers `app-users-events`. Son producteur sera livré avec
+`experienceContext` au lot 05. Les événements ticket stables alimentent déjà le
+Pass via outbox, route SQS/in-process et inbox. La fraîcheur mobile reste
+`projection.updated` puis GET ; aucun état métier n'est envoyé directement en SSE.
+Experience publie ses états de publication/modération et un motif factuel
+(`PUBLISHED`, `AUTHOR_DELETED`, `MODERATION_HIDDEN`, `FRAUD_CONFIRMED`, etc.) ;
+il ne publie ni une contribution Pass ni un ordre de révocation. La politique
+Pass interprète elle-même ces faits.
 
-Historique privé proposé : `GET /api/users/me/tickets?cursor=...&limit=...`.
+Historique privé implémenté : `GET /api/users/me/tickets?cursor=...&limit=...`.
 Query/handler/port de lecture JDBC, demandeur issu du JWT, liste résumé sans OCR,
 référence d'image ni paiement. Le détail propriétaire existant reste distinct.
 Pagination keyset avec ordre immuable et départage unique : ne pas prendre
@@ -195,16 +201,17 @@ l'absence d'un ticket dans une page ne prouve pas sa suppression.
 
 | Slice | Livraison | Preuves obligatoires |
 | --- | --- | --- |
-| 02A | Décisions Experience/Pass et contrat de transition | Revue de ce document avec le produit ; pas de migration fonctionnelle |
-| 02B | Projections ticket fiables + historique serveur/mobile | Versions désordonnées, suppression/replay, PostgreSQL, pagination/intercalage, HTTP deux identités, mapper, reducer et parcours VM → lecture → rendu d'état |
-| 02C | Politique Pass validée, protection contre le rescan et nouveau propriétaire | Domaine pur, fakes de contributions, identité de reçu, inbox duplicate/redelivery, concurrence PostgreSQL, migration ancien profil, HTTP et consommation mobile sans seuil local |
-| 02D | Contrats Experience nécessaires au Pass | Schémas primitifs/versionnés, sérialisation, architecture ; raccord effectif au producteur au lot 05 |
+| 02A | Décisions Experience/Pass et contrat de transition | Validé par le produit et tracé ici |
+| 02B | Projections ticket fiables + historique serveur/mobile | Implémenté : versions désordonnées, tombstones, PostgreSQL, pagination/intercalage, HTTP propriétaire, mapper, cache et états UI |
+| 02C | Politique Pass validée, protection contre le rescan et nouveau propriétaire | Implémenté : domaine pur, contributions locales, empreinte OCR exacte, inbox, verrou utilisateur, identité immuable des sources, migration ancien profil, HTTP et mobile sans seuil local |
+| 02D | Contrats Experience nécessaires au Pass | Contrat, catalogue, sérialisation, route et consommateur implémentés ; raccord au producteur réel différé au lot 05 |
 | Conditionnelle | Justificatif ticket/café, si retenu | Référence locale, matching ambigu, collision réelle vs suspectée, révocation, pas de double comptage |
 
-En l'absence d'Experience au lot 02, ne pas annoncer 02C/02D validés de bout en
-bout contre un producteur inexistant. Les tests fake-first préparent le contrat ;
-la verticale réelle Experience → SQS/inbox → Pass → GET/mobile sera livrée et
-vérifiée au lot 05. Aucune donnée synthétique ne sera exposée comme activité réelle.
+En l'absence d'Experience au lot 02, la verticale Experience → SQS/inbox → Pass
+n'est pas annoncée comme validée contre un producteur inexistant. Le trajet ticket
+stable → inbox → Pass → GET authentifié et le contrat Experience sont couverts ;
+la verticale réelle Experience sera livrée et vérifiée au lot 05. Aucune donnée
+synthétique n'est exposée comme activité réelle.
 
 Les parcours critiques ajoutent perte réseau, redémarrage, socket absent,
 commande rejetée explicitement et changements de compte. Les tests unitaires ne
@@ -213,25 +220,32 @@ régression et garde-fous DDD/hexa restent ceux du dépôt.
 
 ## Estimation et état
 
-Premier point chronométré : 14:39 CEST, après exploration initiale. Ne pas inventer
-un temps actif depuis le changement de modèle. Estimation avant code fonctionnel :
-30–60 min pour le cadrage 02A ; 1–2 jours concentrés pour 02B–02D après validation,
-avec confiance faible tant que seuils, migration et politique de doublons sont ouverts.
-Le justificatif conditionnel demanderait une estimation séparée après choix produit.
+Premier point chronométré : 14:39 CEST, après exploration initiale. L'estimation
+avant code fonctionnel était de 30–60 min pour 02A puis 1–2 jours concentrés pour
+02B–02D. La fenêtre observée jusqu'à la première validation ciblée est proche
+d'une heure, sans prétendre mesurer un temps actif : elle inclut échanges, analyse,
+tests et attentes Testcontainers. Le socle d'événements, inbox et projections a
+permis d'aller nettement plus vite que l'hypothèse prudente. Le justificatif
+conditionnel demanderait toujours une estimation séparée après choix produit.
 
-La fourchette globale précédente de 4–8 jours est conservée comme référence,
-pas confirmée par cette exploration. Le retrait du ticket obligatoire réduit les
-dépendances de publication ; la nouvelle politique Pass et la fiabilisation des
-projections ajoutent du travail réel. Reprojeter après 02A et première slice testée.
+La fourchette globale initiale de 4–8 jours reste la référence historique. Après
+les lots 00–02 locaux, la projection de l'implémentation restante passe à 3–6 jours
+concentrés, hors délais TestFlight/App Review. L'objectif de quatre jours devient
+plausible si les choix UI sont rapides et qu'aucun prérequis Apple/AWS ne bloque ;
+médias, suppression de compte et modération restent les principales incertitudes.
 
-État : exploration effectuée, règles produit ci-dessus enregistrées, propositions
-révisables. Historique, refonte Pass et Experience non implémentés dans cette slice.
+État : 02A–02C implémentés localement ; 02D prêt côté consommateur et contrat.
+L'historique privé est paginé serveur/mobile. Le Pass appartient désormais à
+`userApplicationContext`, sans lecture SQL inter-BC en fonctionnement normal.
+La migration SQL ponctuelle préserve les anciens niveaux et canonise les doublons
+OCR exacts. Les tickets image sans texte OCR ne peuvent pas encore être dédupliqués
+de façon fiable. Le domaine Experience lui-même reste le lot 05.
 
 Sources principales :
 
 - [Agrégat Ticket](../../src/main/java/com/nm/fragmentsclean/ticketContext/write/businesslogic/models/Ticket.java)
-- [Politique Pass actuelle](../../src/main/java/com/nm/fragmentsclean/ticketContext/read/pass/PassProgressPolicy.java)
-- [Lecture actuelle des compteurs](../../src/main/java/com/nm/fragmentsclean/ticketContext/read/adapters/secondary/repositories/JdbcUserEntitlementsProjectionRepository.java)
+- [Politique Pass version 2](../../src/main/java/com/nm/fragmentsclean/userApplicationContext/pass/domain/PassProgressPolicy.java)
+- [Projection locale du Pass](../../src/main/java/com/nm/fragmentsclean/userApplicationContext/pass/adapters/secondary/JdbcPassContributionStore.java)
 - [Projections ticket](../../src/main/java/com/nm/fragmentsclean/ticketContext/read/adapters/secondary/repositories/JdbcTicketStatusProjectionRepository.java)
 - [Contrats d'intégration ticket](../../src/main/java/com/nm/fragmentsclean/platform/eventing/contracts/TicketIntegrationEvents.java)
 - [Historique mobile](/Users/nicolasmaldiney/fragmentsCleanFront/app/adapters/secondary/viewModel/useTicketsHistory.ts)

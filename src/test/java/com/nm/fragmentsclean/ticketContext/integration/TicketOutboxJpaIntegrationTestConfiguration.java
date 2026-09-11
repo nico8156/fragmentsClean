@@ -11,6 +11,9 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.eventing.TicketOu
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.JpaTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jpa.SpringTicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketSubmissionFingerprintRegistry;
+import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.repositories.jdbc.JdbcTicketSubmissionFingerprintRegistry;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -51,7 +54,13 @@ public class TicketOutboxJpaIntegrationTestConfiguration {
     @Bean
     public VerifyTicketCommandHandler verifyTicketCommandHandler(TicketRepository ticketRepository,
                                                                  DomainEventPublisher domainEventPublisher,
-                                                                 DateTimeProvider dateTimeProvider) {
-        return new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider);
+                                                                 DateTimeProvider dateTimeProvider,
+                                                                 TicketSubmissionFingerprintRegistry registry) {
+        return new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider, registry);
+    }
+
+    @Bean
+    TicketSubmissionFingerprintRegistry ticketSubmissionFingerprintRegistry(JdbcTemplate jdbcTemplate) {
+        return new JdbcTicketSubmissionFingerprintRegistry(jdbcTemplate);
     }
 }

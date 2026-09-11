@@ -16,7 +16,7 @@ public class IntegrationEventDestinationResolver {
             if (eventType.endsWith("TicketVerifyAcceptedEvent")) {
                 return List.of(TICKET_EVENTS, TICKET_VERIFICATION_REQUESTED);
             }
-            return List.of(TICKET_EVENTS);
+            return List.of(TICKET_EVENTS, APP_USERS_EVENTS);
         }
 
         if ("Coffee".equals(aggregateType)) {
@@ -26,6 +26,11 @@ public class IntegrationEventDestinationResolver {
                 return List.of(COFFEES_EVENTS, APP_USERS_EVENTS);
             }
             return List.of(COFFEES_EVENTS);
+        }
+
+        if ("Experience".equals(aggregateType)
+                && eventType.endsWith("ExperienceLifecycleChangedEvent")) {
+            return List.of(APP_USERS_EVENTS);
         }
 
         return switch (aggregateType) {
