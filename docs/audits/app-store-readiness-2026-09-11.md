@@ -613,6 +613,11 @@ OpenAPI généré, build Studio de production, configuration native, carte Redux
 lint sont validés ; le lint mobile conserve un unique warning historique sans
 nouvelle erreur.
 
+Traçabilité Git locale : backend `4273d42` fusionné dans `release/app-store` par
+`319f70f` ; mobile `dff610a` fusionné dans `release/app-store` par `c7fdce3` ;
+Studio `78b3d72` fusionné dans `main` par `32a91d9`. Aucun push ni déploiement
+n'est inclus dans cette clôture.
+
 **05 — Expériences texte.** Introduire `experienceContext` suivant le contrat
 validé, avec invariants de propriétaire/café,
 brouillon, publication non vide, modification, suppression et masquage. Les
