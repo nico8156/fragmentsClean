@@ -745,7 +745,7 @@ simultanées ne doivent pas être additionnées deux fois.
 | 05 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 45, de 18:35 à 20:20 CEST, incluant implémentation, corrections, Docker/builds et validations ; temps actif non isolé | Verticale Experience texte complète sur serveur/mobile/Studio ; médias, environnement déployé et recette appareil restent hors lot |
 | 06 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 20, de 20:45 à 22:05 CEST ; temps actif non isolé | Médias privés, avatar, reprise et effacement ; IAM/CORS réel et recette appareil restent ouverts |
 | 07 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 19 min, de 22:05 à 22:24 CEST ; temps actif non isolé | Barre flottante, carte et fiche ; recette appareil/VoiceOver ouverte |
-| 08 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 25 min depuis la clôture 07, incluant inventaire, composition, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Mobile `629933c`/merge `f6c465c` ; hero et bandeau de scroll préservés, recette native et contrôle visuel sur appareil ouverts |
+| 08 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 25 min depuis la clôture 07, incluant inventaire, composition, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Mobile `629933c`/merge `ff3b984` ; hero et bandeau de scroll préservés, recette native et contrôle visuel sur appareil ouverts |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
