@@ -947,8 +947,8 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 07 implémentés et testés localement ; le lot 07 est
-prêt à intégrer. Il a utilisé GPT-5.6 Terra Medium, conformément au choix de
+**État actuel : lots 00 à 07 implémentés, testés et intégrés localement. Le lot
+07 a utilisé GPT-5.6 Terra Medium, conformément au choix de
 modèle : changements UI bornés, contrats et navigation métier figés. Il livre
 une barre d’onglets flottante accessible, un parcours carte explicite et une
 fiche café réordonnée, sans nouveau contexte ni changement backend. Les
