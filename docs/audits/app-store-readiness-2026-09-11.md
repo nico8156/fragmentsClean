@@ -656,6 +656,11 @@ configuration native. Studio valide 30 fichiers et 144 tests, le contrat OpenAPI
 et le build de production en mode OAuth sûr. Aucun média, déploiement, migration
 d'environnement ni recette appareil n'est revendiqué dans ce lot.
 
+Traçabilité Git locale lot 05 : backend `e6bc6c5` fusionné dans
+`release/app-store` par `f718240` ; mobile `a9423d5` fusionné dans
+`release/app-store` par `30efde5` ; Studio `4b85a50` fusionné dans `main` par
+`eddf3d5`. Aucun push ni déploiement n'est inclus dans cette clôture.
+
 **06 — Photos et avatar.** Réutiliser les adaptateurs techniques S3, mais garder
 les références et autorisations chez leurs propriétaires métier. Livrer upload
 présigné vers un emplacement temporaire privé, contrôle serveur taille/type réel,
