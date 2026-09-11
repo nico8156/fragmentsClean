@@ -91,8 +91,11 @@ class ImportGoogleOpeningHoursForCoffeeTest {
 
 	private static FakeCoffeeRepository coffeesContaining(CoffeeCreatedEvent event) {
 		var result = new FakeCoffeeRepository();
-		result.save(Coffee.createNew(event.coffeeId(), event.googlePlaceId(), event.name(), event.address(), event.location(),
-				event.phoneNumber(), event.website(), java.util.Set.copyOf(event.tags()), event.occurredAt()));
+		result.save(Coffee.rehydrate(
+				event.coffeeId(), event.googlePlaceId(), event.name(), event.address(), event.location(),
+				event.phoneNumber(), event.website(), java.util.Set.copyOf(event.tags()), List.of(),
+				com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.OpeningHours.empty(),
+				event.version(), event.occurredAt(), null));
 		return result;
 	}
 
