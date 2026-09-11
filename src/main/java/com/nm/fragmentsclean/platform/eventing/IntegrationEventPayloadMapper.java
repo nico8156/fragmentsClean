@@ -294,6 +294,37 @@ public class IntegrationEventPayloadMapper {
                     text(node, "reason"),
                     longValue(node, "version"),
                     instantOrFallback(node, "occurredAt", event.getOccurredAt()));
+            case "experience.snapshot.changed" ->
+                new ExperienceIntegrationEvents.SnapshotChanged(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuidOrFallback(node, "experienceId", event.getAggregateId()),
+                    uuid(node, "userId"), uuid(node, "coffeeId"), text(node, "message"),
+                    text(node, "publicationStatus"), text(node, "moderationStatus"),
+                    text(node, "reason"), longValue(node, "version"),
+                    instantOrFallback(node, "createdAt", event.getOccurredAt()),
+                    instantOrFallback(node, "updatedAt", event.getOccurredAt()),
+                    nullableInstant(node, "deletedAt"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    nullableInstant(node, "clientAt"));
+            case "experience.reported" ->
+                new ExperienceIntegrationEvents.Reported(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuid(node, "reportId"), uuid(node, "experienceId"), uuid(node, "coffeeId"),
+                    uuid(node, "authorId"), uuid(node, "reporterId"), text(node, "reason"),
+                    text(node, "details"), text(node, "status"), longValue(node, "version"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    nullableInstant(node, "clientAt"));
+            case "experience.moderated" ->
+                new ExperienceIntegrationEvents.Moderated(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuid(node, "actionId"), uuid(node, "reportId"), uuid(node, "experienceId"),
+                    uuid(node, "coffeeId"), uuid(node, "authorId"), uuid(node, "operatorId"),
+                    text(node, "moderationStatus"), text(node, "reportStatus"), text(node, "reason"),
+                    longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    nullableInstant(node, "clientAt"));
             case "coffee.published" ->
                 new CoffeePublishedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

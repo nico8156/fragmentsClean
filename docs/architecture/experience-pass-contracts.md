@@ -1,9 +1,8 @@
 # Lot 02 — Experience, tickets et progression du Pass
 
 Date : 11 septembre 2026. Cadrage 02A par GPT-6 Astra High puis implémentation
-02B–02D par GPT-5.6 Sol High, modèles indiqués par l'utilisateur. Ce document
-distingue le contrat produit validé, sa réalisation actuelle et ce qui dépend
-encore du futur producteur `experienceContext`.
+02B–02D et lot 05 par GPT-5.6 Sol High, modèles indiqués par l'utilisateur. Ce
+document distingue le contrat produit validé et sa réalisation actuelle.
 
 ## Décisions produit acquises
 
@@ -172,8 +171,8 @@ sérialisés par utilisateur ou protégés par verrou optimiste et retry transac
 La révision du Pass est propre au Pass, pas un maximum des versions des tickets.
 
 Le contrat primitif versionné `experience.lifecycle.changed` est inscrit
-au catalogue et routé vers `app-users-events`. Son producteur sera livré avec
-`experienceContext` au lot 05. Les événements ticket stables alimentent déjà le
+au catalogue, produit par `experienceContext` et routé vers `app-users-events`.
+Les événements ticket stables alimentent déjà le
 Pass via outbox, route SQS/in-process et inbox. La fraîcheur mobile reste
 `projection.updated` puis GET ; aucun état métier n'est envoyé directement en SSE.
 Experience publie ses états de publication/modération et un motif factuel
@@ -204,14 +203,14 @@ l'absence d'un ticket dans une page ne prouve pas sa suppression.
 | 02A | Décisions Experience/Pass et contrat de transition | Validé par le produit et tracé ici |
 | 02B | Projections ticket fiables + historique serveur/mobile | Implémenté : versions désordonnées, tombstones, PostgreSQL, pagination/intercalage, HTTP propriétaire, mapper, cache et états UI |
 | 02C | Politique Pass validée, protection contre le rescan et nouveau propriétaire | Implémenté : domaine pur, contributions locales, empreinte OCR exacte, inbox, verrou utilisateur, identité immuable des sources, migration ancien profil, HTTP et mobile sans seuil local |
-| 02D | Contrats Experience nécessaires au Pass | Contrat, catalogue, sérialisation, route et consommateur implémentés ; raccord au producteur réel différé au lot 05 |
+| 02D | Contrats Experience nécessaires au Pass | Contrat, catalogue, sérialisation, route et consommateur implémentés ; producteur raccordé et verticale réelle vérifiée au lot 05 |
 | Conditionnelle | Justificatif ticket/café, si retenu | Référence locale, matching ambigu, collision réelle vs suspectée, révocation, pas de double comptage |
 
-En l'absence d'Experience au lot 02, la verticale Experience → SQS/inbox → Pass
-n'est pas annoncée comme validée contre un producteur inexistant. Le trajet ticket
-stable → inbox → Pass → GET authentifié et le contrat Experience sont couverts ;
-la verticale réelle Experience sera livrée et vérifiée au lot 05. Aucune donnée
-synthétique n'est exposée comme activité réelle.
+Le lot 05 fournit maintenant la verticale Experience → outbox/enveloppe →
+SQS/inbox → Pass et les lectures café/profil. Brouillon, publication, édition,
+suppression, signalement, blocage, modération et effacement de compte sont
+raccordés à leurs propriétaires. Aucune donnée synthétique n'est exposée comme
+activité réelle et aucun ticket n'est envoyé dans le contrat de création.
 
 Les parcours critiques ajoutent perte réseau, redémarrage, socket absent,
 commande rejetée explicitement et changements de compte. Les tests unitaires ne
@@ -234,12 +233,12 @@ concentrés, hors délais TestFlight/App Review. L'objectif de quatre jours devi
 plausible si les choix UI sont rapides et qu'aucun prérequis Apple/AWS ne bloque ;
 médias, suppression de compte et modération restent les principales incertitudes.
 
-État : 02A–02C implémentés localement ; 02D prêt côté consommateur et contrat.
+État : 02A–02D et leur raccord au producteur Experience sont implémentés localement.
 L'historique privé est paginé serveur/mobile. Le Pass appartient désormais à
 `userApplicationContext`, sans lecture SQL inter-BC en fonctionnement normal.
 La migration SQL ponctuelle préserve les anciens niveaux et canonise les doublons
 OCR exacts. Les tickets image sans texte OCR ne peuvent pas encore être dédupliqués
-de façon fiable. Le domaine Experience lui-même reste le lot 05.
+de façon fiable. Les médias Experience restent le lot 06.
 
 Sources principales :
 

@@ -34,6 +34,12 @@ native, credentials fournisseur chiffrés, suppression initiable dans l'app et
 processus durable d'effacement par bounded context. Les prérequis Apple Developer,
 les valeurs SSM et la recette sur build iOS signé restent externes et non réalisés.
 
+Les lots 04 et 05 sont également implémentés localement avec **GPT-5.6 Sol
+High**. `experienceContext` est maintenant le propriétaire des expériences texte
+et de leur modération ; le mobile expose les parcours café et personnel sans
+exiger de ticket, et Studio traite commentaires et expériences dans une file
+unifiée. Les médias restent explicitement au lot 06.
+
 ## Conclusion
 
 Fragments dispose déjà du socle nécessaire pour avancer vite : navigation,
@@ -460,7 +466,7 @@ explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiem
 | 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile | Implémenté localement côté historique/Pass/contrats ; producteur Experience attendu au lot 05 ; justificatif facultatif non retenu à ce stade |
 | 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | Implémenté et testé localement ; activation Apple Developer/SSM et recette iOS signée externes ; extension Experience/media obligatoire aux lots 05/06 |
 | 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | Implémenté et testé localement ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables. Contact public réel, opérateur/SLA et recette déployée restent externes |
-| 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | 02 + socle 03/04 ; brouillon, publication, édition, suppression, listes café/moi, synchronisation, modération et suppression de compte intégrées |
+| 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | Implémenté et testé localement ; brouillon, publication sans ticket, édition, suppression, listes café/moi, synchronisation, modération, Pass et suppression de compte intégrés |
 | 06 | Photos d'expérience et avatar choisi | Serveur + mobile + Studio | 03/05 ; pipeline média sécurisé, upload/reprise, validation réelle, remplacement, modération et nettoyage |
 | 07 | Fondations UI, floating tab bar, carte et fiche café | Mobile, contrats serveur si manque constaté | Fondations préparables après 01 ; intégration finale avec 05/06, navigation et états complets |
 | 08 | Home réel et cohérence profil/Pass/expériences | Mobile + lectures serveur utiles | 02/03/05/06/07 ; contenu réel, progression cohérente, sections utiles sans localisation ou activité communautaire |
@@ -618,17 +624,37 @@ Traçabilité Git locale : backend `4273d42` fusionné dans `release/app-store` 
 Studio `78b3d72` fusionné dans `main` par `32a91d9`. Aucun push ni déploiement
 n'est inclus dans cette clôture.
 
-**05 — Expériences texte.** Introduire `experienceContext` suivant le contrat
-validé, avec invariants de propriétaire/café,
-brouillon, publication non vide, modification, suppression et masquage. Les
-commandes sont offline-first et idempotentes ; lectures café/moi paginées,
-projections et SSE/GET. Livrer fiche café → rédaction → publication →
-fiche/historique, accessible sans ticket, avec vide, erreur et reprise. Raccorder
-la progression Pass au producteur réel Experience dans cette même verticale.
-Étendre dans ce
-même lot signalement, blocage, file Studio et suppression du compte ; ne pas
-exposer un nouveau type d'UGC sans les protections du lot 04. Tester replay,
-concurrence, suppression et retrait de contribution au Pass.
+**05 — Expériences texte.** Implémenté localement. `experienceContext` possède
+les agrégats Experience et ExperienceReport, les commandes authentifiées et les
+projections JDBC. Une expérience peut être brouillonnée puis publiée, modifiée
+ou supprimée sans ticket ; auteur et café sont des invariants et l'existence du
+café repose sur une référence locale alimentée par événements. Les faits primitifs
+versionnés passent par outbox, destinations SQS et inbox ; les décisions reçues
+hors ordre ne peuvent pas rétablir un ancien état. Les handlers de query et de
+projection dépendent de ports, jamais de JDBC.
+
+Le mobile ajoute `experienceWl`, son mapping transport explicite, lectures café/
+moi, cache privé, SSE→GET, optimisme, outbox durable et réconciliation canonique.
+La fiche café permet brouillon ou publication, puis édition/suppression ; la liste
+personnelle expose les deux états. Une panne technique conserve la commande et
+seul un rejet explicite déclenche le rollback. Signalement et blocage masquent
+immédiatement le contenu. Studio agrège les files commentaire/expérience et route
+la décision vers le contexte propriétaire. L'effacement Experience participe au
+processus de suppression du compte et le producteur réel alimente désormais le
+Pass.
+
+Preuves locales du lot 05 : 370 tests Maven verts (0 échec, 2 tests
+d'infrastructure ignorés lorsque le socket Docker n'était pas accessible), puis
+8 tests d'intégration PostgreSQL/Testcontainers verts ciblant Experience,
+migration réentrante et suppression de compte. Ils couvrent les invariants et
+handlers, HTTP/JWT, création sans ticket, cycle brouillon→publication→
+suppression, refus d'un autre propriétaire, outbox/enveloppe/routage/inbox,
+pagination, replay et ordre de modération, contribution Pass, signalement/blocage,
+file Studio et effacement de compte. Le mobile valide 70 suites et 270 tests,
+TypeScript, lint (aucune erreur, un avertissement historique), carte Redux et
+configuration native. Studio valide 30 fichiers et 144 tests, le contrat OpenAPI
+et le build de production en mode OAuth sûr. Aucun média, déploiement, migration
+d'environnement ni recette appareil n'est revendiqué dans ce lot.
 
 **06 — Photos et avatar.** Réutiliser les adaptateurs techniques S3, mais garder
 les références et autorisations chez leurs propriétaires métier. Livrer upload
@@ -710,8 +736,9 @@ simultanées ne doivent pas être additionnées deux fois.
 | 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
 | 02 | Clos et intégré localement ; Astra High puis Sol High | Fenêtre observée d'environ 14:39 à 15:54 CEST, incluant échanges, implémentation et attentes de tests ; temps actif non isolé | Backend `3ff0ca8`/merge `94d8082`, mobile `588f825`/merge `e4952fc` ; producteur Experience différé au lot 05 |
 | 03 | Implémenté et testé localement ; Sol High | Fenêtre observée d'environ 86 min, de 15:54 à 17:20 CEST, incluant exploration, implémentation et attentes de tests ; temps actif non isolé | Backend/mobile complets dans le périmètre actuel ; capability/SSM/build iOS externes, avatar et extensions Experience/media différés explicitement |
-| 04 | Implémentation locale en validation ; GPT-5.6 Sol High | Fenêtre observée depuis environ 17:20 CEST ; temps actif non isolé | Domaine et commandes `socialContext`, projections/lectures, outbox mobile, UI et file Studio présents ; suites complètes et intégration Git en cours |
-| 05 à 08 | Planifiés, non démarrés | Non démarré | Experience, médias puis parcours UI/Home |
+| 04 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 75 min, de 17:20 à 18:35 CEST ; temps actif non isolé | Verticale commentaire/blocage/Studio complète ; exploitation humaine et recette déployée externes |
+| 05 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 45, de 18:35 à 20:20 CEST, incluant implémentation, corrections, Docker/builds et validations ; temps actif non isolé | Verticale Experience texte complète sur serveur/mobile/Studio ; médias, environnement déployé et recette appareil restent hors lot |
+| 06 à 08 | Planifiés, non démarrés | Non démarré | Médias/avatar puis navigation/carte/fiche et Home |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
@@ -762,6 +789,8 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 4 — lot 03, clôture locale 2026-09-11 17:20 CEST | Profil, Apple, suppression coordonnée des données actuelles | Incluse dans la référence globale 3–6 jours ; pas de fourchette isolée enregistrée avant code | Fenêtre observée d'environ 86 min depuis la clôture 02, incluant exploration, dépendance Expo, implémentation et suites complètes ; temps actif non isolé | Zéro pour le code local du périmètre actuel ; activation Apple/SSM/recette signée externes ; extensions Experience/media prévues | 2–5 jours concentrés pour 04 à 09, puis délais TestFlight/App Review séparés | Forte réutilisation command/outbox/SQS/inbox ; Apple et le processus transverse ont néanmoins demandé une vraie verticale. Confiance moyenne-faible avant UGC/médias/UI |
 | Prévision 5 — lot 04, point avant suites complètes 2026-09-11 18:10 CEST | Modération commentaires, blocage personnel et file Studio | Incluse dans la référence globale 2–5 jours ; pas de fourchette isolée enregistrée avant code | Fenêtre observée d'environ 50 min depuis 17:20, incluant implémentation, génération de contrat, attentes Docker et tests ciblés ; temps actif non isolé | Suites complètes, revue architecturale et intégration Git | 1,5–4 jours concentrés pour 05 à 09, puis TestFlight/App Review séparés | Le socle command/outbox/projection a fortement accéléré la verticale ; médias et recette native restent les plus incertains. Confiance moyenne-faible |
 | Prévision 6 — lot 04, clôture locale 2026-09-11 18:35 CEST | Modération commentaires, blocage personnel et file Studio | Référence 2–5 jours globale conservée ; aucune estimation isolée reconstruite | Fenêtre observée d'environ 75 min depuis 17:20, incluant trois suites complètes, contrôles statiques/build et attentes Docker ; temps actif non isolé | Zéro pour le code local du périmètre ; contact/support réel, opérateur/SLA, migration et recette déployée externes | 1,5–3,5 jours concentrés pour 05 à 09, puis TestFlight/App Review séparés | Réutilisation forte du pipeline de commandes et des projections ; Experience texte est maintenant la prochaine incertitude métier, puis médias et recette native. Confiance moyenne |
+| Prévision 7 — lot 05, démarrage 2026-09-11 vers 18:35 CEST | Experience texte serveur/mobile/Studio, Pass, modération et suppression | 1 h 30 à 3 h de fenêtre locale annoncée avant implémentation | Implémentation et validations en cours ; temps actif non isolé des attentes Docker/build | Suites complètes, documentation et intégration Git | 1 à 3 jours concentrés pour 06 à 09, puis TestFlight/App Review séparés | Les contrats Pass/modération/outbox existants accélèrent le lot ; les médias/S3 et la recette native ne doivent pas être extrapolés à cette vitesse. Confiance moyenne |
+| Prévision 8 — lot 05, clôture locale 2026-09-11 vers 20:20 CEST | Experience texte serveur/mobile/Studio, Pass, modération et suppression | Référence initiale de 1 h 30 à 3 h | Fenêtre observée d'environ 1 h 45 depuis 18:35, dans la fourchette, incluant corrections, attentes Docker et builds ; temps actif non isolé | Zéro pour le périmètre texte local ; médias et recette déployée restent explicitement ouverts | 1 à 2,5 jours concentrés pour 06 à 09, puis TestFlight/App Review séparés | Réutilisation forte des pipelines command/outbox/inbox, Pass et modération ; le pipeline S3, les traitements d'image et la recette native du lot 06 concentrent désormais l'incertitude. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -799,6 +828,25 @@ listener. Les évolutions prioritaires sont donc la résolution des appels exter
 via paramètres de factory/interfaces injectées et l'analyse du corps des callbacks
 `createAsyncThunk` ; la future couverture Java devra
 ensuite relier contrôleur, commande, handler, agrégat, outbox, SQS et projection.
+
+Retour lot 05 : la projection `uiExperienceCreateRequested` est complète selon
+FlowAtlas avec 7 nœuds, 9 relations et 3 239 octets ; elle retrouve l'intention,
+le listener, les quatre mutations optimistes et le reducer. Elle ne relie toutefois
+pas `enqueueCommitted`, appelé dans une fonction locale `enqueue` du listener.
+La projection centrée sur `enqueueCommitted` (20 nœuds, 19 relations, 6 550
+octets) retrouve les producteurs directs historiques, mais omet elle aussi le
+listener Experience, alors que la carte Redux statique et le test vertical le
+voient. C'est un cas de test précis à ajouter à FlowAtlas : propagation inter-
+procédurale d'un `api.dispatch` à travers un helper local capturant `api`.
+
+Sur Studio, `moderationDecisionRequested` reste une projection complète de 10
+nœuds, 15 relations et 4 328 octets. Elle confirme événements/listener/reducers,
+mais ne montre ni le déclencheur React ni la branche `ModerationGateway` qui route
+COMMENT et EXPERIENCE vers deux endpoints. Les prochaines améliorations utiles
+sont donc la résolution des appels de ports injectés, des branches discriminées
+par union TypeScript et des dispatches indirects. Même avec cette limite,
+FlowAtlas réduit bien la lecture initiale Redux ; le code et les tests restent la
+preuve nécessaire pour les transactions Java et les frontières réseau.
 
 ### Modèles Codex et niveau d'exigence
 
@@ -881,8 +929,10 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 02 et 03 implémentés et testés localement. Lot 03 a utilisé
-GPT-5.6 Sol High. Profil, Apple et suppression coordonnée couvrent les données
-actuelles sans traverser les frontières de contexte. Les configurations Apple/SSM,
-la recette native, puis l'ajout des futurs propriétaires Experience/media au
-processus restent explicitement ouverts.**
+**État actuel : lots 00 à 05 implémentés et testés localement ; lots 01 à 05
+intégrés sur leurs branches locales de release. Le lot 05 a utilisé GPT-5.6 Sol
+High et livre Experience texte sans ticket, offline-first, modérée, reliée au
+Pass et à la suppression du compte, sans traverser les frontières de contexte.
+Les médias/avatar S3 du lot 06, les configurations Apple/SSM, la recette native,
+les migrations d'environnement et tout déploiement restent explicitement
+ouverts.**

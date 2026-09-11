@@ -94,6 +94,27 @@
         "responses": { "202": { "description": "Moderation decision accepted" } }
       }
     },
+    "/api/admin/experience-moderation/reports": {
+      "get": {
+        "operationId": "listExperienceModerationReports",
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"], "default": "OPEN" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 50 } }
+        ],
+        "responses": { "200": { "description": "Experience moderation queue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceModerationReport" } } } } } }
+      }
+    },
+    "/api/admin/experience-moderation/reports/{reportId}/decision": {
+      "post": {
+        "operationId": "moderateReportedExperience",
+        "parameters": [
+          { "name": "reportId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "experienceId", "in": "query", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ModerateExperience" } } } },
+        "responses": { "202": { "description": "Experience moderation decision accepted" } }
+      }
+    },
     "/api/admin/commands/{commandId}": {
       "get": {
         "operationId": "getAdminCommandStatus",
@@ -129,6 +150,16 @@
         "type": "object", "additionalProperties": false,
         "required": ["commandId", "actionId", "commentId", "decision", "at"],
         "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "commentId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
+      },
+      "ExperienceModerationReport": {
+        "type": "object", "additionalProperties": false,
+        "required": ["reportId", "experienceId", "coffeeId", "authorId", "reporterId", "reason", "status", "reportCount", "createdAt", "actions"],
+        "properties": { "reportId": { "type": "string", "format": "uuid" }, "experienceId": { "type": "string", "format": "uuid" }, "coffeeId": { "type": "string", "format": "uuid" }, "authorId": { "type": "string", "format": "uuid" }, "authorName": { "type": ["string", "null"] }, "reporterId": { "type": "string", "format": "uuid" }, "reason": { "type": "string" }, "details": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] }, "content": { "type": ["string", "null"] }, "reportCount": { "type": "integer", "format": "int64" }, "createdAt": { "type": "string", "format": "date-time" }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ModerationAction" } } }
+      },
+      "ModerateExperience": {
+        "type": "object", "additionalProperties": false,
+        "required": ["commandId", "actionId", "decision", "at"],
+        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
       },
       "TopicCandidate": {
         "type": "object", "additionalProperties": false, "required": ["id", "subject", "suggestedAngle", "signalIds", "status"],

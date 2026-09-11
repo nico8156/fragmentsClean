@@ -24,6 +24,8 @@ class AccountDeletionProcessTest {
     assertThat(process.acknowledge(AccountDeletionProcess.Context.SOCIAL, COMPLETED_AT)).isTrue();
     assertThat(process.status()).isEqualTo(AccountDeletionProcess.Status.IN_PROGRESS);
     assertThat(process.acknowledge(AccountDeletionProcess.Context.TICKET, COMPLETED_AT)).isTrue();
+    assertThat(process.status()).isEqualTo(AccountDeletionProcess.Status.IN_PROGRESS);
+    assertThat(process.acknowledge(AccountDeletionProcess.Context.EXPERIENCE, COMPLETED_AT)).isTrue();
 
     assertThat(process.status()).isEqualTo(AccountDeletionProcess.Status.COMPLETED);
     assertThat(process.completedAt()).isEqualTo(COMPLETED_AT);

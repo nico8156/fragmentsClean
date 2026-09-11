@@ -208,7 +208,7 @@ class IntegrationEventEnvelopeFactoryTest {
                 0);
 
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
-                .containsExactly("coffees-events", "app-users-events");
+                .containsExactly("coffees-events", "app-users-events", "experiences-events");
 
         var coffeeEnvelope = new IntegrationEventEnvelopeFactory()
                 .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
@@ -271,7 +271,7 @@ class IntegrationEventEnvelopeFactoryTest {
                 0);
 
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
-                .containsExactly("coffees-events", "app-users-events");
+                .containsExactly("coffees-events", "app-users-events", "experiences-events");
 
         var envelope = new IntegrationEventEnvelopeFactory()
                 .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
@@ -303,7 +303,7 @@ class IntegrationEventEnvelopeFactoryTest {
                 0);
 
         assertThat(new IntegrationEventDestinationResolver().destinationsFor(outbox))
-                .containsExactly("coffees-events", "app-users-events");
+                .containsExactly("coffees-events", "app-users-events", "experiences-events");
 
         var envelope = new IntegrationEventEnvelopeFactory()
                 .from(outbox, IntegrationEventDestinations.COFFEES_EVENTS);
