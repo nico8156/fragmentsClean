@@ -469,7 +469,7 @@ explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiem
 | 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | Implémenté et testé localement ; brouillon, publication sans ticket, édition, suppression, listes café/moi, synchronisation, modération, Pass et suppression de compte intégrés |
 | 06 | Photos d'expérience et avatar choisi | Serveur + mobile + Studio | 03/05 ; pipeline média sécurisé, upload/reprise, validation réelle, remplacement, modération et nettoyage |
 | 07 | Fondations UI, floating tab bar, carte et fiche café | Mobile, contrats serveur si manque constaté | Fondations préparables après 01 ; intégration finale avec 05/06, navigation et états complets |
-| 08 | Home réel et cohérence profil/Pass/expériences | Mobile + lectures serveur utiles | 02/03/05/06/07 ; contenu réel, progression cohérente, sections utiles sans localisation ou activité communautaire |
+| 08 | Home réel et cohérence profil/Pass/expériences | Mobile + lectures serveur utiles | Implémenté localement : composition read-only articles/catalogue/Pass/expériences, sans `homeContext`, sans contenu fictif et sans modifier le hero ni son bandeau de scroll |
 | 09 | Durcissement transversal, récupération des données et préparation exploitation | Serveur + mobile + Studio | 01 à 08 ; sécurité, offline, accessibilité, migrations/restauration, observabilité et recette complète |
 | 10 | TestFlight, corrections et préparation App Store | Ensemble + ressources de revue | 09 ; parcours réels validés, blocages levés, build et dossier de revue cohérents |
 
@@ -743,7 +743,9 @@ simultanées ne doivent pas être additionnées deux fois.
 | 03 | Implémenté et testé localement ; Sol High | Fenêtre observée d'environ 86 min, de 15:54 à 17:20 CEST, incluant exploration, implémentation et attentes de tests ; temps actif non isolé | Backend/mobile complets dans le périmètre actuel ; capability/SSM/build iOS externes, avatar et extensions Experience/media différés explicitement |
 | 04 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 75 min, de 17:20 à 18:35 CEST ; temps actif non isolé | Verticale commentaire/blocage/Studio complète ; exploitation humaine et recette déployée externes |
 | 05 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 45, de 18:35 à 20:20 CEST, incluant implémentation, corrections, Docker/builds et validations ; temps actif non isolé | Verticale Experience texte complète sur serveur/mobile/Studio ; médias, environnement déployé et recette appareil restent hors lot |
-| 06 à 08 | Planifiés, non démarrés | Non démarré | Médias/avatar puis navigation/carte/fiche et Home |
+| 06 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 20, de 20:45 à 22:05 CEST ; temps actif non isolé | Médias privés, avatar, reprise et effacement ; IAM/CORS réel et recette appareil restent ouverts |
+| 07 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 19 min, de 22:05 à 22:24 CEST ; temps actif non isolé | Barre flottante, carte et fiche ; recette appareil/VoiceOver ouverte |
+| 08 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 25 min depuis la clôture 07, incluant inventaire, composition, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Mobile `629933c`/merge `f6c465c` ; hero et bandeau de scroll préservés, recette native et contrôle visuel sur appareil ouverts |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
@@ -799,6 +801,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 9 — lot 06, démarrage 2026-09-11 20:45 CEST | Photo d'expérience et avatar, stockage privé, reprise, modération et effacement | 2 h 30 à 5 h de fenêtre locale pour code et preuves automatisées ; AWS réel et recette appareil séparés | Exploration et cadrage démarrés ; temps actif non isolé | Verticales backend/mobile/Studio, tests, documentation et intégration Git | 0,75 à 2 jours concentrés pour 07 à 09 après le lot 06, puis TestFlight/App Review séparés | Une photo par expérience dans l'UI V1, collection ordonnée et plafond serveur configurables ; avatar unique. JPEG/PNG seulement tant que HEIC n'est pas décodé et normalisé côté serveur. Confiance moyenne-faible avant preuve du pipeline objet |
 | Prévision 10 — lot 06, clôture locale 2026-09-11 22:05 CEST | Photo d'expérience et avatar sur backend/mobile/Studio, stockage privé, reprise, modération, SSE et effacement | Référence initiale de 2 h 30 à 5 h | Fenêtre observée d'environ 1 h 20 depuis 20:45, sous la fourchette, incluant implémentation, revue de fraîcheur SSE, trois suites complètes, builds et attentes Docker ; temps actif non isolé | Zéro pour l'implémentation locale ; IAM/CORS S3 réel, migration d'environnement et recette appareil/réseau lent restent au durcissement | 0,5 à 1,5 jour concentré pour 07 à 09, puis TestFlight/App Review séparés | Le socle outbox/command status/projections et les adapters Expo ont accéléré la verticale. L'absence de preuve AWS réelle interdit d'extrapoler la vitesse locale au déploiement. Confiance moyenne |
 | Prévision 11 — lot 07, clôture locale 2026-09-11 22:24 CEST | Navigation flottante, sélection carte, itinéraire et hiérarchie de fiche café | 0,5 à 1,5 jour pour une passe UI contenue sans changement de contrat | Fenêtre observée d'environ 19 min depuis la clôture 06, incluant inventaire, implémentation, documentation, TypeScript, lint et deux régressions mobiles complètes ; temps actif non isolé | Zéro pour le code local ; contrôle sur appareils petit/grand iPhone et VoiceOver restent à la recette native | 0,25 à 1 jour concentré pour 08 à 09, puis TestFlight/App Review séparés | Le périmètre a été volontairement borné aux composants et lectures existants : ni refonte du Home, ni nouveau contexte, ni contrat backend. La vitesse ne préjuge pas de la recette native ni du durcissement réseau. Confiance moyenne |
+| Prévision 12 — lot 08, clôture locale 2026-09-11 vers 22:49 CEST | Home : sections articles, cafés, prochaine étape Pass et expériences personnelles | 0,25 à 1 jour pour une composition UI fondée sur les lectures existantes | Fenêtre observée d'environ 25 min depuis 22:24, incluant inventaire, implémentation, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Zéro pour le code local ; contrôle visuel sur appareils et durcissement transverse du lot 09 restent ouverts | 0,25 à 0,75 jour concentré pour le lot 09 local, puis recette native/TestFlight/App Review séparés | Le contrat Pass, les selectors et les projections existantes ont permis une composition sans backend ni Redux write. Le hero éditorial et son bandeau vertical ont été explicitement préservés. La vitesse ne prouve pas le rendu sur appareil. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -887,7 +890,7 @@ raisonnement monte seulement avec la complexité et les compromis du lot.
 | 05 — expériences texte | GPT-5.6 Sol | High | Verticale métier complète DDD/CQRS/offline |
 | 06 — médias/avatar/S3 | GPT-5.6 Sol | High | Sécurité objet, reprise et nettoyage ; revue Astra ciblée possible |
 | 07 — navigation/carte/fiche | GPT-5.6 Terra ou Sol | Medium à High | Choisir Terra si les écrans et contrats sont figés, Sol si des interactions transverses restent ouvertes |
-| 08 — Home/cohérence produit | GPT-5.6 Terra ou Sol | Medium à High | Dépend du niveau de composition et des contrats restants |
+| 08 — Home/cohérence produit | GPT-5.6 Terra | Medium | Réalisé : lectures et navigation existantes, aucune nouvelle décision de contrat |
 | 09 — durcissement | GPT-5.6 Sol | High | Analyse des courses, sécurité, migrations et reprise |
 | 10 — TestFlight/App Store | GPT-5.6 Sol, revue Astra ciblée | High | Corrections de release et jugement final ; pas d'Ultra par défaut |
 
@@ -947,11 +950,12 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 07 implémentés, testés et intégrés localement. Le lot
-07 a utilisé GPT-5.6 Terra Medium, conformément au choix de
-modèle : changements UI bornés, contrats et navigation métier figés. Il livre
-une barre d’onglets flottante accessible, un parcours carte explicite et une
-fiche café réordonnée, sans nouveau contexte ni changement backend. Les
+**État actuel : lots 00 à 08 implémentés, testés et intégrés localement. Les lots
+07 et 08 ont utilisé GPT-5.6 Terra Medium, conformément au choix de modèle :
+changements UI bornés, contrats et navigation métier figés. Le lot 08 compose
+les lectures réelles sous le grand visuel existant, sans `homeContext` ni données
+fictives, et préserve strictement le hero et l'apparition du bandeau au scroll.
+Les
 configurations Apple/SSM et IAM/CORS S3 réelles, la recette native petit/grand
 iPhone et VoiceOver, les migrations d'environnement et tout déploiement restent
 explicitement ouverts.**
