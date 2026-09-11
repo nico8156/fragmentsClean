@@ -946,8 +946,7 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 06 implémentés et testés localement ; lots 01 à 05
-intégrés sur leurs branches locales de release et lot 06 prêt à intégrer. Le lot
+**État actuel : lots 00 à 06 implémentés, testés et intégrés localement. Le lot
 06 a utilisé GPT-5.6 Sol High et livre les photos Experience et avatars privés,
 offline-first, normalisés, projetés et effaçables sans traverser les frontières
 de contexte. Les configurations Apple/SSM et IAM/CORS S3 réelles, la recette
