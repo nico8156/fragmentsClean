@@ -5,7 +5,10 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import jakarta.transaction.Transactional;
+
+import java.util.Objects;
 
 @Transactional
 public class CreateCommentCommandHandler implements CommandHandler<CreateCommentCommand> {
@@ -28,7 +31,18 @@ public class CreateCommentCommandHandler implements CommandHandler<CreateComment
 		// idempotence simple : si le commentaire existe déjà, on ne recrée pas
 		var existing = commentRepository.byId(cmd.commentId());
 		if (existing.isPresent()) {
+			var snapshot = existing.get().toSnapshot();
+			if (!snapshot.authorId().equals(cmd.authorId())
+					|| !snapshot.targetId().equals(cmd.targetId())
+					|| !Objects.equals(snapshot.parentId(), cmd.parentId())
+					|| !snapshot.body().equals(cmd.body())) {
+				throw new BusinessCommandRejectedException(
+						"COMMENT_ID_CONFLICT", "Comment id belongs to another comment");
+			}
 			return;
+		}
+		if (cmd.body() == null || cmd.body().isBlank()) {
+			throw new BusinessCommandRejectedException("COMMENT_BODY_EMPTY", "Comment body cannot be empty");
 		}
 
 		var comment = Comment.createNew(

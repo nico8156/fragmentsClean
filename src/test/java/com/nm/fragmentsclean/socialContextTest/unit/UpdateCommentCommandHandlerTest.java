@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
@@ -25,15 +25,13 @@ public class UpdateCommentCommandHandlerTest {
 	FakeCommentRepository commentRepository = new FakeCommentRepository();
 	FakeDomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 	DeterministicDateTimeProvider dateTimeProvider = new DeterministicDateTimeProvider();
-	RecordingCommandStatusRecorder commandStatusRecorder = new RecordingCommandStatusRecorder();
 
 	UpdateCommentCommandHandler handler;
 
 	@BeforeEach
 	void setup() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
-		commandStatusRecorder = new RecordingCommandStatusRecorder();
-		handler = new UpdateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider, commandStatusRecorder);
+		handler = new UpdateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider);
 
 		// seed : commentaire existant
 		Comment initial = Comment.createNew(
@@ -69,8 +67,6 @@ public class UpdateCommentCommandHandlerTest {
 		assertThat(evt.body()).isEqualTo("New content");
 		assertThat(evt.version()).isEqualTo(1L);
 		assertThat(evt.occurredAt()).isEqualTo(dateTimeProvider.instantOfNow);
-		assertThat(commandStatusRecorder.commandId).isEqualTo(CMD_ID);
-		assertThat(commandStatusRecorder.eventType).isEqualTo("social.comment.updated");
 	}
 
 	@Test
@@ -87,8 +83,6 @@ public class UpdateCommentCommandHandlerTest {
 		assertThat(domainEventPublisher.published).isEmpty();
 		var snap = commentRepository.allSnapshots().getFirst();
 		assertThat(snap.version()).isEqualTo(0L);
-		assertThat(commandStatusRecorder.commandId).isEqualTo(CMD_ID);
-		assertThat(commandStatusRecorder.eventType).isEqualTo("social.comment.updated");
 	}
 
 	@Test
@@ -99,18 +93,7 @@ public class UpdateCommentCommandHandlerTest {
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				"New content",
 				Instant.parse("2023-10-01T10:04:00Z"))))
-				.isInstanceOf(IllegalStateException.class);
-		assertThat(commandStatusRecorder.commandId).isNull();
-	}
-
-	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
-		UUID commandId;
-		String eventType;
-
-		@Override
-		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
-			this.commandId = commandId;
-			this.eventType = eventType;
-		}
+				.isInstanceOf(BusinessCommandRejectedException.class)
+				.hasFieldOrPropertyWithValue("rejectionCode", "COMMENT_NOT_OWNED");
 	}
 }

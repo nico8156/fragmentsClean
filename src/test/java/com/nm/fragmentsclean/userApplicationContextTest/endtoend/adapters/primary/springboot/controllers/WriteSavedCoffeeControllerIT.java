@@ -95,6 +95,34 @@ class WriteSavedCoffeeControllerIT extends AbstractBaseE2E {
 		assertThat(commandStatus).isEqualTo("APPLIED");
 	}
 
+	@Test
+	void already_satisfied_command_is_applied_without_a_new_event() throws Exception {
+		postSet(COMMAND_ID, true).andExpect(status().isAccepted());
+		UUID secondCommand = UUID.fromString("55555555-5555-4555-8555-555555555555");
+
+		postSet(secondCommand, true).andExpect(status().isAccepted());
+
+		assertThat(outboxRepository.findAll()).hasSize(1);
+		String commandStatus = jdbcTemplate.queryForObject(
+				"SELECT status FROM command_status WHERE command_id = ?", String.class, secondCommand);
+		assertThat(commandStatus).isEqualTo("APPLIED");
+	}
+
+	private org.springframework.test.web.servlet.ResultActions postSet(UUID commandId, boolean value) throws Exception {
+		return mockMvc.perform(post("/api/users/me/saved-coffees")
+				.with(jwt().jwt(j -> j.subject(USER_ID.toString()).claim("roles", java.util.List.of("USER"))))
+				.contentType("application/json")
+				.content("""
+						{
+						  "commandId": "%s",
+						  "savedCoffeeId": "%s",
+						  "coffeeId": "%s",
+						  "value": %s,
+						  "at": "2026-01-01T09:59:00.000Z"
+						}
+						""".formatted(commandId, SAVED_COFFEE_ID, COFFEE_ID, value)));
+	}
+
 	private void seedUser(UUID userId) {
 		jdbcTemplate.update("""
 				INSERT INTO auth_users (

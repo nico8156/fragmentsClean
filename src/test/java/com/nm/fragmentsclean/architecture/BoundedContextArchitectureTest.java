@@ -119,6 +119,20 @@ class BoundedContextArchitectureTest {
     }
 
     @Test
+    void command_status_controllers_use_queries_instead_of_jdbc_adapters() throws IOException {
+        List<Path> controllers = List.of(
+                MAIN_JAVA.resolve("sharedKernel/adapters/primary/springboot/controllers/CommandStatusController.java"),
+                MAIN_JAVA.resolve("adminImportContext/adapters/primary/rest/AdminCommandStatusController.java"));
+
+        assertThat(controllers.stream()
+                .filter(file -> fileContains(file, "adapters.secondary"))
+                .map(BoundedContextArchitectureTest::normalize)
+                .toList())
+                .as("command status primary adapters must cross a query/application boundary")
+                .isEmpty();
+    }
+
+    @Test
     void article_domain_has_no_lombok_data_or_public_setters() throws IOException {
         List<String> violations = javaFiles(MAIN_JAVA.resolve("articleContext/write/businesslogic/models")).stream()
                 .filter(file -> fileContains(file, "@Data") || fileMatches(file, "public\\s+void\\s+set[A-Z]"))

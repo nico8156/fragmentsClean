@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -14,16 +14,13 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
     private final CommentRepository commentRepository;
     private final DomainEventPublisher eventPublisher;
     private final DateTimeProvider dateTimeProvider;
-    private final CommandStatusRecorder commandStatusRecorder;
 
     public UpdateCommentCommandHandler(CommentRepository commentRepository,
                                        DomainEventPublisher eventPublisher,
-                                       DateTimeProvider dateTimeProvider,
-                                       CommandStatusRecorder commandStatusRecorder) {
+                                       DateTimeProvider dateTimeProvider) {
         this.commentRepository = commentRepository;
         this.eventPublisher = eventPublisher;
         this.dateTimeProvider = dateTimeProvider;
-        this.commandStatusRecorder = commandStatusRecorder;
     }
 
     @Override
@@ -32,10 +29,16 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
         var now = dateTimeProvider.now();
 
         Comment comment = commentRepository.byId(cmd.commentId())
-                .orElseThrow(() -> new IllegalStateException("Comment not found: " + cmd.commentId()));
+                .orElseThrow(() -> new BusinessCommandRejectedException(
+                        "COMMENT_NOT_FOUND", "Comment does not exist"));
 
         if (!comment.toSnapshot().authorId().equals(cmd.userId())) {
-            throw new IllegalStateException("Only the comment author can update it");
+            throw new BusinessCommandRejectedException(
+                    "COMMENT_NOT_OWNED", "Only the comment author can update it");
+        }
+
+        if (cmd.newBody() == null || cmd.newBody().isBlank()) {
+            throw new BusinessCommandRejectedException("COMMENT_BODY_EMPTY", "Comment body cannot be empty");
         }
 
         boolean changed = comment.applyBodyEdit(cmd.newBody(), now);
@@ -53,12 +56,5 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
 
         comment.domainEvents().forEach(eventPublisher::publish);
         comment.clearDomainEvents();
-        commandStatusRecorder.markApplied(
-                cmd.commandId(),
-                "Comment",
-                cmd.commentId().toString(),
-                "social.comment.updated",
-                now
-        );
     }
 }

@@ -40,12 +40,8 @@ public class WriteCommentController {
                 Instant.parse(body.at())
         );
 
-        try {
-            commandBus.dispatch(command);
-            return ResponseEntity.accepted().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        commandBus.dispatch(command);
+        return ResponseEntity.accepted().build();
     }
 
     @PutMapping
@@ -62,12 +58,8 @@ public class WriteCommentController {
                 Instant.parse(body.editedAt())
         );
 
-        try {
-            commandBus.dispatch(command);
-            return ResponseEntity.accepted().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        commandBus.dispatch(command);
+        return ResponseEntity.accepted().build();
     }
 
     @DeleteMapping
@@ -83,11 +75,7 @@ public class WriteCommentController {
                 Instant.parse(body.deletedAt())
         );
 
-        try {
-            commandBus.dispatch(command);
-            return ResponseEntity.accepted().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        commandBus.dispatch(command);
+        return ResponseEntity.accepted().build();
     }
 }

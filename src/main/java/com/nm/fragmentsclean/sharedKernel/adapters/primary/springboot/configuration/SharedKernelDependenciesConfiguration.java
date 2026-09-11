@@ -14,6 +14,10 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadataResolver;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandFingerprint;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandReceiptStore;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandTransaction;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCommandExecutor;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -54,8 +58,17 @@ public class SharedKernelDependenciesConfiguration {
     }
 
     @Bean
-    public CommandBus commandBus() {
-        return new CommandBus();
+    public DurableCommandExecutor durableCommandExecutor(
+            CommandReceiptStore receipts,
+            CommandFingerprint fingerprint,
+            CommandTransaction transactions,
+            DateTimeProvider dateTimeProvider) {
+        return new DurableCommandExecutor(receipts, fingerprint, transactions, dateTimeProvider);
+    }
+
+    @Bean
+    public CommandBus commandBus(DurableCommandExecutor durableCommandExecutor) {
+        return new CommandBus(durableCommandExecutor);
     }
     @Bean
     public QueryBus queryBus()  {
