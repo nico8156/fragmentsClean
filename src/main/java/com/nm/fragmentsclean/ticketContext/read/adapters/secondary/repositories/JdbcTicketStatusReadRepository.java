@@ -23,6 +23,15 @@ public class JdbcTicketStatusReadRepository implements TicketStatusReadRepositor
 
 	@Override
 	public TicketStatusView findById(UUID ticketId) {
+		return find(ticketId, null);
+	}
+
+	@Override
+	public TicketStatusView findByIdAndUserId(UUID ticketId, UUID userId) {
+		return find(ticketId, java.util.Objects.requireNonNull(userId));
+	}
+
+	private TicketStatusView find(UUID ticketId, UUID userId) {
 		SqlRowSet rs = jdbc.queryForRowSet("""
 				    SELECT ticket_id, user_id, status, outcome,
 				           image_ref, ocr_text,
@@ -31,7 +40,8 @@ public class JdbcTicketStatusReadRepository implements TicketStatusReadRepositor
 				           rejection_reason, version, occurred_at
 				    FROM ticket_status_projection
 				    WHERE ticket_id = ?
-				""", ticketId);
+				""" + (userId == null ? "" : " AND user_id = ?"),
+                userId == null ? new Object[]{ticketId} : new Object[]{ticketId, userId});
 
 		if (!rs.next())
 			return null;

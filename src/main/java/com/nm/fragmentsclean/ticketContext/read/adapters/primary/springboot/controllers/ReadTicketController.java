@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.ticketContext.read.adapters.primary.springboot.controllers;
 
 import java.util.UUID;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,8 +25,9 @@ public class ReadTicketController {
 	}
 
 	@GetMapping("/{ticketId}/status")
-	public ResponseEntity<TicketStatusView> getStatus(@PathVariable UUID ticketId) {
-		TicketStatusView view = queryBus.dispatch(new GetTicketStatusQuery(ticketId));
+	public ResponseEntity<TicketStatusView> getStatus(@PathVariable UUID ticketId, @AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) return ResponseEntity.status(401).build();
+		TicketStatusView view = queryBus.dispatch(new GetTicketStatusQuery(ticketId, UUID.fromString(jwt.getSubject())));
 		if (view == null)
 			return ResponseEntity.notFound().build();
 		return ResponseEntity.ok(view);
