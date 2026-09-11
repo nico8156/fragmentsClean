@@ -23,6 +23,11 @@ Les lots 00 et 01 sont intégrés localement dans `release/app-store`. Aucun cho
 métier des lots suivants n'est implicitement validé et aucun déploiement n'est
 autorisé.
 
+Lot 02 démarré avec Astra High. Décisions produit explicites : **expériences
+possibles sans ticket**, **Pass repensé autour des visites/expériences**, avec
+**tickets nécessaires pour certains niveaux**. Le [cadrage du lot 02](../architecture/experience-pass-contracts.md)
+fait foi pour ces décisions et distingue les seuils encore proposés.
+
 ## Conclusion
 
 Fragments dispose déjà du socle nécessaire pour avancer vite : navigation,
@@ -39,10 +44,10 @@ leurs critères de sortie et les temps constatés ; aucune date de soumission
 n'est garantie. Le calendrier Apple et les attentes externes sont distingués du
 temps de développement.
 
-La suggestion préliminaire de simplement faire évoluer les commentaires en
-« expériences » mérite d'être corrigée : les commentaires actuels n'attestent
-aucune visite. Une expérience vérifiée nécessite des invariants supplémentaires.
-Conserver les commentaires impose déjà de traiter les exigences UGC.
+Les expériences libres deviennent un contenu autonome, accessible sans ticket.
+Elles ne doivent pas être présentées comme des visites vérifiées. Les commentaires
+actuels restent distincts jusqu'à décision explicite de transition ; les contenus
+publics imposent déjà de traiter la modération UGC.
 
 ## Périmètre et niveau de preuve
 
@@ -286,35 +291,37 @@ Sources principales : [navigation](/Users/nicolasmaldiney/fragmentsCleanFront/ap
 
 ## Découpage métier recommandé pour les expériences
 
-Si le produit retient « souvenir publié d'une visite appuyée par un ticket »,
-un `experienceContext` est défendable : éligibilité, brouillon, publication,
-modification, médias et masquage ont leur propre cycle de vie. Ce choix reste
-une proposition, pas une décision produit actée par l'audit.
+Décision du lot 02 : une expérience peut être publiée sans ticket.
+`experienceContext` reste recommandé pour son cycle autonome de contenu,
+brouillon, publication, médias et modération. Le ticket conserve son propre
+parcours et participe à certains niveaux du Pass. Voir le
+[contrat détaillé](../architecture/experience-pass-contracts.md).
 
 | Concept | Propriétaire proposé | Frontière |
 | --- | --- | --- |
-| Vérification et rattachement du ticket | `ticketContext` | Émet un fait de visite éligible avec références primitives ; aucun accès d'Experience aux tables ticket |
-| Référence café utile au rattachement | Référence locale du consommateur | Alimentée par événements café ; ambiguïté résolue explicitement, éventuellement par Studio |
-| Expérience et références de ses médias | `experienceContext` | Unicité par ticket, propriétaire, publication non vide, visibilité |
+| Vérification du ticket et déduplication | `ticketContext` | Résultat de vérification distinct d'une preuve de visite ; progression par événements, pas d'accès aux tables d'un autre BC |
+| Référence café | Référence locale du consommateur | Alimentée par événements café ; le rattachement d'un ticket reste conditionnel à une fonction justificatif validée |
+| Expérience et références de ses médias | `experienceContext` | Auteur, café, publication non vide et visibilité ; aucun ticket requis |
+| Progression Pass | Sous-module de `userApplicationContext` proposé | Politique versionnée, contributions locales ticket/experience, niveaux ; suppression du SQL transverse actuel |
 | Nom et avatar publics | `userApplicationContext` | Projection locale du profil dans les consommateurs |
 | Commentaire, like du lieu | `socialContext` | Ne deviennent pas automatiquement des visites |
 | Favori privé | `userApplicationContext` | Le produit possède déjà `savedCoffeeWl`, distinct du Like |
 | Stockage d'objets | Adaptateurs techniques | S3 ne devient pas un domaine ni une table métier partagée sans propriétaire |
 
-Contrat nouveau possible : événement versionné contenant `ticketId`, `userId`,
-`coffeeId`, date de visite, statut d'éligibilité et version. Ne pas transmettre
-l'OCR ou les informations de paiement à Experience. Les références consommées
-servent explicitement à l'éligibilité ; les vues de feed ne servent pas aux
-décisions d'écriture.
+Contrats de progression proposés : faits versionnés de contribution Experience
+(id, auteur, café, admissibilité, version) et de résultat ticket. Ne pas transmettre
+l'OCR ou les informations de paiement au Pass ou à Experience. Les références
+métier consommées sont distinctes des vues de feed et des compteurs affichés.
 
-Définir aussi la révocation : modification/suppression administrative du ticket,
-café archivé, utilisateur supprimé, publication concurrente et replay désordonné.
-Pour les tickets existants, un backfill explicite est nécessaire ; ne pas fabriquer
-de rattachement à partir du nom du commerçant seul.
+Définir retrait de contribution, ticket supprimé/corrigé, utilisateur supprimé,
+café archivé, concurrence et replay désordonné. La révocation d'un justificatif
+facultatif ne supprime pas automatiquement une expérience libre. Aucun rattachement
+des anciens tickets à partir du seul nom du commerçant.
 
-Le Pass actuel compte les commentaires et les likes. Remplacer les commentaires
-par des expériences sans faire évoluer ce contrat casserait la progression.
-Ne pas attribuer rétroactivement une preuve de visite aux anciens commentaires.
+Le Pass actuel compte commentaires et likes. Sa refonte est demandée par le
+produit : versionner la politique, prévoir les acquis existants et retirer les
+seuils de repli mobiles. Les seuils nouveaux restent à valider ; aucune conversion
+automatique de commentaire en expérience ou visite vérifiée.
 
 ## Médias : socle existant et travail restant
 
@@ -405,9 +412,11 @@ Sources : [README FlowAtlas](/Users/nicolasmaldiney/FlowAtlas/README.md),
 
 ### Cible et règles de livraison
 
-Livrer un même produit complet : découverte → café → visite/ticket → expérience
-texte/photo → profil et progression, avec modération, confidentialité, suppression
-du compte et exploitation fiables. Le parcours passe ensuite par TestFlight,
+Livrer un même produit complet : découverte → café → expérience texte/photo,
+avec un parcours parallèle de scan/historique de tickets ; expériences et tickets
+alimentent une progression Pass selon la politique validée. Profil, modération,
+confidentialité, suppression du compte et exploitation font partie du produit.
+Le parcours passe ensuite par TestFlight,
 corrections de recette et préparation de la soumission App Store.
 
 Ne pas supprimer silencieusement expériences, photos, avatar ou conformité pour
@@ -420,15 +429,15 @@ et nouvelles fonctions sociales restent des extensions à valider séparément.
 « prêt à soumettre » sont des statuts différents. Une suite verte ne suffit pas
 à franchir les trois derniers. Les builds partagés, mutations AWS, migrations
 d'environnement et soumissions doivent avoir leur périmètre d'autorisation
-explicite ; la présente demande n'autorise que la mise à jour du plan.
+explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiement.
 
 ### Ordre des lots et dépendances
 
 | Lot | Intervention | Dépôts | Dépendances et sortie attendue |
 | --- | --- | --- | --- |
 | 00 | Isolation comptes/outbox/cache/SSE, propriétaire ticket, permission | Serveur + mobile | Implémenté et testé localement ; reprise legacy et recette appareil restent ouvertes |
-| 01 | P0 erreurs techniques, rejets métier, vérité et autorisation des statuts | Serveur + mobile + contrats admin concernés | Prochain lot après validation ; aucun rollback sur panne, rejet durable, idempotence et statut réservé au demandeur |
-| 02 | Contrats Experience/Comment/Pass, visite éligible, rattachement café et historique tickets | Serveur + mobile + Studio si résolution opérateur | 01 ; règles validées, références fiables, historique paginé, cas ambigus et anciens tickets traités explicitement |
+| 01 | P0 erreurs techniques, rejets métier, vérité et autorisation des statuts | Serveur + mobile + contrats admin concernés | Intégré localement ; aucun rollback sur panne, rejet durable, idempotence et statut réservé au demandeur |
+| 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile + Studio si résolution opérateur | En cadrage ; seuils/migration à valider, historique fiable, références locales ; rattachement justificatif facultatif à confirmer |
 | 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | 01 ; auth conforme au cas produit, nom public modifiable, suppression des données existantes et sessions, extension prévue aux nouveaux contenus |
 | 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | 01 + contrats d'identité ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables |
 | 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | 02 + socle 03/04 ; brouillon, publication, édition, suppression, listes café/moi, synchronisation, modération et suppression de compte intégrées |
@@ -449,7 +458,7 @@ intercalées après accord sur les écrans, sans court-circuiter les P0.
 
 Ce lot est distinct de l'isolation déjà réalisée. Il est implémenté, validé et
 intégré localement dans les branches `release/app-store` backend et mobile.
-La revue produit de fin de tranche reste le point d'arrêt avant le lot 02.
+Le produit a autorisé le démarrage du lot 02.
 Il doit couvrir les commandes mobiles existantes (tickets, commentaires, likes,
 favoris), inventorier les consommateurs Studio du statut et fournir un contrat
 réutilisable par profil, expériences, médias et modération.
@@ -524,14 +533,14 @@ de confondre implémentation locale et production.
 
 ### Lots 02 à 06 — Parcours métier complet et conformité intégrée
 
-**02 — Visite et contrat métier.** Valider le sens d'une expérience, l'éligibilité
-du ticket, son rattachement au café, la déduplication du reçu et les cas de
-révocation. Ajouter l'historique serveur du compte pour restaurer les tickets sur
-un nouveau téléphone. Prévoir les anciens tickets et une résolution opérateur
-si nécessaire, sans fabriquer de preuve de visite depuis le nom du commerçant.
-Fixer les événements primitifs versionnés, références locales des consommateurs,
-unicité et règles de progression du Pass. Ne pas requalifier automatiquement
-les anciens commentaires en expériences vérifiées.
+**02 — Expériences libres et nouveau Pass.** Publication autorisée sans ticket ;
+certains niveaux du Pass nécessitent des tickets. Valider seuils, rôle des
+commentaires existants et conservation des acquis. Ajouter l'historique serveur
+paginé et sa consommation mobile, fiabiliser les projections ticket face au replay,
+définir déduplication et retrait des contributions. Déplacer la progression vers
+son propriétaire produit avec références locales et événements primitifs versionnés.
+Un justificatif ticket/café, s'il est retenu, aura ses propres règles de
+rattachement/révocation ; il ne conditionne pas les expériences libres.
 
 **03 — Identité et compte.** Vérifier le cas Google/connexion Apple ou équivalent
 conforme et les prérequis de configuration. Garder profil produit dans
@@ -551,15 +560,17 @@ métier direct depuis le contrôleur admin. Définir le responsable opérationne
 le contact public et le traitement effectif des signalements, pas seulement les
 boutons. Les règles de communauté et conditions accompagnent le parcours.
 
-**05 — Expériences texte.** Après accord métier, introduire `experienceContext`
-si son autonomie est confirmée, avec invariants de propriétaire/éligibilité,
+**05 — Expériences texte.** Introduire `experienceContext` suivant le contrat
+validé, avec invariants de propriétaire/café,
 brouillon, publication non vide, modification, suppression et masquage. Les
 commandes sont offline-first et idempotentes ; lectures café/moi paginées,
-projections et SSE/GET. Livrer le parcours ticket → rédaction → publication →
-fiche/historique avec états sans ticket, vide, erreur et reprise. Étendre dans ce
+projections et SSE/GET. Livrer fiche café → rédaction → publication →
+fiche/historique, accessible sans ticket, avec vide, erreur et reprise. Raccorder
+la progression Pass au producteur réel Experience dans cette même verticale.
+Étendre dans ce
 même lot signalement, blocage, file Studio et suppression du compte ; ne pas
 exposer un nouveau type d'UGC sans les protections du lot 04. Tester replay,
-concurrence, suppression et révocation d'éligibilité.
+concurrence, suppression et retrait de contribution au Pass.
 
 **06 — Photos et avatar.** Réutiliser les adaptateurs techniques S3, mais garder
 les références et autorisations chez leurs propriétaires métier. Livrer upload
@@ -613,11 +624,11 @@ levée des blocages et accord explicite ; l'acceptation Apple reste externe.
 
 ### Décisions ciblées à prendre avant les lots concernés
 
-Le choix « faire les deux parcours » est acquis. Restent à valider, sans bloquer
-la préparation du lot 01 une fois le plan approuvé :
+Le choix « faire les deux parcours » et les trois décisions du lot 02 sont acquis.
+Restent à valider avant les implémentations concernées :
 
-- Avant 02/05 : expérience uniquement liée à une visite éligible ou autre règle,
-  rôle futur des commentaires, effet sur le Pass, café inconnu et révocation.
+- Avant 02/05 : seuils exacts du nouveau Pass, conservation des acquis, rôle futur
+  des commentaires et éventuel justificatif facultatif ticket/café.
 - Avant 03 : modalités du nom public, politique de suppression/anonymisation,
   fournisseurs de connexion, informations de support et confidentialité.
 - Avant 04 : responsabilité de modération, motifs/actions et traitement opérateur.
@@ -639,7 +650,8 @@ simultanées ne doivent pas être additionnées deux fois.
 | --- | --- | --- | --- |
 | 00 | Implémenté et testé localement | Non mesuré | 232 tests mobile, 41 backend ciblés, TypeScript/carte Redux OK ; legacy et appareil ouverts |
 | 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
-| 02 à 08 | Planifiés, non démarrés | Non démarré | Contrats métier puis fonctionnalités complètes |
+| 02 | Cadrage en cours, Astra High | Premier point mesuré 14:39 CEST ; exploration antérieure non chronométrée | Expériences sans ticket et tickets requis pour certains niveaux décidés ; contrat et seuils proposés, aucun code fonctionnel nouveau |
+| 03 à 08 | Planifiés, non démarrés | Non démarré | Contrats métier puis fonctionnalités complètes |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
@@ -685,7 +697,8 @@ Gabarit du journal à compléter sans valeurs inventées :
 | --- | --- | --- | --- | --- | --- | --- |
 | Prévision 0 — 2026-09-11 13:47 CEST | 01, erreurs/rejets/statuts | Non consignée avant le premier patch ; ne pas reconstruire a posteriori | Fenêtre écoulée mesurée depuis 13:47, incluant compilation et attentes Testcontainers ; temps actif non chronométré | Revue, documentation et intégration Git | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | Estimation encore peu fiable : le socle existant a accéléré 01, mais Experience, médias et modération sont plus larges |
 | Prévision 1 — 2026-09-11 14:30 CEST | 01 clos et intégré localement | Référence ci-dessus conservée | Fenêtre 43 min, incluant deux suites backend complètes, tests ciblés/Testcontainers, mobile, Studio et intégration Git ; temps actif non isolé | Zéro en implémentation locale ; migration/recette reportées au durcissement | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | 01 a été plus rapide grâce au socle existant et aux tests ; confiance faible à moyenne, sans extrapolation aux décisions Experience, médias, UGC et natif |
-| Prévisions 1, 2… — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
+| Prévision 2 — lot 02, premier point 2026-09-11 14:39 CEST, avant code fonctionnel | 02A cadrage, 02B historique, 02C Pass/doublons, 02D contrats | 30–60 min de cadrage ; 1–2 jours concentrés d'implémentation après validation | Exploration démarrée ; temps actif non isolé | Seuils/migration à valider puis slices testées | Référence 4–8 jours conservée, à recalculer après cadrage et première slice ; TestFlight/App Review séparés | Ticket retiré du chemin obligatoire ; nouvelle politique Pass, ownership et replay ajoutent du travail ; confiance faible |
+| Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
@@ -723,7 +736,7 @@ raisonnement monte seulement avec la complexité et les compromis du lot.
 | Audit et plan initial | GPT-6 Astra | High | Architecture, arbitrages et périmètre transverse ; réalisé |
 | 00 — isolation/confidentialité | GPT-6 Astra | High | Investigation et sécurisation transverse ; réalisé |
 | 01 — erreurs/rejets/statuts | GPT-5.6 Sol | High | Transactions, concurrence, sécurité et contrats offline ; utilisé du début d'implémentation à la revue et l'intégration |
-| 02 — contrats visite/Experience/Pass | GPT-6 Astra ou GPT-5.6 Sol | High à Extra High | Décision DDD structurante ; confirmer après les enseignements du lot 01 |
+| 02 — contrats Experience/Pass/historique | GPT-6 Astra pour 02A ; Sol proposé pour l'implémentation | High | Astra sélectionné par l'utilisateur ; décisions produit, ownership Pass et contrats ; changement ultérieur à tracer |
 | 03 — identité/profil/suppression | GPT-5.6 Sol | High | Cycle de vie transverse et conformité ; Astra seulement pour une revue ciblée si nécessaire |
 | 04 — modération UGC | GPT-5.6 Sol | High | Autorisations, cohérence serveur/mobile/Studio et exploitation |
 | 05 — expériences texte | GPT-5.6 Sol | High | Verticale métier complète DDD/CQRS/offline |
@@ -789,6 +802,6 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**Point d'arrêt actuel : lot 01 clos localement. Revoir sa direction et choisir
-le modèle du lot 02 avant toute nouvelle implémentation. Aucun déploiement ni
-démarrage implicite du parcours Experience n'est autorisé par cette clôture.**
+**État actuel : lot 02 démarré avec Astra High. Expériences sans ticket et tickets
+nécessaires à certains niveaux actés ; seuils, migration des acquis et contrats
+proposés dans le cadrage 02A. Les slices suivantes restent à implémenter et tester.**
