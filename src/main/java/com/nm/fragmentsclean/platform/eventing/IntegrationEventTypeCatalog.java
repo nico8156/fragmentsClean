@@ -39,6 +39,7 @@ public final class IntegrationEventTypeCatalog {
             Map.entry("TicketVerificationCompletedEvent", "ticket.verification.completed")
             ,Map.entry("TicketAdminUpdatedEvent", "ticket.admin.updated")
             ,Map.entry("TicketAdminDeletedEvent", "ticket.admin.deleted")
+            ,Map.entry("ExperienceLifecycleChangedEvent", "experience.lifecycle.changed")
     );
 
     private IntegrationEventTypeCatalog() {

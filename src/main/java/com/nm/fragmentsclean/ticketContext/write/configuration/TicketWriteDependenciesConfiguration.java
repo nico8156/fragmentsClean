@@ -20,6 +20,7 @@ import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.ticketEngine.ProcessBuilderTicketVerificationProvider;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketSubmissionFingerprintRegistry;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminUpdateTicketCommandHandler;
@@ -42,8 +43,9 @@ public class TicketWriteDependenciesConfiguration {
 	VerifyTicketCommandHandler verifyTicketCommandHandler(
 			TicketRepository ticketRepository,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
-		return new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider);
+			DateTimeProvider dateTimeProvider,
+			TicketSubmissionFingerprintRegistry fingerprintRegistry) {
+		return new VerifyTicketCommandHandler(ticketRepository, domainEventPublisher, dateTimeProvider, fingerprintRegistry);
 	}
 
 	@Bean AdminUpdateTicketCommandHandler adminUpdateTicketCommandHandler(TicketRepository repository,

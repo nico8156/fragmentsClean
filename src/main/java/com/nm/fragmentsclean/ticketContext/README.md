@@ -259,6 +259,10 @@ Fournir une vue simple, stable, utile à l’UI.
 Endpoint de lecture :
 
 * `GET /api/tickets/{ticketId}/status`
+* `GET /api/users/me/tickets?cursor=...&limit=...`
+
+Les deux lectures sont privées et filtrées par l'identité authentifiée. La liste
+utilise une pagination keyset et n'expose ni OCR, ni image, ni données de paiement.
 
 ---
 
@@ -291,12 +295,16 @@ ticket_status_projection updated
 Le frontend ne reçoit jamais `TicketVerifyAcceptedEvent` ni
 `TicketVerificationCompletedEvent`.
 
-Quand une vérification est approuvée, le même handler met également à jour le
-read model d'entitlements utilisateur après la projection ticket :
+Quand le résultat d'une vérification change, `ticketContext` publie son contrat
+d'intégration stable. Le sous-module Pass de `userApplicationContext` le consomme
+via sa propre inbox et met à jour sa projection locale :
 
 ```text
-ticket_status_projection updated
--> user_entitlements_projection refreshed
+ticket.verification.completed / ticket.admin.updated / ticket.admin.deleted
+-> app-users-events
+-> inbox
+-> pass_ticket_contributions
+-> user_pass_projection
 -> ProjectionSyncEvent(
      eventName="projection.updated",
      projection="entitlements",
@@ -308,42 +316,29 @@ ticket_status_projection updated
 -> client GET /api/users/me/entitlements
 ```
 
-Ce flux est le chemin actif pour la fraîcheur des droits produit. Le client
-reçoit un signal de projection, puis relit un snapshot des entitlements.
+Le client reçoit ensuite un signal de projection, puis relit le snapshot. Le
+handler ticket ne lit et ne modifie aucune table du Pass.
 
-## Pass mobile
+## Contribution au Pass
 
-Le contrat mobile `GET /api/users/me/entitlements` porte aussi le snapshot de
-progression Pass. Le backend reste source de vérité pour les compteurs :
+Le Pass n'appartient plus à `ticketContext`. Ce contexte fournit uniquement des
+faits versionnés sur le résultat du ticket. `userApplicationContext` possède la
+politique et le contrat mobile `GET /api/users/me/entitlements` :
 
 ```text
-ticket_status_projection
-+ social_comments_projection
-+ social_likes_projection
--> UserEntitlementsView
--> PassProgressPolicy
+ticket integration events
+-> userApplicationContext inbox
+-> local ticket contribution
+-> PassProgressPolicy v2
 -> /api/users/me/entitlements
 -> mobile entitlementWl read model
 -> PassViewModel selector
 -> Pass rings UI
 ```
 
-Les seuils Pass actuels sont fixes côté backend :
-
-* `COFFEE_TASTER` : 3 tickets validés, débloque `SCAN`.
-* `URBAN_EXPLORER` : 5 tickets validés et 3 commentaires publiés, débloque `COMMENT`.
-* `SOCIAL_BEAN` : 10 tickets validés, 5 commentaires publiés et 5 likes confirmés, débloque `LIKE`.
-* `FRAGMENTS_MASTER` : niveau final libre. Il n'ajoute pas de nouvel objectif ;
-  il devient complet quand `SOCIAL_BEAN` est complet.
-
-Le backend ne retourne pas de couleurs ni de règles visuelles. Le mobile calcule
-uniquement la progression graphique à partir de `counters`, `requirements` et
-`status`.
-
-Dette assumée pour le MVP : ce read model assemble des compteurs à partir de
-projections ticket et social. La cible plus stricte serait une projection Pass
-alimentée par événements d'intégration social/ticket, sans lecture SQL
-transverse.
+Un reçu OCR strictement identique est protégé par une empreinte normalisée et une
+contrainte d'unicité concurrente. Cette empreinte ne prétend pas détecter deux
+photos différentes du même reçu ; les entrées sans OCR restent une limite connue.
 
 ---
 
@@ -351,7 +346,7 @@ transverse.
 
 * `JdbcTicketStatusReadRepository`
 * `JdbcTicketStatusProjectionRepository`
-* `JdbcUserEntitlementsProjectionRepository`
+* `JdbcTicketHistoryReadRepository`
 
 ➡️ Le read model utilise une persistance optimisée (JDBC) pour les vues.
 

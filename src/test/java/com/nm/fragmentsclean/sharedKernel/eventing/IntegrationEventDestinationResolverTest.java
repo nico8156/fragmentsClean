@@ -34,9 +34,9 @@ class IntegrationEventDestinationResolverTest {
     }
 
     @Test
-    void routes_ticket_completed_to_ticket_projection_queue_only() {
+    void routes_ticket_completed_to_ticket_and_user_pass_projections() {
         assertThat(destinations("Ticket", "com.example.TicketVerificationCompletedEvent"))
-                .containsExactly("ticket-events");
+                .containsExactly("ticket-events", "app-users-events");
     }
 
     @Test
@@ -45,6 +45,12 @@ class IntegrationEventDestinationResolverTest {
                 .containsExactly("articles-events");
         assertThat(destinations("ArticleAuthoringSaga", "com.example.ArticleGenerationCompletedEvent"))
                 .containsExactly("articles-events");
+    }
+
+    @Test
+    void routes_experience_lifecycle_facts_to_the_user_product_projection() {
+        assertThat(destinations("Experience", "com.example.ExperienceLifecycleChangedEvent"))
+                .containsExactly("app-users-events");
     }
 
     private List<String> destinations(String aggregateType, String eventType) {

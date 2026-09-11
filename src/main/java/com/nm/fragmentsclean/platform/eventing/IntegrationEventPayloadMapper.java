@@ -24,6 +24,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrati
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialLikeSetIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.TicketIntegrationEvents;
+import com.nm.fragmentsclean.platform.eventing.contracts.ExperienceIntegrationEvents;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleWorkflowIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AuthUserLoggedInIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
@@ -135,6 +136,12 @@ public class IntegrationEventPayloadMapper {
                         uuidOrFallback(node, "eventId", event.getEventId()), uuidOrFallback(node, "commandId", event.getEventId()),
                         uuidOrFallback(node, "ticketId", event.getAggregateId()), uuid(node, "userId"), uuid(node, "actorUserId"),
                         longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()));
+                case "experience.lifecycle.changed" -> new ExperienceIntegrationEvents.LifecycleChanged(
+                        uuidOrFallback(node, "eventId", event.getEventId()),
+                        uuidOrFallback(node, "experienceId", event.getAggregateId()), uuid(node, "userId"),
+                        uuid(node, "coffeeId"), text(node, "publicationStatus"), text(node, "moderationStatus"),
+                        text(node, "reason"), longValue(node, "version"),
+                        instantOrFallback(node, "occurredAt", event.getOccurredAt()));
                 case "coffee.published" -> new CoffeePublishedIntegrationEvent(
                         uuidOrFallback(node, "eventId", event.getEventId()),
                         uuidOrFallback(node, "commandId", event.getEventId()),

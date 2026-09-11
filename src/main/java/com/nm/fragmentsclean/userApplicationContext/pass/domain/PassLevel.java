@@ -1,4 +1,4 @@
-package com.nm.fragmentsclean.ticketContext.read.pass;
+package com.nm.fragmentsclean.userApplicationContext.pass.domain;
 
 public enum PassLevel {
     COFFEE_TASTER,
