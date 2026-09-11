@@ -9,6 +9,6 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketAdmi
 public class TicketAdminEventHandlers {
     private final JdbcTicketStatusProjectionRepository repository;
     public TicketAdminEventHandlers(JdbcTicketStatusProjectionRepository repository) { this.repository = repository; }
-    public void updated(TicketAdminUpdatedEvent event) { repository.applyAdminUpdated(event); }
-    public void deleted(TicketAdminDeletedEvent event) { repository.applyAdminDeleted(event); }
+    public boolean updated(TicketAdminUpdatedEvent event) { return repository.applyAdminUpdated(event); }
+    public boolean deleted(TicketAdminDeletedEvent event) { return repository.applyAdminDeleted(event); }
 }

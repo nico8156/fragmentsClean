@@ -24,12 +24,9 @@ public class JdbcTicketStatusProjectionRepository {
         return instant == null ? null : Timestamp.from(instant);
     }
 
-    /**
-     * Upsert "ANALYZING" state.
-     * Idempotent / last-write-wins by version (we accept overwrite; you can add guards if needed).
-     */
-    public void applyAnalyzing(TicketVerifyAcceptedEvent evt) {
-        jdbc.update("""
+    /** Upsert the initial state without allowing a replay to reopen a terminal ticket. */
+    public boolean applyAnalyzing(TicketVerifyAcceptedEvent evt) {
+        return jdbc.update("""
             INSERT INTO ticket_status_projection (
               ticket_id, user_id, status, outcome,
               image_ref, ocr_text,
@@ -46,6 +43,8 @@ public class JdbcTicketStatusProjectionRepository {
               ocr_text  = COALESCE(EXCLUDED.ocr_text,  ticket_status_projection.ocr_text),
               version = EXCLUDED.version,
               occurred_at = EXCLUDED.occurred_at
+            WHERE ticket_status_projection.version < EXCLUDED.version
+              AND ticket_status_projection.status NOT IN ('CONFIRMED', 'REJECTED', 'DELETED')
         """,
                 evt.ticketId(),
                 evt.userId(),
@@ -58,14 +57,14 @@ public class JdbcTicketStatusProjectionRepository {
                 null,
                 evt.version(),
                 ts(evt.occurredAt())
-        );
+        ) == 1;
     }
 
     /**
      * Upsert completed state (APPROVED/REJECTED/FAILED_*).
      * For FAILED_* we keep status ANALYZING (or you can set status REJECTED if you want).
      */
-    public void applyCompleted(TicketVerificationCompletedEvent evt) {
+    public boolean applyCompleted(TicketVerificationCompletedEvent evt) {
         String status = switch (evt.outcome()) {
             case APPROVED -> Ticket.TicketStatus.CONFIRMED.name();
             case REJECTED -> Ticket.TicketStatus.REJECTED.name();
@@ -82,7 +81,7 @@ public class JdbcTicketStatusProjectionRepository {
 
         String rejectionReason = evt.rejected() != null ? evt.rejected().reasonCode() : null;
 
-        jdbc.update("""
+        return jdbc.update("""
             INSERT INTO ticket_status_projection (
               ticket_id, user_id, status, outcome,
               image_ref, ocr_text,
@@ -104,6 +103,8 @@ public class JdbcTicketStatusProjectionRepository {
               rejection_reason = EXCLUDED.rejection_reason,
               version = EXCLUDED.version,
               occurred_at = EXCLUDED.occurred_at
+            WHERE ticket_status_projection.version < EXCLUDED.version
+              AND ticket_status_projection.status <> 'DELETED'
         """,
                 evt.ticketId(),
                 evt.userId(),
@@ -120,17 +121,47 @@ public class JdbcTicketStatusProjectionRepository {
                 rejectionReason,
                 evt.version(),
                 ts(evt.occurredAt())
-        );
+        ) == 1;
     }
 
-    public void applyAdminUpdated(TicketAdminUpdatedEvent evt) {
-        jdbc.update("""
-            UPDATE ticket_status_projection SET status=?, image_ref=?, ocr_text=?, amount_cents=?, currency=?, ticket_date=?, merchant_name=?, merchant_address=?, payment_method=?, rejection_reason=?, version=?, occurred_at=? WHERE ticket_id=? AND version <= ?
-            """, evt.status(), evt.imageRef(), evt.ocrText(), evt.amountCents(), evt.currency(), ts(evt.ticketDate()), evt.merchantName(), evt.merchantAddress(), evt.paymentMethod(), evt.rejectionReason(), evt.version(), ts(evt.occurredAt()), evt.ticketId(), evt.version());
+    public boolean applyAdminUpdated(TicketAdminUpdatedEvent evt) {
+        return jdbc.update("""
+            INSERT INTO ticket_status_projection (
+              ticket_id, user_id, status, outcome, image_ref, ocr_text,
+              amount_cents, currency, ticket_date, merchant_name, merchant_address,
+              payment_method, rejection_reason, version, occurred_at
+            ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (ticket_id) DO UPDATE SET
+              user_id = EXCLUDED.user_id, status = EXCLUDED.status, outcome = NULL,
+              image_ref = EXCLUDED.image_ref, ocr_text = EXCLUDED.ocr_text,
+              amount_cents = EXCLUDED.amount_cents, currency = EXCLUDED.currency,
+              ticket_date = EXCLUDED.ticket_date, merchant_name = EXCLUDED.merchant_name,
+              merchant_address = EXCLUDED.merchant_address,
+              payment_method = EXCLUDED.payment_method,
+              rejection_reason = EXCLUDED.rejection_reason,
+              version = EXCLUDED.version, occurred_at = EXCLUDED.occurred_at
+            WHERE ticket_status_projection.version < EXCLUDED.version
+              AND ticket_status_projection.status <> 'DELETED'
+            """, evt.ticketId(), evt.userId(), evt.status(), evt.imageRef(), evt.ocrText(),
+                evt.amountCents(), evt.currency(), ts(evt.ticketDate()), evt.merchantName(),
+                evt.merchantAddress(), evt.paymentMethod(), evt.rejectionReason(), evt.version(),
+                ts(evt.occurredAt())) == 1;
     }
 
-    public void applyAdminDeleted(TicketAdminDeletedEvent evt) {
-        jdbc.update("UPDATE ticket_status_projection SET status='DELETED', version=?, occurred_at=? WHERE ticket_id=? AND version <= ?",
-                evt.version(), ts(evt.occurredAt()), evt.ticketId(), evt.version());
+    public boolean applyAdminDeleted(TicketAdminDeletedEvent evt) {
+        return jdbc.update("""
+            INSERT INTO ticket_status_projection (
+              ticket_id, user_id, status, outcome, image_ref, ocr_text,
+              amount_cents, currency, ticket_date, merchant_name, merchant_address,
+              payment_method, rejection_reason, version, occurred_at
+            ) VALUES (?, ?, 'DELETED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?)
+            ON CONFLICT (ticket_id) DO UPDATE SET
+              status = 'DELETED', outcome = NULL, image_ref = NULL, ocr_text = NULL,
+              amount_cents = NULL, currency = NULL, ticket_date = NULL,
+              merchant_name = NULL, merchant_address = NULL, payment_method = NULL,
+              rejection_reason = NULL, version = EXCLUDED.version,
+              occurred_at = EXCLUDED.occurred_at
+            WHERE ticket_status_projection.version < EXCLUDED.version
+            """, evt.ticketId(), evt.userId(), evt.version(), ts(evt.occurredAt())) == 1;
     }
 }

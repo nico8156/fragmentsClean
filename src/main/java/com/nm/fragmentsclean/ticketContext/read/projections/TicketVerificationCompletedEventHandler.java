@@ -32,7 +32,9 @@ public class TicketVerificationCompletedEventHandler implements EventHandler<Tic
     public void handle(TicketVerificationCompletedEvent event) {
         log.info("[ticket-read] apply TicketVerificationCompletedEvent ticketId={} outcome={} v={}",
                 event.ticketId(), event.outcome(), event.version());
-        projectionRepository.applyCompleted(event);
+        if (!projectionRepository.applyCompleted(event)) {
+            return;
+        }
         projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
                 "tickets",
                 "entity",
