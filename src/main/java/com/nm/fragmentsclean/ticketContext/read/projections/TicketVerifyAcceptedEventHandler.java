@@ -27,7 +27,9 @@ public class TicketVerifyAcceptedEventHandler {
     public void handle(TicketVerifyAcceptedEvent event) {
         log.info("[ticket-read] apply TicketVerifyAcceptedEvent ticketId={} v={}",
                 event.ticketId(), event.version());
-        projectionRepository.applyAnalyzing(event);
+        if (!projectionRepository.applyAnalyzing(event)) {
+            return;
+        }
         projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
                 "tickets",
                 "entity",

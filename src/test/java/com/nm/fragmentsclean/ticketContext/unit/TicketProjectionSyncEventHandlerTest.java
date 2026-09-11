@@ -103,21 +103,49 @@ class TicketProjectionSyncEventHandlerTest {
 		assertThat(entitlementsEvent.hints()).containsExactly("confirmedTickets");
 	}
 
+	@Test
+	void stale_or_duplicate_events_do_not_publish_sync_or_refresh_progress() {
+		var repository = new RecordingTicketProjectionRepository();
+		repository.applied = false;
+		var entitlementsRepository = new RecordingUserEntitlementsProjectionRepository(repository.operations);
+		var publisher = new RecordingProjectionSyncPublisher(repository.operations);
+
+		new TicketVerifyAcceptedEventHandler(repository, publisher).handle(new TicketVerifyAcceptedEvent(
+				UUID.randomUUID(), COMMAND_ID, TICKET_ID, USER_ID, "OCR", null,
+				Ticket.TicketStatus.ANALYZING.name(), 0L, NOW, CLIENT_AT));
+		new TicketVerificationCompletedEventHandler(repository, entitlementsRepository, publisher)
+				.handle(approvedEvent());
+
+		assertThat(repository.operations).containsExactly("projection", "projection");
+		assertThat(publisher.events).isEmpty();
+	}
+
+	private TicketVerificationCompletedEvent approvedEvent() {
+		return new TicketVerificationCompletedEvent(
+				UUID.randomUUID(), COMMAND_ID, TICKET_ID, USER_ID,
+				TicketVerificationCompletedEvent.Outcome.APPROVED, 1L, NOW, CLIENT_AT,
+				new TicketVerificationCompletedEvent.Approved(400, "EUR", null, "CAFE", null, null, List.of()),
+				null, "ticketEngine", "tv:ok");
+	}
+
 	private static class RecordingTicketProjectionRepository extends JdbcTicketStatusProjectionRepository {
 		private final List<String> operations = new ArrayList<>();
+		private boolean applied = true;
 
 		private RecordingTicketProjectionRepository() {
 			super(null);
 		}
 
 		@Override
-		public void applyAnalyzing(TicketVerifyAcceptedEvent evt) {
+		public boolean applyAnalyzing(TicketVerifyAcceptedEvent evt) {
 			operations.add("projection");
+			return applied;
 		}
 
 		@Override
-		public void applyCompleted(TicketVerificationCompletedEvent evt) {
+		public boolean applyCompleted(TicketVerificationCompletedEvent evt) {
 			operations.add("projection");
+			return applied;
 		}
 	}
 
