@@ -156,7 +156,7 @@ contexts. Voir [le contrat détaillé](../../../../../../../docs/architecture/id
 Le sous-module `pass` possède la politique de progression produit version 2.
 Il maintient ses propres contributions ticket et expérience à partir de contrats
 d'intégration primitifs, versionnés et consommés via inbox. Il ne lit aucune table
-métier de `ticketContext` ou du futur `experienceContext` en fonctionnement normal.
+métier de `ticketContext` ou d'`experienceContext` en fonctionnement normal.
 
 ```text
 ticket / experience stable event

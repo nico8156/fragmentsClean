@@ -47,6 +47,11 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
     jdbc.update("DELETE FROM comments");
     jdbc.update("DELETE FROM users");
     jdbc.update("DELETE FROM tickets");
+    jdbc.update("DELETE FROM experience_reports_projection");
+    jdbc.update("DELETE FROM experience_reports");
+    jdbc.update("DELETE FROM experience_views");
+    jdbc.update("DELETE FROM experiences");
+    jdbc.update("DELETE FROM experience_user_profiles");
     outbox.deleteAll();
     jdbc.update("DELETE FROM app_users");
     jdbc.update("DELETE FROM auth_users");
@@ -78,7 +83,8 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
             envelope(requested, IntegrationEventDestinations.APP_USERS_EVENTS),
             envelope(requested, IntegrationEventDestinations.AUTH_USERS_EVENTS),
             envelope(requested, IntegrationEventDestinations.DOMAIN_EVENTS),
-            envelope(requested, IntegrationEventDestinations.TICKET_EVENTS));
+            envelope(requested, IntegrationEventDestinations.TICKET_EVENTS),
+            envelope(requested, IntegrationEventDestinations.EXPERIENCES_EVENTS));
     envelopes.forEach(router::route);
     envelopes.forEach(router::route);
 
@@ -86,7 +92,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
         outbox.findAll().stream()
             .filter(event -> event.getEventType().endsWith("AccountDataErasedEvent"))
             .toList();
-    assertThat(acknowledgements).hasSize(3);
+    assertThat(acknowledgements).hasSize(4);
     acknowledgements.stream()
         .map(event -> envelope(event, IntegrationEventDestinations.APP_USERS_EVENTS))
         .forEach(router::route);
@@ -95,6 +101,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
     assertThat(count("comments", "author_id")).isZero();
     assertThat(count("users", "user_id")).isZero();
     assertThat(count("tickets", "user_id")).isZero();
+    assertThat(count("experiences", "user_id")).isZero();
     assertThat(
             jdbc.queryForObject(
                 "SELECT revoked FROM refresh_tokens WHERE user_id = ?", Boolean.class, USER_ID))
@@ -121,7 +128,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
                 "SELECT COUNT(*) FROM inbox_messages WHERE event_id = ? AND status = 'PROCESSED'",
                 Integer.class,
                 requested.getEventId()))
-        .isEqualTo(4);
+        .isEqualTo(5);
   }
 
   private OutboxEventJpaEntity event(String eventType) {
@@ -204,6 +211,18 @@ VALUES (?, ?, ?, 'Deletion Test', null, 'Personal bio', 'fr-FR', 0)
         """,
         CONTENT_ID,
         USER_ID,
+        at,
+        at);
+    jdbc.update(
+        """
+        INSERT INTO experiences (
+          experience_id, user_id, coffee_id, message, publication_status,
+          moderation_status, created_at, updated_at, version
+        ) VALUES (?, ?, ?, 'Personal experience', 'PUBLISHED', 'VISIBLE', ?, ?, 0)
+        """,
+        UUID.randomUUID(),
+        USER_ID,
+        UUID.randomUUID(),
         at,
         at);
   }

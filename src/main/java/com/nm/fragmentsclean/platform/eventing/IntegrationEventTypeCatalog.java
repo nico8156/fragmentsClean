@@ -35,6 +35,7 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("AuthenticationAccountDataErasedEvent", "account.data_erased"),
           Map.entry("SocialAccountDataErasedEvent", "account.data_erased"),
           Map.entry("TicketAccountDataErasedEvent", "account.data_erased"),
+          Map.entry("ExperienceAccountDataErasedEvent", "account.data_erased"),
           Map.entry("SavedCoffeeSetEvent", "user.saved_coffee.set"),
           Map.entry("LikeSetEvent", "social.like.set"),
           Map.entry("CommentCreatedEvent", "social.comment.created"),
@@ -47,7 +48,10 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("TicketVerificationCompletedEvent", "ticket.verification.completed"),
           Map.entry("TicketAdminUpdatedEvent", "ticket.admin.updated"),
           Map.entry("TicketAdminDeletedEvent", "ticket.admin.deleted"),
-          Map.entry("ExperienceLifecycleChangedEvent", "experience.lifecycle.changed"));
+          Map.entry("ExperienceLifecycleChangedEvent", "experience.lifecycle.changed"),
+          Map.entry("ExperienceSnapshotChangedEvent", "experience.snapshot.changed"),
+          Map.entry("ExperienceReportedEvent", "experience.reported"),
+          Map.entry("ExperienceModerationDecidedEvent", "experience.moderated"));
 
   private IntegrationEventTypeCatalog() {}
 

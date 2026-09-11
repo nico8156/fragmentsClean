@@ -19,6 +19,7 @@ class BoundedContextArchitectureTest {
             "authenticationContext",
             "coffeeContext",
 			"editorialIntelligenceContext",
+            "experienceContext",
             "socialContext",
             "ticketContext",
             "userApplicationContext"
@@ -129,6 +130,36 @@ class BoundedContextArchitectureTest {
                 .map(BoundedContextArchitectureTest::normalize)
                 .toList())
                 .as("command status primary adapters must cross a query/application boundary")
+                .isEmpty();
+    }
+
+    @Test
+    void experience_application_layers_depend_on_ports_not_secondary_adapters() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("experienceContext")).stream()
+                .filter(file -> normalize(file).contains("/businesslogic/")
+                        || normalize(file).contains("/read/projections/"))
+                .filter(file -> fileContains(file, ".adapters.secondary."))
+                .map(BoundedContextArchitectureTest::normalize)
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("Experience application/domain layers must depend on ports, never secondary adapters")
+                .isEmpty();
+    }
+
+    @Test
+    void experience_primary_adapters_do_not_access_secondary_repositories_directly() throws IOException {
+        List<String> violations = javaFiles(MAIN_JAVA.resolve("experienceContext")).stream()
+                .filter(file -> normalize(file).contains("/adapters/primary/"))
+                .filter(file -> !file.getFileName().toString().endsWith("Configuration.java"))
+                .filter(file -> fileContains(file, ".adapters.secondary."))
+                .map(BoundedContextArchitectureTest::normalize)
+                .sorted()
+                .toList();
+
+        assertThat(violations)
+                .as("Experience primary adapters must cross application ports/use cases")
                 .isEmpty();
     }
 

@@ -58,6 +58,7 @@ Active backend bounded contexts:
 - `articleContext`: editorial content.
 - `socialContext`: likes, comments, social interactions and their projections.
 - `ticketContext`: ticket submission, OCR/verification pipeline, entitlements source signals.
+- `experienceContext`: textual coffee experiences, their publication lifecycle, reports and moderation projections.
 - `adminImportContext`: Fragments Studio/admin import and editorial authoring boundary.
 - `sharedKernel`: technical abstractions only.
 
@@ -69,6 +70,7 @@ The mobile app mirrors these capabilities as `*Wl` client contexts where useful:
 - `likeWl`
 - `commentWl`
 - `ticketWl`
+- `experienceWl`
 - `outboxWl`
 - `wsWl`
 - `locationWl`

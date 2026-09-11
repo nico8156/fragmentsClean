@@ -61,9 +61,10 @@ The stable integration event is routed independently to the owning contexts:
 | `authenticationContext` | Revoke Apple credential when applicable, revoke refresh sessions, remove provider credential, anonymize auth identity |
 | `socialContext` | Remove authored comments, likes and social/user projections |
 | `ticketContext` | Remove tickets, fingerprints, status projections and ticket entitlements |
+| `experienceContext` | Remove experiences, reports, moderation references and local user/block projections |
 
 Each consumer persists inbox idempotence and emits its own primitive
-`account.data_erased` fact. The process manager completes only after all four
+`account.data_erased` fact. The process manager completes only after all five
 distinct acknowledgements. Its acknowledgement load is pessimistically locked,
 preventing concurrent SQS deliveries from losing one context's completion.
 Duplicate request or completion events are safe.
