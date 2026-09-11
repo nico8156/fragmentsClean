@@ -17,6 +17,6 @@ public class GetTicketStatusQueryHandler
 
 	@Override
 	public TicketStatusView handle(GetTicketStatusQuery query) {
-		return repo.findById(query.ticketId());
+		return repo.findByIdAndUserId(query.ticketId(), query.userId());
 	}
 }

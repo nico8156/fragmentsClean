@@ -6,5 +6,8 @@ import java.util.List;
 
 public interface TicketStatusReadRepository {
 	TicketStatusView findById(UUID ticketId); // null si absent
+	default TicketStatusView findByIdAndUserId(UUID ticketId, UUID userId) {
+        throw new UnsupportedOperationException("Owner-scoped ticket read required");
+    }
 	List<TicketStatusView> list();
 }
