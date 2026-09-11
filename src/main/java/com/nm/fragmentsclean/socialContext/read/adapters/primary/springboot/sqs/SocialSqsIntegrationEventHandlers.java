@@ -14,6 +14,7 @@ import com.nm.fragmentsclean.socialContext.read.projections.CommentCreatedEventH
 import com.nm.fragmentsclean.socialContext.read.projections.CommentDeletedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentUpdatedEventHandler;
 import com.nm.fragmentsclean.socialContext.read.projections.LikeSetEventHandler;
+import com.nm.fragmentsclean.socialContext.read.projections.ModerationProjectionEventHandler;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialLikeSetIntegrationEvent;
 import org.springframework.context.annotation.Bean;
@@ -54,6 +55,24 @@ public class SocialSqsIntegrationEventHandlers {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.like.set",
                 envelope -> handler.handle(SocialIntegrationEventAcl.likeSet(
                         payloadReader.read(envelope, SocialLikeSetIntegrationEvent.class))));
+    }
+
+    @Bean SqsIntegrationEventHandler socialCommentReportedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+        return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.reported",
+                envelope -> handler.handle(SocialIntegrationEventAcl.reported(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Reported.class))));
+    }
+
+    @Bean SqsIntegrationEventHandler socialCommentModeratedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+        return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.moderated",
+                envelope -> handler.handle(SocialIntegrationEventAcl.moderated(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Moderated.class))));
+    }
+
+    @Bean SqsIntegrationEventHandler socialUserBlockChangedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+        return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.user_block.changed",
+                envelope -> handler.handle(SocialIntegrationEventAcl.blockChanged(
+                        payloadReader.read(envelope, SocialCommentIntegrationEvents.UserBlockChanged.class))));
     }
 
     @Bean

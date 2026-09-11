@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentContentPolicy;
 import jakarta.transaction.Transactional;
 
 @Transactional
@@ -14,13 +15,16 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
     private final CommentRepository commentRepository;
     private final DomainEventPublisher eventPublisher;
     private final DateTimeProvider dateTimeProvider;
+    private final CommentContentPolicy contentPolicy;
 
     public UpdateCommentCommandHandler(CommentRepository commentRepository,
                                        DomainEventPublisher eventPublisher,
-                                       DateTimeProvider dateTimeProvider) {
+                                       DateTimeProvider dateTimeProvider,
+                                       CommentContentPolicy contentPolicy) {
         this.commentRepository = commentRepository;
         this.eventPublisher = eventPublisher;
         this.dateTimeProvider = dateTimeProvider;
+        this.contentPolicy = contentPolicy;
     }
 
     @Override
@@ -37,11 +41,7 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
                     "COMMENT_NOT_OWNED", "Only the comment author can update it");
         }
 
-        if (cmd.newBody() == null || cmd.newBody().isBlank()) {
-            throw new BusinessCommandRejectedException("COMMENT_BODY_EMPTY", "Comment body cannot be empty");
-        }
-
-        boolean changed = comment.applyBodyEdit(cmd.newBody(), now);
+        boolean changed = comment.applyBodyEdit(contentPolicy.validateAndNormalize(cmd.newBody()), now);
 
         // état persistant
         commentRepository.save(comment);

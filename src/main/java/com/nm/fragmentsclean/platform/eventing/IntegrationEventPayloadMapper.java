@@ -207,6 +207,29 @@ public class IntegrationEventPayloadMapper {
                     longValue(node, "version"),
                     instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                     nullableInstant(node, "clientAt"));
+            case "social.comment.reported" ->
+                new SocialCommentIntegrationEvents.Reported(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuid(node, "reportId"), uuid(node, "commentId"), uuid(node, "targetId"),
+                    uuid(node, "authorId"), uuid(node, "reporterId"), text(node, "reason"),
+                    text(node, "details"), text(node, "status"), longValue(node, "version"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
+            case "social.comment.moderated" ->
+                new SocialCommentIntegrationEvents.Moderated(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()), uuid(node, "actionId"),
+                    uuid(node, "reportId"), uuid(node, "commentId"), uuid(node, "targetId"),
+                    uuid(node, "authorId"), uuid(node, "operatorId"), text(node, "moderation"),
+                    text(node, "reportStatus"), text(node, "reason"), longValue(node, "version"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()), nullableInstant(node, "clientAt"));
+            case "social.user_block.changed" ->
+                new SocialCommentIntegrationEvents.UserBlockChanged(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()), uuid(node, "blockId"),
+                    uuid(node, "blockerId"), uuid(node, "blockedUserId"), bool(node, "active"),
+                    longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    nullableInstant(node, "clientAt"));
             case "social.like.set" ->
                 new SocialLikeSetIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

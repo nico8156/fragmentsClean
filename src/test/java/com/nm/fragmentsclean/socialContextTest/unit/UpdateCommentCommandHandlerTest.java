@@ -15,6 +15,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentContentPolicy;
 
 public class UpdateCommentCommandHandlerTest {
 	private final UUID COMMENT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
@@ -31,7 +33,8 @@ public class UpdateCommentCommandHandlerTest {
 	@BeforeEach
 	void setup() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
-		handler = new UpdateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider);
+		handler = new UpdateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider,
+				new CommentContentPolicy(Set.of()));
 
 		// seed : commentaire existant
 		Comment initial = Comment.createNew(

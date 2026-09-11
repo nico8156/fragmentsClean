@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.socialContext.read.projections.CommentsListView;
 import java.util.UUID;
 
 public record ListCommentsQuery(
+        UUID requesterId,
         UUID targetId,
         String cursor,
         int limit,
