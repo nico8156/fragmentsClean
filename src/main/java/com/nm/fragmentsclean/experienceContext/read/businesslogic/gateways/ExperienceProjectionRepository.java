@@ -11,6 +11,8 @@ public interface ExperienceProjectionRepository {
 
   void apply(ExperienceIntegrationEvents.Moderated event);
 
+  void apply(ExperienceIntegrationEvents.MediaChanged event);
+
   void upsertProfile(UUID userId, String displayName, String avatarUrl, long version, Instant occurredAt);
 
   void upsertCoffee(UUID coffeeId, boolean active, long version, Instant occurredAt);

@@ -12,6 +12,7 @@ public final class ExperienceOutboxEventMetadataContributor implements OutboxEve
         if(event instanceof ExperienceSnapshotChangedEvent e)return Optional.of(experience(e.experienceId(),e.userId()));
         if(event instanceof ExperienceLifecycleChangedEvent e)return Optional.of(experience(e.experienceId(),e.userId()));
         if(event instanceof ExperienceModerationDecidedEvent e)return Optional.of(experience(e.experienceId(),e.authorId()));
+        if(event instanceof ExperienceMediaChangedEvent e)return Optional.of(new OutboxEventMetadata("ExperienceMedia",e.mediaId().toString(),"experience:"+e.experienceId()+":media"));
         if(event instanceof ExperienceReportedEvent e)return Optional.of(new OutboxEventMetadata("ExperienceReport",e.reportId().toString(),"user:"+e.reporterId()));
         if(event instanceof ExperienceAccountDataErasedEvent e)return Optional.of(new OutboxEventMetadata("ExperienceAccountDeletion",e.userId().toString(),"accountDeletion:"+e.userId()));
         return Optional.empty();

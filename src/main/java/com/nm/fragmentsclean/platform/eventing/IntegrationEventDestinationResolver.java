@@ -42,6 +42,7 @@ public class IntegrationEventDestinationResolver {
       return List.of(EXPERIENCES_EVENTS);
     }
     if ("ExperienceReport".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
+    if ("ExperienceMedia".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
     if ("ExperienceAccountDeletion".equals(aggregateType)) return List.of(APP_USERS_EVENTS);
     if ("UserBlock".equals(aggregateType)) return List.of(DOMAIN_EVENTS, EXPERIENCES_EVENTS);
     if ("AppUser".equals(aggregateType)

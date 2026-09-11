@@ -4,12 +4,17 @@ import com.nm.fragmentsclean.experienceContext.read.ExperienceCursor;
 import com.nm.fragmentsclean.experienceContext.read.businesslogic.gateways.ExperienceReadRepository;
 import com.nm.fragmentsclean.experienceContext.read.projections.ExperienceModerationActionView;
 import com.nm.fragmentsclean.experienceContext.read.projections.ExperienceModerationReportView;
+import com.nm.fragmentsclean.experienceContext.read.projections.ExperienceMediaView;
 import com.nm.fragmentsclean.experienceContext.read.projections.ExperiencePage;
 import com.nm.fragmentsclean.experienceContext.read.projections.ExperienceView;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaReferences;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaUrlResolver;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,9 +23,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcExperienceReadRepository implements ExperienceReadRepository {
   private final JdbcTemplate jdbc;
+  private final PrivateMediaUrlResolver mediaUrls;
 
-  public JdbcExperienceReadRepository(JdbcTemplate jdbc) {
+  public JdbcExperienceReadRepository(JdbcTemplate jdbc, PrivateMediaUrlResolver mediaUrls) {
     this.jdbc = jdbc;
+    this.mediaUrls = mediaUrls;
   }
 
   @Override
@@ -103,10 +110,13 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
                     rs.getString("message"),
                     rs.getLong("report_count"),
                     rs.getTimestamp("created_at").toInstant(),
+                    List.of(),
                     List.of()),
             status,
             limit);
+    var media = mediaForExperiences(reports.stream().map(ExperienceModerationReportView::experienceId).toList());
     return reports.stream()
+		.map(report -> withMedia(report, media.getOrDefault(report.experienceId(), List.of())))
         .map(report -> withActions(report, moderationActions(report.reportId())))
         .toList();
   }
@@ -123,16 +133,19 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
                     rs.getObject("coffee_id", UUID.class),
                     rs.getObject("user_id", UUID.class),
                     Optional.ofNullable(rs.getString("display_name")).orElse("Utilisateur"),
-                    rs.getString("avatar_url"),
+                    mediaUrls.resolve(rs.getString("avatar_url")),
                     rs.getString("message"),
                     rs.getString("publication_status"),
                     rs.getString("moderation_status"),
                     rs.getTimestamp("created_at").toInstant(),
                     rs.getTimestamp("updated_at").toInstant(),
-                    rs.getLong("version")),
+					rs.getLong("version"),
+					List.of()),
             parameters.toArray());
     boolean hasMore = rows.size() > limit;
-    var items = hasMore ? List.copyOf(rows.subList(0, limit)) : List.copyOf(rows);
+	var baseItems = hasMore ? List.copyOf(rows.subList(0, limit)) : List.copyOf(rows);
+	var media = mediaForExperiences(baseItems.stream().map(ExperienceView::experienceId).toList());
+	var items = baseItems.stream().map(item -> withMedia(item, media.getOrDefault(item.experienceId(), List.of()))).toList();
     String nextCursor =
         hasMore && !items.isEmpty()
             ? new ExperienceCursor(items.getLast().createdAt(), items.getLast().experienceId()).encode()
@@ -163,8 +176,21 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
     return new ExperienceModerationReportView(
         report.reportId(), report.experienceId(), report.coffeeId(), report.authorId(),
         report.authorName(), report.reporterId(), report.reason(), report.details(), report.status(),
-        report.content(), report.reportCount(), report.createdAt(), actions);
+        report.content(), report.reportCount(), report.createdAt(), report.media(), actions);
   }
+
+  private ExperienceModerationReportView withMedia(ExperienceModerationReportView report,List<ExperienceMediaView> media){return new ExperienceModerationReportView(report.reportId(),report.experienceId(),report.coffeeId(),report.authorId(),report.authorName(),report.reporterId(),report.reason(),report.details(),report.status(),report.content(),report.reportCount(),report.createdAt(),media,report.actions());}
+
+	private static ExperienceView withMedia(ExperienceView item,List<ExperienceMediaView> media){return new ExperienceView(item.experienceId(),item.coffeeId(),item.authorId(),item.authorName(),item.avatarUrl(),item.message(),item.publicationStatus(),item.moderationStatus(),item.createdAt(),item.updatedAt(),item.version(),media);}
+
+	private Map<UUID,List<ExperienceMediaView>> mediaForExperiences(List<UUID> experienceIds){
+		if(experienceIds.isEmpty())return Map.of();
+		String placeholders=String.join(",",java.util.Collections.nCopies(experienceIds.size(),"?"));
+		var rows=jdbc.query("SELECT experience_id,media_id,object_key,width,height,position FROM experience_media_views WHERE experience_id IN ("+placeholders+") AND status='AVAILABLE' AND object_key IS NOT NULL ORDER BY experience_id,position,media_id",(rs,row)->Map.entry(rs.getObject("experience_id",UUID.class),new ExperienceMediaView(rs.getObject("media_id",UUID.class),mediaUrls.resolve(PrivateMediaReferences.experience(rs.getString("object_key"))),rs.getObject("width",Integer.class),rs.getObject("height",Integer.class),rs.getInt("position"))),experienceIds.toArray());
+		Map<UUID,List<ExperienceMediaView>> result=new LinkedHashMap<>();
+		for(var row:rows)result.computeIfAbsent(row.getKey(),ignored->new ArrayList<>()).add(row.getValue());
+		return result;
+	}
 
   private static void appendCursor(
       StringBuilder sql, List<Object> parameters, ExperienceCursor cursor) {

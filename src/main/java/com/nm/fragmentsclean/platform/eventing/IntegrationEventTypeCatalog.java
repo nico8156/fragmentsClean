@@ -51,7 +51,8 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("ExperienceLifecycleChangedEvent", "experience.lifecycle.changed"),
           Map.entry("ExperienceSnapshotChangedEvent", "experience.snapshot.changed"),
           Map.entry("ExperienceReportedEvent", "experience.reported"),
-          Map.entry("ExperienceModerationDecidedEvent", "experience.moderated"));
+          Map.entry("ExperienceModerationDecidedEvent", "experience.moderated"),
+          Map.entry("ExperienceMediaChangedEvent", "experience.media.changed"));
 
   private IntegrationEventTypeCatalog() {}
 

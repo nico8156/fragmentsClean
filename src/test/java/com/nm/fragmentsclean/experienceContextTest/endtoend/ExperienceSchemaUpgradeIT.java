@@ -33,9 +33,15 @@ class ExperienceSchemaUpgradeIT extends AbstractBaseE2E {
       var migration = new ClassPathResource("db/release/2026-09-11-experience-text.sql");
       ScriptUtils.executeSqlScript(connection, migration);
       ScriptUtils.executeSqlScript(connection, migration);
+	  var mediaMigration = new ClassPathResource("db/release/2026-09-11-private-media.sql");
+	  ScriptUtils.executeSqlScript(connection, mediaMigration);
+	  ScriptUtils.executeSqlScript(connection, mediaMigration);
 
       assertThat(tableExists(statement, "experiences")).isTrue();
       assertThat(tableExists(statement, "experience_views")).isTrue();
+	  assertThat(tableExists(statement, "experience_media")).isTrue();
+	  assertThat(tableExists(statement, "experience_media_views")).isTrue();
+	  assertThat(tableExists(statement, "user_avatar_media")).isTrue();
       assertThat(columnExists(statement, "experience_reports_projection", "moderation_version"))
           .isTrue();
       assertThat(value(statement, "SELECT acknowledgements FROM account_deletion_processes"))

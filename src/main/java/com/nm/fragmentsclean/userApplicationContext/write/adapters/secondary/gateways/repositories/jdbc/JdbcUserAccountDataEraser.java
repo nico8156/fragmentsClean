@@ -13,6 +13,7 @@ public final class JdbcUserAccountDataEraser implements UserAccountDataEraser {
 
   @Override
   public void erase(UUID userId) {
+    jdbc.update("UPDATE user_avatar_media SET status='DELETION_PENDING',user_id=NULL,updated_at=now(),version=version+1 WHERE user_id=? AND status<>'DELETED'", userId);
     jdbc.update("DELETE FROM user_saved_coffees_projection WHERE user_id = ?", userId);
     jdbc.update("DELETE FROM saved_coffees WHERE user_id = ?", userId);
     jdbc.update("DELETE FROM pass_ticket_contributions WHERE user_id = ?", userId);

@@ -23,7 +23,7 @@ public class JpaAppUserRepository implements AppUserRepository {
 
   @Override
   public Optional<AppUser> findById(UUID userId) {
-    return springRepo.findById(userId).map(this::toDomain);
+    return springRepo.findByIdForUpdate(userId).map(this::toDomain);
   }
 
   @Override

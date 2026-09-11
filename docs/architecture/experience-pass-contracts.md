@@ -212,6 +212,14 @@ suppression, signalement, blocage, modération et effacement de compte sont
 raccordés à leurs propriétaires. Aucune donnée synthétique n'est exposée comme
 activité réelle et aucun ticket n'est envoyé dans le contrat de création.
 
+Le lot 06 ajoute une collection média ordonnée appartenant à
+`experienceContext`. Le serveur accepte jusqu'à quatre images configurables ;
+l'interface V1 en expose une. Une publication attend que tous les médias soient
+confirmés. `experience.media.changed` transporte les identifiants primitifs de
+l'expérience, du café et de l'auteur, alimente la projection locale via SQS/inbox
+et invalide les snapshots SSE café/utilisateur. Le stockage et la normalisation
+sont détaillés dans [private-media.md](private-media.md).
+
 Les parcours critiques ajoutent perte réseau, redémarrage, socket absent,
 commande rejetée explicitement et changements de compte. Les tests unitaires ne
 remplacent ni les adaptateurs réels ni les verticales front et back. Suites de

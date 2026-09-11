@@ -177,6 +177,31 @@ public class AppUser extends AggregateRoot {
     return true;
   }
 
+  public boolean replaceAvatar(String newAvatarReference, Instant now) {
+    requireActive();
+    if (newAvatarReference == null || !newAvatarReference.startsWith("media:avatar:")) {
+      throw new IllegalArgumentException("Owned avatar reference is required");
+    }
+    if (newAvatarReference.equals(avatarUrl)) return false;
+    avatarUrl = newAvatarReference;
+    updatedAt = now;
+    version++;
+    registerEvent(new AppUserProfileUpdatedEvent(
+        UUID.randomUUID(), id, displayName, avatarUrl, version, now));
+    return true;
+  }
+
+  public boolean removeAvatar(Instant now) {
+    requireActive();
+    if (avatarUrl == null) return false;
+    avatarUrl = null;
+    updatedAt = now;
+    version++;
+    registerEvent(new AppUserProfileUpdatedEvent(
+        UUID.randomUUID(), id, displayName, null, version, now));
+    return true;
+  }
+
   private static String normalizeDisplayName(String name) {
     if (name == null) return null;
     String trimmed = name.trim();

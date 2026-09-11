@@ -75,12 +75,15 @@ technical uncertainty keeps the same command identifier for retry, so the user
 can safely retry without producing a second process; only backend acceptance
 then triggers local sign-out.
 
-## Extension rule
+## Media extension
 
-Lot 03 covers every current user-owned store. When Experience and media stores
-are introduced, their owning contexts must become explicit participants before
-release: erase/anonymize local data, emit an acknowledgement, and be added to the
-process completion invariant. Cross-context cleanup SQL is forbidden.
+Lots 05 and 06 completed this extension. `experienceContext` is an explicit
+participant and marks every owned experience photo for deferred object deletion.
+`userApplicationContext` does the same for avatars while erasing its own data.
+The shared cleanup adapter only executes an owning context's requested object
+transition; it does not query or mutate another context's business tables.
+Cross-context cleanup SQL remains forbidden. See
+[private-media.md](private-media.md) for the storage lifecycle.
 
 ## Verification and rollback
 

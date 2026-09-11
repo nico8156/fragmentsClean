@@ -51,5 +51,9 @@ class StudioOpenApiContractTest {
         assertThat(root.path("components").path("schemas").path("ModerateComment")
                 .path("properties").path("decision").path("enum").toString())
                 .isEqualTo("[\"HIDDEN\",\"PUBLISHED\"]");
+		assertThat(root.path("components").path("schemas").path("ExperienceModerationReport")
+				.path("required").toString()).contains("\"media\"");
+		assertThat(root.path("components").path("schemas").path("ExperienceMedia")
+				.path("properties").has("url")).isTrue();
     }
 }

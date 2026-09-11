@@ -34,4 +34,9 @@ public final class ExperienceIntegrationEvents {
             UUID coffeeId, UUID authorId, UUID operatorId, String moderationStatus,
             String reportStatus, String reason, long version, Instant occurredAt,
             Instant clientAt) { }
+
+    public record MediaChanged(
+            UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID userId,
+            UUID coffeeId, String status, String objectKey, String contentType, long size, Integer width,
+            Integer height, String reason, long version, Instant occurredAt, Instant clientAt) { }
 }

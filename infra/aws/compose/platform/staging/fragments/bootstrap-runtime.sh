@@ -90,6 +90,14 @@ write_env ARTICLE_IMAGES_S3_BUCKET anchor-assets-prod-851725375299
 write_env ARTICLE_IMAGES_S3_PREFIX fragments/staging/articles
 write_env ARTICLE_IMAGES_S3_REGION "$aws_region"
 write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.fr
+write_env PRIVATE_MEDIA_S3_BUCKET anchor-assets-prod-851725375299
+write_env PRIVATE_MEDIA_S3_PREFIX fragments/staging/private-media
+write_env PRIVATE_MEDIA_S3_REGION "$aws_region"
+write_env PRIVATE_MEDIA_UPLOAD_TTL PT10M
+write_env PRIVATE_MEDIA_DOWNLOAD_TTL PT6H
+write_env PRIVATE_MEDIA_CLEANUP_ENABLED true
+write_env PRIVATE_MEDIA_CLEANUP_DELAY_MS 600000
+write_env PRIVATE_MEDIA_PENDING_TTL PT24H
 write_env POSTGRES_BACKUP_S3_BUCKET anchor-assets-prod-851725375299
 write_env POSTGRES_BACKUP_S3_PREFIX fragments/staging/backups/postgres
 

@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.socialContext.read;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaUrlResolver;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCursor;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentItemView;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentView;
@@ -19,9 +20,11 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
     private static final int DEFAULT_PAGE_SIZE = 20;
 
     private final JdbcTemplate jdbcTemplate;
+    private final PrivateMediaUrlResolver mediaUrls;
 
-    public ListCommentsQueryHandler(JdbcTemplate jdbcTemplate) {
+    public ListCommentsQueryHandler(JdbcTemplate jdbcTemplate, PrivateMediaUrlResolver mediaUrls) {
         this.jdbcTemplate = jdbcTemplate;
+        this.mediaUrls = mediaUrls;
     }
 
     @Override
@@ -139,7 +142,7 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
                 ? u.displayName()
                 : "Utilisateur";
 
-        String avatarUrl = (u != null) ? u.avatarUrl() : null;
+        String avatarUrl = (u != null) ? mediaUrls.resolve(u.avatarUrl()) : null;
 
         return new CommentItemView(
                 c.id(),

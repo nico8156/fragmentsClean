@@ -325,6 +325,16 @@ public class IntegrationEventPayloadMapper {
                     text(node, "moderationStatus"), text(node, "reportStatus"), text(node, "reason"),
                     longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                     nullableInstant(node, "clientAt"));
+            case "experience.media.changed" ->
+                new ExperienceIntegrationEvents.MediaChanged(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuidOrFallback(node, "mediaId", event.getAggregateId()),
+                    uuid(node, "experienceId"), nullableUuid(node, "userId"), uuid(node, "coffeeId"), text(node, "status"),
+                    text(node, "objectKey"), text(node, "contentType"), longValue(node, "size"),
+                    nullableInt(node, "width"), nullableInt(node, "height"), text(node, "reason"),
+                    longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    nullableInstant(node, "clientAt"));
             case "coffee.published" ->
                 new CoffeePublishedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

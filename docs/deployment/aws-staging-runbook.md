@@ -127,6 +127,13 @@ Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 - `ARTICLE_IMAGES_S3_PREFIX`
 - `ARTICLE_IMAGES_S3_REGION`
 - `ARTICLE_IMAGES_S3_PRESIGN_TTL`
+- `PRIVATE_MEDIA_S3_BUCKET`
+- `PRIVATE_MEDIA_S3_PREFIX`
+- `PRIVATE_MEDIA_S3_REGION`
+- `PRIVATE_MEDIA_UPLOAD_TTL`
+- `PRIVATE_MEDIA_DOWNLOAD_TTL`
+- `PRIVATE_MEDIA_CLEANUP_ENABLED`
+- `PRIVATE_MEDIA_PENDING_TTL`
 - `OPENAI_API_KEY`
 - `OPENAI_PROJECT_ID`
 - all `SQS_*_URL` values from CloudFormation outputs
@@ -157,6 +164,13 @@ ARTICLE_IMAGES_S3_BUCKET=anchor-assets-prod-851725375299
 ARTICLE_IMAGES_S3_PREFIX=fragments/staging/articles
 ARTICLE_IMAGES_S3_REGION=eu-west-3
 ARTICLE_IMAGES_S3_PRESIGN_TTL=PT15M
+PRIVATE_MEDIA_S3_BUCKET=anchor-assets-prod-851725375299
+PRIVATE_MEDIA_S3_PREFIX=fragments/staging/private-media
+PRIVATE_MEDIA_S3_REGION=eu-west-3
+PRIVATE_MEDIA_UPLOAD_TTL=PT10M
+PRIVATE_MEDIA_DOWNLOAD_TTL=PT6H
+PRIVATE_MEDIA_CLEANUP_ENABLED=true
+PRIVATE_MEDIA_PENDING_TTL=PT24H
 ```
 
 Before starting the backend, configure the Sign in with Apple capability for
@@ -179,9 +193,15 @@ The staging backend reuses the Anchor asset bucket with an isolated Fragments pr
 ```text
 s3://anchor-assets-prod-851725375299/fragments/staging/coffees/...
 s3://anchor-assets-prod-851725375299/fragments/staging/articles/...
+s3://anchor-assets-prod-851725375299/fragments/staging/private-media/...
 ```
 
 The EC2 runtime IAM role is limited to object operations under `fragments/staging/*`.
+The bucket must keep Block Public Access enabled. Native iOS uploads use signed
+requests and do not require a browser CORS wildcard. Upload signatures bind the
+declared `Content-Type` and `x-amz-server-side-encryption: AES256` headers; the
+client must send both unchanged. The cleanup jobs must remain enabled so expired
+pending objects and logically deleted media are physically removed.
 
 ## GitHub Actions
 

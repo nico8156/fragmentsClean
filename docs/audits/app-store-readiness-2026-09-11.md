@@ -796,6 +796,8 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 6 — lot 04, clôture locale 2026-09-11 18:35 CEST | Modération commentaires, blocage personnel et file Studio | Référence 2–5 jours globale conservée ; aucune estimation isolée reconstruite | Fenêtre observée d'environ 75 min depuis 17:20, incluant trois suites complètes, contrôles statiques/build et attentes Docker ; temps actif non isolé | Zéro pour le code local du périmètre ; contact/support réel, opérateur/SLA, migration et recette déployée externes | 1,5–3,5 jours concentrés pour 05 à 09, puis TestFlight/App Review séparés | Réutilisation forte du pipeline de commandes et des projections ; Experience texte est maintenant la prochaine incertitude métier, puis médias et recette native. Confiance moyenne |
 | Prévision 7 — lot 05, démarrage 2026-09-11 vers 18:35 CEST | Experience texte serveur/mobile/Studio, Pass, modération et suppression | 1 h 30 à 3 h de fenêtre locale annoncée avant implémentation | Implémentation et validations en cours ; temps actif non isolé des attentes Docker/build | Suites complètes, documentation et intégration Git | 1 à 3 jours concentrés pour 06 à 09, puis TestFlight/App Review séparés | Les contrats Pass/modération/outbox existants accélèrent le lot ; les médias/S3 et la recette native ne doivent pas être extrapolés à cette vitesse. Confiance moyenne |
 | Prévision 8 — lot 05, clôture locale 2026-09-11 vers 20:20 CEST | Experience texte serveur/mobile/Studio, Pass, modération et suppression | Référence initiale de 1 h 30 à 3 h | Fenêtre observée d'environ 1 h 45 depuis 18:35, dans la fourchette, incluant corrections, attentes Docker et builds ; temps actif non isolé | Zéro pour le périmètre texte local ; médias et recette déployée restent explicitement ouverts | 1 à 2,5 jours concentrés pour 06 à 09, puis TestFlight/App Review séparés | Réutilisation forte des pipelines command/outbox/inbox, Pass et modération ; le pipeline S3, les traitements d'image et la recette native du lot 06 concentrent désormais l'incertitude. Confiance moyenne |
+| Prévision 9 — lot 06, démarrage 2026-09-11 20:45 CEST | Photo d'expérience et avatar, stockage privé, reprise, modération et effacement | 2 h 30 à 5 h de fenêtre locale pour code et preuves automatisées ; AWS réel et recette appareil séparés | Exploration et cadrage démarrés ; temps actif non isolé | Verticales backend/mobile/Studio, tests, documentation et intégration Git | 0,75 à 2 jours concentrés pour 07 à 09 après le lot 06, puis TestFlight/App Review séparés | Une photo par expérience dans l'UI V1, collection ordonnée et plafond serveur configurables ; avatar unique. JPEG/PNG seulement tant que HEIC n'est pas décodé et normalisé côté serveur. Confiance moyenne-faible avant preuve du pipeline objet |
+| Prévision 10 — lot 06, clôture locale 2026-09-11 22:05 CEST | Photo d'expérience et avatar sur backend/mobile/Studio, stockage privé, reprise, modération, SSE et effacement | Référence initiale de 2 h 30 à 5 h | Fenêtre observée d'environ 1 h 20 depuis 20:45, sous la fourchette, incluant implémentation, revue de fraîcheur SSE, trois suites complètes, builds et attentes Docker ; temps actif non isolé | Zéro pour l'implémentation locale ; IAM/CORS S3 réel, migration d'environnement et recette appareil/réseau lent restent au durcissement | 0,5 à 1,5 jour concentré pour 07 à 09, puis TestFlight/App Review séparés | Le socle outbox/command status/projections et les adapters Expo ont accéléré la verticale. L'absence de preuve AWS réelle interdit d'extrapoler la vitesse locale au déploiement. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -852,6 +854,16 @@ sont donc la résolution des appels de ports injectés, des branches discriminé
 par union TypeScript et des dispatches indirects. Même avec cette limite,
 FlowAtlas réduit bien la lecture initiale Redux ; le code et les tests restent la
 preuve nécessaire pour les transactions Java et les frontières réseau.
+
+Retour lot 06 : la projection avatar Redux est complète avec 23 nœuds et 30
+relations. Elle suit l'intention UI, le listener, la mutation optimiste, l'outbox,
+le retry et le watchdog, ce qui a permis de contrôler rapidement le maintien du
+fichier local pendant une incertitude technique. Elle ne matérialise toutefois
+pas l'appel externe effectué via le port polymorphe `UserRepo`. Cette limite
+rejoint le retour des lots précédents : la prochaine évolution la plus rentable
+est de résoudre les appels d'interfaces/factories injectées et de les classer
+comme frontières externes. La future analyse Java devra en priorité relier
+controller, use case, transaction, aggregate, outbox, SQS/inbox et projection.
 
 ### Modèles Codex et niveau d'exigence
 
@@ -934,10 +946,10 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 05 implémentés et testés localement ; lots 01 à 05
-intégrés sur leurs branches locales de release. Le lot 05 a utilisé GPT-5.6 Sol
-High et livre Experience texte sans ticket, offline-first, modérée, reliée au
-Pass et à la suppression du compte, sans traverser les frontières de contexte.
-Les médias/avatar S3 du lot 06, les configurations Apple/SSM, la recette native,
-les migrations d'environnement et tout déploiement restent explicitement
+**État actuel : lots 00 à 06 implémentés et testés localement ; lots 01 à 05
+intégrés sur leurs branches locales de release et lot 06 prêt à intégrer. Le lot
+06 a utilisé GPT-5.6 Sol High et livre les photos Experience et avatars privés,
+offline-first, normalisés, projetés et effaçables sans traverser les frontières
+de contexte. Les configurations Apple/SSM et IAM/CORS S3 réelles, la recette
+native, les migrations d'environnement et tout déploiement restent explicitement
 ouverts.**

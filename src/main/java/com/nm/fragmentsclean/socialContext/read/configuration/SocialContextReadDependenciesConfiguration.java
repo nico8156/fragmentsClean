@@ -36,12 +36,12 @@ public class SocialContextReadDependenciesConfiguration {
   }
 
   @Bean
-  ListCommentsQueryHandler listCommentsQueryHandler(JdbcTemplate jdbcTemplate) {
-    return new ListCommentsQueryHandler(jdbcTemplate);
+  ListCommentsQueryHandler listCommentsQueryHandler(JdbcTemplate jdbcTemplate,com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaUrlResolver mediaUrls) {
+    return new ListCommentsQueryHandler(jdbcTemplate,mediaUrls);
   }
 
-  @Bean ListBlockedUsersQueryHandler listBlockedUsersQueryHandler(JdbcTemplate jdbc) {
-    return new ListBlockedUsersQueryHandler(jdbc);
+  @Bean ListBlockedUsersQueryHandler listBlockedUsersQueryHandler(JdbcTemplate jdbc,com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaUrlResolver mediaUrls) {
+    return new ListBlockedUsersQueryHandler(jdbc,mediaUrls);
   }
 
   @Bean ListModerationReportsQueryHandler listModerationReportsQueryHandler(JdbcTemplate jdbc) {

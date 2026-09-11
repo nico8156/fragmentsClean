@@ -24,6 +24,13 @@ public class JdbcExperienceProjectionRepository implements ExperienceProjectionR
         jdbc.update("UPDATE experience_reports_projection SET status=?,resolved_at=?,version=version+1,moderation_version=? WHERE report_id=? AND moderation_version<?",e.reportStatus(),Timestamp.from(e.occurredAt()),e.version(),e.reportId(),e.version());
         jdbc.update("INSERT INTO experience_moderation_actions_projection(action_id,report_id,experience_id,operator_id,decision,reason,occurred_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(action_id) DO NOTHING",e.actionId(),e.reportId(),e.experienceId(),e.operatorId(),e.moderationStatus(),e.reason(),Timestamp.from(e.occurredAt()));
     }
+    public void apply(ExperienceIntegrationEvents.MediaChanged e){jdbc.update("""
+        INSERT INTO experience_media_views(media_id,experience_id,user_id,status,object_key,content_type,size_bytes,width,height,position,updated_at,version)
+        VALUES(?,?,?,?,?,?,?,?,?,0,?,?) ON CONFLICT(media_id) DO UPDATE SET status=EXCLUDED.status,
+        object_key=EXCLUDED.object_key,content_type=EXCLUDED.content_type,size_bytes=EXCLUDED.size_bytes,
+        width=EXCLUDED.width,height=EXCLUDED.height,updated_at=EXCLUDED.updated_at,version=EXCLUDED.version
+        WHERE experience_media_views.version<EXCLUDED.version
+        """,e.mediaId(),e.experienceId(),e.userId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),Timestamp.from(e.occurredAt()),e.version());}
     public void upsertProfile(UUID userId,String displayName,String avatarUrl,long version,Instant at){jdbc.update("""
         INSERT INTO experience_user_profiles(user_id,display_name,avatar_url,updated_at,version) VALUES(?,?,?,?,?)
         ON CONFLICT(user_id) DO UPDATE SET display_name=EXCLUDED.display_name,avatar_url=EXCLUDED.avatar_url,
