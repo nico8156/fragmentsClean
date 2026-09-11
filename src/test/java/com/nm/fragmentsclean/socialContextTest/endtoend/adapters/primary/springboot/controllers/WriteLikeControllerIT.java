@@ -21,7 +21,9 @@ import java.util.UUID;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @ActiveProfiles("auth_test")
 public class WriteLikeControllerIT extends AbstractBaseE2E {
@@ -157,6 +159,96 @@ public class WriteLikeControllerIT extends AbstractBaseE2E {
 				String.class,
 				COMMAND_ID);
 		assertThat(commandStatus).isEqualTo("APPLIED");
+	}
+
+	@Test
+	void command_status_is_visible_only_to_the_authenticated_requester() throws Exception {
+		postLike(COMMAND_ID, LIKE_ID, TARGET_ID, USER_ID, true)
+				.andExpect(status().isAccepted());
+
+		mockMvc.perform(get("/commands/{commandId}", COMMAND_ID)
+					.with(userJwt(USER_ID)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("APPLIED"));
+
+		UUID anotherUser = UUID.fromString("77777777-7777-4777-8777-777777777777");
+		mockMvc.perform(get("/commands/{commandId}", COMMAND_ID)
+					.with(userJwt(anotherUser)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("PENDING"))
+				.andExpect(jsonPath("$.reason").doesNotExist());
+	}
+
+	@Test
+	void explicit_business_rejection_is_persisted_and_replayed() throws Exception {
+		springLikeRepository.save(new LikeJpaEntity(
+				LIKE_ID, USER_ID, TARGET_ID, true, Instant.parse("2026-09-11T10:00:00Z"), 1L));
+		UUID anotherUser = UUID.fromString("77777777-7777-4777-8777-777777777777");
+		UUID rejectedCommand = UUID.fromString("88888888-8888-4888-8888-888888888888");
+
+		postLike(rejectedCommand, LIKE_ID, TARGET_ID, anotherUser, false)
+				.andExpect(status().isUnprocessableEntity())
+				.andExpect(jsonPath("$.error").value("COMMAND_REJECTED"))
+				.andExpect(jsonPath("$.reason").value("LIKE_ID_CONFLICT"));
+
+		mockMvc.perform(get("/commands/{commandId}", rejectedCommand)
+					.with(userJwt(anotherUser)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("REJECTED"))
+				.andExpect(jsonPath("$.rejectionCode").value("LIKE_ID_CONFLICT"));
+
+		postLike(rejectedCommand, LIKE_ID, TARGET_ID, anotherUser, false)
+				.andExpect(status().isUnprocessableEntity())
+				.andExpect(jsonPath("$.reason").value("LIKE_ID_CONFLICT"));
+	}
+
+	@Test
+	void command_id_reuse_with_another_intent_is_rejected_without_second_effect() throws Exception {
+		postLike(COMMAND_ID, LIKE_ID, TARGET_ID, USER_ID, true)
+				.andExpect(status().isAccepted());
+
+		postLike(COMMAND_ID, LIKE_ID, TARGET_ID, USER_ID, false)
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.error").value("COMMAND_ID_CONFLICT"))
+				.andExpect(jsonPath("$.reason").value("COMMAND_ID_REUSED"));
+
+		assertThat(springLikeRepository.findById(LIKE_ID).orElseThrow().isActive()).isTrue();
+		assertThat(outboxRepository.findAll()).hasSize(1);
+	}
+
+	@Test
+	void unknown_and_legacy_ownerless_receipts_are_indistinguishable_to_mobile() throws Exception {
+		UUID legacyCommand = UUID.fromString("99999999-9999-4999-8999-999999999999");
+		jdbcTemplate.update("""
+				INSERT INTO command_status(command_id, status, applied_at, updated_at)
+				VALUES (?, 'APPLIED', now(), now())
+				""", legacyCommand);
+
+		for (UUID id : java.util.List.of(legacyCommand, UUID.randomUUID())) {
+			mockMvc.perform(get("/commands/{commandId}", id).with(userJwt(USER_ID)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$.status").value("PENDING"));
+		}
+	}
+
+	private org.springframework.test.web.servlet.ResultActions postLike(
+			UUID commandId, UUID likeId, UUID targetId, UUID userId, boolean value) throws Exception {
+		return mockMvc.perform(post("/api/social/likes")
+				.with(userJwt(userId))
+				.contentType("application/json")
+				.content("""
+						{
+						  "commandId": "%s",
+						  "likeId": "%s",
+						  "targetId": "%s",
+						  "value": %s,
+						  "at": "2026-09-11T10:00:00Z"
+						}
+						""".formatted(commandId, likeId, targetId, value)));
+	}
+
+	private org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor userJwt(UUID userId) {
+		return jwt().jwt(j -> j.subject(userId.toString()).claim("roles", java.util.List.of("USER")));
 	}
 
 }

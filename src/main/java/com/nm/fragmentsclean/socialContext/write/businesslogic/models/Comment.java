@@ -107,6 +107,34 @@ public class Comment extends AggregateRoot {
         return true;
     }
 
+    public boolean hide() {
+        if (deletedAt != null) {
+            throw new IllegalStateException("Deleted comment cannot be moderated");
+        }
+        if (moderation == ModerationStatus.HIDDEN) return false;
+        moderation = ModerationStatus.HIDDEN;
+        version++;
+        return true;
+    }
+
+    public boolean restore() {
+        if (deletedAt != null) {
+            throw new IllegalStateException("Deleted comment cannot be restored");
+        }
+        if (moderation == ModerationStatus.PUBLISHED) return false;
+        moderation = ModerationStatus.PUBLISHED;
+        version++;
+        return true;
+    }
+
+    public void registerModeratedEvent(UUID commandId, UUID actionId, UUID reportId,
+                                       UUID operatorId, ReportStatus reportStatus,
+                                       String reason, Instant clientAt, Instant serverNow) {
+        registerEvent(new CommentModeratedEvent(
+                UUID.randomUUID(), commandId, actionId, reportId, id, targetId, authorId,
+                operatorId, moderation, reportStatus, reason, version, serverNow, clientAt));
+    }
+
 
     public void registerCreatedEvent(UUID commandId,
                                      Instant clientAt,

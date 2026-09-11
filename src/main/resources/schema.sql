@@ -209,6 +209,80 @@ CREATE INDEX IF NOT EXISTS idx_social_comments_projection_target_created_at
 CREATE INDEX IF NOT EXISTS idx_social_comments_projection_author_visible
     ON social_comments_projection (author_id, deleted_at, moderation);
 
+-- Social moderation write models
+CREATE TABLE IF NOT EXISTS content_reports (
+    report_id UUID PRIMARY KEY,
+    comment_id UUID NOT NULL,
+    target_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reporter_id UUID NOT NULL,
+    reason VARCHAR(40) NOT NULL,
+    details VARCHAR(1000),
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    resolved_at TIMESTAMPTZ,
+    version BIGINT NOT NULL,
+    CONSTRAINT uq_content_reports_reporter_comment UNIQUE (reporter_id, comment_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_blocks (
+    block_id UUID PRIMARY KEY,
+    blocker_id UUID NOT NULL,
+    blocked_user_id UUID NOT NULL,
+    active BOOLEAN NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL,
+    CONSTRAINT uq_user_blocks_users UNIQUE (blocker_id, blocked_user_id),
+    CONSTRAINT ck_user_blocks_not_self CHECK (blocker_id <> blocked_user_id)
+);
+
+-- Local read models fed by social integration events.
+CREATE TABLE IF NOT EXISTS social_content_reports_projection (
+    report_id UUID PRIMARY KEY,
+    comment_id UUID NOT NULL,
+    target_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reporter_id UUID NOT NULL,
+    reason VARCHAR(40) NOT NULL,
+    details VARCHAR(1000),
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    resolved_at TIMESTAMPTZ,
+    version BIGINT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_reports_status_created
+    ON social_content_reports_projection (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_social_reports_comment
+    ON social_content_reports_projection (comment_id);
+
+CREATE TABLE IF NOT EXISTS social_user_blocks_projection (
+    block_id UUID PRIMARY KEY,
+    blocker_id UUID NOT NULL,
+    blocked_user_id UUID NOT NULL,
+    active BOOLEAN NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL,
+    CONSTRAINT uq_social_user_blocks_users UNIQUE (blocker_id, blocked_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_user_blocks_active
+    ON social_user_blocks_projection (blocker_id, active);
+
+CREATE TABLE IF NOT EXISTS social_moderation_actions_projection (
+    action_id UUID PRIMARY KEY,
+    report_id UUID NOT NULL,
+    comment_id UUID NOT NULL,
+    operator_id UUID NOT NULL,
+    decision VARCHAR(20) NOT NULL,
+    reason VARCHAR(1000),
+    occurred_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_moderation_actions_report
+    ON social_moderation_actions_projection (report_id, occurred_at DESC);
+
 
 create table if not exists users (
                                      user_id    uuid primary key,
@@ -283,6 +357,9 @@ CREATE INDEX IF NOT EXISTS idx_projection_sync_events_projection_id
 
 CREATE TABLE IF NOT EXISTS command_status (
     command_id      UUID PRIMARY KEY,
+    requester_id    UUID,
+    command_type    VARCHAR(255),
+    fingerprint     VARCHAR(64),
     status          VARCHAR(32) NOT NULL,
     aggregate_type  VARCHAR(100),
     aggregate_id    VARCHAR(100),
@@ -290,9 +367,39 @@ CREATE TABLE IF NOT EXISTS command_status (
     event_type      VARCHAR(255),
     applied_at      TIMESTAMPTZ,
     rejected_at     TIMESTAMPTZ,
+    rejection_code  VARCHAR(100),
     reason          TEXT,
     updated_at      TIMESTAMPTZ NOT NULL
 );
+
+-- Additive compatibility for environments created before durable owner-scoped receipts.
+-- Legacy rows deliberately remain ownerless and are never exposed by the mobile endpoint.
+ALTER TABLE command_status ADD COLUMN IF NOT EXISTS requester_id UUID;
+ALTER TABLE command_status ADD COLUMN IF NOT EXISTS command_type VARCHAR(255);
+ALTER TABLE command_status ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(64);
+ALTER TABLE command_status ADD COLUMN IF NOT EXISTS rejection_code VARCHAR(100);
+
+CREATE INDEX IF NOT EXISTS idx_command_status_requester_command
+    ON command_status (requester_id, command_id);
+
+WITH candidates AS (
+    SELECT (payload_json::jsonb ->> 'commandId')::uuid AS command_id,
+           COALESCE(payload_json::jsonb ->> 'userId', payload_json::jsonb ->> 'authorId')::uuid AS requester_id
+    FROM outbox_events
+    WHERE (payload_json::jsonb ->> 'commandId') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+      AND COALESCE(payload_json::jsonb ->> 'userId', payload_json::jsonb ->> 'authorId')
+          ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+), evidence AS (
+    SELECT command_id, MIN(requester_id::text)::uuid AS requester_id
+    FROM candidates
+    GROUP BY command_id
+    HAVING COUNT(DISTINCT requester_id) = 1
+)
+UPDATE command_status receipt
+SET requester_id = evidence.requester_id
+FROM evidence
+WHERE receipt.command_id = evidence.command_id
+  AND receipt.requester_id IS NULL;
 
 CREATE TABLE IF NOT EXISTS articles (
                           article_id        UUID PRIMARY KEY,
@@ -469,6 +576,8 @@ CREATE TABLE IF NOT EXISTS auth_users (
 );
 ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
 ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(512);
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_auth_users_provider_user
     ON auth_users (provider, provider_user_id);
@@ -509,6 +618,19 @@ CREATE TABLE IF NOT EXISTS app_users (
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_url varchar(512);
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS lifecycle_status varchar(32) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS deletion_requested_at timestamptz;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS account_deletion_processes (
+    request_id uuid primary key,
+    user_id uuid not null unique,
+    requested_at timestamptz not null,
+    status varchar(32) not null,
+    acknowledgements text not null,
+    completed_at timestamptz,
+    version bigint not null
+);
 
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);
@@ -569,6 +691,14 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token
     ON refresh_tokens (token);
 
+CREATE TABLE IF NOT EXISTS auth_provider_credentials (
+    user_id UUID NOT NULL,
+    provider VARCHAR(32) NOT NULL,
+    encrypted_refresh_token TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(user_id, provider)
+);
+
 create table if not exists tickets (
                                        ticket_id uuid primary key,
                                        user_id uuid not null,
@@ -597,8 +727,26 @@ create table if not exists tickets (
                                        version bigint not null
 );
 
+create table if not exists ticket_submission_fingerprints (
+    fingerprint varchar(64) primary key,
+    ticket_id uuid not null unique,
+    user_id uuid not null,
+    created_at timestamptz not null
+);
+insert into ticket_submission_fingerprints(fingerprint,ticket_id,user_id,created_at)
+select fingerprint,ticket_id,user_id,created_at from (
+    select 'v1:' || md5(lower(regexp_replace(btrim(ocr_text), '\s+', ' ', 'g'))) fingerprint,
+           ticket_id,user_id,created_at,
+           row_number() over (
+             partition by md5(lower(regexp_replace(btrim(ocr_text), '\s+', ' ', 'g')))
+             order by created_at,ticket_id) ordinal
+    from tickets where ocr_text is not null and btrim(ocr_text) <> ''
+) canonical where ordinal=1
+on conflict do nothing;
+
 create table if not exists ticket_status_projection (
                                                         ticket_id uuid primary key,
+                                                        history_position bigint generated by default as identity unique,
                                                         user_id uuid not null,
 
                                                         status varchar(32) not null,
@@ -621,8 +769,15 @@ create table if not exists ticket_status_projection (
                                                         occurred_at timestamptz not null
 );
 
+alter table ticket_status_projection
+    add column if not exists history_position bigint generated by default as identity;
+
 create index if not exists idx_ticket_status_user on ticket_status_projection(user_id);
 create index if not exists idx_ticket_status_status on ticket_status_projection(status);
+create unique index if not exists idx_ticket_status_history_position
+    on ticket_status_projection(history_position);
+create index if not exists idx_ticket_status_user_history
+    on ticket_status_projection(user_id, history_position desc);
 
 create table if not exists user_entitlements_projection (
                                                             user_id uuid primary key,
@@ -630,6 +785,73 @@ create table if not exists user_entitlements_projection (
                                                             version bigint not null,
                                                             updated_at timestamptz not null
 );
+
+-- Pass belongs to userApplicationContext. These tables are local contributions
+-- fed by integration events; normal reads never join another bounded context.
+create table if not exists pass_ticket_contributions (
+    ticket_id uuid primary key,
+    user_id uuid not null,
+    active boolean not null,
+    source_version bigint not null,
+    updated_at timestamptz not null
+);
+create index if not exists idx_pass_ticket_contributions_user_active
+    on pass_ticket_contributions(user_id, active);
+
+create table if not exists pass_experience_contributions (
+    experience_id uuid primary key,
+    user_id uuid not null,
+    coffee_id uuid not null,
+    active boolean not null,
+    source_version bigint not null,
+    updated_at timestamptz not null
+);
+create index if not exists idx_pass_experience_contributions_user_active
+    on pass_experience_contributions(user_id, active);
+
+create table if not exists user_pass_projection (
+    user_id uuid primary key,
+    policy_version integer not null,
+    published_experiences integer not null,
+    distinct_experienced_coffees integer not null,
+    validated_tickets integer not null,
+    acquired_levels text not null,
+    version bigint not null,
+    updated_at timestamptz not null
+);
+
+insert into pass_ticket_contributions(ticket_id,user_id,active,source_version,updated_at)
+select ticket_id,user_id,(status='CONFIRMED'),version,updated_at
+from tickets
+where ocr_text is null or btrim(ocr_text) = ''
+   or exists (select 1 from ticket_submission_fingerprints fingerprint
+              where fingerprint.ticket_id=tickets.ticket_id)
+on conflict(ticket_id) do nothing;
+
+with legacy as (
+    select contribution.user_id,
+           count(*) filter (where contribution.active) :: integer as tickets,
+           (select count(*) from social_comments_projection comment
+             where comment.author_id=contribution.user_id and comment.deleted_at is null
+               and comment.moderation='PUBLISHED') :: integer as comments,
+           (select count(*) from social_likes_projection liked
+             where liked.user_id=contribution.user_id and liked.active=true) :: integer as likes,
+           max(contribution.updated_at) as updated_at
+    from pass_ticket_contributions contribution
+    group by contribution.user_id
+)
+insert into user_pass_projection(user_id,policy_version,published_experiences,
+    distinct_experienced_coffees,validated_tickets,acquired_levels,version,updated_at)
+select user_id,2,0,0,tickets,
+       case
+         when tickets>=10 and comments>=5 and likes>=5 then 'COFFEE_TASTER,URBAN_EXPLORER,SOCIAL_BEAN,FRAGMENTS_MASTER'
+         when tickets>=5 and comments>=3 then 'COFFEE_TASTER,URBAN_EXPLORER'
+         when tickets>=3 then 'COFFEE_TASTER'
+         else ''
+       end,
+       1,updated_at
+from legacy
+on conflict(user_id) do nothing;
 
 -- Durable process-manager state for long-running Studio article authoring.
 -- The saga is coordination state; article content remains owned by articleContext.
@@ -790,3 +1012,148 @@ create index if not exists idx_editorial_publication_schedule_due on editorial_p
 create unique index if not exists uq_editorial_publication_schedule_active_operation
     on editorial_publication_schedule(article_id, operation)
     where status in ('SCHEDULED','CLAIMED','DISPATCHED');
+
+-- experienceContext owns experience text, moderation and its event-fed references.
+CREATE TABLE IF NOT EXISTS experiences (
+    experience_id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    coffee_id UUID NOT NULL,
+    message VARCHAR(4000),
+    publication_status VARCHAR(32) NOT NULL,
+    moderation_status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    deleted_at TIMESTAMPTZ,
+    version BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_experiences_user_updated ON experiences(user_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS ix_experiences_coffee_updated ON experiences(coffee_id, updated_at DESC);
+
+CREATE TABLE IF NOT EXISTS experience_reports (
+    report_id UUID PRIMARY KEY,
+    experience_id UUID NOT NULL,
+    coffee_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reporter_id UUID NOT NULL,
+    reason VARCHAR(64) NOT NULL,
+    details VARCHAR(1000),
+    status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    resolved_at TIMESTAMPTZ,
+    version BIGINT NOT NULL,
+    CONSTRAINT uq_experience_reporter UNIQUE(reporter_id, experience_id)
+);
+CREATE INDEX IF NOT EXISTS ix_experience_reports_experience_status ON experience_reports(experience_id,status);
+
+CREATE TABLE IF NOT EXISTS experience_views (
+    experience_id UUID PRIMARY KEY,
+    user_id UUID NOT NULL,
+    coffee_id UUID NOT NULL,
+    message VARCHAR(4000),
+    publication_status VARCHAR(32) NOT NULL,
+    moderation_status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    deleted_at TIMESTAMPTZ,
+    version BIGINT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_experience_views_coffee_created ON experience_views(coffee_id,created_at DESC,experience_id DESC);
+CREATE INDEX IF NOT EXISTS ix_experience_views_user_created ON experience_views(user_id,created_at DESC,experience_id DESC);
+
+CREATE TABLE IF NOT EXISTS experience_reports_projection (
+    report_id UUID PRIMARY KEY,
+    experience_id UUID NOT NULL,
+    coffee_id UUID NOT NULL,
+    author_id UUID NOT NULL,
+    reporter_id UUID NOT NULL,
+    reason VARCHAR(64) NOT NULL,
+    details VARCHAR(1000),
+    status VARCHAR(32) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    resolved_at TIMESTAMPTZ,
+    version BIGINT NOT NULL,
+    moderation_version BIGINT NOT NULL DEFAULT -1
+);
+ALTER TABLE experience_reports_projection ADD COLUMN IF NOT EXISTS moderation_version BIGINT NOT NULL DEFAULT -1;
+CREATE INDEX IF NOT EXISTS ix_experience_reports_projection_queue ON experience_reports_projection(status,created_at);
+CREATE INDEX IF NOT EXISTS ix_experience_reports_projection_reporter ON experience_reports_projection(reporter_id,experience_id);
+
+CREATE TABLE IF NOT EXISTS experience_moderation_actions_projection (
+    action_id UUID PRIMARY KEY,
+    report_id UUID NOT NULL,
+    experience_id UUID NOT NULL,
+    operator_id UUID NOT NULL,
+    decision VARCHAR(32) NOT NULL,
+    reason VARCHAR(1000),
+    occurred_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_experience_moderation_actions_report ON experience_moderation_actions_projection(report_id,occurred_at DESC);
+
+CREATE TABLE IF NOT EXISTS experience_user_profiles (
+    user_id UUID PRIMARY KEY,
+    display_name VARCHAR(255) NOT NULL,
+    avatar_url VARCHAR(512),
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS experience_user_blocks (
+    block_id UUID PRIMARY KEY,
+    blocker_id UUID NOT NULL,
+    blocked_user_id UUID NOT NULL,
+    active BOOLEAN NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL,
+    CONSTRAINT uq_experience_user_blocks UNIQUE(blocker_id,blocked_user_id)
+);
+CREATE INDEX IF NOT EXISTS ix_experience_user_blocks_active ON experience_user_blocks(blocker_id,active);
+CREATE TABLE IF NOT EXISTS experience_coffee_references (
+    coffee_id UUID PRIMARY KEY,
+    active BOOLEAN NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    version BIGINT NOT NULL
+);
+
+INSERT INTO experience_coffee_references(coffee_id,active,updated_at,version)
+SELECT id, archived_at IS NULL AND publication_status='PUBLISHED', updated_at, version FROM coffees
+ON CONFLICT(coffee_id) DO NOTHING;
+INSERT INTO experience_user_profiles(user_id,display_name,avatar_url,updated_at,version)
+SELECT id,display_name,avatar_url,updated_at,version FROM app_users
+ON CONFLICT(user_id) DO NOTHING;
+
+-- Private user media. Object keys are generated server-side; buckets remain private.
+CREATE TABLE IF NOT EXISTS experience_media (
+    media_id UUID PRIMARY KEY, experience_id UUID NOT NULL, coffee_id UUID NOT NULL, user_id UUID,
+    declared_content_type VARCHAR(64) NOT NULL, declared_size BIGINT NOT NULL,
+    pending_object_key VARCHAR(1024) NOT NULL, status VARCHAR(32) NOT NULL,
+    object_key VARCHAR(1024), content_type VARCHAR(64), size_bytes BIGINT NOT NULL DEFAULT 0,
+    width INTEGER, height INTEGER, sha256 VARCHAR(64), created_at TIMESTAMPTZ NOT NULL,
+	updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
+	CONSTRAINT ck_experience_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
+	CONSTRAINT ck_experience_media_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_experience_media_available CHECK (status <> 'AVAILABLE' OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND sha256 IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS ix_experience_media_experience_status ON experience_media(experience_id,status);
+CREATE INDEX IF NOT EXISTS ix_experience_media_cleanup ON experience_media(status,updated_at);
+
+CREATE TABLE IF NOT EXISTS experience_media_views (
+    media_id UUID PRIMARY KEY, experience_id UUID NOT NULL, user_id UUID,
+    status VARCHAR(32) NOT NULL, object_key VARCHAR(1024), content_type VARCHAR(64),
+    size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER,
+	position INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
+	CONSTRAINT ck_experience_media_view_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_experience_media_view_position CHECK (position >= 0)
+);
+CREATE INDEX IF NOT EXISTS ix_experience_media_views_experience ON experience_media_views(experience_id,status,position);
+
+CREATE TABLE IF NOT EXISTS user_avatar_media (
+    media_id UUID PRIMARY KEY, user_id UUID, declared_content_type VARCHAR(64) NOT NULL,
+    declared_size BIGINT NOT NULL, pending_object_key VARCHAR(1024) NOT NULL,
+    status VARCHAR(32) NOT NULL, object_key VARCHAR(1024), content_type VARCHAR(64),
+    size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER, sha256 VARCHAR(64),
+	created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
+	CONSTRAINT ck_user_avatar_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
+	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_user_avatar_media_available CHECK (status <> 'AVAILABLE' OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_user_avatar_media_available ON user_avatar_media(user_id) WHERE status='AVAILABLE';
+CREATE INDEX IF NOT EXISTS ix_user_avatar_media_cleanup ON user_avatar_media(status,updated_at);

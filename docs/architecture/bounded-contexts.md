@@ -84,6 +84,17 @@ Owns ticket verification:
 
 Ticket verification may emit facts that other contexts consume for entitlements or profile progress.
 
+### experienceContext
+
+Owns textual coffee experiences:
+- drafts, publication, author deletion and moderation visibility
+- experience reports and moderation decisions
+- coffee/user/block local references and mobile-facing read models
+
+An experience can be published without a ticket. It emits a stable lifecycle
+fact that `userApplicationContext` interprets for Pass progression; it never
+owns Pass policy or ticket evidence.
+
 ### sharedKernel
 
 Technical only:

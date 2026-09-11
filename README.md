@@ -90,6 +90,9 @@ Le projet est structuré en **bounded contexts** indépendants :
 * **ticketContext**
   Vérification de tickets, pipeline de traitement asynchrone, intégration moteur natif
 
+* **experienceContext**
+  Expériences café, brouillons/publication, modération et projections mobiles
+
 Chaque context possède :
 
 * son modèle de domaine
@@ -188,6 +191,7 @@ fragmentsClean/
 ├── articleContext/
 ├── socialContext/
 ├── ticketContext/
+├── experienceContext/
 ├── sharedKernel/
 ├── bin/
 │   └── ticketverify
@@ -293,6 +297,9 @@ Cette documentation remplace l'ancienne lecture "Kafka par défaut" : le transpo
 
 * 🎫 Ticket
   `src/main/java/com/nm/fragmentsclean/ticketContext/README.md`
+
+* ✍️ Experience
+  `src/main/java/com/nm/fragmentsclean/experienceContext/README.md`
 
 ### 🧱 Infrastructure & Architecture
 

@@ -107,6 +107,8 @@ Allowed projection names are platform contracts, for example:
 - `comments`
 - `likes`
 - `tickets`
+- `experiences`
+- `experience-moderation`
 - `walletPasses`
 - `users`
 - `notifications`
@@ -116,7 +118,7 @@ names, or internal table names in SSE payloads.
 
 ## Mobile Projection Sync
 
-Comments, likes, tickets, and entitlements use projection sync for read-model
+Comments, likes, tickets, experiences, moderation, and entitlements use projection sync for read-model
 freshness. Command lifecycle remains handled by `/commands/{commandId}`.
 
 Backend publication:

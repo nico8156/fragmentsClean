@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.socialContext.read;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateMediaUrlResolver;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentCursor;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentItemView;
 import com.nm.fragmentsclean.socialContext.read.projections.CommentView;
@@ -19,9 +20,11 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
     private static final int DEFAULT_PAGE_SIZE = 20;
 
     private final JdbcTemplate jdbcTemplate;
+    private final PrivateMediaUrlResolver mediaUrls;
 
-    public ListCommentsQueryHandler(JdbcTemplate jdbcTemplate) {
+    public ListCommentsQueryHandler(JdbcTemplate jdbcTemplate, PrivateMediaUrlResolver mediaUrls) {
         this.jdbcTemplate = jdbcTemplate;
+        this.mediaUrls = mediaUrls;
     }
 
     @Override
@@ -37,10 +40,24 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
             FROM social_comments_projection
             WHERE target_id = ?
               AND deleted_at IS NULL
+              AND moderation = 'PUBLISHED'
+              AND NOT EXISTS (
+                SELECT 1 FROM social_content_reports_projection report
+                WHERE report.comment_id = social_comments_projection.id
+                  AND report.reporter_id = ?
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM social_user_blocks_projection block
+                WHERE block.blocker_id = ?
+                  AND block.blocked_user_id = social_comments_projection.author_id
+                  AND block.active = TRUE
+              )
             """);
 
         List<Object> params = new ArrayList<>();
         params.add(query.targetId());
+        params.add(query.requesterId());
+        params.add(query.requesterId());
 
         switch (query.op()) {
             case "older" -> appendOlderClause(sql, params, cursor);
@@ -125,7 +142,7 @@ public class ListCommentsQueryHandler implements QueryHandler<ListCommentsQuery,
                 ? u.displayName()
                 : "Utilisateur";
 
-        String avatarUrl = (u != null) ? u.avatarUrl() : null;
+        String avatarUrl = (u != null) ? mediaUrls.resolve(u.avatarUrl()) : null;
 
         return new CommentItemView(
                 c.id(),

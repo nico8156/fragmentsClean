@@ -2,7 +2,6 @@ package com.nm.fragmentsclean.userApplicationContextTest.unit;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.SavedCoffeeRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.SavedCoffee;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.SavedCoffeeSetEvent;
@@ -26,19 +25,16 @@ class SetSavedCoffeeCommandHandlerTest {
 
 	private FakeSavedCoffeeRepository repository;
 	private FakeDomainEventPublisher eventPublisher;
-	private RecordingCommandStatusRecorder commandStatusRecorder;
 	private SetSavedCoffeeCommandHandler handler;
 
 	@BeforeEach
 	void setup() {
 		repository = new FakeSavedCoffeeRepository();
 		eventPublisher = new FakeDomainEventPublisher();
-		commandStatusRecorder = new RecordingCommandStatusRecorder();
 		handler = new SetSavedCoffeeCommandHandler(
 				repository,
 				eventPublisher,
-				new DeterministicDateTimeProvider(),
-				commandStatusRecorder);
+				new DeterministicDateTimeProvider());
 	}
 
 	@Test
@@ -67,7 +63,6 @@ class SetSavedCoffeeCommandHandlerTest {
 		assertThat(event.active()).isTrue();
 		assertThat(event.version()).isEqualTo(1L);
 		assertThat(event.occurredAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
-		assertThat(commandStatusRecorder.eventType).isEqualTo("user.saved_coffee.set");
 	}
 
 	@Test
@@ -118,7 +113,6 @@ class SetSavedCoffeeCommandHandlerTest {
 		assertThat(eventPublisher.published).hasSize(1);
 		assertThat(((SavedCoffeeSetEvent) eventPublisher.published.getFirst()).savedCoffeeId())
 				.isEqualTo(SAVED_COFFEE_ID);
-		assertThat(commandStatusRecorder.aggregateId).isEqualTo(SAVED_COFFEE_ID.toString());
 	}
 
 	@Test
@@ -143,7 +137,6 @@ class SetSavedCoffeeCommandHandlerTest {
 
 		assertThat(repository.allSnapshots().getFirst().version()).isEqualTo(1L);
 		assertThat(eventPublisher.published).isEmpty();
-		assertThat(commandStatusRecorder.isApplied(SECOND_COMMAND_ID)).isTrue();
 	}
 
 	private static class FakeSavedCoffeeRepository implements SavedCoffeeRepository {
@@ -171,24 +164,6 @@ class SetSavedCoffeeCommandHandlerTest {
 
 		List<SavedCoffee.SavedCoffeeSnapshot> allSnapshots() {
 			return byId.values().stream().map(SavedCoffee::toSnapshot).toList();
-		}
-	}
-
-	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
-		String eventType;
-		String aggregateId;
-		private final Set<UUID> applied = new HashSet<>();
-
-		@Override
-		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
-			this.eventType = eventType;
-			this.aggregateId = aggregateId;
-			applied.add(commandId);
-		}
-
-		@Override
-		public boolean isApplied(UUID commandId) {
-			return applied.contains(commandId);
 		}
 	}
 }

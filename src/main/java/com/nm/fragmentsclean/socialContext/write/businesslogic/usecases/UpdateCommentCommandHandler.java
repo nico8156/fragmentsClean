@@ -1,11 +1,12 @@
 package com.nm.fragmentsclean.socialContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.Comment;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentContentPolicy;
 import jakarta.transaction.Transactional;
 
 @Transactional
@@ -14,16 +15,16 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
     private final CommentRepository commentRepository;
     private final DomainEventPublisher eventPublisher;
     private final DateTimeProvider dateTimeProvider;
-    private final CommandStatusRecorder commandStatusRecorder;
+    private final CommentContentPolicy contentPolicy;
 
     public UpdateCommentCommandHandler(CommentRepository commentRepository,
                                        DomainEventPublisher eventPublisher,
                                        DateTimeProvider dateTimeProvider,
-                                       CommandStatusRecorder commandStatusRecorder) {
+                                       CommentContentPolicy contentPolicy) {
         this.commentRepository = commentRepository;
         this.eventPublisher = eventPublisher;
         this.dateTimeProvider = dateTimeProvider;
-        this.commandStatusRecorder = commandStatusRecorder;
+        this.contentPolicy = contentPolicy;
     }
 
     @Override
@@ -32,13 +33,15 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
         var now = dateTimeProvider.now();
 
         Comment comment = commentRepository.byId(cmd.commentId())
-                .orElseThrow(() -> new IllegalStateException("Comment not found: " + cmd.commentId()));
+                .orElseThrow(() -> new BusinessCommandRejectedException(
+                        "COMMENT_NOT_FOUND", "Comment does not exist"));
 
         if (!comment.toSnapshot().authorId().equals(cmd.userId())) {
-            throw new IllegalStateException("Only the comment author can update it");
+            throw new BusinessCommandRejectedException(
+                    "COMMENT_NOT_OWNED", "Only the comment author can update it");
         }
 
-        boolean changed = comment.applyBodyEdit(cmd.newBody(), now);
+        boolean changed = comment.applyBodyEdit(contentPolicy.validateAndNormalize(cmd.newBody()), now);
 
         // état persistant
         commentRepository.save(comment);
@@ -53,12 +56,5 @@ public class UpdateCommentCommandHandler implements CommandHandler<UpdateComment
 
         comment.domainEvents().forEach(eventPublisher::publish);
         comment.clearDomainEvents();
-        commandStatusRecorder.markApplied(
-                cmd.commandId(),
-                "Comment",
-                cmd.commentId().toString(),
-                "social.comment.updated",
-                now
-        );
     }
 }

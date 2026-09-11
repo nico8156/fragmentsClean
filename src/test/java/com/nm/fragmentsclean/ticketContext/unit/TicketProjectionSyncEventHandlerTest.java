@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcTicketStatusProjectionRepository;
-import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcUserEntitlementsProjectionRepository;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerifyAcceptedEventHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
@@ -57,9 +56,8 @@ class TicketProjectionSyncEventHandlerTest {
 	@Test
 	void completed_projection_publishes_ticket_projection_updated_after_projection_update() {
 		var repository = new RecordingTicketProjectionRepository();
-		var entitlementsRepository = new RecordingUserEntitlementsProjectionRepository(repository.operations);
 		var publisher = new RecordingProjectionSyncPublisher(repository.operations);
-		var handler = new TicketVerificationCompletedEventHandler(repository, entitlementsRepository, publisher);
+		var handler = new TicketVerificationCompletedEventHandler(repository, publisher);
 
 		handler.handle(new TicketVerificationCompletedEvent(
 				UUID.fromString("55555555-5555-5555-5555-555555555555"),
@@ -82,8 +80,8 @@ class TicketProjectionSyncEventHandlerTest {
 				"ticketEngine",
 				"tv:ok"));
 
-		assertThat(repository.operations).containsExactly("projection", "sync", "entitlementsProjection", "sync");
-		assertThat(publisher.events).hasSize(2);
+		assertThat(repository.operations).containsExactly("projection", "sync");
+		assertThat(publisher.events).hasSize(1);
 		ProjectionSyncEvent event = publisher.events.getFirst();
 		assertThat(event.eventName()).isEqualTo("projection.updated");
 		assertThat(event.projection()).isEqualTo("tickets");
@@ -92,56 +90,50 @@ class TicketProjectionSyncEventHandlerTest {
 		assertThat(event.version()).isEqualTo(1L);
 		assertThat(event.changedAt()).isEqualTo(NOW);
 		assertThat(event.hints()).containsExactly("status", "approved");
+	}
 
-		ProjectionSyncEvent entitlementsEvent = publisher.events.get(1);
-		assertThat(entitlementsEvent.eventName()).isEqualTo("projection.updated");
-		assertThat(entitlementsEvent.projection()).isEqualTo("entitlements");
-		assertThat(entitlementsEvent.scope()).isEqualTo("user");
-		assertThat(entitlementsEvent.entityId()).isEqualTo(USER_ID.toString());
-		assertThat(entitlementsEvent.version()).isEqualTo(1L);
-		assertThat(entitlementsEvent.changedAt()).isEqualTo(NOW);
-		assertThat(entitlementsEvent.hints()).containsExactly("confirmedTickets");
+	@Test
+	void stale_or_duplicate_events_do_not_publish_sync_or_refresh_progress() {
+		var repository = new RecordingTicketProjectionRepository();
+		repository.applied = false;
+		var publisher = new RecordingProjectionSyncPublisher(repository.operations);
+
+		new TicketVerifyAcceptedEventHandler(repository, publisher).handle(new TicketVerifyAcceptedEvent(
+				UUID.randomUUID(), COMMAND_ID, TICKET_ID, USER_ID, "OCR", null,
+				Ticket.TicketStatus.ANALYZING.name(), 0L, NOW, CLIENT_AT));
+		new TicketVerificationCompletedEventHandler(repository, publisher)
+				.handle(approvedEvent());
+
+		assertThat(repository.operations).containsExactly("projection", "projection");
+		assertThat(publisher.events).isEmpty();
+	}
+
+	private TicketVerificationCompletedEvent approvedEvent() {
+		return new TicketVerificationCompletedEvent(
+				UUID.randomUUID(), COMMAND_ID, TICKET_ID, USER_ID,
+				TicketVerificationCompletedEvent.Outcome.APPROVED, 1L, NOW, CLIENT_AT,
+				new TicketVerificationCompletedEvent.Approved(400, "EUR", null, "CAFE", null, null, List.of()),
+				null, "ticketEngine", "tv:ok");
 	}
 
 	private static class RecordingTicketProjectionRepository extends JdbcTicketStatusProjectionRepository {
 		private final List<String> operations = new ArrayList<>();
+		private boolean applied = true;
 
 		private RecordingTicketProjectionRepository() {
 			super(null);
 		}
 
 		@Override
-		public void applyAnalyzing(TicketVerifyAcceptedEvent evt) {
+		public boolean applyAnalyzing(TicketVerifyAcceptedEvent evt) {
 			operations.add("projection");
+			return applied;
 		}
 
 		@Override
-		public void applyCompleted(TicketVerificationCompletedEvent evt) {
+		public boolean applyCompleted(TicketVerificationCompletedEvent evt) {
 			operations.add("projection");
-		}
-	}
-
-	private static class RecordingUserEntitlementsProjectionRepository extends JdbcUserEntitlementsProjectionRepository {
-		private final List<String> operations;
-
-		private RecordingUserEntitlementsProjectionRepository(List<String> operations) {
-			super(null);
-			this.operations = operations;
-		}
-
-		@Override
-		public com.nm.fragmentsclean.ticketContext.read.projections.UserEntitlementsView refreshFromTicketStatus(
-				UUID userId,
-				long version,
-				Instant updatedAt) {
-			operations.add("entitlementsProjection");
-			return new com.nm.fragmentsclean.ticketContext.read.projections.UserEntitlementsView(
-					userId,
-					1,
-					0,
-					0,
-					version,
-					updatedAt);
+			return applied;
 		}
 	}
 

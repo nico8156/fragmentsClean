@@ -16,6 +16,7 @@ Read in order:
 10. [Release 1.0 architecture readiness](release-1-readiness.md)
 11. [Article authoring and generation saga](article-authoring-saga.md)
 12. [Integration event contracts and incoming ACLs](integration-event-contracts.md)
+13. [Private experience media and avatars](private-media.md)
 
 The versioned Studio transport contract is server-owned at
 `contracts/studio-api/v1/openapi.json`. Browser DTOs are generated from it;

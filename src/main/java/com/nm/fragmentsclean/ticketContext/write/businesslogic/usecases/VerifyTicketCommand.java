@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.AuthenticatedCommand;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,5 +12,19 @@ public record VerifyTicketCommand(
         String imageRef,   // nullable
         String ocrText,    // nullable (mais au moins un des deux devrait être présent)
         Instant clientAt   // correspond à "at" côté front
-) implements Command {
+) implements AuthenticatedCommand {
+    @Override
+    public UUID receiptCommandId() {
+        return commandId;
+    }
+
+    @Override
+    public UUID requesterId() {
+        return userId;
+    }
+
+    @Override
+    public String receiptType() {
+        return "ticket.verify.v1";
+    }
 }

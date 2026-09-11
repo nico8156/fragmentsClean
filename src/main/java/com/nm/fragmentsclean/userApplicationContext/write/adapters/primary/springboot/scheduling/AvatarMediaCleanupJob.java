@@ -1,0 +1,3 @@
+package com.nm.fragmentsclean.userApplicationContext.write.adapters.primary.springboot.scheduling;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.CleanAvatarMediaObjects;import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;import org.springframework.scheduling.annotation.Scheduled;import org.springframework.stereotype.Component;
+@Component @ConditionalOnProperty(prefix="fragments.media.cleanup",name="enabled",havingValue="true") public final class AvatarMediaCleanupJob{private final CleanAvatarMediaObjects cleanup;public AvatarMediaCleanupJob(CleanAvatarMediaObjects cleanup){this.cleanup=cleanup;}@Scheduled(fixedDelayString="${fragments.media.cleanup.delay-ms:600000}")public void clean(){cleanup.run(100);}}

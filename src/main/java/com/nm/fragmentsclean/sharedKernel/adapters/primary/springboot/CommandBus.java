@@ -2,7 +2,9 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.AuthenticatedCommand;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.CommandHandlerWithResult;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCommandExecutor;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.stereotype.Component;
 
@@ -14,11 +16,21 @@ import java.util.Map;
 @Component
 public class CommandBus {
 
+    private final DurableCommandExecutor durableCommandExecutor;
+
     // Handlers "classiques" sans retour
     private final Map<Class<?>, CommandHandler<?>> voidHandlers = new HashMap<>();
 
     // Handlers avec résultat
     private final Map<Class<?>, CommandHandlerWithResult<?, ?>> resultHandlers = new HashMap<>();
+
+    public CommandBus() {
+        this(null);
+    }
+
+    public CommandBus(DurableCommandExecutor durableCommandExecutor) {
+        this.durableCommandExecutor = durableCommandExecutor;
+    }
 
     // ------- Registration -------
 
@@ -43,6 +55,13 @@ public class CommandBus {
         CommandHandler<C> handler = (CommandHandler<C>) voidHandlers.get(command.getClass());
         if (handler == null) {
             throw new IllegalArgumentException("No void handler for command: " + command.getClass());
+        }
+        if (command instanceof AuthenticatedCommand authenticatedCommand) {
+            if (durableCommandExecutor == null) {
+                throw new IllegalStateException("Authenticated commands require durable command execution");
+            }
+            durableCommandExecutor.execute(authenticatedCommand, () -> handler.execute(command));
+            return;
         }
         handler.execute(command);
     }

@@ -6,6 +6,7 @@ public record CommandStatusView(
         String status,
         Instant appliedAt,
         Instant rejectedAt,
+        String rejectionCode,
         String reason
 ) {
 }

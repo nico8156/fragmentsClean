@@ -14,8 +14,9 @@ Ce context couvre :
 * gestion des identités
 * gestion des rôles
 * gestion des tokens (access / refresh)
-* intégration OAuth externe (Google)
+* intégration OAuth externe (Google et Apple)
 * sécurisation des endpoints
+* révocation des sessions et anonymisation de l'identité lors d'une suppression
 
 Mais surtout :
 👉 il définit la **frontière de confiance** du système.
@@ -38,7 +39,7 @@ Elle est pensée autour de trois principes :
 
 Le système repose sur un **backend de confiance** :
 
-* OAuth externe (Google)
+* OAuth externe (Google et Apple)
 * échange de tokens côté backend
 * génération des JWT côté serveur
 
@@ -47,7 +48,7 @@ Le système repose sur un **backend de confiance** :
 Ce n’est pas un flow PKCE pur côté client, mais un modèle **broker d’authentification** :
 
 ```
-Mobile → Backend → Google OAuth → Backend → JWT → Mobile
+Mobile → Backend → fournisseur OAuth → Backend → JWT → Mobile
 ```
 
 ### Pourquoi ce choix ?
@@ -97,6 +98,7 @@ L’authentification est organisée comme un **domaine** à part entière :
 
 * `AuthUserCreatedEvent`
 * `AuthUserLoggedInEvent`
+* `AuthenticationAccountDataErasedEvent`
 
 ➡️ L’authentification produit des **faits métier**.
 
@@ -105,6 +107,7 @@ L’authentification est organisée comme un **domaine** à part entière :
 ### Use cases
 
 * `GoogleLoginCommand`
+* `AppleLoginCommand`
 * `LogoutCommand`
 * `RefreshTokenCommand`
 
@@ -115,6 +118,8 @@ L’authentification est organisée comme un **domaine** à part entière :
 ### Ports (gateways)
 
 * `GoogleAuthService`
+* `AppleAuthService`
+* `ProviderCredentialRepository`
 * `TokenService`
 * `JwtClaimsFactory`
 * `AuthUserRepository`
@@ -137,6 +142,7 @@ L’authentification est organisée comme un **domaine** à part entière :
 ### Secondary
 
 * `HttpGoogleAuthService`
+* `HttpAppleAuthService`
 * `JwtTokenService`
 * `JpaAuthUserRepository`
 * `JpaRefreshTokenRepository`
@@ -149,22 +155,11 @@ Le domaine ne dépend pas de JWT.
 
 ---
 
-## 📖 Read side — identité projetée
+## 📖 Read side — statut de sécurité
 
-### Projections
-
-* `AuthMeView`
-
-➡️ Vue lecture dédiée pour l’API `/me`.
-
----
-
-### Queries
-
-* `GetMeQuery`
-* `GetMeQueryHandler`
-
-➡️ Séparation claire lecture / écriture.
+Le contexte expose uniquement la lecture technique nécessaire au resource
+server pour refuser immédiatement un JWT appartenant à une identité supprimée.
+Le profil public `/api/users/me` appartient au `userApplicationContext`.
 
 ---
 
@@ -188,6 +183,10 @@ La sécurité est **une couche**, pas une dépendance métier.
 * logique métier isolée
 
 ➡️ Tests rapides, fiables, sans dépendances externes.
+
+Les credentials Apple nécessaires à la révocation sont chiffrés au repos. La
+suppression distante Apple précède l'effacement transactionnel local ; un échec
+provider est rejoué par la consommation SQS/inbox.
 
 ---
 

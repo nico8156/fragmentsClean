@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.Command;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.AuthenticatedCommand;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -13,5 +13,19 @@ public record CreateCommentCommand(
         UUID parentId,
         String body,
         Instant clientAt
-) implements Command {
+) implements AuthenticatedCommand {
+    @Override
+    public UUID receiptCommandId() {
+        return commandId;
+    }
+
+    @Override
+    public UUID requesterId() {
+        return authorId;
+    }
+
+    @Override
+    public String receiptType() {
+        return "social.comment.create.v1";
+    }
 }

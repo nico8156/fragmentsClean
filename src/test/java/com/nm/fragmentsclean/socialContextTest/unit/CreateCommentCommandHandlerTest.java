@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.socialContextTest.unit;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.ModerationStatus;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Set;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentContentPolicy;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -30,7 +33,20 @@ public class CreateCommentCommandHandlerTest {
     @BeforeEach
     void setup() {
         dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T10:00:00Z");
-        handler = new CreateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider);
+        handler = new CreateCommentCommandHandler(commentRepository, domainEventPublisher, dateTimeProvider,
+                new CommentContentPolicy(Set.of("forbidden")));
+    }
+
+    @Test
+    void should_reject_forbidden_content_without_persisting_or_publishing() {
+        assertThatThrownBy(() -> handler.execute(new CreateCommentCommand(
+                CMD_ID, COMMENT_ID, USER_ID, TARGET_ID, null, "Contains FORBIDDEN term",
+                Instant.parse("2023-10-01T09:59:00Z"))))
+                .isInstanceOf(BusinessCommandRejectedException.class)
+                .extracting(error -> ((BusinessCommandRejectedException) error).rejectionCode())
+                .isEqualTo("COMMENT_BODY_FORBIDDEN_TERM");
+        assertThat(commentRepository.allSnapshots()).isEmpty();
+        assertThat(domainEventPublisher.published).isEmpty();
     }
 
     @Test
@@ -73,5 +89,22 @@ public class CreateCommentCommandHandlerTest {
         assertThat(evt.version()).isEqualTo(0L);
         //assertThat(evt.occurredAt()).isEqualTo(dateTimeProvider.instantOfNow);
         //assertThat(evt.clientAt()).isEqualTo(Instant.parse("2023-10-01T10:00:00Z"));
+    }
+
+    @Test
+    void should_reject_reusing_a_comment_id_for_a_different_intent() {
+        handler.execute(new CreateCommentCommand(
+                CMD_ID, COMMENT_ID, USER_ID, TARGET_ID, null,
+                "Original", Instant.parse("2023-10-01T09:59:00Z")));
+
+        assertThatThrownBy(() -> handler.execute(new CreateCommentCommand(
+                UUID.randomUUID(), COMMENT_ID, USER_ID, TARGET_ID, null,
+                "Different", Instant.parse("2023-10-01T10:01:00Z"))))
+                .isInstanceOf(BusinessCommandRejectedException.class)
+                .extracting(error -> ((BusinessCommandRejectedException) error).rejectionCode())
+                .isEqualTo("COMMENT_ID_CONFLICT");
+
+        assertThat(commentRepository.allSnapshots().getFirst().body()).isEqualTo("Original");
+        assertThat(domainEventPublisher.published).hasSize(1);
     }
 }

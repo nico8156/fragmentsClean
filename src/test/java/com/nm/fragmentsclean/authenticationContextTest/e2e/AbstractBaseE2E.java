@@ -9,12 +9,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 @SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = FragmentsCleanApplication.class
-)
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = FragmentsCleanApplication.class,
+    properties = {
+      "app.outbox.dispatcher.scheduling-enabled=false",
+      "auth.provider-credential-encryption-key=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+    })
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = AuthenticationContextWriteE2EConfiguration.class)
 @ActiveProfiles("auth_test")
-public abstract class AbstractBaseE2E extends TestContainers {
-}
+public abstract class AbstractBaseE2E extends TestContainers {}

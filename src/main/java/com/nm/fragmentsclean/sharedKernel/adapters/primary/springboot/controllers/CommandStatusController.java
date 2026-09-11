@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.controllers;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.CommandStatusRepository;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.QueryBus;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.GetCommandStatusQuery;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusView;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,15 +17,19 @@ import java.util.UUID;
 @RequestMapping("/commands")
 public class CommandStatusController {
 
-    private final CommandStatusRepository commandStatusRepository;
+    private final QueryBus queryBus;
 
-    public CommandStatusController(CommandStatusRepository commandStatusRepository) {
-        this.commandStatusRepository = commandStatusRepository;
+    public CommandStatusController(QueryBus queryBus) {
+        this.queryBus = queryBus;
     }
 
     @GetMapping("/{commandId}")
     public ResponseEntity<CommandStatusView> getStatus(@PathVariable UUID commandId,
                                                        @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(commandStatusRepository.find(commandId));
+        if (jwt == null || jwt.getSubject() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(queryBus.dispatch(
+                new GetCommandStatusQuery(commandId, UUID.fromString(jwt.getSubject()))));
     }
 }

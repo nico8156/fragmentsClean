@@ -16,9 +16,9 @@ class IntegrationEventDestinationResolverTest {
         assertThat(destinations("AuthUser", "com.example.AuthUserCreatedEvent"))
                 .containsExactly("auth-users-events");
         assertThat(destinations("AppUser", "com.example.AppUserCreatedEvent"))
-                .containsExactly("app-users-events");
+                .containsExactly("app-users-events", "experiences-events");
         assertThat(destinations("Coffee", "com.example.CoffeeCreatedEvent"))
-                .containsExactly("coffees-events", "app-users-events");
+                .containsExactly("coffees-events", "app-users-events", "experiences-events");
         assertThat(destinations("Article", "com.example.ArticleCreatedEvent"))
                 .containsExactly("articles-events");
         assertThat(destinations("Comment", "com.example.CommentCreatedEvent"))
@@ -34,9 +34,9 @@ class IntegrationEventDestinationResolverTest {
     }
 
     @Test
-    void routes_ticket_completed_to_ticket_projection_queue_only() {
+    void routes_ticket_completed_to_ticket_and_user_pass_projections() {
         assertThat(destinations("Ticket", "com.example.TicketVerificationCompletedEvent"))
-                .containsExactly("ticket-events");
+                .containsExactly("ticket-events", "app-users-events");
     }
 
     @Test
@@ -45,6 +45,20 @@ class IntegrationEventDestinationResolverTest {
                 .containsExactly("articles-events");
         assertThat(destinations("ArticleAuthoringSaga", "com.example.ArticleGenerationCompletedEvent"))
                 .containsExactly("articles-events");
+    }
+
+    @Test
+    void routes_experience_lifecycle_facts_to_the_user_product_projection() {
+        assertThat(destinations("Experience", "com.example.ExperienceLifecycleChangedEvent"))
+                .containsExactly("app-users-events");
+    }
+
+    @Test
+    void routes_experience_snapshots_and_social_blocks_to_the_experience_projection() {
+        assertThat(destinations("Experience", "com.example.ExperienceSnapshotChangedEvent"))
+                .containsExactly("experiences-events");
+        assertThat(destinations("UserBlock", "com.example.UserBlockChangedEvent"))
+                .containsExactly("domain-events", "experiences-events");
     }
 
     private List<String> destinations(String aggregateType, String eventType) {

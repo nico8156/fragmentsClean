@@ -6,34 +6,55 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentDeletedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentUpdatedEvent;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentReportedEvent;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentModeratedEvent;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.UserBlockChangedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.LikeSetEvent;
-import org.springframework.stereotype.Component;
-
+import com.nm.fragmentsclean.socialContext.write.businesslogic.models.SocialAccountDataErasedEvent;
 import java.util.Optional;
+import org.springframework.stereotype.Component;
 
 @Component
 public class SocialOutboxEventMetadataContributor implements OutboxEventMetadataContributor {
-	@Override
-	public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
-		if (event instanceof LikeSetEvent likeEvent) {
-			return Optional.of(new OutboxEventMetadata(
-					"Like",
-					likeEvent.likeId().toString(),
-					"user:" + likeEvent.userId()));
-		}
-		if (event instanceof CommentCreatedEvent commentEvent) {
-			return Optional.of(comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
-		}
-		if (event instanceof CommentUpdatedEvent commentEvent) {
-			return Optional.of(comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
-		}
-		if (event instanceof CommentDeletedEvent commentEvent) {
-			return Optional.of(comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
-		}
-		return Optional.empty();
-	}
+  @Override
+  public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
+    if (event instanceof LikeSetEvent likeEvent) {
+      return Optional.of(
+          new OutboxEventMetadata(
+              "Like", likeEvent.likeId().toString(), "user:" + likeEvent.userId()));
+    }
+    if (event instanceof CommentCreatedEvent commentEvent) {
+      return Optional.of(
+          comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
+    }
+    if (event instanceof CommentUpdatedEvent commentEvent) {
+      return Optional.of(
+          comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
+    }
+    if (event instanceof CommentDeletedEvent commentEvent) {
+      return Optional.of(
+          comment(commentEvent.commentId().toString(), commentEvent.authorId().toString()));
+    }
+    if (event instanceof CommentReportedEvent report) {
+      return Optional.of(new OutboxEventMetadata("ContentReport", report.reportId().toString(), "user:" + report.reporterId()));
+    }
+    if (event instanceof CommentModeratedEvent moderation) {
+      return Optional.of(new OutboxEventMetadata("Comment", moderation.commentId().toString(), "user:" + moderation.authorId()));
+    }
+    if (event instanceof UserBlockChangedEvent block) {
+      return Optional.of(new OutboxEventMetadata("UserBlock", block.blockId().toString(), "user:" + block.blockerId()));
+    }
+    if (event instanceof SocialAccountDataErasedEvent erased) {
+      return Optional.of(
+          new OutboxEventMetadata(
+              "SocialAccountDeletion",
+              erased.userId().toString(),
+              "accountDeletion:" + erased.userId()));
+    }
+    return Optional.empty();
+  }
 
-	private OutboxEventMetadata comment(String commentId, String authorId) {
-		return new OutboxEventMetadata("Comment", commentId, "user:" + authorId);
-	}
+  private OutboxEventMetadata comment(String commentId, String authorId) {
+    return new OutboxEventMetadata("Comment", commentId, "user:" + authorId);
+  }
 }

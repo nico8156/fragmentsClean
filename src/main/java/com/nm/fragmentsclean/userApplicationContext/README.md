@@ -52,6 +52,8 @@ Le userApplicationContext assure :
 * la création d’un `AppUser` côté application
 * la synchronisation depuis l’identité (auth user)
 * la gestion des événements de profil
+* la progression Pass du membre et la conservation de ses niveaux acquis
+* la demande et la coordination durable de suppression du compte
 
 Ce context est souvent alimenté par un contrat d’intégration public venant du
 `authenticationContext`.
@@ -92,6 +94,8 @@ Le `userApplicationContext` réagit :
 
 * `AuthUserCreatedEventHandler`
 * `SetSavedCoffeeCommandHandler`
+* `UpdateAppUserProfileCommandHandler`
+* `RequestAccountDeletionCommandHandler`
 
 ### Port
 
@@ -134,6 +138,41 @@ tap enregistrer
 Le read model `savedCoffees` maintient aussi une petite projection locale des
 cafés alimentée par les événements stables `coffee.created`, `coffee.archived`
 et `coffee.deleted`. Le read side ne lit donc pas les tables du `coffeeContext`.
+
+## Profil et suppression du compte
+
+Le nom public est modifié par commande offline-first et reste un invariant de
+`AppUser`. La lecture `/api/users/me` est une query JDBC de ce contexte, jamais
+une projection d'authentification.
+
+La suppression démarre un `AccountDeletionProcess` durable. L'événement stable
+`app.user.deletion_requested` demande à chaque contexte propriétaire d'effacer
+ses propres données ; les faits `account.data_erased` complètent le processus.
+Le contexte coordinateur ne lit ni ne supprime les tables métier des autres
+contexts. Voir [le contrat détaillé](../../../../../../../docs/architecture/identity-profile-account-deletion.md).
+
+## Pass
+
+Le sous-module `pass` possède la politique de progression produit version 2.
+Il maintient ses propres contributions ticket et expérience à partir de contrats
+d'intégration primitifs, versionnés et consommés via inbox. Il ne lit aucune table
+métier de `ticketContext` ou d'`experienceContext` en fonctionnement normal.
+
+```text
+ticket / experience stable event
+-> app-users-events
+-> inbox idempotente
+-> contribution locale versionnée
+-> PassProgressPolicy
+-> user_pass_projection
+-> projection.updated entitlements
+-> GET /api/users/me/entitlements
+```
+
+Les seuils sont : `1/1/0`, `3/3/0`, `5/3/1`, `10/5/3` pour expériences
+publiées, cafés distincts et tickets validés. Une suppression ordinaire réduit
+les compteurs mais conserve les niveaux acquis ; une décision de fraude ou de
+modération peut les révoquer. Le mobile n'invente aucun seuil de repli.
 
 ---
 
