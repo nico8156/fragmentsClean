@@ -798,6 +798,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 8 — lot 05, clôture locale 2026-09-11 vers 20:20 CEST | Experience texte serveur/mobile/Studio, Pass, modération et suppression | Référence initiale de 1 h 30 à 3 h | Fenêtre observée d'environ 1 h 45 depuis 18:35, dans la fourchette, incluant corrections, attentes Docker et builds ; temps actif non isolé | Zéro pour le périmètre texte local ; médias et recette déployée restent explicitement ouverts | 1 à 2,5 jours concentrés pour 06 à 09, puis TestFlight/App Review séparés | Réutilisation forte des pipelines command/outbox/inbox, Pass et modération ; le pipeline S3, les traitements d'image et la recette native du lot 06 concentrent désormais l'incertitude. Confiance moyenne |
 | Prévision 9 — lot 06, démarrage 2026-09-11 20:45 CEST | Photo d'expérience et avatar, stockage privé, reprise, modération et effacement | 2 h 30 à 5 h de fenêtre locale pour code et preuves automatisées ; AWS réel et recette appareil séparés | Exploration et cadrage démarrés ; temps actif non isolé | Verticales backend/mobile/Studio, tests, documentation et intégration Git | 0,75 à 2 jours concentrés pour 07 à 09 après le lot 06, puis TestFlight/App Review séparés | Une photo par expérience dans l'UI V1, collection ordonnée et plafond serveur configurables ; avatar unique. JPEG/PNG seulement tant que HEIC n'est pas décodé et normalisé côté serveur. Confiance moyenne-faible avant preuve du pipeline objet |
 | Prévision 10 — lot 06, clôture locale 2026-09-11 22:05 CEST | Photo d'expérience et avatar sur backend/mobile/Studio, stockage privé, reprise, modération, SSE et effacement | Référence initiale de 2 h 30 à 5 h | Fenêtre observée d'environ 1 h 20 depuis 20:45, sous la fourchette, incluant implémentation, revue de fraîcheur SSE, trois suites complètes, builds et attentes Docker ; temps actif non isolé | Zéro pour l'implémentation locale ; IAM/CORS S3 réel, migration d'environnement et recette appareil/réseau lent restent au durcissement | 0,5 à 1,5 jour concentré pour 07 à 09, puis TestFlight/App Review séparés | Le socle outbox/command status/projections et les adapters Expo ont accéléré la verticale. L'absence de preuve AWS réelle interdit d'extrapoler la vitesse locale au déploiement. Confiance moyenne |
+| Prévision 11 — lot 07, clôture locale 2026-09-11 22:24 CEST | Navigation flottante, sélection carte, itinéraire et hiérarchie de fiche café | 0,5 à 1,5 jour pour une passe UI contenue sans changement de contrat | Fenêtre observée d'environ 19 min depuis la clôture 06, incluant inventaire, implémentation, documentation, TypeScript, lint et deux régressions mobiles complètes ; temps actif non isolé | Zéro pour le code local ; contrôle sur appareils petit/grand iPhone et VoiceOver restent à la recette native | 0,25 à 1 jour concentré pour 08 à 09, puis TestFlight/App Review séparés | Le périmètre a été volontairement borné aux composants et lectures existants : ni refonte du Home, ni nouveau contexte, ni contrat backend. La vitesse ne préjuge pas de la recette native ni du durcissement réseau. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -946,9 +947,11 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 06 implémentés, testés et intégrés localement. Le lot
-06 a utilisé GPT-5.6 Sol High et livre les photos Experience et avatars privés,
-offline-first, normalisés, projetés et effaçables sans traverser les frontières
-de contexte. Les configurations Apple/SSM et IAM/CORS S3 réelles, la recette
-native, les migrations d'environnement et tout déploiement restent explicitement
-ouverts.**
+**État actuel : lots 00 à 07 implémentés et testés localement ; le lot 07 est
+prêt à intégrer. Il a utilisé GPT-5.6 Terra Medium, conformément au choix de
+modèle : changements UI bornés, contrats et navigation métier figés. Il livre
+une barre d’onglets flottante accessible, un parcours carte explicite et une
+fiche café réordonnée, sans nouveau contexte ni changement backend. Les
+configurations Apple/SSM et IAM/CORS S3 réelles, la recette native petit/grand
+iPhone et VoiceOver, les migrations d'environnement et tout déploiement restent
+explicitement ouverts.**
