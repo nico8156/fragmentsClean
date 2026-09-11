@@ -14,12 +14,14 @@ exigences de publication. Les anciennes trajectoires A/B sont remplacées par le
 La première tranche est implémentée et testée localement : voir le
 [bilan et ses limites](first-common-tranche-2026-09-11.md). Les constats et nombres
 de tests des sections d'audit ci-dessous restent ceux d'avant cette tranche.
-Le plan distingue donc corrections livrées, validations restantes et travaux
-non commencés. **Tous les P0 ne sont pas corrigés.**
+Le plan distingue donc corrections intégrées localement, validations restantes
+et travaux non commencés. **Les correctifs P0 sont présents sur les branches de
+release, mais ne sont ni déployés ni recettés sur appareil/environnement cible.**
 
-Statut du plan révisé : **en attente de validation utilisateur**. Cette mise à
-jour est documentaire ; aucun lot supplémentaire n'est démarré, aucun choix
-métier détaillé n'est implicitement validé et aucun déploiement n'est autorisé.
+Statut du plan révisé : **validé par l'utilisateur le 11 septembre 2026**.
+Les lots 00 et 01 sont intégrés localement dans `release/app-store`. Aucun choix
+métier des lots suivants n'est implicitement validé et aucun déploiement n'est
+autorisé.
 
 ## Conclusion
 
@@ -132,9 +134,9 @@ Sources : [contrôleur](../../src/main/java/com/nm/fragmentsclean/ticketContext/
 
 ### P0 — Une erreur technique peut devenir un rejet métier
 
-État actuel : **ouvert, prochain lot prioritaire 01**. Ce chantier n'a pas été
-traité par la tranche d'isolation ; son contrat et ses tests de sortie figurent
-dans le plan ci-dessous.
+État après lot 01 : correction implémentée, testée et intégrée localement dans
+`release/app-store` côté serveur et mobile ; migration de production et recette
+sur environnement déployé restent à exécuter. Le constat initial était :
 
 `WriteTicketController.verify` transforme toute exception du dispatch en HTTP
 400. Le mapper mobile classe ce statut comme erreur `business`, ce qui autorise
@@ -445,7 +447,9 @@ intercalées après accord sur les écrans, sans court-circuiter les P0.
 
 ### Lot 01 — Erreurs techniques, rejets métier et statuts canoniques
 
-Ce lot est distinct de l'isolation déjà réalisée et reste intégralement ouvert.
+Ce lot est distinct de l'isolation déjà réalisée. Il est implémenté, validé et
+intégré localement dans les branches `release/app-store` backend et mobile.
+La revue produit de fin de tranche reste le point d'arrêt avant le lot 02.
 Il doit couvrir les commandes mobiles existantes (tickets, commentaires, likes,
 favoris), inventorier les consommateurs Studio du statut et fournir un contrat
 réutilisable par profil, expériences, médias et modération.
@@ -510,6 +514,13 @@ réel pour transaction/concurrence/reprise, tests mobile outbox/watchdog et
 compatibilité Studio ; revue des frontières DDD et de l'absence d'appels réseau
 dans les transactions. Ce lot est clos seulement sur ces preuves, pas par une
 modification isolée de `WriteTicketController`.
+
+Preuves obtenues à la clôture locale : 325 tests backend verts, dont transactions,
+concurrence, migration legacy, HTTP à deux identités, no-op et séparation du
+résultat ticket ; 59 suites et 240 tests mobile verts ; TypeScript et ESLint sans
+erreur ; 27 fichiers/136 tests, contrat et build Studio verts. La recette sur un
+backend réellement migré reste une preuve de déploiement du lot 09, pas une raison
+de confondre implémentation locale et production.
 
 ### Lots 02 à 06 — Parcours métier complet et conformité intégrée
 
@@ -627,7 +638,7 @@ simultanées ne doivent pas être additionnées deux fois.
 | Lot | État au moment de cette révision | Temps constaté | Preuve / reste à faire |
 | --- | --- | --- | --- |
 | 00 | Implémenté et testé localement | Non mesuré | 232 tests mobile, 41 backend ciblés, TypeScript/carte Redux OK ; legacy et appareil ouverts |
-| 01 | À démarrer après validation du plan | Non démarré | Matrice erreurs/rejets/statuts ci-dessus |
+| 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
 | 02 à 08 | Planifiés, non démarrés | Non démarré | Contrats métier puis fonctionnalités complètes |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
@@ -672,7 +683,8 @@ Gabarit du journal à compléter sans valeurs inventées :
 
 | Révision / date | Lot et périmètre | Estimation initiale du lot | Réel actif / attentes | Reste du lot réestimé | Projection du reste global | Écart, hypothèses et confiance |
 | --- | --- | --- | --- | --- | --- | --- |
-| Prévision 0 — à établir au démarrage autorisé | 01, erreurs/rejets/statuts | À estimer | Non démarré | À estimer | Première fourchette des lots 01 à 10 | Dépendances et incertitudes à expliciter |
+| Prévision 0 — 2026-09-11 13:47 CEST | 01, erreurs/rejets/statuts | Non consignée avant le premier patch ; ne pas reconstruire a posteriori | Fenêtre écoulée mesurée depuis 13:47, incluant compilation et attentes Testcontainers ; temps actif non chronométré | Revue, documentation et intégration Git | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | Estimation encore peu fiable : le socle existant a accéléré 01, mais Experience, médias et modération sont plus larges |
+| Prévision 1 — 2026-09-11 14:30 CEST | 01 clos et intégré localement | Référence ci-dessus conservée | Fenêtre 43 min, incluant deux suites backend complètes, tests ciblés/Testcontainers, mobile, Studio et intégration Git ; temps actif non isolé | Zéro en implémentation locale ; migration/recette reportées au durcissement | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | 01 a été plus rapide grâce au socle existant et aux tests ; confiance faible à moyenne, sans extrapolation aux décisions Experience, médias, UGC et natif |
 | Prévisions 1, 2… — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -710,7 +722,7 @@ raisonnement monte seulement avec la complexité et les compromis du lot.
 | --- | --- | --- | --- |
 | Audit et plan initial | GPT-6 Astra | High | Architecture, arbitrages et périmètre transverse ; réalisé |
 | 00 — isolation/confidentialité | GPT-6 Astra | High | Investigation et sécurisation transverse ; réalisé |
-| 01 — erreurs/rejets/statuts | GPT-5.6 Sol | High | Transactions, concurrence, sécurité et contrats offline ; sélectionné par l'utilisateur au démarrage |
+| 01 — erreurs/rejets/statuts | GPT-5.6 Sol | High | Transactions, concurrence, sécurité et contrats offline ; utilisé du début d'implémentation à la revue et l'intégration |
 | 02 — contrats visite/Experience/Pass | GPT-6 Astra ou GPT-5.6 Sol | High à Extra High | Décision DDD structurante ; confirmer après les enseignements du lot 01 |
 | 03 — identité/profil/suppression | GPT-5.6 Sol | High | Cycle de vie transverse et conformité ; Astra seulement pour une revue ciblée si nécessaire |
 | 04 — modération UGC | GPT-5.6 Sol | High | Autorisations, cohérence serveur/mobile/Studio et exploitation |
@@ -777,6 +789,6 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**Point d'arrêt actuel : validation de ce plan par l'utilisateur. Après validation,
-commencer par le lot 01. Plan validé le 11 septembre 2026 ; préparation Git puis
-lot 01 autorisés.**
+**Point d'arrêt actuel : lot 01 clos localement. Revoir sa direction et choisir
+le modèle du lot 02 avant toute nouvelle implémentation. Aucun déploiement ni
+démarrage implicite du parcours Experience n'est autorisé par cette clôture.**
