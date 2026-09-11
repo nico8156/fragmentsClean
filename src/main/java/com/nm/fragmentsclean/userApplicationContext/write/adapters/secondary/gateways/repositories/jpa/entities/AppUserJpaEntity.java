@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.userApplicationContext.write.adapters.secondary.gateways.repositories.jpa.entities;
 
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserLifecycleStatus;
 import jakarta.persistence.*;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -9,66 +9,119 @@ import java.util.UUID;
 @Table(name = "app_users")
 public class AppUserJpaEntity {
 
-    @Id
-    private UUID id;
+  @Id private UUID id;
 
-    @Column(name = "auth_user_id", nullable = false)
-    private UUID authUserId;
+  @Column(name = "auth_user_id", nullable = false)
+  private UUID authUserId;
 
-    @Column(name = "display_name", nullable = false)
-    private String displayName;
+  @Column(name = "display_name", nullable = false)
+  private String displayName;
 
-    @Column(name = "avatar_url")
-    private String avatarUrl;
+  @Column(name = "avatar_url")
+  private String avatarUrl;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false)
+  private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+  @Column(name = "updated_at", nullable = false)
+  private Instant updatedAt;
 
-    @Column(name = "version", nullable = false)
-    private long version;
+  @Column(name = "version", nullable = false)
+  private long version;
 
-    protected AppUserJpaEntity() {}
+  @Enumerated(EnumType.STRING)
+  @Column(name = "lifecycle_status", nullable = false)
+  private AppUserLifecycleStatus lifecycleStatus;
 
-    public AppUserJpaEntity(UUID id, UUID authUserId, String displayName, String avatarUrl,
-                            Instant createdAt, Instant updatedAt, long version) {
-        this.id = id;
-        this.authUserId = authUserId;
-        this.displayName = displayName;
-        this.avatarUrl = avatarUrl;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.version = version;
-    }
+  @Column(name = "deletion_requested_at")
+  private Instant deletionRequestedAt;
 
-    public UUID getId() {
-        return id;
-    }
+  @Column(name = "deleted_at")
+  private Instant deletedAt;
 
-    public UUID getAuthUserId() {
-        return authUserId;
-    }
+  protected AppUserJpaEntity() {}
 
-    public String getDisplayName() {
-        return displayName;
-    }
+  public AppUserJpaEntity(
+      UUID id,
+      UUID authUserId,
+      String displayName,
+      String avatarUrl,
+      Instant createdAt,
+      Instant updatedAt,
+      long version) {
+    this(
+        id,
+        authUserId,
+        displayName,
+        avatarUrl,
+        createdAt,
+        updatedAt,
+        version,
+        AppUserLifecycleStatus.ACTIVE,
+        null,
+        null);
+  }
 
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
+  public AppUserJpaEntity(
+      UUID id,
+      UUID authUserId,
+      String displayName,
+      String avatarUrl,
+      Instant createdAt,
+      Instant updatedAt,
+      long version,
+      AppUserLifecycleStatus lifecycleStatus,
+      Instant deletionRequestedAt,
+      Instant deletedAt) {
+    this.id = id;
+    this.authUserId = authUserId;
+    this.displayName = displayName;
+    this.avatarUrl = avatarUrl;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+    this.version = version;
+    this.lifecycleStatus = lifecycleStatus;
+    this.deletionRequestedAt = deletionRequestedAt;
+    this.deletedAt = deletedAt;
+  }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+  public UUID getId() {
+    return id;
+  }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
-    }
+  public UUID getAuthUserId() {
+    return authUserId;
+  }
 
-    public long getVersion() {
-        return version;
-    }
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public String getAvatarUrl() {
+    return avatarUrl;
+  }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public long getVersion() {
+    return version;
+  }
+
+  public AppUserLifecycleStatus getLifecycleStatus() {
+    return lifecycleStatus;
+  }
+
+  public Instant getDeletionRequestedAt() {
+    return deletionRequestedAt;
+  }
+
+  public Instant getDeletedAt() {
+    return deletedAt;
+  }
 }
-

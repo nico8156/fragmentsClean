@@ -12,6 +12,10 @@ runtime_google_studio_secret=$(aws ssm get-parameter --region "$aws_region" --na
 runtime_openai_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_API_KEY --with-decryption --query Parameter.Value --output text)
 runtime_openai_project_id=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/OPENAI_PROJECT_ID --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
 runtime_editorial_approval_secret=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/EDITORIAL_APPROVAL_SECRET --with-decryption --query Parameter.Value --output text)
+runtime_apple_team_id=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/APPLE_TEAM_ID --with-decryption --query Parameter.Value --output text)
+runtime_apple_key_id=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/APPLE_KEY_ID --with-decryption --query Parameter.Value --output text)
+runtime_apple_private_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/APPLE_PRIVATE_KEY --with-decryption --query Parameter.Value --output text)
+runtime_provider_credential_encryption_key=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY --with-decryption --query Parameter.Value --output text)
 # This is deliberately a normal SSM String, not a secret: it identifies the
 # operator account allowed to bootstrap an otherwise empty admin allow-list.
 runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
@@ -56,6 +60,11 @@ write_env AWS_REGION "$aws_region"
 write_env FRAGMENTS_EDGE_NETWORK fragments-staging-edge
 write_env GOOGLE_MOBILE_IOS_CLIENT_ID 255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe.apps.googleusercontent.com
 write_env GOOGLE_MOBILE_IOS_REDIRECT_URI com.googleusercontent.apps.255942605258-jisbuvlprrs8pp2qb6ft3psa6hg650fe:/oauthredirect
+write_env APPLE_CLIENT_ID com.nico8156.fragments
+write_env APPLE_TEAM_ID "$runtime_apple_team_id"
+write_env APPLE_KEY_ID "$runtime_apple_key_id"
+write_env APPLE_PRIVATE_KEY "$runtime_apple_private_key"
+write_env AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY "$runtime_provider_credential_encryption_key"
 write_env GOOGLE_STUDIO_CLIENT_ID 255942605258-1nji47405hqf1q2imk35toejorv1opsk.apps.googleusercontent.com
 write_env GOOGLE_STUDIO_REDIRECT_URI https://studio-staging.anchor-event.fr/
 write_env GOOGLE_STUDIO_CLIENT_SECRET "$runtime_google_studio_secret"
@@ -84,4 +93,4 @@ write_env ARTICLE_IMAGES_PUBLIC_BASE_URL https://fragments-staging.anchor-event.
 write_env POSTGRES_BACKUP_S3_BUCKET anchor-assets-prod-851725375299
 write_env POSTGRES_BACKUP_S3_PREFIX fragments/staging/backups/postgres
 
-unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_admin_bootstrap_user_ids
+unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_apple_team_id runtime_apple_key_id runtime_apple_private_key runtime_provider_credential_encryption_key runtime_admin_bootstrap_user_ids

@@ -1,131 +1,161 @@
 package com.nm.fragmentsclean.authenticationContext.write.businesslogic.models;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.AggregateRoot;
-
 import java.time.Instant;
 import java.util.UUID;
 
 public class AuthUser extends AggregateRoot {
 
-	private final AuthProvider provider;
-	private final String providerUserId; // Google sub
-	private final String email;
-	private final boolean emailVerified;
+  private final AuthProvider provider;
+  private String providerUserId;
+  private String email;
+  private boolean emailVerified;
 
-	// ✅ NOUVEAUX CHAMPS
-	private String displayName;
-	private String avatarUrl;
+  // ✅ NOUVEAUX CHAMPS
+  private String displayName;
+  private String avatarUrl;
 
-	private Instant lastLoginAt;
+  private Instant lastLoginAt;
+  private AuthUserLifecycleStatus lifecycleStatus;
+  private Instant deletedAt;
 
-	public AuthUser(UUID id,
-			AuthProvider provider,
-			String providerUserId,
-			String email,
-			boolean emailVerified,
+  public AuthUser(
+      UUID id,
+      AuthProvider provider,
+      String providerUserId,
+      String email,
+      boolean emailVerified,
 
-			// ✅ nouveaux paramètres
-			String displayName,
-			String avatarUrl,
+      // ✅ nouveaux paramètres
+      String displayName,
+      String avatarUrl,
+      Instant lastLoginAt) {
 
-			Instant lastLoginAt) {
+    super(id);
+    this.provider = provider;
+    this.providerUserId = providerUserId;
+    this.email = email;
+    this.emailVerified = emailVerified;
 
-		super(id);
-		this.provider = provider;
-		this.providerUserId = providerUserId;
-		this.email = email;
-		this.emailVerified = emailVerified;
+    this.displayName = displayName;
+    this.avatarUrl = avatarUrl;
 
-		this.displayName = displayName;
-		this.avatarUrl = avatarUrl;
+    this.lastLoginAt = lastLoginAt;
+    this.lifecycleStatus = AuthUserLifecycleStatus.ACTIVE;
+  }
 
-		this.lastLoginAt = lastLoginAt;
-	}
+  public AuthUser(
+      UUID id,
+      AuthProvider provider,
+      String providerUserId,
+      String email,
+      boolean emailVerified,
+      String displayName,
+      String avatarUrl,
+      Instant lastLoginAt,
+      AuthUserLifecycleStatus lifecycleStatus,
+      Instant deletedAt) {
+    this(id, provider, providerUserId, email, emailVerified, displayName, avatarUrl, lastLoginAt);
+    this.lifecycleStatus = lifecycleStatus;
+    this.deletedAt = deletedAt;
+  }
 
-	// ----------------------------------------------------------------------
-	// FACTORY ENRICHIE
-	// ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // FACTORY ENRICHIE
+  // ----------------------------------------------------------------------
 
-	public static AuthUser createNew(AuthProvider provider,
-			String providerUserId,
-			String email,
-			boolean emailVerified,
+  public static AuthUser createNew(
+      AuthProvider provider,
+      String providerUserId,
+      String email,
+      boolean emailVerified,
 
-			// ✅ nouveaux arguments
-			String displayName,
-			String avatarUrl,
+      // ✅ nouveaux arguments
+      String displayName,
+      String avatarUrl,
+      Instant now) {
 
-			Instant now) {
+    UUID id = UUID.randomUUID();
 
-		UUID id = UUID.randomUUID();
+    var authUser =
+        new AuthUser(
+            id, provider, providerUserId, email, emailVerified, displayName, avatarUrl, now);
 
-		var authUser = new AuthUser(
-				id,
-				provider,
-				providerUserId,
-				email,
-				emailVerified,
+    // 🔥 Event enrichi
+    authUser.registerEvent(AuthUserCreatedEvent.of(authUser, now));
 
-				displayName,
-				avatarUrl,
+    return authUser;
+  }
 
-				now);
+  // ----------------------------------------------------------------------
+  // EXISTANT CONSERVÉ
+  // ----------------------------------------------------------------------
 
-		// 🔥 Event enrichi
-		authUser.registerEvent(AuthUserCreatedEvent.of(authUser, now));
+  public void markLogin(Instant now) {
+    this.lastLoginAt = now;
+    registerEvent(AuthUserLoggedInEvent.of(this, now));
+  }
 
-		return authUser;
-	}
+  // ----------------------------------------------------------------------
+  // GETTERS
+  // ----------------------------------------------------------------------
 
-	// ----------------------------------------------------------------------
-	// EXISTANT CONSERVÉ
-	// ----------------------------------------------------------------------
+  public AuthProvider provider() {
+    return provider;
+  }
 
-	public void markLogin(Instant now) {
-		this.lastLoginAt = now;
-		registerEvent(AuthUserLoggedInEvent.of(this, now));
-	}
+  public String providerUserId() {
+    return providerUserId;
+  }
 
-	// ----------------------------------------------------------------------
-	// GETTERS
-	// ----------------------------------------------------------------------
+  public String email() {
+    return email;
+  }
 
-	public AuthProvider provider() {
-		return provider;
-	}
+  public boolean emailVerified() {
+    return emailVerified;
+  }
 
-	public String providerUserId() {
-		return providerUserId;
-	}
+  public Instant lastLoginAt() {
+    return lastLoginAt;
+  }
 
-	public String email() {
-		return email;
-	}
+  // ✅ NOUVEAUX GETTERS
 
-	public boolean emailVerified() {
-		return emailVerified;
-	}
+  public String displayName() {
+    return displayName;
+  }
 
-	public Instant lastLoginAt() {
-		return lastLoginAt;
-	}
+  public String avatarUrl() {
+    return avatarUrl;
+  }
 
-	// ✅ NOUVEAUX GETTERS
+  public AuthUserLifecycleStatus lifecycleStatus() {
+    return lifecycleStatus;
+  }
 
-	public String displayName() {
-		return displayName;
-	}
+  public Instant deletedAt() {
+    return deletedAt;
+  }
 
-	public String avatarUrl() {
-		return avatarUrl;
-	}
+  public boolean erasePersonalData(Instant now) {
+    if (lifecycleStatus == AuthUserLifecycleStatus.DELETED) return false;
+    providerUserId = "deleted:" + id;
+    email = "deleted+" + id + "@invalid.local";
+    emailVerified = false;
+    displayName = null;
+    avatarUrl = null;
+    lifecycleStatus = AuthUserLifecycleStatus.DELETED;
+    deletedAt = now;
+    return true;
+  }
 
-	// ----------------------------------------------------------------------
-	// FUTUR : possibilité d’update profil
-	// ----------------------------------------------------------------------
+  // ----------------------------------------------------------------------
+  // FUTUR : possibilité d’update profil
+  // ----------------------------------------------------------------------
 
-	public void updateProfile(String displayName, String avatarUrl) {
-		this.displayName = displayName;
-		this.avatarUrl = avatarUrl;
-	}
+  public void updateProfile(String displayName, String avatarUrl) {
+    this.displayName = displayName;
+    this.avatarUrl = avatarUrl;
+  }
 }

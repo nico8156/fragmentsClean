@@ -106,6 +106,11 @@ Create `.env` from `infra/aws/compose/staging/.env.example` and fill:
 - `APP_DOMAIN`
 - `POSTGRES_PASSWORD`
 - `AUTH_JWT_SECRET`
+- `AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY`
+- `APPLE_CLIENT_ID`
+- `APPLE_TEAM_ID`
+- `APPLE_KEY_ID`
+- `APPLE_PRIVATE_KEY` (PKCS#8 `.p8`, line breaks escaped as `\n`)
 - `GOOGLE_MOBILE_IOS_CLIENT_ID`
 - `GOOGLE_MOBILE_IOS_REDIRECT_URI`
 - `GOOGLE_PLACES_API_KEY`
@@ -130,6 +135,7 @@ Production runtime must keep:
 
 ```properties
 SPRING_PROFILES_ACTIVE=prod
+APPLE_CLIENT_ID=com.nico8156.fragments
 APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED=false
 APP_MESSAGING_SQS_ENABLED=true
 APP_MESSAGING_SQS_MAX_MESSAGES=5
@@ -152,6 +158,21 @@ ARTICLE_IMAGES_S3_PREFIX=fragments/staging/articles
 ARTICLE_IMAGES_S3_REGION=eu-west-3
 ARTICLE_IMAGES_S3_PRESIGN_TTL=PT15M
 ```
+
+Before starting the backend, configure the Sign in with Apple capability for
+the `com.nico8156.fragments` App ID and create these SSM parameters:
+
+```text
+/fragments/staging/APPLE_TEAM_ID
+/fragments/staging/APPLE_KEY_ID
+/fragments/staging/APPLE_PRIVATE_KEY
+/fragments/staging/AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY
+```
+
+The final parameter is a Base64-encoded 32-byte AES key. The Apple private key
+must stay a single SSM value with PEM line breaks represented as `\n`. Validate
+native Apple login and account deletion/revocation on a real signed iOS build;
+Expo Go and backend unit tests do not prove the entitlement or Apple portal setup.
 
 The staging backend reuses the Anchor asset bucket with an isolated Fragments prefix:
 

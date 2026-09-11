@@ -16,7 +16,7 @@ This matrix records ownership and handling rules, not secret values.
 
 | Area | Non-secret values | Secret values |
 | --- | --- | --- |
-| Fragments | Spring profile, SQS region/URLs, S3 bucket/prefixes, CORS origins | PostgreSQL password, JWT secret, Google Places key, OpenAI key, admin bootstrap values |
+| Fragments | Spring profile, SQS region/URLs, S3 bucket/prefixes, CORS origins, Apple client/bundle id | PostgreSQL password, JWT secret, Google Places key, OpenAI key, Apple team/key/private key, provider-credential encryption key, admin bootstrap values |
 | Anchor | Spring profile, SQS destinations, S3 bucket, public URLs, wallet flags | PostgreSQL password, Apple signing credentials, wallet auth secret, provider keys |
 
 Both servers must keep separate database credentials and separate application
@@ -29,6 +29,10 @@ Public build configuration only:
 - `EXPO_PUBLIC_API_BASE_URL`;
 - `EXPO_PUBLIC_GOOGLE_MOBILE_IOS_CLIENT_ID`;
 - `EXPO_PUBLIC_GOOGLE_MOBILE_IOS_REDIRECT_URI`.
+
+Sign in with Apple uses Expo's native entitlement and the versioned iOS bundle
+identifier. It does not embed the Apple `.p8` key, team id, key id, provider
+refresh token or credential-encryption key in the application bundle.
 
 The mobile bundle must never receive backend secrets, AWS credentials, admin
 tokens, or database credentials.
