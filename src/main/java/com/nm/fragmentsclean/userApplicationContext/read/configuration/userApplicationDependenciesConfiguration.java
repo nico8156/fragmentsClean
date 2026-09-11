@@ -10,7 +10,6 @@ import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.SavedCoffeeRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.AuthUserCreatedEventHandler;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.SetSavedCoffeeCommandHandler;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -47,12 +46,10 @@ public class userApplicationDependenciesConfiguration {
 	SetSavedCoffeeCommandHandler setSavedCoffeeCommandHandler(
 			SavedCoffeeRepository savedCoffeeRepository,
 			DomainEventPublisher eventPublisher,
-			DateTimeProvider dateTimeProvider,
-			CommandStatusRecorder commandStatusRecorder) {
+			DateTimeProvider dateTimeProvider) {
 		return new SetSavedCoffeeCommandHandler(
 				savedCoffeeRepository,
 				eventPublisher,
-				dateTimeProvider,
-				commandStatusRecorder);
+				dateTimeProvider);
 	}
 }

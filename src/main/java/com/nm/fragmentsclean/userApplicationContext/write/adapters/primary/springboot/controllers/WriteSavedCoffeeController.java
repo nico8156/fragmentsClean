@@ -35,11 +35,7 @@ public class WriteSavedCoffeeController {
 				body.value(),
 				Instant.parse(body.at()));
 
-		try {
-			commandBus.dispatch(command);
-			return ResponseEntity.accepted().build();
-		} catch (IllegalStateException exception) {
-			return ResponseEntity.badRequest().build();
-		}
+		commandBus.dispatch(command);
+		return ResponseEntity.accepted().build();
 	}
 }

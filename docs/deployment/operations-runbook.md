@@ -288,6 +288,12 @@ requiring an explicit recovery decision and maintenance window.
 Current staging applies `schema.sql` directly. This is acceptable only while
 schema history is intentionally simple and idempotent.
 
+Before deploying the owner-scoped command receipt change to an existing
+environment, apply the additive script
+`src/main/resources/db/release/2026-09-11-command-receipts.sql`, then deploy the
+application. Existing ownerless rows remain readable by Studio administrators
+but intentionally resolve as `PENDING` on the authenticated mobile endpoint.
+
 Do not perform destructive changes without an explicit backup/reset decision.
 
 Move to Flyway or Liquibase before production has long-lived user data with

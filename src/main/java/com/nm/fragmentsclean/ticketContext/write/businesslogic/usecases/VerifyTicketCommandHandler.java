@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 import jakarta.transaction.Transactional;
@@ -30,7 +31,8 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
 
         if ((cmd.ocrText() == null || cmd.ocrText().isBlank())
                 && (cmd.imageRef() == null || cmd.imageRef().isBlank())) {
-            throw new IllegalArgumentException("VerifyTicket requires ocrText or imageRef");
+            throw new BusinessCommandRejectedException(
+                    "TICKET_CONTENT_REQUIRED", "Ticket requires OCR text or an image reference");
         }
 
         var existingOpt = ticketRepository.byId(cmd.ticketId());
@@ -42,7 +44,8 @@ public class VerifyTicketCommandHandler implements CommandHandler<VerifyTicketCo
             ticket = existingOpt.get();
 
             if (!Objects.equals(ticket.toSnapshot().userId(), cmd.userId())) {
-                throw new IllegalStateException("Ticket userId mismatch");
+                throw new BusinessCommandRejectedException(
+                        "TICKET_ID_CONFLICT", "Ticket id belongs to another user");
             }
 
             changed = ticket.markAnalyzingIfPossible(cmd.ocrText(), cmd.imageRef(), now);

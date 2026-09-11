@@ -1,6 +1,5 @@
 package com.nm.fragmentsclean.socialContextTest.unit;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeLikeRepository;
@@ -27,15 +26,13 @@ public class MakeLikeCommandHandlerTest {
 	FakeLikeRepository likeRepository = new FakeLikeRepository();
 	FakeDomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 	DeterministicDateTimeProvider dateTimeProvider = new DeterministicDateTimeProvider();
-	RecordingCommandStatusRecorder commandStatusRecorder = new RecordingCommandStatusRecorder();
 
 	MakeLikeCommandHandler handler;
 
 	@BeforeEach
 	void setup() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T10:00:00Z");
-		commandStatusRecorder = new RecordingCommandStatusRecorder();
-		handler = new MakeLikeCommandHandler(likeRepository, domainEventPublisher, dateTimeProvider, commandStatusRecorder);
+		handler = new MakeLikeCommandHandler(likeRepository, domainEventPublisher, dateTimeProvider);
 	}
 
 	@Test
@@ -72,8 +69,6 @@ public class MakeLikeCommandHandlerTest {
 		assertThat(evt.version()).isEqualTo(1L);
 		assertThat(evt.occurredAt()).isEqualTo(Instant.parse("2023-10-01T11:00:00Z"));
 		assertThat(evt.clientAt()).isEqualTo(Instant.parse("2023-10-01T09:59:00Z"));
-		assertThat(commandStatusRecorder.commandId).isEqualTo(CMD_ID);
-		assertThat(commandStatusRecorder.eventType).isEqualTo("social.like.set");
 	}
 
 	@Test
@@ -107,11 +102,10 @@ public class MakeLikeCommandHandlerTest {
 		var evt = (LikeSetEvent) domainEventPublisher.published.getFirst();
 		assertThat(evt.count()).isEqualTo(0L);
 		assertThat(evt.active()).isFalse();
-		assertThat(commandStatusRecorder.commandId).isEqualTo(UUID.fromString("55555555-5555-5555-5555-555555555555"));
 	}
 
 	@Test
-	void should_publish_snapshot_and_ack_when_state_does_not_change_with_new_command() {
+	void should_not_publish_when_state_does_not_change_with_new_command() {
 		// GIVEN
 		handler.execute(new MakeLikeCommand(
 				CMD_ID.toString(),
@@ -131,14 +125,8 @@ public class MakeLikeCommandHandlerTest {
 				true,
 				Instant.parse("2023-10-01T10:00:00Z")));
 
-		// THEN : snapshot event pour permettre à la projection stale de rattraper
-		assertThat(domainEventPublisher.published).hasSize(1);
-		var evt = (LikeSetEvent) domainEventPublisher.published.getFirst();
-		assertThat(evt.count()).isEqualTo(1L);
-		assertThat(evt.active()).isTrue();
-		assertThat(evt.version()).isEqualTo(1L);
-		assertThat(commandStatusRecorder.commandId).isEqualTo(UUID.fromString("66666666-6666-6666-6666-666666666666"));
-		assertThat(commandStatusRecorder.eventType).isEqualTo("social.like.set");
+		assertThat(domainEventPublisher.published).isEmpty();
+		assertThat(likeRepository.allSnapshots().getFirst().version()).isEqualTo(1L);
 	}
 
 	@Test
@@ -165,23 +153,5 @@ public class MakeLikeCommandHandlerTest {
 		// THEN
 		assertThat(domainEventPublisher.published).isEmpty();
 		assertThat(likeRepository.allSnapshots()).hasSize(1);
-	}
-
-	private static class RecordingCommandStatusRecorder implements CommandStatusRecorder {
-		UUID commandId;
-		String eventType;
-		private final Set<UUID> appliedCommandIds = new HashSet<>();
-
-		@Override
-		public void markApplied(UUID commandId, String aggregateType, String aggregateId, String eventType, Instant appliedAt) {
-			this.commandId = commandId;
-			this.eventType = eventType;
-			this.appliedCommandIds.add(commandId);
-		}
-
-		@Override
-		public boolean isApplied(UUID commandId) {
-			return appliedCommandIds.contains(commandId);
-		}
 	}
 }

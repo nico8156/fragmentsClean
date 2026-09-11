@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.socialContext.write.businesslogic.usecases;
 
-import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
@@ -14,16 +14,13 @@ public class DeleteCommentCommandHandler implements CommandHandler<DeleteComment
     private final CommentRepository commentRepository;
     private final DomainEventPublisher eventPublisher;
     private final DateTimeProvider dateTimeProvider;
-    private final CommandStatusRecorder commandStatusRecorder;
 
     public DeleteCommentCommandHandler(CommentRepository commentRepository,
                                        DomainEventPublisher eventPublisher,
-                                       DateTimeProvider dateTimeProvider,
-                                       CommandStatusRecorder commandStatusRecorder) {
+                                       DateTimeProvider dateTimeProvider) {
         this.commentRepository = commentRepository;
         this.eventPublisher = eventPublisher;
         this.dateTimeProvider = dateTimeProvider;
-        this.commandStatusRecorder = commandStatusRecorder;
     }
 
     @Override
@@ -32,10 +29,12 @@ public class DeleteCommentCommandHandler implements CommandHandler<DeleteComment
         var now = dateTimeProvider.now();
 
         Comment comment = commentRepository.byId(cmd.commentId())
-                .orElseThrow(() -> new IllegalStateException("Comment not found: " + cmd.commentId()));
+                .orElseThrow(() -> new BusinessCommandRejectedException(
+                        "COMMENT_NOT_FOUND", "Comment does not exist"));
 
         if (!comment.toSnapshot().authorId().equals(cmd.userId())) {
-            throw new IllegalStateException("Only the comment author can delete it");
+            throw new BusinessCommandRejectedException(
+                    "COMMENT_NOT_OWNED", "Only the comment author can delete it");
         }
 
         boolean changed = comment.softDelete(now);
@@ -52,12 +51,5 @@ public class DeleteCommentCommandHandler implements CommandHandler<DeleteComment
 
         comment.domainEvents().forEach(eventPublisher::publish);
         comment.clearDomainEvents();
-        commandStatusRecorder.markApplied(
-                cmd.commandId(),
-                "Comment",
-                cmd.commentId().toString(),
-                "social.comment.deleted",
-                now
-        );
     }
 }

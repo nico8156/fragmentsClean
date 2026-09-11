@@ -35,12 +35,7 @@ public class WriteLikeController {
                 Instant.parse(body.at())
         );
 
-        try {
-            commandBus.dispatch(command);
-            // async + ACK en socket -> 202 Accepted
-            return ResponseEntity.accepted().build();
-        } catch (IllegalStateException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        commandBus.dispatch(command);
+        return ResponseEntity.accepted().build();
     }
 }

@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.socialContextTest.unit;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.ModerationStatus;
@@ -73,5 +74,22 @@ public class CreateCommentCommandHandlerTest {
         assertThat(evt.version()).isEqualTo(0L);
         //assertThat(evt.occurredAt()).isEqualTo(dateTimeProvider.instantOfNow);
         //assertThat(evt.clientAt()).isEqualTo(Instant.parse("2023-10-01T10:00:00Z"));
+    }
+
+    @Test
+    void should_reject_reusing_a_comment_id_for_a_different_intent() {
+        handler.execute(new CreateCommentCommand(
+                CMD_ID, COMMENT_ID, USER_ID, TARGET_ID, null,
+                "Original", Instant.parse("2023-10-01T09:59:00Z")));
+
+        assertThatThrownBy(() -> handler.execute(new CreateCommentCommand(
+                UUID.randomUUID(), COMMENT_ID, USER_ID, TARGET_ID, null,
+                "Different", Instant.parse("2023-10-01T10:01:00Z"))))
+                .isInstanceOf(BusinessCommandRejectedException.class)
+                .extracting(error -> ((BusinessCommandRejectedException) error).rejectionCode())
+                .isEqualTo("COMMENT_ID_CONFLICT");
+
+        assertThat(commentRepository.allSnapshots().getFirst().body()).isEqualTo("Original");
+        assertThat(domainEventPublisher.published).hasSize(1);
     }
 }
