@@ -4,32 +4,37 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMeta
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventMetadataContributor;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserCreatedEvent;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserDeletionRequestedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserProfileUpdatedEvent;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.SavedCoffeeSetEvent;
-import org.springframework.stereotype.Component;
-
 import java.util.Optional;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AppUserOutboxEventMetadataContributor implements OutboxEventMetadataContributor {
-	@Override
-	public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
-		if (event instanceof AppUserCreatedEvent appEvent) {
-			return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
-		}
-		if (event instanceof AppUserProfileUpdatedEvent appEvent) {
-			return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
-		}
-		if (event instanceof SavedCoffeeSetEvent savedCoffeeEvent) {
-			return Optional.of(aggregate(
-					"SavedCoffee",
-					savedCoffeeEvent.savedCoffeeId().toString(),
-					"appUser:" + savedCoffeeEvent.userId() + ":savedCoffee"));
-		}
-		return Optional.empty();
-	}
+  @Override
+  public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
+    if (event instanceof AppUserCreatedEvent appEvent) {
+      return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
+    }
+    if (event instanceof AppUserProfileUpdatedEvent appEvent) {
+      return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
+    }
+    if (event instanceof AppUserDeletionRequestedEvent appEvent) {
+      return Optional.of(aggregate("AppUser", appEvent.userId().toString(), "appUser"));
+    }
+    if (event instanceof SavedCoffeeSetEvent savedCoffeeEvent) {
+      return Optional.of(
+          aggregate(
+              "SavedCoffee",
+              savedCoffeeEvent.savedCoffeeId().toString(),
+              "appUser:" + savedCoffeeEvent.userId() + ":savedCoffee"));
+    }
+    return Optional.empty();
+  }
 
-	private OutboxEventMetadata aggregate(String aggregateType, String aggregateId, String streamPrefix) {
-		return new OutboxEventMetadata(aggregateType, aggregateId, streamPrefix + ":" + aggregateId);
-	}
+  private OutboxEventMetadata aggregate(
+      String aggregateType, String aggregateId, String streamPrefix) {
+    return new OutboxEventMetadata(aggregateType, aggregateId, streamPrefix + ":" + aggregateId);
+  }
 }

@@ -502,6 +502,8 @@ CREATE TABLE IF NOT EXISTS auth_users (
 );
 ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
 ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(512);
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE auth_users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_auth_users_provider_user
     ON auth_users (provider, provider_user_id);
@@ -542,6 +544,19 @@ CREATE TABLE IF NOT EXISTS app_users (
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS avatar_url varchar(512);
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE app_users ADD COLUMN IF NOT EXISTS version bigint NOT NULL DEFAULT 0;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS lifecycle_status varchar(32) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS deletion_requested_at timestamptz;
+ALTER TABLE app_users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+
+CREATE TABLE IF NOT EXISTS account_deletion_processes (
+    request_id uuid primary key,
+    user_id uuid not null unique,
+    requested_at timestamptz not null,
+    status varchar(32) not null,
+    acknowledgements text not null,
+    completed_at timestamptz,
+    version bigint not null
+);
 
 CREATE INDEX IF NOT EXISTS ix_app_users_auth_user_id
     ON app_users (auth_user_id);
@@ -601,6 +616,14 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token
     ON refresh_tokens (token);
+
+CREATE TABLE IF NOT EXISTS auth_provider_credentials (
+    user_id UUID NOT NULL,
+    provider VARCHAR(32) NOT NULL,
+    encrypted_refresh_token TEXT NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(user_id, provider)
+);
 
 create table if not exists tickets (
                                        ticket_id uuid primary key,

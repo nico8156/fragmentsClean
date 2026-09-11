@@ -53,6 +53,7 @@ Le userApplicationContext assure :
 * la synchronisation depuis l’identité (auth user)
 * la gestion des événements de profil
 * la progression Pass du membre et la conservation de ses niveaux acquis
+* la demande et la coordination durable de suppression du compte
 
 Ce context est souvent alimenté par un contrat d’intégration public venant du
 `authenticationContext`.
@@ -93,6 +94,8 @@ Le `userApplicationContext` réagit :
 
 * `AuthUserCreatedEventHandler`
 * `SetSavedCoffeeCommandHandler`
+* `UpdateAppUserProfileCommandHandler`
+* `RequestAccountDeletionCommandHandler`
 
 ### Port
 
@@ -135,6 +138,18 @@ tap enregistrer
 Le read model `savedCoffees` maintient aussi une petite projection locale des
 cafés alimentée par les événements stables `coffee.created`, `coffee.archived`
 et `coffee.deleted`. Le read side ne lit donc pas les tables du `coffeeContext`.
+
+## Profil et suppression du compte
+
+Le nom public est modifié par commande offline-first et reste un invariant de
+`AppUser`. La lecture `/api/users/me` est une query JDBC de ce contexte, jamais
+une projection d'authentification.
+
+La suppression démarre un `AccountDeletionProcess` durable. L'événement stable
+`app.user.deletion_requested` demande à chaque contexte propriétaire d'effacer
+ses propres données ; les faits `account.data_erased` complètent le processus.
+Le contexte coordinateur ne lit ni ne supprime les tables métier des autres
+contexts. Voir [le contrat détaillé](../../../../../../../docs/architecture/identity-profile-account-deletion.md).
 
 ## Pass
 

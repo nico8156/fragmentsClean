@@ -7,7 +7,15 @@ import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.nm.fragmentsclean.authenticationContext.read.AuthAccountStatusReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.JwtAuthConverters;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,105 +23,128 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity // 👈 IMPORTANT
 @EnableMethodSecurity
 public class AuthSecurityConfiguration {
 
-	@Value("${auth.jwt.secret:test-secret-change-me-min-32-chars-xxxx}")
-	private String secret;
+  @Value("${auth.jwt.secret:test-secret-change-me-min-32-chars-xxxx}")
+  private String secret;
 
-	@Bean
-	@Order(1)
-	public SecurityFilterChain securityFilterChain(HttpSecurity http,
-			JwtAuthenticationConverter jwtAuthConverter) throws Exception {
-		return http
-				.csrf(AbstractHttpConfigurer::disable)
-				.cors(Customizer.withDefaults())
-				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-				.authorizeHttpRequests(auth -> auth
-							.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-							.requestMatchers(HttpMethod.POST, "/auth/google/mobile").permitAll()
-							.requestMatchers(HttpMethod.GET, "/auth/google/studio/config").permitAll()
-							.requestMatchers(HttpMethod.POST, "/auth/google/studio").permitAll()
-							.requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
-							.requestMatchers(HttpMethod.GET, "/actuator/health/**").permitAll()
-							.requestMatchers("/error").permitAll()
-							.requestMatchers(HttpMethod.GET, "/api/coffees/**").permitAll()
-							.requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
-							.requestMatchers(HttpMethod.GET, "/auth/me").authenticated()
-							.requestMatchers(HttpMethod.GET, "/commands/**").authenticated()
-							.requestMatchers(HttpMethod.GET, "/api/sync/events").authenticated()
-							.requestMatchers("/api/tickets/**").authenticated()
-						.requestMatchers(HttpMethod.POST, "/api/social/likes").authenticated()
-						.requestMatchers(HttpMethod.POST, "/api/social/comments")
-						.authenticated()
-						.requestMatchers(HttpMethod.PUT, "/api/social/comments").authenticated()
-						.requestMatchers(HttpMethod.DELETE, "/api/social/comments")
-						.authenticated()
-							.anyRequest().authenticated())
-				.oauth2ResourceServer(oauth2 -> oauth2
-						.jwt(jwt -> jwt
-								.jwtAuthenticationConverter(JwtAuthConverters
-										.jwtAuthenticationConverter())))
-				.build();
-	}
+  @Bean
+  @Order(1)
+  public SecurityFilterChain securityFilterChain(
+      HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter) throws Exception {
+    return http.csrf(AbstractHttpConfigurer::disable)
+        .cors(Customizer.withDefaults())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers(HttpMethod.OPTIONS, "/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/google/mobile")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/apple/mobile")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/auth/google/studio/config")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/google/studio")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/refresh")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/actuator/health/**")
+                    .permitAll()
+                    .requestMatchers("/error")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/coffees/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/articles/**")
+                    .permitAll()
+                    .requestMatchers(HttpMethod.GET, "/auth/me")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.GET, "/commands/**")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.GET, "/api/sync/events")
+                    .authenticated()
+                    .requestMatchers("/api/tickets/**")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/social/likes")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/social/comments")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.PUT, "/api/social/comments")
+                    .authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/social/comments")
+                    .authenticated()
+                    .anyRequest()
+                    .authenticated())
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2.jwt(
+                    jwt ->
+                        jwt.jwtAuthenticationConverter(
+                            JwtAuthConverters.jwtAuthenticationConverter())))
+        .build();
+  }
 
-	@Bean
-	public JwtDecoder jwtDecoder() {
-		SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-		return NimbusJwtDecoder
-				.withSecretKey(key)
-				.macAlgorithm(MacAlgorithm.HS256)
-				.build();
-	}
+  @Bean
+  public JwtDecoder jwtDecoder(AuthAccountStatusReader accounts) {
+    SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    NimbusJwtDecoder decoder =
+        NimbusJwtDecoder.withSecretKey(key).macAlgorithm(MacAlgorithm.HS256).build();
+    OAuth2TokenValidator<Jwt> activeAccount =
+        jwt -> {
+          try {
+            return accounts.isActive(UUID.fromString(jwt.getSubject()))
+                ? OAuth2TokenValidatorResult.success()
+                : OAuth2TokenValidatorResult.failure(
+                    new OAuth2Error("invalid_token", "Account is not active", null));
+          } catch (RuntimeException invalid) {
+            return OAuth2TokenValidatorResult.failure(
+                new OAuth2Error("invalid_token", "Invalid account subject", null));
+          }
+        };
+    decoder.setJwtValidator(
+        new DelegatingOAuth2TokenValidator<>(new JwtTimestampValidator(), activeAccount));
+    return decoder;
+  }
 
-	@Bean
-	public JwtEncoder jwtEncoder() {
-		SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-		JWK jwk = new OctetSequenceKey.Builder(key)
-				.algorithm(JWSAlgorithm.HS256)
-				.build();
+  @Bean
+  public JwtEncoder jwtEncoder() {
+    SecretKey key = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    JWK jwk = new OctetSequenceKey.Builder(key).algorithm(JWSAlgorithm.HS256).build();
 
-		JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
+    JWKSource<SecurityContext> jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
 
-		return new NimbusJwtEncoder(jwkSource);
-	}
+    return new NimbusJwtEncoder(jwkSource);
+  }
 
-	@Bean
-	public JwtAuthenticationConverter jwtAuthenticationConverter() {
-		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-		converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-			List<String> roles = jwt.getClaimAsStringList("roles");
-			if (roles == null) {
-				return Collections.emptyList();
-			}
-			return roles.stream()
-					.map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-					.map(a -> (GrantedAuthority) a)
-					.collect(Collectors.toList());
-		});
-		return converter;
-	}
+  @Bean
+  public JwtAuthenticationConverter jwtAuthenticationConverter() {
+    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+    converter.setJwtGrantedAuthoritiesConverter(
+        jwt -> {
+          List<String> roles = jwt.getClaimAsStringList("roles");
+          if (roles == null) {
+            return Collections.emptyList();
+          }
+          return roles.stream()
+              .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+              .map(a -> (GrantedAuthority) a)
+              .collect(Collectors.toList());
+        });
+    return converter;
+  }
 }

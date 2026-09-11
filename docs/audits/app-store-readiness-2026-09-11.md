@@ -23,10 +23,16 @@ Les lots 00 et 01 sont intégrés localement dans `release/app-store`. Aucun cho
 métier des lots suivants n'est implicitement validé et aucun déploiement n'est
 autorisé.
 
-Lot 02 démarré avec Astra High. Décisions produit explicites : **expériences
+Lot 02 a été cadré avec Astra High puis implémenté avec Sol High. Décisions produit explicites : **expériences
 possibles sans ticket**, **Pass repensé autour des visites/expériences**, avec
 **tickets nécessaires pour certains niveaux**. Le [contrat du lot 02](../architecture/experience-pass-contracts.md)
 fait foi : les seuils version 2 et la conservation des acquis ont été validés.
+
+Le lot 03 est implémenté localement avec **GPT-5.6 Sol High** : nom public
+offline-first, lecture de profil dans son contexte propriétaire, connexion Apple
+native, credentials fournisseur chiffrés, suppression initiable dans l'app et
+processus durable d'effacement par bounded context. Les prérequis Apple Developer,
+les valeurs SSM et la recette sur build iOS signé restent externes et non réalisés.
 
 ## Conclusion
 
@@ -381,6 +387,8 @@ de l'expansion lorsque le territoire utile est identifié.
 | Mobile `projection.updated`, puis handler de sync | Réception détectée ; sorties du helper de routage absentes | Le code contient des refresh que le graphe ne restitue pas ici |
 | Mobile `ticketRetrieval` | 6 nœuds, 7 relations, 2 474 octets | A ciblé le gateway, le thunk et le reducer avant l'ajout de l'historique paginé |
 | Mobile `entitlementsRetrieval` | 4 nœuds, 3 relations, 1 651 octets | A confirmé le chemin handler → gateway → action → reducer ; la lecture directe a ensuite révélé l'ancien fallback UI hors de ce trajet |
+| Lot 03 mobile `profileUpdateRequested` | 21 nœuds, 27 relations, 7 362 octets, projection complète | Retrouve précisément listener, optimisme, outbox, rollback/reconciliation et reducer |
+| Lot 03 mobile `accountDeletionRequested` | 21 nœuds, 37 relations, 9 397 octets, projection complète | Retrouve confirmation/view-model, listener, statuts, sign-out et nettoyages Redux ; utile pour contrôler les fuites inter-comptes |
 | Recherches initiales `State:coffee`, `Handler:Home` | Aucun résultat | Recherche lexicale des nœuds ; les états peuvent s'appeler `cfState`, les écrans ne sont pas des handlers |
 
 Les premières recherches vides ne signifiaient donc pas que le connecteur était
@@ -393,6 +401,10 @@ runtime ou rendu visuel. `complete: true` signifie complétude de la projection
 selon les limites de l'outil, pas complétude de la fonctionnalité dans le code.
 Les handlers agrégés peuvent mêler des opérations voisines sans prouver leur
 causalité. Les liens et chemins manquants doivent rester explicitement inconnus.
+Sur le lot 03, la projection n'a pas montré l'appel HTTP concret de suppression
+porté par `UserRepo`, ni le routage HTTP de `User.Profile.Update` derrière le
+processeur d'outbox générique. Elle ne peut pas non plus prouver le bouton natif
+Apple, SecureStore, les garanties backend Java ou les suppressions SQL.
 
 Économie attendue : moins de recherches globales et de fichiers ouverts sur une
 intervention Redux ciblée. Aucun pourcentage de coût ou de vitesse n'est établi
@@ -405,6 +417,12 @@ projection de 8–16 Ko maximum → sources et tests utiles → recherche compl�
 sur les frontières absentes. Utiliser directement `rg` pour une modification UI
 locale ou du Java. Le MCP conserve des graphes vérifiés en session et peut
 réutiliser jusqu'à quatre projets ; il reste nécessaire de revalider après edits.
+Pour faire évoluer FlowAtlas, les gains les plus concrets seraient : résoudre
+les appels de gateway selon le `kind` d'une commande générique, inclure les
+déclencheurs écran/view-model, distinguer les branches provider et modéliser les
+frontières natives. L'adaptateur Java annoncé complétera surtout l'analyse des
+controllers, handlers, ports/adapters et événements ; transactions et SQL réel
+devront malgré tout rester prouvés par les tests.
 
 Sources : [README FlowAtlas](/Users/nicolasmaldiney/FlowAtlas/README.md),
 [évaluation antérieure](/Users/nicolasmaldiney/FlowAtlas/docs/evaluations/codex-mcp-exploration.md),
@@ -440,7 +458,7 @@ explicite ; le démarrage du lot 02 autorise son travail local, pas un déploiem
 | 00 | Isolation comptes/outbox/cache/SSE, propriétaire ticket, permission | Serveur + mobile | Implémenté et testé localement ; reprise legacy et recette appareil restent ouvertes |
 | 01 | P0 erreurs techniques, rejets métier, vérité et autorisation des statuts | Serveur + mobile + contrats admin concernés | Intégré localement ; aucun rollback sur panne, rejet durable, idempotence et statut réservé au demandeur |
 | 02 | Expériences libres, nouveau Pass, déduplication et historique tickets | Serveur + mobile | Implémenté localement côté historique/Pass/contrats ; producteur Experience attendu au lot 05 ; justificatif facultatif non retenu à ce stade |
-| 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | 01 ; auth conforme au cas produit, nom public modifiable, suppression des données existantes et sessions, extension prévue aux nouveaux contenus |
+| 03 | Identité, profil éditable et cycle de suppression du compte | Serveur + mobile | Implémenté et testé localement ; activation Apple Developer/SSM et recette iOS signée externes ; extension Experience/media obligatoire aux lots 05/06 |
 | 04 | Modération de l'UGC existant et outillage opérateur | Serveur + mobile + Studio | 01 + contrats d'identité ; signalement, blocage/déblocage, filtrage, masquage/restauration et historique opérateur utilisables |
 | 05 | Expériences texte de bout en bout | Serveur + mobile + Studio | 02 + socle 03/04 ; brouillon, publication, édition, suppression, listes café/moi, synchronisation, modération et suppression de compte intégrées |
 | 06 | Photos d'expérience et avatar choisi | Serveur + mobile + Studio | 03/05 ; pipeline média sécurisé, upload/reprise, validation réelle, remplacement, modération et nettoyage |
@@ -552,14 +570,27 @@ préexistants), carte Redux et configuration native de release validés. La
 verticale issue d'un vrai producteur Experience reste explicitement une preuve
 du lot 05.
 
-**03 — Identité et compte.** Vérifier le cas Google/connexion Apple ou équivalent
-conforme et les prérequis de configuration. Garder profil produit dans
-`userApplicationContext` et identité OAuth dans `authenticationContext`. Brancher
-le nom public éditable et son contrat de commande. Implémenter la suppression
-initiable dans l'app : confirmation, suivi durable, révocation des sessions,
-traitement des données existantes et purge locale. Définir la politique de
-suppression/anonymisation et les obligations de conservation à faire valider ;
-prévoir dès maintenant l'extension aux expériences et médias des lots suivants.
+**03 — Identité et compte.** Implémenté localement. Le profil produit et sa query
+JDBC sont dans `userApplicationContext`; l'ancien `/auth/me` transverse est retiré.
+Le nom public suit une commande offline-first avec validation domaine, outbox,
+rejet métier et réconciliation. Sign in with Apple utilise le bouton Expo natif,
+une validation/exchange backend, des credentials de révocation chiffrés AES-GCM
+et une configuration SSM documentée. La suppression confirmée crée un processus
+durable : chaque contexte actuel efface ses propres données, publie son
+acquittement via outbox/SQS/inbox, puis le coordinateur termine sous verrou. Les
+refresh tokens sont révoqués, l'identité est anonymisée et un ancien access token
+est refusé après traitement auth. `APPLIED` signifie demande durablement acceptée,
+pas effacement global terminé. Experience et médias devront rejoindre ce même
+processus aux lots 05/06 ; avatar reste au lot 06.
+
+Preuves locales du lot 03 : 339 tests backend distincts verts (suite complète,
+puis test de migration additive ajouté et exécuté), dont
+domaine/use cases, adaptateurs Apple, chiffrement, HTTP/JWT, PostgreSQL,
+transactional outbox, SQS/inbox, duplication et verticale complète de suppression ;
+64 suites et 255 tests mobile verts ; TypeScript, configuration native, carte
+Redux et lint sans erreur nouvelle (un warning historique). L'activation réelle
+du capability Apple, les secrets SSM et une recette de connexion/suppression sur
+build iOS signé restent des prérequis externes.
 
 **04 — Modération existante.** Couvrir les commentaires déjà publics : filtrage,
 motifs de signalement, masquage pour le signalant, blocage/déblocage et lectures
@@ -639,8 +670,8 @@ Restent à valider avant les implémentations concernées :
 
 - Avant 02/05 : seuils exacts du nouveau Pass, conservation des acquis, rôle futur
   des commentaires et éventuel justificatif facultatif ticket/café.
-- Avant 03 : modalités du nom public, politique de suppression/anonymisation,
-  fournisseurs de connexion, informations de support et confidentialité.
+- Lot 03 : nom public, anonymisation et fournisseurs sont implémentés ; les
+  informations de support/confidentialité restent à finaliser avant diffusion.
 - Avant 04 : responsabilité de modération, motifs/actions et traitement opérateur.
 - Avant 06 : formats réellement supportés, quantité/taille des photos, coût et
   paramètres d'exploitation S3 ; photos et avatar restent dans le périmètre.
@@ -661,7 +692,8 @@ simultanées ne doivent pas être additionnées deux fois.
 | 00 | Implémenté et testé localement | Non mesuré | 232 tests mobile, 41 backend ciblés, TypeScript/carte Redux OK ; legacy et appareil ouverts |
 | 01 | Clos et intégré localement ; validation produit en cours | 43 min de fenêtre observée, de 13:47 à 14:30 CEST ; temps actif non instrumenté séparément | Reçu durable, isolation, migration/backfill, contrats mobile et compatibilité Studio ; déploiement non réalisé |
 | 02 | Clos et intégré localement ; Astra High puis Sol High | Fenêtre observée d'environ 14:39 à 15:54 CEST, incluant échanges, implémentation et attentes de tests ; temps actif non isolé | Backend `3ff0ca8`/merge `94d8082`, mobile `588f825`/merge `e4952fc` ; producteur Experience différé au lot 05 |
-| 03 à 08 | Planifiés, non démarrés | Non démarré | Contrats métier puis fonctionnalités complètes |
+| 03 | Implémenté et testé localement ; Sol High | Fenêtre observée d'environ 86 min, de 15:54 à 17:20 CEST, incluant exploration, implémentation et attentes de tests ; temps actif non isolé | Backend/mobile complets dans le périmètre actuel ; capability/SSM/build iOS externes, avatar et extensions Experience/media différés explicitement |
+| 04 à 08 | Planifiés, non démarrés | Non démarré | Modération, Experience, médias puis parcours UI/Home |
 | 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
@@ -709,6 +741,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 1 — 2026-09-11 14:30 CEST | 01 clos et intégré localement | Référence ci-dessus conservée | Fenêtre 43 min, incluant deux suites backend complètes, tests ciblés/Testcontainers, mobile, Studio et intégration Git ; temps actif non isolé | Zéro en implémentation locale ; migration/recette reportées au durcissement | 4 à 8 jours concentrés d'implémentation locale pour 02 à 09, puis délais TestFlight/App Review séparés | 01 a été plus rapide grâce au socle existant et aux tests ; confiance faible à moyenne, sans extrapolation aux décisions Experience, médias, UGC et natif |
 | Prévision 2 — lot 02, premier point 2026-09-11 14:39 CEST, avant code fonctionnel | 02A cadrage, 02B historique, 02C Pass/doublons, 02D contrats | 30–60 min de cadrage ; 1–2 jours concentrés d'implémentation après validation | Exploration démarrée ; temps actif non isolé | Seuils/migration à valider puis slices testées | Référence 4–8 jours conservée, à recalculer après cadrage et première slice ; TestFlight/App Review séparés | Ticket retiré du chemin obligatoire ; nouvelle politique Pass, ownership et replay ajoutent du travail ; confiance faible |
 | Prévision 3 — lot 02, clôture 2026-09-11 15:54 CEST | 02A–02D, hors producteur Experience du lot 05 | Référence 1–2 jours après cadrage | Fenêtre observée d'environ 75 min depuis le premier point, incluant échanges et attentes Testcontainers ; temps actif non isolé | Zéro dans le périmètre 02 ; raccord producteur au lot 05 | 3–6 jours concentrés pour 03 à 09, puis délais TestFlight/App Review séparés | Socle eventing/inbox/projection largement réutilisable ; objectif quatre jours plausible, confiance moyenne-faible car médias, UGC, Apple et recette native restent plus incertains |
+| Prévision 4 — lot 03, clôture locale 2026-09-11 17:20 CEST | Profil, Apple, suppression coordonnée des données actuelles | Incluse dans la référence globale 3–6 jours ; pas de fourchette isolée enregistrée avant code | Fenêtre observée d'environ 86 min depuis la clôture 02, incluant exploration, dépendance Expo, implémentation et suites complètes ; temps actif non isolé | Zéro pour le code local du périmètre actuel ; activation Apple/SSM/recette signée externes ; extensions Experience/media prévues | 2–5 jours concentrés pour 04 à 09, puis délais TestFlight/App Review séparés | Forte réutilisation command/outbox/SQS/inbox ; Apple et le processus transverse ont néanmoins demandé une vraie verticale. Confiance moyenne-faible avant UGC/médias/UI |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -813,7 +846,8 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lot 02 cadré avec Astra High puis implémenté avec Sol High.
-Expériences sans ticket, seuils version 2 et conservation des acquis sont actés.
-Historique ticket et Pass sont raccordés serveur/mobile ; le contrat Experience
-est prêt côté consommateur. Seul son producteur réel reste volontairement au lot 05.**
+**État actuel : lots 02 et 03 implémentés et testés localement. Lot 03 a utilisé
+GPT-5.6 Sol High. Profil, Apple et suppression coordonnée couvrent les données
+actuelles sans traverser les frontières de contexte. Les configurations Apple/SSM,
+la recette native, puis l'ajout des futurs propriétaires Experience/media au
+processus restent explicitement ouverts.**

@@ -28,9 +28,19 @@ Production uses the same structure with the `production` environment segment.
 | `/fragments/{env}/GOOGLE_PLACES_API_KEY` | Google Places provider | Provider key rotation |
 | `/fragments/{env}/OPENAI_API_KEY` | Required when editorial generation is enabled | Provider key rotation |
 | `/fragments/{env}/OPENAI_PROJECT_ID` | Optional provider project | Configuration change |
+| `/fragments/{env}/APPLE_TEAM_ID` | Apple Developer team used to sign OAuth client secrets | Apple account/key rotation |
+| `/fragments/{env}/APPLE_KEY_ID` | Sign in with Apple key identifier | Apple key rotation |
+| `/fragments/{env}/APPLE_PRIVATE_KEY` | PKCS#8 `.p8` key used to sign short-lived Apple client secrets | Revoke/replace the Apple key, then restart |
+| `/fragments/{env}/AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY` | AES-256-GCM key protecting provider refresh credentials at rest | Coordinated credential re-encryption before replacement |
 
 Public OAuth client IDs and URLs are not secrets and remain build/runtime
 configuration rather than entering the secret store.
+
+`APPLE_PRIVATE_KEY` is stored with line breaks escaped as `\n`, so the generated
+runtime `.env` remains one assignment per line. The application reconstructs the
+PEM before parsing it. `AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY` is a Base64-
+encoded 32-byte key. Losing or rotating it without re-encryption makes stored
+Apple refresh credentials unreadable and prevents compliant remote revocation.
 
 ## Anchor parameters
 

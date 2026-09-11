@@ -1,15 +1,19 @@
 package com.nm.fragmentsclean.socialContext.read.configuration;
 
-
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.read.GetLikeSummaryQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.ListCommentsQueryHandler;
 import com.nm.fragmentsclean.socialContext.read.adapters.secondary.repositories.JdbcLikeProjectionRepository;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jdbc.JdbcSocialAccountDataEraser;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.JpaLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jpa.SpringLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.CommentRepository;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.LikeRepository;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.SocialAccountDataEraser;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.EraseSocialAccountData;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,23 +21,35 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Configuration
 public class SocialContextReadDependenciesConfiguration {
 
-    @Bean
-    GetLikeSummaryQueryHandler getLikeSummaryQueryHandler(
-            JdbcLikeProjectionRepository projectionRepository
-    ){
-        return new GetLikeSummaryQueryHandler(projectionRepository);
-    }
+  @Bean
+  GetLikeSummaryQueryHandler getLikeSummaryQueryHandler(
+      JdbcLikeProjectionRepository projectionRepository) {
+    return new GetLikeSummaryQueryHandler(projectionRepository);
+  }
 
-    @Bean
-    ListCommentsQueryHandler listCommentsQueryHandler(JdbcTemplate jdbcTemplate){
-        return new ListCommentsQueryHandler(jdbcTemplate);
-    }
-    @Bean
-    public LikeRepository likeRepository(SpringLikeRepository springLikeRepository){
-        return new JpaLikeRepository(springLikeRepository);
-    }
-    @Bean
-    public CommentRepository commentRepository(SpringCommentRepository springCommentRepository){
-        return new JpaCommentRepository(springCommentRepository);
-    }
+  @Bean
+  ListCommentsQueryHandler listCommentsQueryHandler(JdbcTemplate jdbcTemplate) {
+    return new ListCommentsQueryHandler(jdbcTemplate);
+  }
+
+  @Bean
+  public LikeRepository likeRepository(SpringLikeRepository springLikeRepository) {
+    return new JpaLikeRepository(springLikeRepository);
+  }
+
+  @Bean
+  public CommentRepository commentRepository(SpringCommentRepository springCommentRepository) {
+    return new JpaCommentRepository(springCommentRepository);
+  }
+
+  @Bean
+  SocialAccountDataEraser socialAccountDataEraser(JdbcTemplate jdbc) {
+    return new JdbcSocialAccountDataEraser(jdbc);
+  }
+
+  @Bean
+  EraseSocialAccountData eraseSocialAccountData(
+      SocialAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock) {
+    return new EraseSocialAccountData(eraser, events, clock);
+  }
 }

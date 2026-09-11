@@ -8,14 +8,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ContextConfiguration;
 
 @SpringBootTest(
-		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-		classes = FragmentsCleanApplication.class,
-		properties = {
-				"spring.task.scheduling.enabled=false"
-		}
-)
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = FragmentsCleanApplication.class,
+    properties = {
+      "spring.task.scheduling.enabled=false",
+      "app.outbox.dispatcher.scheduling-enabled=false"
+    })
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = UserApplicationContextE2EConfiguration.class)
-public abstract class AbstractBaseE2E extends TestContainers {
-}
+public abstract class AbstractBaseE2E extends TestContainers {}
