@@ -1,5 +1,29 @@
 # Configuration staging et passage au déploiement — 12 septembre 2026
 
+## Mise à jour : clé Apple fournie et première tentative CI
+
+- L'opérateur a fourni la clé Sign in with Apple dans Downloads, le Team ID
+  `GZU3V23673` et le Key ID `JNNK3W84JP`. Le fichier PKCS#8 EC P-256 a été
+  vérifié en mémoire (signature/vérification locale), sans afficher son contenu.
+  Cette preuve ne valide pas encore un échange réel avec Apple.
+- Les trois paramètres `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`
+  sous `/fragments/staging/` ont été créés comme SecureString Standard version 1,
+  sans écrasement, avec la même clé KMS. Relecture vérifiée en mémoire ; fichier
+  source inchangé dans Downloads, aucune clé dans Git.
+- Le backend `5437112be54ff21abe46c7a46eba705a2e313418` a été poussé sur `main`.
+  Le run manuel autorisé [34695399350](https://github.com/nico8156/fragmentsClean/actions/runs/34695399350)
+  a échoué avant Maven : aucun build, appel de déploiement SSM, arrêt de service
+  ou SQL exécuté. Le contrôle initial `command -v rg` pouvait échouer sans message.
+- Correction CI en cours : installation explicite de ripgrep avant les tests,
+  diagnostic explicite si absent et test de garde-fou. Le passage de la suite
+  complète Java 21 reste obligatoire avant toute livraison.
+- Bouton natif Apple déjà présent sous Google sur iOS et branché au gateway ;
+  connexion/suppression Apple sur appareil avec un nouveau build restent à tester.
+
+Les sections suivantes conservent le relevé antérieur à la fourniture de la clé.
+
+## Relevé initial (avant fourniture Apple)
+
 Lot 10D, Astra High. L'opérateur autorise désormais la configuration SSM, la
 préparation/publication du candidat backend et le déploiement avec migration.
 Il prend en charge la recette produit. L'autorisation ne supprime pas les

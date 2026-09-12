@@ -98,3 +98,5 @@ Use `bash scripts/test-release.sh` before handing off a release. Docker and
 as unit/infra `*Test` and `*Tests`, writes reports to a fresh directory and
 refuses skipped tests. This does not run mobile/Studio suites or native/device
 acceptance. See `docs/deployment/testflight-app-store-release.md` for those gates.
+The staging GitHub Actions runner installs ripgrep explicitly before this gate;
+a missing local `rg` fails with a diagnostic before any test or deployment.

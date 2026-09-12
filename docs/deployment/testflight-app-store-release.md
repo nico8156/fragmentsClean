@@ -30,12 +30,13 @@ inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. Les [files/alertes/IAM sont désormais appliqués](aws-applied-2026-09-12.md)
 avec accord : deux stacks `UPDATE_COMPLETE`, instances et disques préservés.
 Un événement EIP legacy non annoncé par l'aperçu a été vérifié et documenté.
-Confirmation email SNS vérifiée et clé de chiffrement SSM créée ; trois paramètres
-Apple encore manquants. L'opérateur a autorisé le push et le déploiement, mais
-celui-ci attend les prérequis Apple : [passage de configuration](staging-configuration-2026-09-12.md).
+Confirmation email SNS vérifiée ; clé de chiffrement et trois paramètres Apple
+créés dans SSM. Le backend `5437112` a été poussé, mais le premier pipeline
+manuel a échoué avant Maven (prérequis CI ripgrep en cours de correction) :
+[passage de configuration](staging-configuration-2026-09-12.md).
 La restauration/upgrade est prouvée sur copie locale réelle et le déploiement
 journalisé est préparé localement, mais ni SQL staging ni application déployés.
-Aucun push. La recette fonctionnelle des nouveaux parcours reste ouverte.
+Aucun push mobile/Studio dans cette tranche. La recette fonctionnelle reste ouverte.
 L'avertissement de terminaison Surefire reste observé sur le dernier run de
 515 tests verts, non réexécuté pour cette tranche d'exploitation AWS.
 

@@ -99,5 +99,7 @@ for the current staging risk and avoids unnecessary key administration.
 
 On 12 September, the staging provider-credential encryption parameter was
 created as SecureString version 1 and verified without logging its value.
-The three Apple signing parameters remain pending operator input; see the
+The three Apple signing parameters were subsequently supplied by the operator,
+created as SecureString version 1 without overwrite and verified in memory.
+Actual Apple sign-in/revocation still requires a native-device test; see the
 [configuration handoff](../deployment/staging-configuration-2026-09-12.md).
