@@ -121,6 +121,13 @@ Resources:
       QueueName: !Sub ${ProjectName}-${EnvironmentName}-ticket-events-dlq
       MessageRetentionPeriod: 1209600
 
+  ExperiencesEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-experiences-events-dlq
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
   TicketVerificationRequestedDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -185,6 +192,17 @@ Resources:
       ReceiveMessageWaitTimeSeconds: 20
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt TicketEventsDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  ExperiencesEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-experiences-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ExperiencesEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   TicketVerificationRequestedQueue:
@@ -367,6 +385,46 @@ Resources:
       EvaluationPeriods: 1
       DatapointsToAlarm: 1
       Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  ExperiencesEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-experiences-events-dlq-not-empty
+      AlarmDescription: Experience events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ExperiencesEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  ExperiencesEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-experiences-events-oldest-message
+      AlarmDescription: Experience projections may be blocked by an old message.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ExperiencesEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
       ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
       AlarmActions: [!Ref OperationsAlarmTopic]
@@ -594,6 +652,7 @@ Resources:
                   - !GetAtt AppUsersEventsQueue.Arn
                   - !GetAtt CoffeesEventsQueue.Arn
                   - !GetAtt DomainEventsQueue.Arn
+                  - !GetAtt ExperiencesEventsQueue.Arn
                   - !GetAtt TicketEventsQueue.Arn
                   - !GetAtt TicketVerificationRequestedQueue.Arn
               - Effect: Allow
@@ -816,6 +875,8 @@ Outputs:
     Value: !Ref CoffeesEventsQueue
   DomainEventsQueueUrl:
     Value: !Ref DomainEventsQueue
+  ExperiencesEventsQueueUrl:
+    Value: !Ref ExperiencesEventsQueue
   TicketEventsQueueUrl:
     Value: !Ref TicketEventsQueue
   TicketVerificationRequestedQueueUrl:
@@ -833,6 +894,8 @@ Outputs:
     Value: !Ref CoffeesEventsDeadLetterQueue
   DomainEventsDeadLetterQueueUrl:
     Value: !Ref DomainEventsDeadLetterQueue
+  ExperiencesEventsDeadLetterQueueUrl:
+    Value: !Ref ExperiencesEventsDeadLetterQueue
   TicketEventsDeadLetterQueueUrl:
     Value: !Ref TicketEventsDeadLetterQueue
   TicketVerificationRequestedDeadLetterQueueUrl:
