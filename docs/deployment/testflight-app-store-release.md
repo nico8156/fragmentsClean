@@ -13,6 +13,7 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 | Configuration release mobile | 8 tests verts, dont le vrai plugin de permissions |
 | Mobile types/lint/Redux/natif | TypeScript et contrôles verts ; lint 0 erreur, 20 avertissements préexistants |
 | Studio | 31 suites, 146 tests verts ; build public sans tokens, vérification du bundle et contrat API verts |
+| Backup réel / upgrade | 12:50:06 CEST : checksum valide, restauration locale réussie, 46 tables sources préservées, réexécution stable sur 69 tables ; copies nettoyées |
 
 Rapports backend isolés : `target/release-verification.tv3Agm`. La JVM locale
 est Java 23 Valhalla, avec compilation `release 21`. Ce résultat n'est pas une
@@ -27,7 +28,8 @@ Commits backend : `f39ee74` (médias), `9bdf9fa` (Spring/profil), `726c254`
 Le [préflight AWS du lot 10](aws-release-preflight-2026-09-12.md) a commencé :
 inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
-restauration et migration explicite restent à prouver avant déploiement. Aucun
+la restauration/upgrade est désormais prouvée sur copie locale réelle, mais
+son intégration sûre au déploiement reste à réaliser. Aucun
 push ni changement AWS effectué. Le préflight consigne aussi l'avertissement
 de terminaison Surefire, également observé sur le dernier run de 500 tests verts.
 
@@ -196,8 +198,9 @@ cohérentes avec la politique publiée.
 Suivre le [runbook d'exploitation](operations-runbook.md) et le
 [candidat d'upgrade SQL](app-store-schema-upgrade.md). Le runtime et ses 46 tables
 ont été inspectés ; le script global est testé sur le DDL réel avec des données
-synthétiques. La restauration du vrai backup et l'intégration au déploiement
-restent nécessaires. Ne pas exécuter tous les scripts à l'aveugle, ne pas remplacer une
+synthétiques, puis sur une restauration autorisée du vrai backup. L'intégration
+au déploiement et un backup frais avant application restent nécessaires.
+Ne pas exécuter tous les scripts à l'aveugle, ne pas remplacer une
 migration par `schema.sql` sur une base existante. Aucun script de release n'a
 été appliqué à distance dans ce lot.
 
@@ -207,7 +210,7 @@ ne sont pas annulables. Ne pas purger inbox/outbox/legacy pour faire disparaîtr
 un incident. Le legacy sans propriétaire fiable reste inerte, non réattribué.
 
 Restent à fournir/valider : URL légales/support, responsable de modération et
-contrôle des images UGC, environnements et IAM, restauration, données de revue,
+contrôle des images UGC, environnements et IAM, migration déployée, données de revue,
 capabilities/credentials Apple, manifeste de confidentialité de l'archive,
 build signé et recette complète. Tant que ces preuves manquent, le lot 10 est
 **préparé localement mais non clos**.

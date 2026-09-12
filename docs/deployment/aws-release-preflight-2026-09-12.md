@@ -7,6 +7,8 @@ AWS, lecture de secret, lecture de message, modification de base ou mise en lign
 La reprise 10B a ensuite exécuté deux diagnostics SSM en lecture seule du
 runtime/DDL (traces SSM créées, aucune mutation applicative) ; voir le
 [candidat d'upgrade SQL](app-store-schema-upgrade.md).
+Après autorisation explicite, le backup du 12 septembre a été restauré et migré
+localement avec succès à 12:50:06 CEST ; copies supprimées et staging inchangé.
 
 ## Cible résolue
 
@@ -32,13 +34,14 @@ runtime/DDL (traces SSM créées, aucune mutation applicative) ; voir le
 | SSM | `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY`, `AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY` absents de l'inventaire `/fragments/staging/` | Le bootstrap actuel échouerait avant génération de `.env` ; fournir ces prérequis avant déploiement |
 | S3 confidentialité | Quatre blocages publics actifs, chiffrement AES256 par défaut | Bonne base ; ne prouve pas les autorisations ni l'effacement du nouveau parcours |
 | S3 conservation | Versioning non activé ; aucune configuration lifecycle | Aucun changement global automatique sur ce bucket partagé ; politique par préfixe à définir |
-| Sauvegarde | Dump `fragments-20260912T032402Z.dump`, 447030 octets, et checksum présents | Dernière sauvegarde observée à 03:24 UTC ; pas encore restaurée ni vérifiée cryptographiquement |
+| Sauvegarde | Dump `fragments-20260912T032402Z.dump`, 447030 octets, et checksum présents | SHA-256 vérifié, restauration/upgrade locaux réussis après autorisation ; copie supprimée, objet S3 intact |
 | Volumes hôte | gp3, 30 et 80 Gio, tous deux chiffrés | Pas de besoin établi de nouvel hôte ou de nouveau volume |
 
 Ces constats viennent de `describe-stacks`, `list-queues`, `get-queue-attributes`,
 `describe-parameters` (métadonnées uniquement), `describe-alarms`, lecture de la
-policy IAM nommée, contrôles S3 et métadonnées EC2/SSM. Aucun contenu de sauvegarde,
-de message ou de paramètre chiffré n'a été consulté. Les compteurs SQS sont
+policy IAM nommée, contrôles S3 et métadonnées EC2/SSM. Au préflight initial, aucun
+contenu de sauvegarde n'avait été consulté ; le drill ultérieur autorisé est
+consigné séparément. Aucun message ni paramètre chiffré consulté. Les compteurs SQS sont
 approximatifs et l'inventaire d'alarmes est limité au préfixe indiqué.
 
 ## Corrections locales de cette tranche
@@ -83,7 +86,7 @@ restent celles du [dossier TestFlight](testflight-app-store-release.md).
 | Étape | Action | Critère de passage |
 | --- | --- | --- |
 | 10A — réalisé | Inventaire en lecture seule et préparation locale ci-dessus | Constats et tests consignés |
-| 10B — en cours | Runtime et schéma inspectés ; upgrade transactionnel testé sur DDL réel et données synthétiques. Restauration réelle et revue des change sets restent à faire | Aucun remplacement EC2/EBS, aucune modification Anchor, rollback identifié |
+| 10B — restauration validée, préparation déploiement ouverte | Runtime/schéma inspectés ; backup réel restauré, upgrade et réexécution vérifiés localement. Traçabilité de migration et revue des change sets restent à faire | Aucun remplacement EC2/EBS, aucune modification Anchor ; application staging toujours non autorisée |
 | 10C — infra après accord | Files/DLQ/alarmes ; liste IAM SQS, droits métriques et S3 restreints ; abonnement opérateur confirmé | Routes existantes conservées, aucune purge/relecture des 5 messages legacy |
 | 10D — configuration | Fournir les valeurs Apple/chiffrement en SSM par un canal sûr ; confirmer capacité Apple et opérateur de modération/alertes | Ne jamais coller de clé privée dans le chat ni dans Git |
 | 10E — migration et application | Upgrade SQL explicite et testé sur copie, puis image backend ARM64 Java 21 identifiée | Sauvegarde vérifiée, migration transactionnelle, santé et reprise correctes |
@@ -97,8 +100,9 @@ initial déterminé, et des évolutions antérieures sont dans le bootstrap.
 Le runtime identifié est `18ae517`, Java 21.0.12, PostgreSQL 15.19 et 46 tables.
 Le schéma réel a été exporté sans données et le candidat
 `db/release/app-store-2026-09.psql` est maintenant testé sur cette structure.
-La restauration de sauvegarde avec ses lignes réelles, la traçabilité des
-migrations et l'intégration sûre au déploiement restent à faire.
+La restauration du backup et l'upgrade sur ses lignes réelles sont maintenant
+validés localement (46 tables sources préservées, 69 tables après upgrade).
+La traçabilité des migrations et l'intégration sûre au déploiement restent à faire.
 
 Un push de `main` touchant les chemins suivis déclenche le workflow de déploiement.
 Ne pas utiliser ce push comme simple transfert de code tant que le SQL, SSM et
@@ -119,6 +123,6 @@ uploads non confirmés, effacements, sauvegardes et fenêtre de rollback.
 Une URL présignée privée ne remplace pas un test d'autorisation applicative.
 
 Les paramètres Apple et l'adresse recevant les alarmes sont des entrées opérateur
-manquantes. Une restauration de sauvegarde et une création de ressources sont
-des actions distinctes à approuver avec leurs cibles exactes ; aucune action
-irréversible n'est incluse dans ce préflight.
+manquantes. L'accord de restauration locale a été obtenu et exécuté ; il ne
+couvre pas la création/modification de ressources AWS ou la migration staging,
+qui nécessitent toujours une revue des cibles et un accord distinct.
