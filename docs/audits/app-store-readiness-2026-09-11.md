@@ -999,6 +999,28 @@ template ; 28 ajouts proposés, ou 29 avec email. Le fournisseur GitHub OIDC
 existant doit être réutilisé, pas recréé. Aucun change set créé ou exécuté,
 aucun SSM secret lu, aucun push ni déploiement. L'adresse d'alerte a été demandée.
 
+### Lot 10C — chiffrage et revue AWS, Astra High, 12 septembre
+
+La [revue AWS détaillée](../deployment/aws-change-review-2026-09-12.md) compare
+les templates déployés et locaux. `validate-template` réussit pour les deux
+stacks ; aucune ressource ni change set créé. Le catalogue tarifaire Paris
+donne environ **2,19 USD/mois** pour 18 alarmes, une métrique et son émission
+toutes les cinq minutes, avant franchises et hors SQS/SNS variables, S3/logs et
+socle existant. L'adresse d'alerte est reçue et reste hors Git.
+
+Deux points supplémentaires ressortent de la revue : la référence AMI non
+versionnée résout aujourd'hui une image différente des deux instances ; le
+template legacy modifie aussi un ancien rôle GitHub, alors que le workflow
+utilise un rôle SSM d'un stack distinct. Aucun remplacement EC2/EBS ni changement
+de rôle legacy n'est implicitement approuvé. Prévisualiser sans exécuter, puis
+préserver le bloc du rôle legacy dans le candidat final et résoudre tout risque
+AMI avant accord d'application. Les ressources/droits Anchor restent hors scope.
+
+Documentation seulement modifiée, aucune nouvelle suite métier lancée ; dernière
+preuve backend inchangée : 513 tests verts. Aucun push, secret lu, SQL staging,
+déploiement ou abonnement SNS. FlowAtlas n'est pas pertinent pour cet inventaire
+des ressources réellement déployées et n'a pas été utilisé.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1158,6 +1180,14 @@ tests rouges/corrections et sa durée active n'est pas isolée. La fourchette
 infra et la migration contrôlée, hors attente d'accords, email d'alerte et SSM.
 Pas de réduction fondée seulement sur des tests locaux : change sets, Java 21
 ARM64 et recette déployée restent à exécuter. TestFlight et sa marge restent séparés.
+
+Prévision 23 — revue AWS du 12 septembre : tarifs et destinataire d'alerte connus,
+validation des templates réussie. La revue découvre cependant un écart IAM legacy
+et confirme la dérive de valeur de l'AMI publique. Conserver **0,25 à 0,75 jour
+actif** pour finaliser/appliquer infra et migration, sans promettre le bas de la
+fourchette avant change sets. L'attente de l'adresse d'alerte est levée ; accords,
+Apple/SSM, recette native et TestFlight restent séparés. La durée de cette revue
+n'a pas été mesurée indépendamment ; aucune vitesse de livraison extrapolée.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater

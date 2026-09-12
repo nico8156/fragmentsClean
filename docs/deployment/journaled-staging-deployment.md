@@ -147,6 +147,12 @@ préflight). Pas de changement global du bucket partagé ni de réseau suppléme
 
 Les 29 ajouts avec email (28 sans) sont un **diff structurel**, pas une prévision
 CloudFormation garantie. Le change set devra confirmer les conditions et les
-modifications des ressources existantes. Coût récurrent des alarmes/métriques et
-usage SQS/SNS à chiffrer sur les tarifs applicables avant accord ; aucun montant
-inventé ni engagement de dépense ici. L'adresse d'alerte est demandée à l'opérateur.
+modifications des ressources existantes.
+
+Le [complément de revue AWS](aws-change-review-2026-09-12.md) chiffre désormais
+ce surcoût sur le catalogue Paris : environ 2,19 USD/mois pour les alarmes,
+la métrique et son émission régulière, avant franchises et hors SQS/SNS variables.
+L'adresse d'alerte a été fournie par l'opérateur, hors Git. Les deux templates
+passent `validate-template`, sans création de change set. La comparaison détaillée
+identifie aussi le changement du rôle GitHub legacy et une AMI courante différente
+des instances : ces points exigent une revue avant toute exécution.
