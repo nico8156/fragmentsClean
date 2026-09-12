@@ -1,5 +1,10 @@
 # AWS / infra — préflight de release, 12 septembre 2026
 
+**Suivi :** les [deux change sets autorisés](aws-preview-results-2026-09-12.md)
+ont depuis été créés, jamais exécutés. Le remplacement EC2 annoncé impose leur
+refus et la préparation de nouveaux candidats. Les ressources déployées restent
+inchangées ; les observations ci-dessous sont le préflight historique.
+
 Lot 10, Astra High. AWS/infra est traité **maintenant, avant le build candidat
 TestFlight**. Autorisation utilisateur : poursuivre le chantier. Cette tranche
 effectue des lectures AWS et prépare des changements locaux ; aucune mutation

@@ -1021,6 +1021,28 @@ preuve backend inchangée : 513 tests verts. Aucun push, secret lu, SQL staging,
 déploiement ou abonnement SNS. FlowAtlas n'est pas pertinent pour cet inventaire
 des ressources réellement déployées et n'a pas été utilisé.
 
+### Lot 10C — prévisualisations autorisées et refusées, Astra High, 12 septembre
+
+Les [deux change sets AWS](../deployment/aws-preview-results-2026-09-12.md) sont
+créés après accord explicite, sans exécution. Le stack legacy annonce 29 ajouts
+et 14 modifications ; la plateforme annonce trois modifications. **Les deux
+instances EC2 seraient remplacées**, avec leur attachement EBS legacy et leur
+association EIP plateforme respectifs. La cause prouvée est la résolution de
+`ImageId` vers l'AMI Ubuntu courante malgré `UsePreviousValue` sur le paramètre.
+
+Verdict : NO GO sur ces deux candidats, laissés présents pour revue et marqués
+« ne pas exécuter » dans le dossier. Ils ne sont pas techniquement invalidés dans
+AWS. Préparer ensuite, après validation de la tranche, des AMI existantes figées
+et conserver le rôle GitHub legacy ; deux nouvelles prévisualisations devront
+prouver zéro changement compute/réseau et zéro remplacement avant accord séparé
+d'exécution. Le rôle partagé conserve les droits Anchor dans son diff IAM,
+mais le remplacement de l'hôte suffit à interdire l'application.
+
+Les paramètres conservés et l'ajout du seul ARN Experience sont vérifiés contre
+les stacks. États EC2 et dates de mise à jour des stacks inchangés après inspection.
+Aucun push, déploiement, SQL, lecture de secret ou abonnement SNS. Documentation
+seulement modifiée ; preuve backend précédente de 513 tests non réexécutée.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1188,6 +1210,13 @@ actif** pour finaliser/appliquer infra et migration, sans promettre le bas de la
 fourchette avant change sets. L'attente de l'adresse d'alerte est levée ; accords,
 Apple/SSM, recette native et TestFlight restent séparés. La durée de cette revue
 n'a pas été mesurée indépendamment ; aucune vitesse de livraison extrapolée.
+
+Prévision 24 — change sets du 12 septembre : la première prévisualisation révèle
+des remplacements réellement planifiés, pas seulement un risque théorique.
+La préparation/application infra n'est donc pas prête. La fourchette précédente
+**0,25 à 0,75 jour actif** reste provisoire, à réévaluer après candidats AMI figés
+et nouveaux change sets ; aucune réduction ni date ferme avant cette preuve.
+Recette, Apple/SSM, maintenance et TestFlight restent des jalons séparés.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater

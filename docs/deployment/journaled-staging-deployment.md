@@ -1,5 +1,9 @@
 # Déploiement staging journalisé — préparation locale, 12 septembre 2026
 
+**Suivi AWS :** après accord distinct, deux change sets ont été créés sans
+exécution. Ils sont refusés car ils remplaceraient les instances EC2 ; voir les
+[résultats de prévisualisation](aws-preview-results-2026-09-12.md).
+
 Lot 10B, Astra High. Aucun push, déploiement, changement SSM ou change set créé
 dans cette tranche. Les consultations AWS se limitent aux ressources et à deux
 paramètres non secrets du stack legacy.
