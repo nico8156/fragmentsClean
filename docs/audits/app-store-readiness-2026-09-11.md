@@ -40,6 +40,13 @@ et de leur modération ; le mobile expose les parcours café et personnel sans
 exiger de ticket, et Studio traite commentaires et expériences dans une file
 unifiée. Les médias restent explicitement au lot 06.
 
+Le lot 09 a démarré le 12 septembre avec **GPT-5.6 Sol High**. Sa première slice
+durcit la vérification technique des tickets : travail durable avec lease,
+processus local hors transaction, completion idempotente, inbox revendiquée de
+façon exclusive et statut technique `FAILED` distinct de `REJECTED`. Le lot 09
+reste en cours : cette slice ne vaut ni recette native, ni validation AWS, ni
+clôture des autres contrôles d'exploitation.
+
 ## Conclusion
 
 Fragments dispose déjà du socle nécessaire pour avancer vite : navigation,
@@ -226,10 +233,12 @@ Sources : [contrats](../../src/main/java/com/nm/fragmentsclean/platform/eventing
 
 ### P1 — Exceptions d'architecture dans le parcours ticket/admin
 
-Le process manager ticket est `@Transactional` et appelle `provider.verify`
-pendant cette transaction. Il faut éviter de recopier ce modèle pour le traitement
-des médias : utiliser une prise de travail durable, exécution externe hors
-transaction, puis completion idempotente.
+État après la première slice du lot 09 : l'exception côté vérification est
+corrigée localement. Le process manager persiste seulement l'intention durable ;
+un worker réclame un lease, appelle le provider hors transaction, puis termine
+ticket, job et outbox dans une transaction courte. Les réponses de workers
+obsolètes sont ignorées et un ticket déjà terminal n'est pas écrasé. Voir la
+[décision détaillée](../architecture/ticket-verification-durable-worker.md).
 
 `TicketAdminPanel` appelle directement le gateway depuis React et recharge
 immédiatement après une réponse HTTP. Le contrôleur admin ticket accède directement
@@ -380,7 +389,8 @@ données créées par la version précédente.
 
 ## FlowAtlas : résultat de l'évaluation
 
-Oui, le MCP est utilisable immédiatement sur les deux clients TypeScript.
+Oui, le MCP est utilisable sur les deux clients TypeScript et, depuis le lot 09,
+sur les slices Java couvertes par des requêtes sémantiques explicites.
 Le guide [architecture-exploration](/Users/nicolasmaldiney/FlowAtlas/.codex/skills/architecture-exploration/SKILL.md)
 a été appliqué : découverte ciblée, contexte borné, lecture des sources, puis arrêt
 de l'expansion lorsque le territoire utile est identifié.
@@ -395,15 +405,21 @@ de l'expansion lorsque le territoire utile est identifié.
 | Mobile `entitlementsRetrieval` | 4 nœuds, 3 relations, 1 651 octets | A confirmé le chemin handler → gateway → action → reducer ; la lecture directe a ensuite révélé l'ancien fallback UI hors de ce trajet |
 | Lot 03 mobile `profileUpdateRequested` | 21 nœuds, 27 relations, 7 362 octets, projection complète | Retrouve précisément listener, optimisme, outbox, rollback/reconciliation et reducer |
 | Lot 03 mobile `accountDeletionRequested` | 21 nœuds, 37 relations, 9 397 octets, projection complète | Retrouve confirmation/view-model, listener, statuts, sign-out et nettoyages Redux ; utile pour contrôler les fuites inter-comptes |
+| Lot 09 Java `ProcessBuilder` / `External` | 2 nœuds, 1 relation | Retrouve exactement `TicketVerificationProcessManager#handle` vers `java.lang.ProcessBuilder` avant correction et a orienté la séparation transaction/worker |
+| Lot 09 Java projection ticket | 3 nœuds, 2 relations | Relie `TicketVerifyAcceptedEventHandler#handle` à `sync:tickets:entity`, puis à la table `tickets` |
+| Lot 09 Java intégration ticket | 3 nœuds, 2 relations | En partant du bean handler, relie l'outbox et le listener SQS au contrat stable `ticket-verification-requested:ticket.verify.accepted:v1` |
 | Recherches initiales `State:coffee`, `Handler:Home` | Aucun résultat | Recherche lexicale des nœuds ; les états peuvent s'appeler `cfState`, les écrans ne sont pas des handlers |
 
 Les premières recherches vides ne signifiaient donc pas que le connecteur était
 en panne. Les résultats sont dans `structuredContent` ; lire seulement le message
 texte d'accusé de réception conduit à des appels répétés inutiles.
 
-Limites : analyse TypeScript/Redux, pas d'adaptateur Java/Spring dans la version
-inspectée ; pas de preuve des autorisations, transactions, SQL, comportement
-runtime ou rendu visuel. `complete: true` signifie complétude de la projection
+L'adaptateur Java livré dans FlowAtlas est désormais utile sur des requêtes
+sémantiques volontairement bornées. Il réduit la recherche initiale sur les
+chaînes outbox/SQS/projection et les frontières de processus local. Il ne prouve
+toutefois pas les autorisations, l'étendue réelle d'une transaction, le SQL,
+la concurrence, le comportement runtime ou le rendu visuel. `complete: true`
+signifie complétude de la projection
 selon les limites de l'outil, pas complétude de la fonctionnalité dans le code.
 Les handlers agrégés peuvent mêler des opérations voisines sans prouver leur
 causalité. Les liens et chemins manquants doivent rester explicitement inconnus.
@@ -423,12 +439,19 @@ projection de 8–16 Ko maximum → sources et tests utiles → recherche compl�
 sur les frontières absentes. Utiliser directement `rg` pour une modification UI
 locale ou du Java. Le MCP conserve des graphes vérifiés en session et peut
 réutiliser jusqu'à quatre projets ; il reste nécessaire de revalider après edits.
-Pour faire évoluer FlowAtlas, les gains les plus concrets seraient : résoudre
-les appels de gateway selon le `kind` d'une commande générique, inclure les
-déclencheurs écran/view-model, distinguer les branches provider et modéliser les
-frontières natives. L'adaptateur Java annoncé complétera surtout l'analyse des
-controllers, handlers, ports/adapters et événements ; transactions et SQL réel
-devront malgré tout rester prouvés par les tests.
+Pour faire évoluer FlowAtlas, les gains les plus concrets restent la résolution
+des appels de gateway selon le `kind` d'une commande générique, l'inclusion des
+déclencheurs écran/view-model, la distinction des branches provider et les
+frontières natives. Côté Java, chercher directement le nom de la classe
+d'événement d'intégration n'a retourné aucun résultat ; chercher le bean handler
+a en revanche révélé le contrat et ses deux extrémités. Après introduction du
+nouveau port `TicketVerificationJobRepository`, la requête externe figée a échoué
+car ses sources de résolution ne contenaient pas encore ce type. Ce comportement
+protège la qualité des preuves mais rend une fixture vite obsolète pendant un
+refactor. Les améliorations les plus utiles seraient donc : meilleure
+découvrabilité par nom de contrat événementiel, diagnostic explicite des types
+de résolution manquants et mécanisme sûr d'extension/invalidation d'une requête
+après édition. Transactions et SQL réel restent prouvés par les tests.
 
 Sources : [README FlowAtlas](/Users/nicolasmaldiney/FlowAtlas/README.md),
 [évaluation antérieure](/Users/nicolasmaldiney/FlowAtlas/docs/evaluations/codex-mcp-exploration.md),
@@ -702,6 +725,17 @@ du compte avec expériences, avatar, médias, caches et sessions réellement pr�
 Les restrictions de blocage/masquage doivent survivre à une relecture depuis le
 cache. Fermer les écarts constatés ; une simple checklist ne constitue pas la preuve.
 
+Première slice locale : la vérification ticket utilise désormais un job durable
+avec lease et version optimiste. L'appel au processus local est hors transaction ;
+intake, claim et completion ont leurs transactions courtes. L'inbox bloque une
+redelivery parallèle active et reste récupérable après échec ou expiration. Un
+échec technique final devient `FAILED`, relançable et distinct d'un refus métier,
+sur le backend, le mobile et Studio. Les preuves sont : 390 tests backend verts,
+dont domaine, worker, architecture, PostgreSQL/Testcontainers et SQS/LocalStack ;
+75 suites/284 tests mobile, TypeScript, lint sans erreur, carte Redux et contrôle
+natif ; 31 fichiers/146 tests Studio, contrat et build OAuth sûr. Cette preuve ne
+couvre pas encore les autres axes du lot ni un environnement déployé.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -746,7 +780,7 @@ simultanées ne doivent pas être additionnées deux fois.
 | 06 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 20, de 20:45 à 22:05 CEST ; temps actif non isolé | Médias privés, avatar, reprise et effacement ; IAM/CORS réel et recette appareil restent ouverts |
 | 07 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 19 min, de 22:05 à 22:24 CEST ; temps actif non isolé | Barre flottante, carte et fiche ; recette appareil/VoiceOver ouverte |
 | 08 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 25 min depuis la clôture 07, incluant inventaire, composition, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Mobile `629933c`/merge `ff3b984` ; hero et bandeau de scroll préservés, recette native et contrôle visuel sur appareil ouverts |
-| 09 | Planifié, non démarré | Non démarré | Preuves de durcissement et recette intégrée |
+| 09 | En cours ; première slice ticket implémentée avec GPT-5.6 Sol High | Fenêtre reprise observée le 12 septembre, temps actif non isolé d'une interruption de session | Worker durable hors transaction, leases job/inbox, échec technique distinct et tests backend/mobile/Studio ; recette native, AWS, legacy et autres contrôles transverses ouverts |
 | 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
 
 Le suivi fonctionne en boucle : **projection → réalisation observée → analyse
@@ -802,6 +836,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 10 — lot 06, clôture locale 2026-09-11 22:05 CEST | Photo d'expérience et avatar sur backend/mobile/Studio, stockage privé, reprise, modération, SSE et effacement | Référence initiale de 2 h 30 à 5 h | Fenêtre observée d'environ 1 h 20 depuis 20:45, sous la fourchette, incluant implémentation, revue de fraîcheur SSE, trois suites complètes, builds et attentes Docker ; temps actif non isolé | Zéro pour l'implémentation locale ; IAM/CORS S3 réel, migration d'environnement et recette appareil/réseau lent restent au durcissement | 0,5 à 1,5 jour concentré pour 07 à 09, puis TestFlight/App Review séparés | Le socle outbox/command status/projections et les adapters Expo ont accéléré la verticale. L'absence de preuve AWS réelle interdit d'extrapoler la vitesse locale au déploiement. Confiance moyenne |
 | Prévision 11 — lot 07, clôture locale 2026-09-11 22:24 CEST | Navigation flottante, sélection carte, itinéraire et hiérarchie de fiche café | 0,5 à 1,5 jour pour une passe UI contenue sans changement de contrat | Fenêtre observée d'environ 19 min depuis la clôture 06, incluant inventaire, implémentation, documentation, TypeScript, lint et deux régressions mobiles complètes ; temps actif non isolé | Zéro pour le code local ; contrôle sur appareils petit/grand iPhone et VoiceOver restent à la recette native | 0,25 à 1 jour concentré pour 08 à 09, puis TestFlight/App Review séparés | Le périmètre a été volontairement borné aux composants et lectures existants : ni refonte du Home, ni nouveau contexte, ni contrat backend. La vitesse ne préjuge pas de la recette native ni du durcissement réseau. Confiance moyenne |
 | Prévision 12 — lot 08, clôture locale 2026-09-11 vers 22:49 CEST | Home : sections articles, cafés, prochaine étape Pass et expériences personnelles | 0,25 à 1 jour pour une composition UI fondée sur les lectures existantes | Fenêtre observée d'environ 25 min depuis 22:24, incluant inventaire, implémentation, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Zéro pour le code local ; contrôle visuel sur appareils et durcissement transverse du lot 09 restent ouverts | 0,25 à 0,75 jour concentré pour le lot 09 local, puis recette native/TestFlight/App Review séparés | Le contrat Pass, les selectors et les projections existantes ont permis une composition sans backend ni Redux write. Le hero éditorial et son bandeau vertical ont été explicitement préservés. La vitesse ne prouve pas le rendu sur appareil. Confiance moyenne |
+| Prévision 13 — lot 09, première slice 2026-09-12 | Vérification ticket durable, inbox concurrente et exposition du statut technique | Référence héritée de 0,25 à 0,75 jour pour le lot 09 local | Fenêtre réelle non exploitable : reprise après interruption de session, validations Docker/build incluses ; temps actif non isolé | Contrôles S3/AWS, migrations/restauration, reprise legacy, recette offline/native, accessibilité et exploitation restent ouverts | 0,5 à 1,5 jour concentré pour terminer les preuves locales du lot 09 ; TestFlight/App Review séparés | La faille transactionnelle a exigé un vrai processus durable et des tests de concurrence, plus large qu'un simple hardening de statut. FlowAtlas Java a accéléré le ciblage, mais ses fixtures doivent évoluer avec le code. Confiance moyenne-faible avant inventaire complet du reste |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
@@ -819,10 +854,11 @@ read-feature/bootstrap ; Studio command-workflow/projection-sync/security.
 Préserver les modifications locales existantes ; pas de commit ou PR global
 mélangeant des décisions indépendantes.
 
-FlowAtlas sert à cibler les parcours Redux mobile/Studio : projection courte,
-lecture des sources utiles, revalidation après modification. Ses limites sur
-callbacks, middleware et Java imposent une vérification directe du code et des
-tests pour autorisation, transactions et concurrence. Ne pas refaire un audit
+FlowAtlas sert à cibler les parcours Redux mobile/Studio et désormais les slices
+Java explicitement configurées : projection courte, lecture des sources utiles,
+revalidation après modification. Ses limites sur callbacks, middleware,
+résolution Java, transactions et SQL imposent une vérification directe du code
+et des tests pour autorisation, transactions et concurrence. Ne pas refaire un audit
 global à chaque slice et ne pas promettre de pourcentage d'économie non mesuré.
 
 Retour lot 04 : FlowAtlas a reconstitué le parcours mobile
@@ -868,6 +904,15 @@ rejoint le retour des lots précédents : la prochaine évolution la plus rentab
 est de résoudre les appels d'interfaces/factories injectées et de les classer
 comme frontières externes. La future analyse Java devra en priorité relier
 controller, use case, transaction, aggregate, outbox, SQS/inbox et projection.
+
+Retour lot 09 Java : les trois requêtes ciblées ont retrouvé la frontière
+`ProcessBuilder`, la projection ticket et la paire producteur/consommateur SQS.
+Cela a évité une exploration Java globale et a directement confirmé le territoire
+à corriger. Le graphe seul n'a pas prouvé que la transaction englobait l'appel :
+l'annotation, le code et un test d'absence de transaction active restent les
+preuves. La requête externe est devenue invalide après ajout du port durable,
+ce qui donne un retour concret à FlowAtlas : conserver le scope explicite, mais
+signaler et faciliter la mise à jour des sources de résolution lors d'un refactor.
 
 ### Modèles Codex et niveau d'exigence
 
@@ -950,7 +995,9 @@ pas `PENDING`, SSE ou WebSocket comme état métier. Kafka et Redis ne sont pas
 introduits. Toute solution qui exige une perversion de ces règles est arrêtée,
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
-**État actuel : lots 00 à 08 implémentés, testés et intégrés localement. Les lots
+**État actuel : lots 00 à 08 implémentés, testés et intégrés localement. Le lot
+09 est en cours avec GPT-5.6 Sol High ; sa première slice ticket est implémentée
+et testée mais pas encore déployée. Les lots
 07 et 08 ont utilisé GPT-5.6 Terra Medium, conformément au choix de modèle :
 changements UI bornés, contrats et navigation métier figés. Le lot 08 compose
 les lectures réelles sous le grand visuel existant, sans `homeContext` ni données

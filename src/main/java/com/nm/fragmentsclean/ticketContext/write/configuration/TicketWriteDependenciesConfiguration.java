@@ -11,6 +11,7 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketAc
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketSubmissionFingerprintRegistry;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationJobRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminDeleteTicketCommandHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminUpdateTicketCommandHandler;
@@ -70,11 +71,10 @@ public class TicketWriteDependenciesConfiguration {
   @Bean
   TicketVerificationProcessManager ticketVerificationProcessManager(
       TicketRepository ticketRepository,
-      TicketVerificationProvider ticketVerificationProvider,
-      DomainEventPublisher domainEventPublisher,
+      TicketVerificationJobRepository ticketVerificationJobs,
       DateTimeProvider dateTimeProvider) {
     return new TicketVerificationProcessManager(
-        ticketRepository, ticketVerificationProvider, domainEventPublisher, dateTimeProvider);
+        ticketRepository, ticketVerificationJobs, dateTimeProvider);
   }
 
   @Bean

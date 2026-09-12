@@ -1,152 +1,38 @@
 package com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.event.EventHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationJobRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
 import jakarta.transaction.Transactional;
-
-import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
-@Transactional
+/** Persists the intent; the scheduled worker owns external execution and durable retries. */
 public class TicketVerificationProcessManager implements EventHandler<TicketVerifyAcceptedEvent> {
+    private final TicketRepository tickets;
+    private final TicketVerificationJobRepository jobs;
+    private final DateTimeProvider clock;
 
-	private final TicketRepository ticketRepository;
-	private final TicketVerificationProvider provider;
-	private final DomainEventPublisher eventPublisher;
-	private final DateTimeProvider dateTimeProvider;
+    public TicketVerificationProcessManager(TicketRepository tickets, TicketVerificationJobRepository jobs,
+            DateTimeProvider clock) {
+        this.tickets = tickets;
+        this.jobs = jobs;
+        this.clock = clock;
+    }
 
-	public TicketVerificationProcessManager(
-			TicketRepository ticketRepository,
-			TicketVerificationProvider provider,
-			DomainEventPublisher eventPublisher,
-			DateTimeProvider dateTimeProvider) {
-		this.ticketRepository = ticketRepository;
-		this.provider = provider;
-		this.eventPublisher = eventPublisher;
-		this.dateTimeProvider = dateTimeProvider;
-	}
-
-	public void handle(TicketVerifyAcceptedEvent evt) {
-		var now = dateTimeProvider.now();
-
-		var ticket = ticketRepository.byId(evt.ticketId())
-				.orElseThrow(() -> new IllegalStateException("Ticket not found: " + evt.ticketId()));
-
-		if (!Objects.equals(ticket.toSnapshot().userId(), evt.userId())) {
-			throw new IllegalStateException("Ticket userId mismatch");
-		}
-
-		var snap = ticket.toSnapshot();
-        if (snap.status() == Ticket.TicketStatus.CONFIRMED || snap.status() == Ticket.TicketStatus.REJECTED || snap.status() == Ticket.TicketStatus.DELETED) {
-			return;
-		}
-
-		var result = provider.verify(evt.ocrText(), evt.imageRef());
-
-		TicketVerificationCompletedEvent completed = switch (result) {
-
-			case TicketVerificationProvider.Approved ok -> {
-				var approved = new Ticket.ConfirmResult(
-						ok.amountCents(),
-						ok.currency(),
-						ok.ticketDate(),
-						ok.merchantName(),
-						ok.merchantAddress(),
-						ok.paymentMethod(),
-						toDomainLineItems(ok.lineItems()));
-
-				ticket.confirm(approved, now);
-				ticketRepository.save(ticket);
-
-				yield new TicketVerificationCompletedEvent(
-						UUID.randomUUID(),
-						evt.commandId(),
-						evt.ticketId(),
-						evt.userId(),
-						TicketVerificationCompletedEvent.Outcome.APPROVED,
-						ticket.toSnapshot().version(),
-						now,
-						evt.clientAt(),
-						new TicketVerificationCompletedEvent.Approved(
-								ok.amountCents(),
-								ok.currency(),
-								ok.ticketDate(),
-								ok.merchantName(),
-								ok.merchantAddress(),
-								ok.paymentMethod(),
-								toDomainLineItems(ok.lineItems())),
-						null,
-						"ticketEngine",
-						ok.providerTraceId());
-			}
-
-			case TicketVerificationProvider.Rejected rej -> {
-				ticket.reject(rej.reasonCode(), now);
-				ticketRepository.save(ticket);
-
-				yield new TicketVerificationCompletedEvent(
-						UUID.randomUUID(),
-						evt.commandId(),
-						evt.ticketId(),
-						evt.userId(),
-						TicketVerificationCompletedEvent.Outcome.REJECTED,
-						ticket.toSnapshot().version(),
-						now,
-						evt.clientAt(),
-						null,
-						new TicketVerificationCompletedEvent.Rejected(rej.reasonCode(),
-								rej.message()),
-						"ticketEngine",
-						rej.providerTraceId());
-			}
-
-			case TicketVerificationProvider.FailedRetryable fail -> {
-				throw new TicketVerificationRetryableException(
-						"ticket verification retryable failure for ticketId=" + evt.ticketId()
-								+ " traceId=" + fail.providerTraceId(),
-						fail);
-			}
-
-			case TicketVerificationProvider.FailedFinal fail -> {
-				yield new TicketVerificationCompletedEvent(
-						UUID.randomUUID(),
-						evt.commandId(),
-						evt.ticketId(),
-						evt.userId(),
-						TicketVerificationCompletedEvent.Outcome.FAILED_FINAL,
-						ticket.toSnapshot().version(),
-						now,
-						evt.clientAt(),
-						null,
-						new TicketVerificationCompletedEvent.Rejected("FAILED_FINAL",
-								fail.message()),
-						"ticketEngine",
-						fail.providerTraceId());
-			}
-		};
-
-		eventPublisher.publish(completed);
-	}
-
-	private List<Ticket.TicketLineItem> toDomainLineItems(List<TicketVerificationProvider.LineItem> items) {
-		if (items == null) {
-			return null;
-		}
-		return items.stream()
-				.map(i -> new Ticket.TicketLineItem(i.label(), i.quantity(), i.amountCents()))
-				.toList();
-	}
-
-	public static class TicketVerificationRetryableException extends RuntimeException {
-		public TicketVerificationRetryableException(String message, TicketVerificationProvider.FailedRetryable failure) {
-			super(message);
-		}
-	}
+    @Override
+    @Transactional
+    public void handle(TicketVerifyAcceptedEvent event) {
+        if (jobs.byId(event.eventId()).isPresent()) return;
+        var ticket = tickets.byId(event.ticketId())
+                .orElseThrow(() -> new IllegalStateException("Ticket not found: " + event.ticketId()));
+        var snapshot = ticket.toSnapshot();
+        if (!Objects.equals(snapshot.userId(), event.userId())) throw new IllegalStateException("Ticket userId mismatch");
+        if (snapshot.status() == Ticket.TicketStatus.CONFIRMED || snapshot.status() == Ticket.TicketStatus.REJECTED
+                || snapshot.status() == Ticket.TicketStatus.DELETED) return;
+        jobs.save(TicketVerificationJob.request(event.eventId(), event.commandId(), event.ticketId(), event.userId(),
+                event.ocrText(), event.imageRef(), event.clientAt(), clock.now()));
+    }
 }

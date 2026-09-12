@@ -205,6 +205,19 @@ public class Ticket extends AggregateRoot {
         return true;
     }
 
+    /** Records a technical terminal attempt without turning it into a business rejection. */
+    public boolean markVerificationFailed(String reason, Instant serverNow) {
+        if (reason == null || reason.isBlank()) throw new IllegalArgumentException("Failure reason is required");
+        if (this.status == TicketStatus.CONFIRMED || this.status == TicketStatus.REJECTED || this.status == TicketStatus.DELETED) {
+            return false;
+        }
+        if (this.status == TicketStatus.FAILED && reason.equals(this.rejectionReason)) return false;
+        this.status = TicketStatus.FAILED;
+        this.rejectionReason = reason;
+        touch(serverNow);
+        return true;
+    }
+
     public void adminUpdate(UUID commandId, UUID actorUserId, AdminUpdate update, Instant serverNow) {
         this.ocrText = update.ocrText(); this.imageRef = update.imageRef();
         this.amountCents = update.amountCents(); this.currency = update.currency();
@@ -301,6 +314,7 @@ public class Ticket extends AggregateRoot {
     public enum TicketStatus {
         CAPTURED,
         ANALYZING,
+        FAILED,
         CONFIRMED,
         REJECTED,
         DELETED

@@ -333,6 +333,7 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
     event_version   INTEGER      NOT NULL,
     received_at     TIMESTAMPTZ  NOT NULL,
     processed_at    TIMESTAMPTZ,
+    lease_until     TIMESTAMPTZ,
     status          VARCHAR(32)  NOT NULL,
     error_message   TEXT,
     UNIQUE(destination, event_id)
@@ -340,6 +341,9 @@ CREATE TABLE IF NOT EXISTS inbox_messages (
 
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_destination_status
     ON inbox_messages (destination, status);
+ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_inbox_messages_claim_lease
+    ON inbox_messages (destination, status, lease_until);
 
 CREATE TABLE IF NOT EXISTS projection_sync_events (
     id            BIGSERIAL PRIMARY KEY,
@@ -733,6 +737,28 @@ create table if not exists ticket_submission_fingerprints (
     user_id uuid not null,
     created_at timestamptz not null
 );
+
+create table if not exists ticket_verification_jobs (
+    job_id uuid primary key,
+    command_id uuid not null,
+    ticket_id uuid not null,
+    user_id uuid not null,
+    ocr_text text null,
+    image_ref text null,
+    client_at timestamptz null,
+    state varchar(32) not null,
+    attempts integer not null default 0,
+    lease_owner varchar(160) null,
+    lease_until timestamptz null,
+    next_attempt_at timestamptz not null,
+    last_failure text null,
+    version bigint not null,
+    created_at timestamptz not null,
+    updated_at timestamptz not null
+);
+create unique index if not exists uq_ticket_verification_job_command on ticket_verification_jobs(command_id);
+create index if not exists idx_ticket_verification_job_due on ticket_verification_jobs(state,next_attempt_at,lease_until);
+create index if not exists idx_ticket_verification_job_user on ticket_verification_jobs(user_id);
 insert into ticket_submission_fingerprints(fingerprint,ticket_id,user_id,created_at)
 select fingerprint,ticket_id,user_id,created_at from (
     select 'v1:' || md5(lower(regexp_replace(btrim(ocr_text), '\s+', ' ', 'g'))) fingerprint,

@@ -13,6 +13,7 @@ public final class JdbcTicketAccountDataEraser implements TicketAccountDataErase
 
   @Override
   public void erase(UUID userId) {
+    jdbc.update("DELETE FROM ticket_verification_jobs WHERE user_id = ?", userId);
     jdbc.update("DELETE FROM ticket_submission_fingerprints WHERE user_id = ?", userId);
     jdbc.update("DELETE FROM ticket_status_projection WHERE user_id = ?", userId);
     jdbc.update("DELETE FROM user_entitlements_projection WHERE user_id = ?", userId);

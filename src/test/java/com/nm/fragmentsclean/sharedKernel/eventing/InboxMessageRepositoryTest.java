@@ -16,18 +16,18 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEven
 class InboxMessageRepositoryTest {
 	@Test
 	void processed_duplicate_is_suppressed() {
-		var jdbc = new DuplicateInboxJdbcTemplate("PROCESSED");
+		var jdbc = new DuplicateInboxJdbcTemplate("PROCESSED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
 		boolean claimed = repository.claim(envelope());
 
 		assertThat(claimed).isFalse();
-		assertThat(jdbc.resetCalls).isZero();
+		assertThat(jdbc.resetCalls).isEqualTo(1);
 	}
 
 	@Test
 	void failed_duplicate_is_claimed_again_for_redelivery() {
-		var jdbc = new DuplicateInboxJdbcTemplate("FAILED");
+		var jdbc = new DuplicateInboxJdbcTemplate("FAILED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
 		boolean claimed = repository.claim(envelope());
@@ -38,14 +38,20 @@ class InboxMessageRepositoryTest {
 	}
 
 	@Test
-	void received_duplicate_is_claimed_again_after_visibility_timeout_redelivery() {
-		var jdbc = new DuplicateInboxJdbcTemplate("RECEIVED");
+	void active_received_duplicate_is_suppressed() {
+		var jdbc = new DuplicateInboxJdbcTemplate("RECEIVED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
 		boolean claimed = repository.claim(envelope());
 
-		assertThat(claimed).isTrue();
+		assertThat(claimed).isFalse();
 		assertThat(jdbc.resetCalls).isEqualTo(1);
+	}
+
+	@Test
+	void received_duplicate_is_claimed_again_after_lease_expiry() {
+		var jdbc = new DuplicateInboxJdbcTemplate("RECEIVED", true);
+		assertThat(new InboxMessageRepository(jdbc).claim(envelope())).isTrue();
 	}
 
 	private static IntegrationEventEnvelope envelope() {
@@ -64,11 +70,13 @@ class InboxMessageRepositoryTest {
 
 	private static class DuplicateInboxJdbcTemplate extends JdbcTemplate {
 		private final String existingStatus;
+		private final boolean expired;
 		private final List<String> sqlCalls = new ArrayList<>();
 		private int resetCalls;
 
-		private DuplicateInboxJdbcTemplate(String existingStatus) {
+		private DuplicateInboxJdbcTemplate(String existingStatus, boolean expired) {
 			this.existingStatus = existingStatus;
+			this.expired = expired;
 		}
 
 		@Override
@@ -79,14 +87,9 @@ class InboxMessageRepositoryTest {
 			}
 			if (sql.contains("SET status = 'RECEIVED'")) {
 				resetCalls++;
+				return "FAILED".equals(existingStatus) || expired ? 1 : 0;
 			}
 			return 1;
-		}
-
-		@Override
-		public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
-			sqlCalls.add(sql);
-			return requiredType.cast(existingStatus);
 		}
 	}
 }
