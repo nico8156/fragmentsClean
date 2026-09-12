@@ -1,5 +1,9 @@
 # AWS / infra — préflight de release, 12 septembre 2026
 
+**État le plus récent :** [files, alertes et IAM appliqués](aws-applied-2026-09-12.md)
+avec accord ; deux stacks `UPDATE_COMPLETE`, instances préservées. Aucun
+déploiement applicatif ni SQL. Les observations ci-dessous restent historiques.
+
 **Dernier résultat :** deux [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
 préservent compute/réseau et rôle GitHub legacy ; aucune exécution autorisée ici.
 

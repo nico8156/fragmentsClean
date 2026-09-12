@@ -1,5 +1,8 @@
 # Revue AWS et chiffrage — 12 septembre 2026
 
+**Suivi :** les candidats corrigés ont été [appliqués avec accord](aws-applied-2026-09-12.md).
+Le chiffrage ci-dessous reste une estimation, pas une facture AWS mesurée.
+
 **Dernier résultat :** les [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
 préservent désormais les serveurs, disques, réseau et rôle GitHub legacy. Aucune
 exécution ; le chiffrage de ce document reste applicable.

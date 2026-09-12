@@ -27,15 +27,15 @@ Commits backend : `f39ee74` (médias), `9bdf9fa` (Spring/profil), `726c254`
 
 Le [préflight AWS du lot 10](aws-release-preflight-2026-09-12.md) a commencé :
 inventaire réel en lecture seule, corrections infra locales et CI complète
-préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
-la restauration/upgrade est désormais prouvée sur copie locale réelle et
-le déploiement journalisé est préparé localement. Son exécution réelle reste
-à valider. Les [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
-ne prévoient plus de remplacement ni changement EC2/EBS/EIP ; les premières
-prévisualisations dangereuses restent refusées. Seuls les change sets ont été
-créés dans AWS, jamais exécutés. Aucun push, changement de ressource applicative
-ou déploiement. L'avertissement de terminaison Surefire est également observé
-sur le dernier run de 515 tests verts.
+préparées. Les [files/alertes/IAM sont désormais appliqués](aws-applied-2026-09-12.md)
+avec accord : deux stacks `UPDATE_COMPLETE`, instances et disques préservés.
+Un événement EIP legacy non annoncé par l'aperçu a été vérifié et documenté.
+Confirmation email SNS encore attendue ; paramètres Apple/chiffrement à fournir.
+La restauration/upgrade est prouvée sur copie locale réelle et le déploiement
+journalisé est préparé localement, mais ni SQL staging ni application déployés.
+Aucun push. La recette fonctionnelle des nouveaux parcours reste ouverte.
+L'avertissement de terminaison Surefire reste observé sur le dernier run de
+515 tests verts, non réexécuté pour cette tranche d'exploitation AWS.
 
 ## Conditions de passage
 

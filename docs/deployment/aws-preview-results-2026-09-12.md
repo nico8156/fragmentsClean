@@ -1,5 +1,10 @@
 # Prévisualisations AWS — refus d'exécution, 12 septembre 2026
 
+**Clôture de ces objets :** après application des candidats corrigés, les listes
+de change sets AWS sont vides. Les prévisualisations dangereuses ci-dessous n'ont
+jamais été exécutées et ne sont plus disponibles ; voir le
+[compte rendu d'application](aws-applied-2026-09-12.md).
+
 **Suivi :** les [candidats corrigés](aws-preserved-preview-2026-09-12.md) ne
 prévoient plus de remplacement ni changement EC2/EBS/EIP. Les deux prévisualisations
 historiques ci-dessous restent refusées et ne doivent pas être exécutées.
