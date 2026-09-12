@@ -1,4 +1,5 @@
-BEGIN;
+-- Transaction boundary is owned by app-store-2026-09.psql.
+-- For standalone use, invoke psql with --single-transaction and ON_ERROR_STOP=1.
 
 CREATE TABLE IF NOT EXISTS experience_media (
     media_id UUID PRIMARY KEY, experience_id UUID NOT NULL, coffee_id UUID NOT NULL, user_id UUID,
@@ -36,5 +37,3 @@ CREATE TABLE IF NOT EXISTS user_avatar_media (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_avatar_media_available ON user_avatar_media(user_id) WHERE status='AVAILABLE';
 CREATE INDEX IF NOT EXISTS ix_user_avatar_media_cleanup ON user_avatar_media(status,updated_at);
-
-COMMIT;

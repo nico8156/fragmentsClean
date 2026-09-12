@@ -1,4 +1,5 @@
-BEGIN;
+-- Transaction boundary is owned by app-store-2026-09.psql.
+-- For standalone use, invoke psql with --single-transaction and ON_ERROR_STOP=1.
 
 CREATE TABLE IF NOT EXISTS ticket_verification_jobs (
     job_id uuid PRIMARY KEY,
@@ -29,5 +30,3 @@ CREATE INDEX IF NOT EXISTS idx_ticket_verification_job_user
 ALTER TABLE inbox_messages ADD COLUMN IF NOT EXISTS lease_until timestamptz NULL;
 CREATE INDEX IF NOT EXISTS idx_inbox_messages_claim_lease
     ON inbox_messages(destination,status,lease_until);
-
-COMMIT;

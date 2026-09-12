@@ -1,0 +1,38 @@
+-- Explicit upgrade for the schema observed on staging at backend 18ae517.
+-- Candidate only: execute on an isolated restore before operator-approved staging use.
+-- Run with psql -X -v ON_ERROR_STOP=1 -f app-store-2026-09.psql.
+-- All referenced files must come from the same reviewed immutable Git revision.
+-- Do not substitute schema.sql, glob release files, or run this at application startup.
+\set ON_ERROR_STOP on
+BEGIN;
+SET LOCAL search_path TO public, pg_catalog;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '5min';
+SELECT pg_advisory_xact_lock(20260912, 10);
+
+-- Fail closed on a fresh/wrong database before any DDL or data backfill.
+DO $preflight$
+DECLARE required_table text;
+BEGIN
+    FOREACH required_table IN ARRAY ARRAY[
+        'auth_users', 'app_users', 'coffees', 'command_status', 'outbox_events',
+        'inbox_messages', 'tickets', 'ticket_status_projection',
+        'social_comments_projection', 'social_likes_projection'
+    ] LOOP
+        IF to_regclass('public.' || required_table) IS NULL THEN
+            RAISE EXCEPTION 'Unsupported release baseline: missing %', required_table;
+        END IF;
+    END LOOP;
+END;
+$preflight$;
+
+\ir 2026-09-11-command-receipts.sql
+\ir 2026-09-11-account-lifecycle.sql
+\ir 2026-09-11-pass-policy-v2.sql
+\ir 2026-09-11-ticket-history.sql
+\ir 2026-09-11-social-moderation.sql
+\ir 2026-09-11-experience-text.sql
+\ir 2026-09-11-private-media.sql
+\ir 2026-09-12-ticket-verification-jobs.sql
+
+COMMIT;
