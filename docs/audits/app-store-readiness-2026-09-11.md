@@ -1067,6 +1067,28 @@ Templates et tests : commit local `29d714e`.
 Les candidats peuvent être présentés pour accord d'application des ressources,
 pas pour déploiement applicatif implicite. Aucun push ni exécution AWS.
 
+### Lot 10C — application AWS autorisée, Astra High, 12 septembre
+
+Les [deux candidats corrigés ont été exécutés](../deployment/aws-applied-2026-09-12.md)
+après accord explicite : stack Fragments terminé à **14:34:34 CEST**, plateforme
+à **14:37:29 CEST**, tous deux `UPDATE_COMPLETE`. Huit destinations SQS et leurs
+DLQ vérifiées, 18 alarmes routées vers SNS, policy réelle conforme au candidat et
+droits Anchor/KMS conservés. Santé Fragments `UP` avant/après ; instances, images,
+dates de lancement et volumes inchangés. Aucun remplacement de serveur.
+
+Un événement `UPDATE` de l'EIP legacy, absent de l'aperçu, a interrompu le passage
+à la seconde étape pour vérification. Adresse et cible conservées ; aucune
+preuve d'un changement des instances/volumes. L'identifiant d'association n'avait
+pas été capturé avant : ne pas affirmer l'absence de réassociation transitoire.
+Cet écart est documenté, pas masqué par le succès global.
+
+SNS reste en attente de confirmation utilisateur. Deux alarmes attendues : cinq
+messages historiques de la shared DLQ et métrique éditoriale absente avant nouveau
+déploiement. Aucun message lu/purgé/rejoué. Les listes de change sets sont vides
+après mise à jour, sans suppression manuelle. Aucun push, SQL, déploiement
+applicatif, changement du bucket ou secret SSM. Régression précédente de 515 tests
+conservée ; vérifications AWS réelles, aucune suite métier relancée.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1249,6 +1271,14 @@ jour actif** pour application, contrôles et migration, conditionné aux accords
 paramètres Apple/SSM ; ne pas confondre les 2 min 49 de tests avec la durée totale
 de la tranche. Recette appareil/TestFlight et marges de correction restent séparées.
 
+Prévision 26 — AWS appliqué du 12 septembre : la mise à jour Fragments a duré
+environ **2 min 36**, la plateforme **24 secondes**, hors préparation, accord et
+contrôles. L'intervalle entre les opérations inclut l'analyse EIP inattendue.
+Le volet création infra est terminé ; prévoir désormais **0,25 à 0,5 jour actif**
+pour configuration/déploiement journalisé/migration, seulement une fois les
+paramètres Apple disponibles et la maintenance autorisée. Ce n'est ni une durée
+garantie ni le délai TestFlight : recette appareil et corrections restent séparées.
+
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
 progressivement si l'ensemble converge plus vite ou plus lentement que prévu,
@@ -1420,13 +1450,13 @@ documentée et remplacée par une alternative conforme avant de poursuivre.
 
 **État actuel : lots 00 à 08 implémentés, testés et intégrés localement. Le lot
 09 a reçu la revue corrective Astra High après l'implémentation Sol High. Le lot
-10 est préparé localement avec Astra High mais reste non clos, sans build signé
-ni campagne TestFlight. Aucun de ces changements n'est déployé. Les lots
+10 reste non clos, sans build signé ni campagne TestFlight. Son volet AWS
+files/alertes/IAM est désormais appliqué avec accord, sans remplacement ; les
+changements applicatifs restent locaux, sans déploiement. Les lots
 07 et 08 ont utilisé GPT-5.6 Terra Medium, conformément au choix de modèle :
 changements UI bornés, contrats et navigation métier figés. Le lot 08 compose
 les lectures réelles sous le grand visuel existant, sans `homeContext` ni données
 fictives, et préserve strictement le hero et l'apparition du bandeau au scroll.
-Les
-configurations Apple/SSM et IAM/CORS S3 réelles, la recette native petit/grand
-iPhone et VoiceOver, les migrations d'environnement et tout déploiement restent
-explicitement ouverts.**
+La confirmation SNS, les configurations Apple/SSM, la recette effective IAM/CORS
+S3 et SQS, la recette native petit/grand iPhone et VoiceOver, les migrations
+d'environnement et le déploiement applicatif restent explicitement ouverts.**

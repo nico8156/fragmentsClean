@@ -67,6 +67,8 @@ substitute for a tested PostgreSQL backup/restore.
 
 ## Completed runtime work
 
+- [Release messaging/alarms/IAM applied on 12 September](../deployment/aws-applied-2026-09-12.md),
+  both stacks `UPDATE_COMPLETE`, existing instances preserved;
 - Docker and isolated Compose runtimes are active;
 - the shared data volume is mounted;
 - platform Caddy owns ingress;
@@ -75,7 +77,7 @@ substitute for a tested PostgreSQL backup/restore.
 
 ## Remaining work
 
-- deploy and confirm queue/DLQ alarms and operator SNS subscription;
+- confirm the operator SNS email subscription and prove notification delivery;
 - validate the journaled deployment and its locking on the actual host (the
   approved local restore drill and implementation are already documented);
 - verify Anchor OIDC/IAM ownership in the Anchor repository;

@@ -1,5 +1,10 @@
 # Candidats AWS corrigés — serveurs préservés, 12 septembre 2026
 
+**Suivi : appliqués après accord explicite**, les deux stacks sont
+`UPDATE_COMPLETE`. Voir le [compte rendu réel](aws-applied-2026-09-12.md), y compris
+l'événement EIP legacy vérifié et la confirmation SNS encore attendue.
+Le texte ci-dessous conserve la preuve de préparation avant exécution.
+
 Lot 10C, Astra High. Préparation et deux nouvelles prévisualisations autorisées,
 **aucune exécution**. Ce dossier remplace les candidats refusés de la
 [première prévisualisation](aws-preview-results-2026-09-12.md).

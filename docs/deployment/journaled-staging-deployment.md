@@ -1,5 +1,9 @@
 # Déploiement staging journalisé — préparation locale, 12 septembre 2026
 
+**Infra maintenant appliquée :** [compte rendu AWS](aws-applied-2026-09-12.md).
+Les files/alertes/IAM sont en place ; le déploiement applicatif journalisé décrit
+ici n'a toujours pas été exécuté. Configuration Apple/SSM et maintenance à valider.
+
 **Dernier résultat AWS :** les [candidats corrigés](aws-preserved-preview-2026-09-12.md)
 passent les critères de prévisualisation sans remplacement ou changement EC2/EBS/EIP.
 Ils restent non exécutés, soumis à accord distinct.
