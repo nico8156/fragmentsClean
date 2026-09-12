@@ -1,5 +1,10 @@
 # Revue AWS et chiffrage — 12 septembre 2026
 
+**Complément après autorisation :** les deux prévisualisations ont été créées,
+sans exécution. Elles prévoient le remplacement des deux instances EC2 et sont
+refusées ; voir les [résultats détaillés](aws-preview-results-2026-09-12.md).
+Le texte ci-dessous conserve le cadrage antérieur à leur création.
+
 Lot 10C, Astra High. Préparation uniquement : lectures AWS et validation des
 templates, sans création de change set, abonnement SNS, ressource ou paramètre.
 Aucun push, déploiement, arrêt de service ou SQL sur staging.
