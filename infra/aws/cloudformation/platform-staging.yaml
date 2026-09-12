@@ -35,6 +35,10 @@ Parameters:
   UbuntuAmiParameter:
     Type: String
     Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+    Description: Legacy parameter retained for stack compatibility; no longer used to resolve ImageId.
+  InstanceImageId:
+    Type: AWS::EC2::Image::Id
+    Description: Explicit approved ARM64 AMI. For an existing stack, supply the current instance ImageId; OS upgrades require a separate reviewed change set.
   AnchorEcrRepositoryArns:
     Type: CommaDelimitedList
     Description: Existing Anchor backend and web ECR repository ARNs.
@@ -168,7 +172,7 @@ Resources:
   PlatformInstance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Sub '{{resolve:ssm:${UbuntuAmiParameter}}}'
+      ImageId: !Ref InstanceImageId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref PlatformInstanceProfile
       KeyName: !Ref KeyPairName
