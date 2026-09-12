@@ -454,6 +454,13 @@ découvrabilité par nom de contrat événementiel, diagnostic explicite des typ
 de résolution manquants et mécanisme sûr d'extension/invalidation d'une requête
 après édition. Transactions et SQL réel restent prouvés par les tests.
 
+La requête d'intégration relancée après la refonte reste stable et exacte sur la
+frontière outbox/SQS (3 nœuds, 2 relations), mais s'arrête au bean qui reçoit le
+process manager. Elle ne relie pas encore l'injection vers le repository de job
+ni le worker `@Scheduled`. La prochaine amélioration Java la plus rentable est
+donc la résolution des dépendances injectées et des déclencheurs planifiés, avec
+une distinction nette entre orchestration applicative et appel externe.
+
 Sources : [README FlowAtlas](/Users/nicolasmaldiney/FlowAtlas/README.md),
 [évaluation antérieure](/Users/nicolasmaldiney/FlowAtlas/docs/evaluations/codex-mcp-exploration.md),
 [composition MCP](/Users/nicolasmaldiney/FlowAtlas/src/mcp.ts).
@@ -764,6 +771,17 @@ cache, imposée ici par le sandbox). Aucun template CloudFormation n'a été env
 au service de validation : cette vérification réseau a été refusée afin de ne pas
 transmettre le contenu local. Aucun changement AWS n'a été appliqué.
 
+Troisième point en cours : le processus durable ticket expose désormais un état
+de santé propre à son contexte et trois métriques pour le travail prêt, en retard
+et définitivement échoué. L'état n'est dégradé que si une tâche est réellement
+ancienne ou terminale ; une tâche récente simplement prête reste saine. Le
+runbook interdit toute suppression d'inbox ou édition directe des jobs et route
+la reprise terminale vers l'intention authentifiée de Studio.
+La preuve associe tests de composition Spring, logique pure, requêtes PostgreSQL
+réelles et régression complète : 399 tests backend verts, sans échec ni test
+ignoré. Un échec historique suivi d'un job réussi ne maintient pas artificiellement
+l'état dégradé.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -866,6 +884,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 12 — lot 08, clôture locale 2026-09-11 vers 22:49 CEST | Home : sections articles, cafés, prochaine étape Pass et expériences personnelles | 0,25 à 1 jour pour une composition UI fondée sur les lectures existantes | Fenêtre observée d'environ 25 min depuis 22:24, incluant inventaire, implémentation, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Zéro pour le code local ; contrôle visuel sur appareils et durcissement transverse du lot 09 restent ouverts | 0,25 à 0,75 jour concentré pour le lot 09 local, puis recette native/TestFlight/App Review séparés | Le contrat Pass, les selectors et les projections existantes ont permis une composition sans backend ni Redux write. Le hero éditorial et son bandeau vertical ont été explicitement préservés. La vitesse ne prouve pas le rendu sur appareil. Confiance moyenne |
 | Prévision 13 — lot 09, première slice 2026-09-12 | Vérification ticket durable, inbox concurrente et exposition du statut technique | Référence héritée de 0,25 à 0,75 jour pour le lot 09 local | Fenêtre réelle non exploitable : reprise après interruption de session, validations Docker/build incluses ; temps actif non isolé | Contrôles S3/AWS, migrations/restauration, reprise legacy, recette offline/native, accessibilité et exploitation restent ouverts | 0,5 à 1,5 jour concentré pour terminer les preuves locales du lot 09 ; TestFlight/App Review séparés | La faille transactionnelle a exigé un vrai processus durable et des tests de concurrence, plus large qu'un simple hardening de statut. FlowAtlas Java a accéléré le ciblage, mais ses fixtures doivent évoluer avec le code. Confiance moyenne-faible avant inventaire complet du reste |
 | Prévision 14 — lot 09, deuxième slice 2026-09-12 | Cache Experience par compte, contrôle AWS en lecture seule, IAM local minimal et rate limits | Référence précédente de 0,5 à 1,5 jour local | Fenêtre interrompue puis reprise ; temps actif non isolable. Deux suites complètes et contrôles statiques inclus | Observabilité du worker, preuve cleanup/restauration, accessibilité/performance et recette native restent à examiner ; déploiement séparé | 0,25 à 1 jour concentré pour les dernières preuves locales ; TestFlight/App Review séparés | Le code local a convergé vite, mais AWS déployé, appareil réel et opérations irréversibles ne peuvent pas être simulés. FlowAtlas Redux a révélé l'omission de persistance ; la requête Java figée s'est périmée après refactor. Confiance moyenne |
+| Prévision 15 — lot 09, troisième slice 2026-09-12 | Santé et métriques du worker durable ticket | Référence précédente de 0,25 à 1 jour local | Fenêtre incluse dans la reprise, avec tests unitaires, PostgreSQL et suite complète ; temps actif non isolé | Preuves cleanup/restauration, revue accessibilité/performance et recette native ; déploiement séparé | 0,25 à 0,75 jour concentré pour clore le vérifiable localement ; TestFlight/App Review séparés | Le health check respecte l'audit durable et redevient sain après une relance réussie. FlowAtlas borne bien la frontière SQS mais ne suit pas encore injection et `@Scheduled`. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse

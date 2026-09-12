@@ -287,6 +287,33 @@ memory because release staging is a single backend node. Before horizontal
 scaling, move enforcement to a shared edge/gateway facility or another explicitly
 approved technical mechanism; do not introduce Redis implicitly.
 
+### Ticket verification worker
+
+`ticketVerificationHealth` reports `DEGRADED` when a durable verification job
+has exhausted its retries without a later successful verification of the same
+ticket, or has remained claimable longer than
+`TICKETVERIFY_HEALTH_STALE_AFTER_SECONDS` (300 seconds in staging). Monitor:
+
+- `fragments.ticket.verification.jobs.ready`;
+- `fragments.ticket.verification.jobs.stale`;
+- `fragments.ticket.verification.jobs.failed.final`.
+
+Inspect operational metadata without selecting OCR text or image references:
+
+```sql
+SELECT job_id, command_id, ticket_id, state, attempts,
+       lease_owner, lease_until, next_attempt_at, last_failure, updated_at
+FROM ticket_verification_jobs
+WHERE state <> 'COMPLETED'
+ORDER BY updated_at ASC;
+```
+
+An expired `RUNNING` lease and a due `RETRY_PENDING` job are recovered by the
+worker automatically. Do not edit those rows or delete inbox history as a retry
+mechanism. For `FAILED_FINAL`, inspect the sanitized failure and the provider
+runtime first, then use the existing authenticated Studio retry action; it creates
+a new business intention and preserves the failed job as audit evidence.
+
 ## Coffee Photos
 
 Read model stores stable photo references. S3 or local URLs are resolved at the

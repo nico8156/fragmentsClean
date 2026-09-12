@@ -91,7 +91,8 @@ class InfrastructureTemplateGuardrailTest {
                     .contains("FRAGMENTS_RATE_LIMIT_ENABLED")
                     .contains("FRAGMENTS_RATE_LIMIT_TICKET_PER_MINUTE")
                     .contains("FRAGMENTS_RATE_LIMIT_MEDIA_PER_MINUTE")
-                    .contains("FRAGMENTS_RATE_LIMIT_UGC_PER_MINUTE");
+                    .contains("FRAGMENTS_RATE_LIMIT_UGC_PER_MINUTE")
+                    .contains("TICKETVERIFY_HEALTH_STALE_AFTER_SECONDS");
         }
     }
 }
