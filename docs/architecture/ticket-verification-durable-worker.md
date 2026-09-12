@@ -70,6 +70,10 @@ qui arrive après reprise par un autre worker sera volontairement ignorée.
 La migration additive
 `db/release/2026-09-12-ticket-verification-jobs.sql` crée la table des jobs, ses
 index et ajoute `lease_until` à l'inbox. Elle doit être appliquée avant le code.
+Pour la candidate App Store, utiliser la composition transactionnelle décrite
+dans [l'upgrade SQL](../deployment/app-store-schema-upgrade.md), après restauration
+de contrôle. Le fragment ne porte plus de `BEGIN/COMMIT` interne ; un usage
+standalone exige `psql --single-transaction -v ON_ERROR_STOP=1`.
 Le rollback applicatif conserve la table et la colonne : aucune donnée de reprise
 n'est supprimée. Après retour à l'ancienne version, arrêter le worker de la
 nouvelle version; lors du redéploiement, les jobs non terminés reprennent selon
@@ -88,4 +92,3 @@ job contient OCR et référence d'image : ces champs ne doivent jamais être log
   version et reprise après expiration ;
 - inbox PostgreSQL : revendication concurrente, échec, expiration et terminalité ;
 - architecture : frontières de bounded contexts inchangées.
-

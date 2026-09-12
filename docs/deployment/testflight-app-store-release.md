@@ -8,13 +8,13 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 
 | Vérification du 12 septembre | Résultat |
 | --- | --- |
-| Backend, `bash scripts/test-release.sh` | 497 tests / 206 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 12:13:17 CEST, 2 min 33 |
+| Backend, `bash scripts/test-release.sh` | 500 tests / 207 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 12:30:03 CEST, 2 min 30 |
 | Mobile Jest | 77 suites, 289 tests verts |
 | Configuration release mobile | 8 tests verts, dont le vrai plugin de permissions |
 | Mobile types/lint/Redux/natif | TypeScript et contrôles verts ; lint 0 erreur, 20 avertissements préexistants |
 | Studio | 31 suites, 146 tests verts ; build public sans tokens, vérification du bundle et contrat API verts |
 
-Rapports backend isolés : `target/release-verification.2W5I8L`. La JVM locale
+Rapports backend isolés : `target/release-verification.tv3Agm`. La JVM locale
 est Java 23 Valhalla, avec compilation `release 21`. Ce résultat n'est pas une
 preuve sur le runtime de production ni sur une archive iOS. La première
 régression exhaustive avait trouvé 19 cas en échec/erreur sur 490 tests ; les
@@ -29,7 +29,7 @@ inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
 restauration et migration explicite restent à prouver avant déploiement. Aucun
 push ni changement AWS effectué. Le préflight consigne aussi l'avertissement
-de terminaison Surefire du dernier run, malgré ses 497 tests verts.
+de terminaison Surefire, également observé sur le dernier run de 500 tests verts.
 
 ## Conditions de passage
 
@@ -193,10 +193,11 @@ cohérentes avec la politique publiée.
 
 ## Déploiement, rollback et points encore ouverts
 
-Suivre le [runbook d'exploitation](operations-runbook.md) et les fichiers additifs
-de `src/main/resources/db/release/`. Inventorier les versions déjà appliquées,
-sauvegarder puis tester l'upgrade et la restauration en environnement isolé avant
-staging. Ne pas exécuter tous les scripts à l'aveugle, ne pas remplacer une
+Suivre le [runbook d'exploitation](operations-runbook.md) et le
+[candidat d'upgrade SQL](app-store-schema-upgrade.md). Le runtime et ses 46 tables
+ont été inspectés ; le script global est testé sur le DDL réel avec des données
+synthétiques. La restauration du vrai backup et l'intégration au déploiement
+restent nécessaires. Ne pas exécuter tous les scripts à l'aveugle, ne pas remplacer une
 migration par `schema.sql` sur une base existante. Aucun script de release n'a
 été appliqué à distance dans ce lot.
 
