@@ -90,3 +90,11 @@ Les scripts suivants donnent des points d'entrée stables pour les suites Maven 
 `test-all.sh` chaîne unit puis integration.
 
 `testcontainers-check.sh` valide uniquement l'accès Docker/Testcontainers attendu.
+
+## Release verification
+
+Use `bash scripts/test-release.sh` before handing off a release. Docker and
+`rg` are required. Unlike Maven's default selection, it includes `*IT` as well
+as unit/infra `*Test` and `*Tests`, writes reports to a fresh directory and
+refuses skipped tests. This does not run mobile/Studio suites or native/device
+acceptance. See `docs/deployment/testflight-app-store-release.md` for those gates.
