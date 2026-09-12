@@ -4,6 +4,9 @@ Lot 10, Astra High. AWS/infra est traité **maintenant, avant le build candidat
 TestFlight**. Autorisation utilisateur : poursuivre le chantier. Cette tranche
 effectue des lectures AWS et prépare des changements locaux ; aucune mutation
 AWS, lecture de secret, lecture de message, modification de base ou mise en ligne.
+La reprise 10B a ensuite exécuté deux diagnostics SSM en lecture seule du
+runtime/DDL (traces SSM créées, aucune mutation applicative) ; voir le
+[candidat d'upgrade SQL](app-store-schema-upgrade.md).
 
 ## Cible résolue
 
@@ -80,7 +83,7 @@ restent celles du [dossier TestFlight](testflight-app-store-release.md).
 | Étape | Action | Critère de passage |
 | --- | --- | --- |
 | 10A — réalisé | Inventaire en lecture seule et préparation locale ci-dessus | Constats et tests consignés |
-| 10B — avant toute mutation | Inspection ciblée du runtime/schema, identification de l'image actuelle, sauvegarde/restauration isolée ; préparation et revue des change sets | Aucun remplacement EC2/EBS, aucune modification Anchor, rollback identifié |
+| 10B — en cours | Runtime et schéma inspectés ; upgrade transactionnel testé sur DDL réel et données synthétiques. Restauration réelle et revue des change sets restent à faire | Aucun remplacement EC2/EBS, aucune modification Anchor, rollback identifié |
 | 10C — infra après accord | Files/DLQ/alarmes ; liste IAM SQS, droits métriques et S3 restreints ; abonnement opérateur confirmé | Routes existantes conservées, aucune purge/relecture des 5 messages legacy |
 | 10D — configuration | Fournir les valeurs Apple/chiffrement en SSM par un canal sûr ; confirmer capacité Apple et opérateur de modération/alertes | Ne jamais coller de clé privée dans le chat ni dans Git |
 | 10E — migration et application | Upgrade SQL explicite et testé sur copie, puis image backend ARM64 Java 21 identifiée | Sauvegarde vérifiée, migration transactionnelle, santé et reprise correctes |
@@ -91,8 +94,11 @@ Le déploiement actuel `deploy-via-ssm.sh` applique encore `schema.sql` à une b
 existante. **Ce chemin n'est pas validé pour cette release.** Ne pas le remplacer
 aveuglément par tous les scripts de `db/release` : certains supposent un schéma
 initial déterminé, et des évolutions antérieures sont dans le bootstrap.
-Il faut d'abord relever les tables/colonnes/version réelles, construire l'upgrade
-correspondant et le tester sur une restauration isolée. Ce travail reste à faire.
+Le runtime identifié est `18ae517`, Java 21.0.12, PostgreSQL 15.19 et 46 tables.
+Le schéma réel a été exporté sans données et le candidat
+`db/release/app-store-2026-09.psql` est maintenant testé sur cette structure.
+La restauration de sauvegarde avec ses lignes réelles, la traçabilité des
+migrations et l'intégration sûre au déploiement restent à faire.
 
 Un push de `main` touchant les chemins suivis déclenche le workflow de déploiement.
 Ne pas utiliser ce push comme simple transfert de code tant que le SQL, SSM et

@@ -905,6 +905,35 @@ applique encore `schema.sql` à l'existant : ce chemin n'est pas validé pour ce
 release. Pas de push `main` (déploiement automatique), pas de mutation AWS,
 de purge DLQ ou de lecture de secret dans cette tranche. Le lot 10 reste ouvert.
 
+### Lot 10B — runtime et upgrade SQL, Astra High, 12 septembre
+
+Diagnostic SSM en lecture seule sur l'hôte actif : backend `18ae517`, Java
+21.0.12, PostgreSQL 15.19, 46 tables. Export des seules métadonnées DDL : pas de
+donnée utilisateur, valeur de séquence, secret ou message récupéré. Ce schéma
+devient une fixture PostgreSQL 15 avec données synthétiques ajoutées par les
+tests. Aucune ancienne table Studio n'est supprimée ou réutilisée par le runtime.
+
+Le [candidat d'upgrade](../deployment/app-store-schema-upgrade.md) compose
+explicitement les huit migrations des lots dans une transaction. Les tests ont
+d'abord reproduit un commit partiel sur erreur finale ; suppression des deux
+transactions internes, puis preuve de rollback intégral. Les trois tests
+`StagingReleaseUpgradeIT` couvrent aussi conservation des données/acquis, reçus
+sans preuve ou ambigus, références Experience, compatibilité du schéma et
+réexécution sans écrasement de l'état plus récent. Test ciblé : 3 verts, 7,211 s.
+Régression complète : **500 tests / 207 classes, aucun échec, erreur ou ignoré**,
+12:30:03 CEST, 2 min 30, `target/release-verification.tv3Agm`. JVM locale Java 23,
+avec les avertissements de terminaison Surefire/Hikari déjà documentés. Commit
+local `184e2ba`, sans push ; mobile et Studio inchangés dans cette tranche.
+
+Cette preuve ne vaut pas restauration d'une sauvegarde réelle. Une copie de
+backup contient potentiellement des données personnelles et credentials ; accord
+explicite requis sur sa cible temporaire et sa suppression. Aucun téléchargement
+de backup, changement de schéma staging, déploiement ou push réalisé. Le script
+de déploiement historique n'est pas encore remplacé et reste interdit pour la
+candidate ; suivi versionné/checksummé de migration à préparer avant application.
+FlowAtlas n'a pas été sollicité ici : ses graphes de code ne décrivent pas le DDL
+déployé, et les points d'entrée SQL étaient déjà identifiés.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1035,6 +1064,15 @@ de la recette et marge de correction de la prévision 18. Cette fourchette doit
 être réévaluée après inspection du schéma et test de restauration ; confiance
 faible à ce stade. Disponibilité Apple/SSM, accord sur les ressources partagées
 et attentes TestFlight restent séparés du temps de réalisation.
+
+Prévision 20 — upgrade SQL du 12 septembre : cible réelle désormais connue et
+upgrade prouvé sur son DDL. La fenêtre observée de cette tranche comprend les
+diagnostics, le téléchargement de l'image PostgreSQL de test, les tests rouges
+puis verts et la documentation ; ce n'est pas du temps actif isolé. La fourchette
+infra/migration/restauration de **0,5 à 1 jour actif** reste provisoirement
+inchangée tant que la vraie restauration n'est pas éprouvée. Les validations
+runtime et SQL réduisent l'incertitude structurelle, pas celle sur les données
+historiques, les accès Apple ou les changements de ressources partagées.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
