@@ -9,12 +9,37 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateImageStore.
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.util.zip.CRC32;
 import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 
 class SafeImageNormalizerTest {
   static { System.setProperty("java.awt.headless", "true"); }
   private final SafeImageNormalizer normalizer = new SafeImageNormalizer();
+
+  @Test
+  void rejects_oversized_dimensions_from_header_without_decoding_pixel_data() throws Exception {
+    var bytes = new ByteArrayOutputStream();
+    var output = new DataOutputStream(bytes);
+    output.writeLong(0x89504e470d0a1a0aL);
+    output.writeInt(13);
+    var headerBytes = new ByteArrayOutputStream();
+    var header = new DataOutputStream(headerBytes);
+    header.writeBytes("IHDR");
+    header.writeInt(1000);
+    header.writeInt(1000);
+    header.write(new byte[] {8, 2, 0, 0, 0});
+    output.write(headerBytes.toByteArray());
+    var crc = new CRC32();
+    crc.update(headerBytes.toByteArray());
+    output.writeInt((int) crc.getValue());
+    // No pixel payload: attempting a full decode would fail with IMAGE_INVALID.
+    assertThatThrownBy(() -> normalizer.normalize(bytes.toByteArray(), "image/png",
+        new ImageRules(100_000, 100, 100, 100, false, .8f)))
+        .isInstanceOf(ImageUploadRejectedException.class)
+        .extracting("code").isEqualTo("IMAGE_PIXEL_LIMIT");
+  }
 
   @Test
   void crops_avatar_to_square_resizes_and_reencodes_as_jpeg() throws Exception {
