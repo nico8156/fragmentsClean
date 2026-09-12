@@ -11,7 +11,8 @@ For incident and release-1 verification commands, see
 - Docker Compose on the host
 - PostgreSQL in Docker with an encrypted EBS data volume
 - ECR for the backend image
-- SQS standard queues with a shared DLQ
+- SQS standard queues with one DLQ per destination (target); the deployed shared
+  legacy DLQ must be retained until its messages are triaged
 - Caddy for HTTPS
 - no Kafka/MSK
 - no Redis/ElastiCache
@@ -45,6 +46,13 @@ accepted command before the ticket read model reaches its final
 `CONFIRMED`/`REJECTED` status.
 
 ## Infrastructure
+
+Before executing the historical deployment commands below, read the
+[12 September release preflight](aws-release-preflight-2026-09-12.md). The
+deployed stacks and local templates differ materially. Do not apply the whole
+standalone stack or push `main` as an unreviewed shortcut: the host is shared,
+the workflow deploys automatically, and the SQL upgrade path still requires
+validation against the actual staging schema.
 
 Deploy the stack:
 

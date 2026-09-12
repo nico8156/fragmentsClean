@@ -54,6 +54,8 @@ corrective **Astra High** : travail durable ticket, médias bornés, composition
 Spring et transactions réparées, tests exhaustifs consolidés. Les validations
 native, AWS et d'exploitation restent ouvertes. Le lot 10 dispose maintenant de
 sa préparation locale et de son dossier, sans build signé ni soumission.
+Le préflight AWS du lot 10 est engagé : inventaire déployé en lecture seule,
+correctifs de routage Experience et métriques préparés, aucune mutation AWS.
 
 ## Conclusion
 
@@ -91,8 +93,10 @@ créé dans `/private/tmp/fragments-release-audit-probe.cjs`.
 
 Pas de déploiement, de modification AWS, de migration, ni de soumission EAS.
 Pas de test sur appareil ou de capture visuelle : les constats UI viennent du
-code. L'état AWS décrit dans les documents du dépôt n'a pas été revérifié en
-ligne. Les exigences Apple ont été consultées sur les sources officielles.
+code. À l'audit initial, l'état AWS décrit dans les documents du dépôt n'avait
+pas été revérifié en ligne ; les contrôles ultérieurs des lots 09/10 sont
+consignés séparément ci-dessous. Les exigences Apple ont été consultées sur
+les sources officielles.
 
 ## Vérifications exécutées
 
@@ -876,6 +880,31 @@ transaction et fixtures), `726c254` (contrôle release) ; mobile `9eebdd9`, merg
 `32f4413`. Les commits sont séparés par correction vérifiable, sous la même
 branche de revue backend. Studio n'a pas été modifié.
 
+### Lot 10A — préflight AWS, Astra High, 12 septembre
+
+AWS/infra est traité avant le build candidat TestFlight. Le
+[préflight détaillé](../deployment/aws-release-preflight-2026-09-12.md) identifie
+l'hôte actif partagé avec Anchor, distinct de l'ancienne instance standalone.
+Constats : file Experience absente, DLQ encore partagée avec environ 5 messages,
+aucune alarme sous le préfixe `fragments-staging`, paramètres Apple/chiffrement
+manquants. Volumes chiffrés, accès public S3 bloqué et sauvegarde du jour présente,
+mais aucune restauration prouvée.
+
+Corrections locales : file Experience/DLQ/alarmes, URL runtime, permission
+CloudWatch limitée au namespace Fragments ; test piloté par le catalogue Java
+et suite complète exigée en CI Java 21. Aucun changement de domaine ni du Home.
+Dernière preuve backend : **497 tests / 206 classes, 0 échec/erreur/ignoré**,
+12:13:17 CEST, 2 min 33, `target/release-verification.2W5I8L`. La JVM locale reste
+Java 23 ; la fermeture tardive Surefire et les avertissements Hikari de fin de
+run restent à investiguer, sans les présenter comme des tests en échec.
+
+La suite est ordonnée : inspection runtime/schéma → restauration isolée et
+upgrade SQL testé → revue et accord sur changements infra → configuration SSM
+→ déploiement contrôlé → recette réelle → TestFlight. Le script de déploiement
+applique encore `schema.sql` à l'existant : ce chemin n'est pas validé pour cette
+release. Pas de push `main` (déploiement automatique), pas de mutation AWS,
+de purge DLQ ou de lecture de secret dans cette tranche. Le lot 10 reste ouvert.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -996,6 +1025,16 @@ marge de correction** selon la recette. Ce n'est pas une estimation ferme d'une
 éventuelle nouvelle solution de filtrage visuel. Attentes Apple, disponibilité
 des credentials, publication des pages et TestFlight sont hors temps de code.
 Confiance moyenne sur le reste local et faible sur le calendrier externe.
+
+Prévision 19 — préflight AWS du 12 septembre : l'inventaire révèle un écart
+supplémentaire entre templates et staging, ainsi qu'un upgrade SQL à construire
+sur le schéma réel. La seule durée précisément mesurée ici est la régression
+complète (2 min 33) ; ne pas la confondre avec la durée de la tranche. Réserver
+provisoirement **0,5 à 1 jour actif pour infra/migration/restauration**, en plus
+de la recette et marge de correction de la prévision 18. Cette fourchette doit
+être réévaluée après inspection du schéma et test de restauration ; confiance
+faible à ce stade. Disponibilité Apple/SSM, accord sur les ressources partagées
+et attentes TestFlight restent séparés du temps de réalisation.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
