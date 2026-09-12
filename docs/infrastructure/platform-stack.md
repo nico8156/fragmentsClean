@@ -35,7 +35,9 @@ The role receives:
   - `fragments/staging/backups/postgres/*`.
 
 The stack deliberately does not grant wildcard ECR repository access, wildcard
-SQS access, bucket listing, or database administration permissions.
+SQS access, unrestricted bucket listing, or database administration permissions.
+The candidate permits listing only the Fragments coffee prefix and metric
+publication only in `Fragments/Staging`.
 
 ## Deployment safety
 
@@ -47,12 +49,21 @@ aws cloudformation validate-template \
   --template-body file://infra/aws/cloudformation/platform-staging.yaml
 ```
 
+`InstanceImageId` is a required explicit AMI ID with no default. For updates,
+use the image currently attached to the instance unless a separate OS migration
+is approved. `UbuntuAmiParameter` remains as an unused compatibility parameter;
+the moving SSM reference is no longer used by the candidate template.
+The [corrected release previews](../deployment/aws-preserved-preview-2026-09-12.md)
+must show no EC2/EBS/EIP changes before this messaging release is applied.
+
 Every update must use a reviewed change set. The legacy stacks remain partial
 resource owners and rollback references; they are not the active runtime.
 
-The data volume has `DeletionPolicy: Snapshot` and
-`UpdateReplacePolicy: Snapshot`, but snapshots are not a substitute for a
-tested PostgreSQL backup and restore procedure.
+The platform data disk is an instance block-device mapping with
+`DeleteOnTermination: false`, not a standalone volume with a snapshot policy.
+The separate legacy stack owns a standalone volume; neither template declares
+the snapshot policies previously claimed here. Disk retention does not
+substitute for a tested PostgreSQL backup/restore.
 
 ## Completed runtime work
 
@@ -65,8 +76,8 @@ tested PostgreSQL backup and restore procedure.
 ## Remaining work
 
 - deploy and confirm queue/DLQ alarms and operator SNS subscription;
-- execute and record the PostgreSQL restore drill;
-- add deployment locking;
+- validate the journaled deployment and its locking on the actual host (the
+  approved local restore drill and implementation are already documented);
 - verify Anchor OIDC/IAM ownership in the Anchor repository;
 - separate active application resources from legacy compute stacks;
 - observe memory, disk and CPU before changing `t4g.medium`.

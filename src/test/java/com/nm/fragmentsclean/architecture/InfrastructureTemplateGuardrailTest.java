@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Locale;
@@ -16,6 +19,35 @@ class InfrastructureTemplateGuardrailTest {
 
     private static final Path STAGING_TEMPLATE =
             Path.of("infra/aws/cloudformation/staging-minimal.yaml");
+
+    @Test
+    void staging_images_are_explicit_operator_inputs_without_a_moving_default() throws IOException {
+        for (Path path : List.of(STAGING_TEMPLATE,
+                Path.of("infra/aws/cloudformation/platform-staging.yaml"))) {
+            String template = Files.readString(path);
+            assertThat(template).contains("      ImageId: !Ref InstanceImageId\n")
+                    .doesNotContain("{{resolve:ssm:");
+            var parameter = java.util.regex.Pattern.compile(
+                    "(?ms)^  InstanceImageId:\\n(.*?)(?=^  [A-Za-z]|^Resources:|^Conditions:)")
+                    .matcher(template);
+            assertThat(parameter.find()).as("Explicit image parameter in %s", path).isTrue();
+            assertThat(parameter.group(1)).contains("Type: AWS::EC2::Image::Id")
+                    .doesNotContain("Default:");
+        }
+    }
+
+    @Test
+    void release_preserves_the_deployed_legacy_github_role() throws Exception {
+        String template = Files.readString(STAGING_TEMPLATE);
+        String role = template.substring(template.indexOf("  GitHubDeployRole:\n"),
+                template.indexOf("\nOutputs:\n")) + "\n";
+        // Snapshot of the actual deployed role, read 2026-09-12. Its retirement
+        // is a separate operator decision, not part of the messaging release.
+        String checksum = HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                .digest(role.getBytes(StandardCharsets.UTF_8)));
+        assertThat(checksum).isEqualTo(
+                "6703be10d6d72c1839eb784eb9de3d2b84963b52f5d4c67d64ba7ee35bf1f2e1");
+    }
 
     @Test
     void every_source_queue_has_an_owned_dead_letter_queue_and_an_age_alarm() throws Exception {

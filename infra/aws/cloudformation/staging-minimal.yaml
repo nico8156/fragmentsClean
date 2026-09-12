@@ -38,6 +38,10 @@ Parameters:
   UbuntuAmiParameter:
     Type: String
     Default: /aws/service/canonical/ubuntu/server/24.04/stable/current/arm64/hvm/ebs-gp3/ami-id
+    Description: Legacy parameter retained for stack compatibility; no longer used to resolve ImageId.
+  InstanceImageId:
+    Type: AWS::EC2::Image::Id
+    Description: Explicit approved ARM64 AMI. For an existing stack, supply the current instance ImageId; OS upgrades require a separate reviewed change set.
   GitHubRepository:
     Type: String
     Default: nico8156/fragmentsClean
@@ -46,10 +50,6 @@ Parameters:
     Type: String
     Default: main
     Description: GitHub branch allowed to assume the deploy role.
-  SsmDeployInstanceId:
-    Type: String
-    Default: i-004d3e9cbca327d01
-    Description: Platform EC2 instance targeted by the SSM deployment workflow.
   ExistingGitHubOidcProviderArn:
     Type: String
     Default: ''
@@ -700,7 +700,7 @@ Resources:
   StagingInstance:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: !Sub '{{resolve:ssm:${UbuntuAmiParameter}}}'
+      ImageId: !Ref InstanceImageId
       InstanceType: !Ref InstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
@@ -834,25 +834,24 @@ Resources:
                   - ecr:UploadLayerPart
                 Resource:
                   - !GetAtt BackendRepository.Arn
+              - Sid: DescribeSecurityGroupsForTemporarySsh
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSecurityGroups
+                Resource: '*'
               - Sid: ReadStagingStackOutputs
                 Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/platform-staging/*
-              - Sid: DeployThroughSsm
+              - Sid: ManageTemporaryRunnerSshIngress
                 Effect: Allow
                 Action:
-                  - ssm:SendCommand
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupIngress
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}::document/AWS-RunShellScript
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/${SsmDeployInstanceId}
-              - Sid: ReadSsmCommandResult
-                Effect: Allow
-                Action:
-                  - ssm:GetCommandInvocation
-                Resource: '*'
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/${InstanceSecurityGroup}
 
 Outputs:
   InstanceId:
