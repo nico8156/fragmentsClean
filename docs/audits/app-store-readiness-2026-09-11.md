@@ -782,6 +782,14 @@ réelles et régression complète : 399 tests backend verts, sans échec ni test
 ignoré. Un échec historique suivi d'un job réussi ne maintient pas artificiellement
 l'état dégradé.
 
+Quatrième point : le nettoyage d'un upload d'expérience abandonné est maintenant
+prouvé contre S3 LocalStack. L'objet existe d'abord dans le bucket, l'adaptateur
+exécute réellement `DeleteObject`, puis seulement le média passe à `DELETED` ;
+le test fake existant prouve en complément qu'un échec objet laisse le média
+retryable. La régression atteint 400 tests backend verts, sans échec ni test
+ignoré. Cette preuve locale ne remplace toujours pas un cycle upload/cleanup sur
+le bucket staging réel.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -885,6 +893,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 13 — lot 09, première slice 2026-09-12 | Vérification ticket durable, inbox concurrente et exposition du statut technique | Référence héritée de 0,25 à 0,75 jour pour le lot 09 local | Fenêtre réelle non exploitable : reprise après interruption de session, validations Docker/build incluses ; temps actif non isolé | Contrôles S3/AWS, migrations/restauration, reprise legacy, recette offline/native, accessibilité et exploitation restent ouverts | 0,5 à 1,5 jour concentré pour terminer les preuves locales du lot 09 ; TestFlight/App Review séparés | La faille transactionnelle a exigé un vrai processus durable et des tests de concurrence, plus large qu'un simple hardening de statut. FlowAtlas Java a accéléré le ciblage, mais ses fixtures doivent évoluer avec le code. Confiance moyenne-faible avant inventaire complet du reste |
 | Prévision 14 — lot 09, deuxième slice 2026-09-12 | Cache Experience par compte, contrôle AWS en lecture seule, IAM local minimal et rate limits | Référence précédente de 0,5 à 1,5 jour local | Fenêtre interrompue puis reprise ; temps actif non isolable. Deux suites complètes et contrôles statiques inclus | Observabilité du worker, preuve cleanup/restauration, accessibilité/performance et recette native restent à examiner ; déploiement séparé | 0,25 à 1 jour concentré pour les dernières preuves locales ; TestFlight/App Review séparés | Le code local a convergé vite, mais AWS déployé, appareil réel et opérations irréversibles ne peuvent pas être simulés. FlowAtlas Redux a révélé l'omission de persistance ; la requête Java figée s'est périmée après refactor. Confiance moyenne |
 | Prévision 15 — lot 09, troisième slice 2026-09-12 | Santé et métriques du worker durable ticket | Référence précédente de 0,25 à 1 jour local | Fenêtre incluse dans la reprise, avec tests unitaires, PostgreSQL et suite complète ; temps actif non isolé | Preuves cleanup/restauration, revue accessibilité/performance et recette native ; déploiement séparé | 0,25 à 0,75 jour concentré pour clore le vérifiable localement ; TestFlight/App Review séparés | Le health check respecte l'audit durable et redevient sain après une relance réussie. FlowAtlas borne bien la frontière SQS mais ne suit pas encore injection et `@Scheduled`. Confiance moyenne |
+| Prévision 16 — lot 09, quatrième slice 2026-09-12 | Suppression différée des médias privés sur S3 LocalStack | Référence précédente de 0,25 à 0,75 jour local | Fenêtre incluse dans la reprise, avec verticale LocalStack et suite complète ; temps actif non isolé | Revue accessibilité/performance et recette native ; preuve staging upload/cleanup et restore drill séparée | 0,25 à 0,5 jour concentré pour le dernier audit local ; TestFlight/App Review séparés | La combinaison fake en panne + vrai `DeleteObject` prouve ordre et retry localement. Le stockage AWS réel reste volontairement inchangé. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
