@@ -30,7 +30,9 @@ inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. Les [files/alertes/IAM sont désormais appliqués](aws-applied-2026-09-12.md)
 avec accord : deux stacks `UPDATE_COMPLETE`, instances et disques préservés.
 Un événement EIP legacy non annoncé par l'aperçu a été vérifié et documenté.
-Confirmation email SNS encore attendue ; paramètres Apple/chiffrement à fournir.
+Confirmation email SNS vérifiée et clé de chiffrement SSM créée ; trois paramètres
+Apple encore manquants. L'opérateur a autorisé le push et le déploiement, mais
+celui-ci attend les prérequis Apple : [passage de configuration](staging-configuration-2026-09-12.md).
 La restauration/upgrade est prouvée sur copie locale réelle et le déploiement
 journalisé est préparé localement, mais ni SQL staging ni application déployés.
 Aucun push. La recette fonctionnelle des nouveaux parcours reste ouverte.

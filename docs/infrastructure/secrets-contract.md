@@ -36,9 +36,10 @@ Production uses the same structure with the `production` environment segment.
 Public OAuth client IDs and URLs are not secrets and remain build/runtime
 configuration rather than entering the secret store.
 
-`APPLE_PRIVATE_KEY` is stored with line breaks escaped as `\n`, so the generated
-runtime `.env` remains one assignment per line. The application reconstructs the
-PEM before parsing it. `AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY` is a Base64-
+`APPLE_PRIVATE_KEY` may contain real PEM line breaks: the staging bootstrap
+preserves them using Compose single-quoted values. The application also accepts
+literal `\n` escaped line breaks before parsing the PEM. Never manually source
+the generated Compose env as a shell script. `AUTH_PROVIDER_CREDENTIAL_ENCRYPTION_KEY` is a Base64-
 encoded 32-byte key. Losing or rotating it without re-encryption makes stored
 Apple refresh credentials unreadable and prevents compliant remote revocation.
 
@@ -95,3 +96,8 @@ arn:aws:kms:eu-west-3:851725375299:key/6e2d9298-8432-48e2-a566-bc10cbc78f2a
 
 No new key is required for the initial migration. This choice is sufficient
 for the current staging risk and avoids unnecessary key administration.
+
+On 12 September, the staging provider-credential encryption parameter was
+created as SecureString version 1 and verified without logging its value.
+The three Apple signing parameters remain pending operator input; see the
+[configuration handoff](../deployment/staging-configuration-2026-09-12.md).

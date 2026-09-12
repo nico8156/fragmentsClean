@@ -1089,6 +1089,24 @@ après mise à jour, sans suppression manuelle. Aucun push, SQL, déploiement
 applicatif, changement du bucket ou secret SSM. Régression précédente de 515 tests
 conservée ; vérifications AWS réelles, aucune suite métier relancée.
 
+### Lot 10D — configuration et autorisation de déploiement, Astra High, 12 septembre
+
+L'opérateur a confirmé SNS et autorisé configuration, préparation/push backend,
+maintenance et migration/déploiement ; il fera la recette produit. SNS est confirmé
+dans AWS. La clé AES-256 des credentials fournisseur est créée en SSM SecureString
+version 1 avec le KMS existant, sans écrasement ; relecture et longueur vérifiées
+sans exposition. Le transport CLI stdin ayant échoué localement, un temporaire
+0600 a été utilisé puis supprimé. Aucun secret dans Git ou les logs.
+
+Les trois paramètres Apple sont absents. Demande de chemin local `.p8`, Team ID
+et Key ID adressée à l'opérateur ; aucune valeur factice ni réutilisation de
+credentials Anchor. Le [dossier de reprise](../deployment/staging-configuration-2026-09-12.md)
+précise le blocage. Aucun arrêt, migration SQL ou déploiement exécuté ici.
+Publication Git autorisée séparément du lancement du workflow manuel ; scanner
+conservateur revu (trois faux positifs PEM/tests), mêmes chemins sur les 66
+révisions à publier. Aucune règle de contrôle supprimée ; dernière preuve backend
+de 515 tests inchangée, pas de nouvelle suite produit pour cette documentation.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1457,6 +1475,7 @@ changements applicatifs restent locaux, sans déploiement. Les lots
 changements UI bornés, contrats et navigation métier figés. Le lot 08 compose
 les lectures réelles sous le grand visuel existant, sans `homeContext` ni données
 fictives, et préserve strictement le hero et l'apparition du bandeau au scroll.
-La confirmation SNS, les configurations Apple/SSM, la recette effective IAM/CORS
+SNS est confirmé et la clé de chiffrement SSM créée. Les trois paramètres Apple,
+la recette effective IAM/CORS
 S3 et SQS, la recette native petit/grand iPhone et VoiceOver, les migrations
 d'environnement et le déploiement applicatif restent explicitement ouverts.**

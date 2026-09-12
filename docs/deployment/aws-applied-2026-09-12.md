@@ -1,5 +1,9 @@
 # AWS appliqué — files, alertes et IAM, 12 septembre 2026
 
+**Suivi configuration :** SNS est désormais confirmé et la clé de chiffrement
+SSM créée ; les trois éléments Apple restent attendus. Voir le
+[passage au déploiement](staging-configuration-2026-09-12.md).
+
 Lot 10C, Astra High. Accord explicite de l'opérateur pour exécuter uniquement les
 [deux candidats corrigés](aws-preserved-preview-2026-09-12.md), sans migration SQL
 ni déploiement applicatif. Templates et garde-fous : commit `29d714e`.
