@@ -6,6 +6,11 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 
 ## Preuves locales obtenues
 
+**Mise à jour déployée :** backend `c8dea6a` livré en staging à 15:39 CEST,
+516 tests verts sur Java 21, image ARM64 vérifiée, backup frais et migration
+journalisée appliquée. [Preuves et réserves](staging-deployment-2026-09-12.md).
+Le tableau suivant conserve les preuves locales antérieures.
+
 | Vérification du 12 septembre | Résultat |
 | --- | --- |
 | Backend, `bash scripts/test-release.sh` | 515 tests / 209 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 14:27:33 CEST, 2 min 49 |
@@ -31,12 +36,12 @@ préparées. Les [files/alertes/IAM sont désormais appliqués](aws-applied-2026
 avec accord : deux stacks `UPDATE_COMPLETE`, instances et disques préservés.
 Un événement EIP legacy non annoncé par l'aperçu a été vérifié et documenté.
 Confirmation email SNS vérifiée ; clé de chiffrement et trois paramètres Apple
-créés dans SSM. Le backend `5437112` a été poussé, mais le premier pipeline
-manuel a échoué avant Maven. Ripgrep est corrigé ; la seconde tentative exécute
-516 tests et révèle 10 cas en échec/erreur liés aux fixtures partagées :
-[passage de configuration](staging-configuration-2026-09-12.md).
-La restauration/upgrade est prouvée sur copie locale réelle et le déploiement
-journalisé est préparé localement, mais ni SQL staging ni application déployés.
+créés dans SSM. Les deux premiers pipelines ont révélé un prérequis CI manquant
+puis des défauts d'isolation de fixtures, corrigés sans affaiblir les assertions.
+Le troisième est vert et a livré le backend `c8dea6a`, avec sauvegarde fraîche
+et migration journalisée : [passage de configuration](staging-configuration-2026-09-12.md).
+Le triage de la DLQ legacy, des neuf inbox historiques en échec et des huit
+sagas éditoriales anciennes reste distinct ; aucune purge/reprise forcée.
 Aucun push mobile/Studio dans cette tranche. La recette fonctionnelle reste ouverte.
 L'avertissement de terminaison Surefire reste observé sur le dernier run de
 515 tests verts, non réexécuté pour cette tranche d'exploitation AWS.
