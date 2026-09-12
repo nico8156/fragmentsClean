@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.rep
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,6 +26,12 @@ public class JpaTicketRepositoryIT extends AbstractTicketJpaIntegrationTest {
 
     @Autowired
     private SpringTicketRepository springTicketRepository; // repo Spring Data brut
+
+    @BeforeEach
+    void isolateRepositoryFixtures() {
+        // The shared container may already contain committed HTTP-test fixtures.
+        springTicketRepository.deleteAllInBatch();
+    }
 
     @Test
     void repositories_are_injected() {

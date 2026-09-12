@@ -1,7 +1,7 @@
 # AWS appliqué — files, alertes et IAM, 12 septembre 2026
 
 **Suivi configuration :** SNS est désormais confirmé et la clé de chiffrement
-SSM créée ; les trois éléments Apple restent attendus. Voir le
+SSM créée ; les trois paramètres Apple sont désormais provisionnés. Voir le
 [passage au déploiement](staging-configuration-2026-09-12.md).
 
 Lot 10C, Astra High. Accord explicite de l'opérateur pour exécuter uniquement les

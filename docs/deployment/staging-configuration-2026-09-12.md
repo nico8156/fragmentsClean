@@ -22,6 +22,36 @@
 
 Les sections suivantes conservent le relevé antérieur à la fourniture de la clé.
 
+### Deuxième tentative : suite complète, défauts d'isolation détectés
+
+Le correctif `6031224`, intégré/poussé par `5602fc6`, installe ripgrep et rend
+le diagnostic local explicite. Garde-fou ciblé rouge puis vert (4 tests).
+Le run [34695826535](https://github.com/nico8156/fragmentsClean/actions/runs/34695826535)
+a passé ce prérequis puis exécuté **516 tests : 4 échecs, 6 erreurs, 0 ignoré**.
+La vérification Java 21 a duré environ 3 min 10, dépendances comprises.
+
+Les traces établissent une contamination du PostgreSQL partagé entre classes :
+favoris conservés empêchant le nettoyage des utilisateurs, tickets/articles
+issus de tests HTTP conservés avant les assertions de repositories, et UUID
+de commande fixe réutilisé entre tests de contextes distincts (HTTP 409).
+Correction limitée aux fixtures : nettoyage des dépendances avant les parents,
+nettoyage transactionnel avant tests de repositories, identifiants de commande
+propres à chaque test. Aucune assertion métier affaiblie, aucun test désactivé,
+aucun changement de domaine. Une régression complète en ordre inversé est lancée
+avant nouvelle CI afin de ne pas dépendre seulement de l'ordre local habituel.
+
+Résultat local en ordre `reversealphabetical` : **516 tests, 0 échec, 0 erreur,
+0 ignoré**, terminé à **15:22:24 CEST**, durée Maven **2 min 39**. Log local
+`/private/tmp/fragments-release-reverse-order.log`, rapports `target/release-reports`.
+JVM locale Java 23 Valhalla / compilation 21 ; nouvelle preuve Java 21 encore
+attendue. Avertissements Hikari de fermeture et terminaison Surefire à 30 secondes
+toujours observés malgré le succès ; ils ne sont pas déclarés corrigés.
+
+Préflight réel : schéma toujours à 46 tables, journal de migration absent,
+ancien backend `18ae517` en service. Les deux premières tentatives CI n'ont
+exécuté ni migration ni déploiement. Identifiants/dates de démarrage du proxy
+et de PostgreSQL relevés pour comparaison après bascule.
+
 ## Relevé initial (avant fourniture Apple)
 
 Lot 10D, Astra High. L'opérateur autorise désormais la configuration SSM, la
