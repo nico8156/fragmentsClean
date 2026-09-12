@@ -1,5 +1,10 @@
 # Configuration staging et passage au déploiement — 12 septembre 2026
 
+**État final : backend `c8dea6a` déployé, migration appliquée et vérifications
+techniques réussies à 15:39 CEST.** Voir la [preuve de livraison](staging-deployment-2026-09-12.md).
+Les relevés ci-dessous conservent les étapes et échecs intermédiaires ; ils ne
+signifient plus que le déploiement attend Apple ou la CI.
+
 ## Mise à jour : clé Apple fournie et première tentative CI
 
 - L'opérateur a fourni la clé Sign in with Apple dans Downloads, le Team ID

@@ -1308,6 +1308,19 @@ vérification Java 21 dure environ 3 min 10 ; ce n'est pas le temps actif du lot
 Recette native et délais Apple/TestFlight restent séparés. FlowAtlas n'est pas
 sollicité pour ces scripts CI/fixtures, sans parcours Redux ni contrat métier modifié.
 
+Prévision 28 — backend livré à 15:39 CEST le 12 septembre, lot 10D / Astra High :
+la configuration et le déploiement journalisé sont accomplis pour `c8dea6a`.
+CI réelle : 15 min 55, dont 2 min 56 de vérification Java 21, 11 min 02 de
+build/push ARM64 et 1 min 03 de déploiement SSM ; ces durées ne mesurent ni le
+temps actif de correction, ni exactement la maintenance utilisateur. La suite
+complète est verte (516 tests, aucun ignoré), ainsi que la régression locale
+en ordre inversé. [Preuves et réserves](../deployment/staging-deployment-2026-09-12.md).
+Reste global : réserver **0,5 à 1 jour de recette/configuration native active**,
+plus **0,5 à 1,5 jour de marge de correction**, hors attente TestFlight/App Review.
+Le triage historique inbox/DLQ/sagas est à cadrer séparément ; aucun rejeu n'a été
+autorisé implicitement par le déploiement. Confiance moyenne pour la recette,
+faible sur les délais externes ; aucun GO App Store déduit du seul pipeline vert.
+
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
 progressivement si l'ensemble converge plus vite ou plus lentement que prévu,
