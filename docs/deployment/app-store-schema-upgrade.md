@@ -1,6 +1,6 @@
 # Upgrade SQL App Store — candidat du 12 septembre 2026
 
-Lot 10B, Astra High. **Préparé et testé localement, pas appliqué au staging.**
+Lot 10B, Astra High. **Testé sur une restauration réelle locale, pas appliqué au staging.**
 Ce document complète le [préflight AWS](aws-release-preflight-2026-09-12.md).
 Implémentation locale : `184e2ba` ; aucun push ni déploiement.
 
@@ -91,6 +91,10 @@ Studio ; leurs suites ne sont pas présentées comme réexécutées ici.
 
 ## Avant application réelle
 
+Les étapes 1 et 2 ci-dessous ont été autorisées puis réalisées le 12 septembre
+(preuve détaillée en fin de document). Les étapes 3 à 5 restent ouvertes ; une
+nouvelle sauvegarde sera nécessaire avant une migration réelle du staging.
+
 1. Accord explicite sur la cible de restauration et le traitement de sa copie.
    Proposition : télécharger uniquement le dump du 12 septembre et son checksum
    dans un dossier temporaire privé local ; vérifier le checksum ; restaurer
@@ -113,4 +117,60 @@ Studio ; leurs suites ne sont pas présentées comme réexécutées ici.
    du rollback avec l'état des écritures survenues depuis la sauvegarde.
 
 **Toujours aucun push `main` : le workflow actuel déclencherait un déploiement
-avant que ces conditions soient réunies.** Aucun restore drill réel exécuté ici.
+avant que ces conditions soient réunies.**
+
+## Restauration réelle autorisée — preuve du 12 septembre, 12:50:06 CEST
+
+L'utilisateur a explicitement autorisé le téléchargement local de la sauvegarde,
+sa restauration/migration isolée et la suppression des copies et de leur
+environnement. Cette autorisation ne couvre pas un déploiement ou une migration
+de la base staging.
+
+- Objet : `s3://anchor-assets-prod-851725375299/fragments/staging/backups/postgres/fragments-20260912T032402Z.dump`,
+  447030 octets, modifié à `2026-09-12T03:24:04Z`, avec son fichier `.sha256`.
+- SHA-256 calculé et conforme au checksum publié :
+  `e4756abb388704327990f787025249d4681bff21b9764d368cef4651115b535a`.
+  Ce contrôle prouve la concordance dump/checksum, pas une signature indépendante.
+- PostgreSQL local 15.19, image Docker
+  `sha256:aad6289ca337b3ce76896f2e7e61480490152886c7828120371fb28e6b779e1d`.
+  Exécution locale x86_64, distincte du runtime staging ARM64.
+- Conteneur sans réseau (`none`), aucun port publié, écoute TCP désactivée,
+  racine en lecture seule ; base et scripts en tmpfs ; limite 512 Mio / 1 CPU.
+  Aucun backend, worker, accès SQS, valeur SSM ou credential AWS dans le conteneur.
+  Authentification PostgreSQL trust limitée aux sockets de ce conteneur isolé.
+- Dump et logs dans un dossier temporaire privé (mode 0700, umask 077) ; aucune
+  ligne restaurée, valeur de token ou erreur contenant des données affichée.
+- `pg_restore --no-owner --no-privileges --exit-on-error` réussi en 1 seconde
+  mesurée à la seconde ; 46 tables sources retrouvées.
+- Candidat SQL `184e2ba`, présent dans le checkout `cf23e04`, appliqué en 1 seconde
+  mesurée à la seconde. Ces durées ne sont pas celles du drill complet ni une
+  estimation des verrous sur le staging actif.
+- Conservation contrôlée pour les 46 tables : nombres de lignes et empreintes
+  ordonnées des **colonnes d'origine** inchangés. Les empreintes MD5 de lignes
+  servent au contrôle de non-régression ; elles sont restées privées et ont été
+  supprimées, sans prétention de preuve cryptographique indépendante.
+- Contrôles de backfill verts : références café/profil, empreintes canoniques
+  tickets, contributions et compteurs Pass, attribution des reçus uniquement sur
+  preuve non ambiguë, unicité des positions d'historique ; jobs, expériences et
+  credentials fournisseur initialement vides. Pas de rejeu des travaux legacy.
+- Deuxième application : empreintes et nombres de lignes inchangés sur les
+  **69 tables** du schéma final.
+
+Deux essais préalables ont corrigé le harness opérateur, pas le SQL produit :
+le contrôle de disponibilité détectait le serveur temporaire d'initdb, puis
+`docker cp` refusait la racine en lecture seule. Le contrôle attend désormais
+le processus PostgreSQL définitif ; le transfert passe par tar/exec vers tmpfs,
+sans retirer les protections. Les copies ont été nettoyées après chaque essai.
+
+Nettoyage final vérifié séparément : trois dossiers privés et les trois
+conteneurs de drill absents, ainsi que le conteneur de diagnostic vide. Base
+en tmpfs, aucun volume persistant de restauration conservé ; logs, dumps,
+checksums et empreintes temporaires supprimés. Il s'agit de suppression normale,
+pas d'une garantie d'effacement forensique. La sauvegarde S3 d'origine a été
+revérifiée présente, même taille et même date de modification. Aucune écriture
+sur la base staging, aucun push et aucun déploiement.
+
+Cette tranche apporte une **preuve opérationnelle de restauration/upgrade**,
+pas une nouvelle exécution des 500 tests backend, des tests mobile ou Studio :
+aucun code produit n'a changé. Restent le chemin de déploiement versionné,
+les changements infra approuvés, les secrets Apple, puis la recette déployée.

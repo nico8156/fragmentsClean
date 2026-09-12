@@ -934,6 +934,34 @@ candidate ; suivi versionné/checksummé de migration à préparer avant applica
 FlowAtlas n'a pas été sollicité ici : ses graphes de code ne décrivent pas le DDL
 déployé, et les points d'entrée SQL étaient déjà identifiés.
 
+### Lot 10B — restauration réelle autorisée, Astra High, 12 septembre
+
+Après accord explicite de l'utilisateur, le dump
+`fragments-20260912T032402Z.dump` et son checksum ont été téléchargés dans un
+dossier privé local puis restaurés dans PostgreSQL 15.19 isolé : réseau `none`,
+aucun port publié, pas de backend/worker, rootfs en lecture seule, données en
+tmpfs, mémoire/CPU plafonnés. Aucun secret ou contenu restauré affiché.
+
+Résultat à **12:50:06 CEST** : SHA-256 conforme ; restauration puis upgrade du
+candidat `184e2ba` réussis, chacun mesuré à 1 seconde (résolution seconde,
+hors préparation). Les nombres de lignes et empreintes des colonnes d'origine
+des **46 tables sources** sont préservés. Contrôles des backfills verts ; seconde
+application stable sur les **69 tables finales**. Il s'agit de preuves sur le
+backup du jour, pas d'un test du staging actif ni de son comportement sous charge.
+
+Deux essais ont révélé des détails du harness local (serveur temporaire initdb
+détecté trop tôt, puis `docker cp` refusé par le rootfs en lecture seule), corrigés
+sans modifier le SQL produit ou desserrer l'isolation. Nettoyage après chaque
+essai ; disparition des trois dossiers privés et quatre conteneurs dédiés
+vérifiée séparément. Dump, logs et empreintes temporaires supprimés ; sauvegarde
+AWS originale revérifiée intacte. Aucun push, déploiement ou changement staging.
+
+Le [dossier SQL](../deployment/app-store-schema-upgrade.md) conserve les preuves
+non sensibles et les limites. Aucun code produit changé ni suite complète
+réexécutée : la preuve backend précédente reste 500 tests verts. Le lot 10 reste
+ouvert : journal/checksums de migration et déploiement contrôlé à préparer,
+change sets AWS à valider, configuration Apple puis recette déployée/App Store.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1073,6 +1101,16 @@ infra/migration/restauration de **0,5 à 1 jour actif** reste provisoirement
 inchangée tant que la vraie restauration n'est pas éprouvée. Les validations
 runtime et SQL réduisent l'incertitude structurelle, pas celle sur les données
 historiques, les accès Apple ou les changements de ressources partagées.
+
+Prévision 21 — restauration réelle du 12 septembre : l'incertitude sur la
+restaurabilité et la compatibilité de ce backup est levée par exécution, avec
+deux ajustements d'outillage local. Réserver désormais **0,25 à 0,75 jour actif**
+pour la préparation/application contrôlée infra et migration, sous réserve des
+accords et paramètres opérateur disponibles ; la recette et sa marge de
+correction restent séparées. Les durées SQL de 1 seconde ne sont pas extrapolées
+au déploiement sur l'hôte partagé. Confiance moyenne sur la copie éprouvée,
+moyenne-faible sur l'intégration AWS non encore exécutée ; attentes Apple et
+validation TestFlight hors estimation active.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
