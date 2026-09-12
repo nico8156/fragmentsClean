@@ -29,7 +29,10 @@ The role receives:
   Fragments SQS queues;
 - object operations only below:
   - `anchor/staging/*`;
-  - `fragments/staging/*`.
+  - `fragments/staging/coffees/*`;
+  - `fragments/staging/articles/*`;
+  - `fragments/staging/private-media/*`;
+  - `fragments/staging/backups/postgres/*`.
 
 The stack deliberately does not grant wildcard ECR repository access, wildcard
 SQS access, bucket listing, or database administration permissions.

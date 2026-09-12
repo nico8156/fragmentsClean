@@ -196,7 +196,8 @@ s3://anchor-assets-prod-851725375299/fragments/staging/articles/...
 s3://anchor-assets-prod-851725375299/fragments/staging/private-media/...
 ```
 
-The EC2 runtime IAM role is limited to object operations under `fragments/staging/*`.
+The EC2 runtime IAM role is limited to the exact `coffees`, `articles`,
+`private-media` and `backups/postgres` prefixes below `fragments/staging`.
 The bucket must keep Block Public Access enabled. Native iOS uploads use signed
 requests and do not require a browser CORS wildcard. Upload signatures bind the
 declared `Content-Type` and `x-amz-server-side-encryption: AES256` headers; the

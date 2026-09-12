@@ -69,4 +69,29 @@ class InfrastructureTemplateGuardrailTest {
                 .contains("fragments-editorial-health.timer")
                 .contains("systemctl enable --now fragments-editorial-health.timer");
     }
+
+    @Test
+    void private_media_and_release_limits_are_least_privilege_and_enabled_in_staging() throws IOException {
+        String minimal = Files.readString(STAGING_TEMPLATE);
+        String platform = Files.readString(Path.of("infra/aws/cloudformation/platform-staging.yaml"));
+        String bootstrap = Files.readString(Path.of(
+                "infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh"));
+        String example = Files.readString(Path.of("infra/aws/compose/staging/.env.example"));
+
+        for (String template : List.of(minimal, platform)) {
+            assertThat(template)
+                    .contains("fragments/staging/coffees/*")
+                    .contains("fragments/staging/articles/*")
+                    .contains("fragments/staging/private-media/*")
+                    .contains("fragments/staging/backups/postgres/*")
+                    .doesNotContain("/fragments/staging/*");
+        }
+        for (String runtime : List.of(bootstrap, example)) {
+            assertThat(runtime)
+                    .contains("FRAGMENTS_RATE_LIMIT_ENABLED")
+                    .contains("FRAGMENTS_RATE_LIMIT_TICKET_PER_MINUTE")
+                    .contains("FRAGMENTS_RATE_LIMIT_MEDIA_PER_MINUTE")
+                    .contains("FRAGMENTS_RATE_LIMIT_UGC_PER_MINUTE");
+        }
+    }
 }

@@ -602,7 +602,10 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource:
-                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/*
+                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/coffees/*
+                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/articles/*
+                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/private-media/*
+                  - arn:aws:s3:::anchor-assets-prod-851725375299/fragments/staging/backups/postgres/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource: arn:aws:s3:::anchor-assets-prod-851725375299

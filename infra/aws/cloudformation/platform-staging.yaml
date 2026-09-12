@@ -130,7 +130,10 @@ Resources:
                   - s3:DeleteObject
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/anchor/staging/*
-                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/coffees/*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/articles/*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/private-media/*
+                  - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/backups/postgres/*
               - Effect: Allow
                 Action: s3:ListBucket
                 Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}

@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositor
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -15,6 +16,7 @@ public class InboxMessageRepository {
     private final JdbcTemplate jdbcTemplate;
     private final Duration claimLease;
 
+    @Autowired
     public InboxMessageRepository(JdbcTemplate jdbcTemplate) {
         this(jdbcTemplate, Duration.ofMinutes(5));
     }

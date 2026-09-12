@@ -408,6 +408,7 @@ de l'expansion lorsque le territoire utile est identifié.
 | Lot 09 Java `ProcessBuilder` / `External` | 2 nœuds, 1 relation | Retrouve exactement `TicketVerificationProcessManager#handle` vers `java.lang.ProcessBuilder` avant correction et a orienté la séparation transaction/worker |
 | Lot 09 Java projection ticket | 3 nœuds, 2 relations | Relie `TicketVerifyAcceptedEventHandler#handle` à `sync:tickets:entity`, puis à la table `tickets` |
 | Lot 09 Java intégration ticket | 3 nœuds, 2 relations | En partant du bean handler, relie l'outbox et le listener SQS au contrat stable `ticket-verification-requested:ticket.verify.accepted:v1` |
+| Lot 09 mobile `experienceOptimisticReported` | 10 nœuds, 9 relations | Retrouve intention, listener et reducer ; l'absence de lien vers la persistance a conduit à vérifier le middleware, qui omettait effectivement `exState` |
 | Recherches initiales `State:coffee`, `Handler:Home` | Aucun résultat | Recherche lexicale des nœuds ; les états peuvent s'appeler `cfState`, les écrans ne sont pas des handlers |
 
 Les premières recherches vides ne signifiaient donc pas que le connecteur était
@@ -736,6 +737,33 @@ dont domaine, worker, architecture, PostgreSQL/Testcontainers et SQS/LocalStack 
 natif ; 31 fichiers/146 tests Studio, contrat et build OAuth sûr. Cette preuve ne
 couvre pas encore les autres axes du lot ni un environnement déployé.
 
+La persistance mobile inclut maintenant `experienceWl` dans le snapshot privé
+par compte. Un test de redémarrage et de changement A→B prouve qu'expériences et
+signalements survivent pour A sans devenir visibles pour B. Les anciennes clés
+non scopées ne sont ni chargées ni attribuées implicitement : leur purge reste
+une opération irréversible soumise à une décision explicite.
+
+Deuxième point du lot 09 : l'état AWS a été vérifié en lecture seule le 12
+septembre. Le bucket actuellement configuré bloque les ACL/policies publiques et
+chiffre par défaut en AES-256 ; il n'a pas de CORS, ce qui est le minimum correct
+pour un client iOS natif. Le rôle attaché à l'instance staging autorisait encore
+le wildcard objet `fragments/staging/*`. Les templates locaux le bornent désormais
+aux quatre préfixes café, article, média privé et backup. Aucun changement AWS
+n'a été appliqué. Des rate limits par utilisateur couvrent localement scan,
+upload/confirmation et écritures UGC ; HTTP 429 reste une panne retryable pour
+l'outbox mobile. La validation du template, le déploiement et la preuve d'un vrai
+upload/cleanup sur réseau mobile restent ouverts.
+
+Preuve locale de ce deuxième point : 395 tests backend verts sans test ignoré,
+dont les garde-fous de templates, les tests unitaires du limiteur/filtre et une
+verticale HTTP/JWT/PostgreSQL ; celle-ci a aussi détecté puis fait corriger le
+câblage Spring du repository inbox à deux constructeurs. 75 suites et 286 tests
+mobile verts, TypeScript, carte Redux et contrôle de configuration native. ESLint
+ne remonte aucune erreur (20 avertissements préexistants lors de l'exécution sans
+cache, imposée ici par le sandbox). Aucun template CloudFormation n'a été envoyé
+au service de validation : cette vérification réseau a été refusée afin de ne pas
+transmettre le contenu local. Aucun changement AWS n'a été appliqué.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -837,6 +865,7 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 11 — lot 07, clôture locale 2026-09-11 22:24 CEST | Navigation flottante, sélection carte, itinéraire et hiérarchie de fiche café | 0,5 à 1,5 jour pour une passe UI contenue sans changement de contrat | Fenêtre observée d'environ 19 min depuis la clôture 06, incluant inventaire, implémentation, documentation, TypeScript, lint et deux régressions mobiles complètes ; temps actif non isolé | Zéro pour le code local ; contrôle sur appareils petit/grand iPhone et VoiceOver restent à la recette native | 0,25 à 1 jour concentré pour 08 à 09, puis TestFlight/App Review séparés | Le périmètre a été volontairement borné aux composants et lectures existants : ni refonte du Home, ni nouveau contexte, ni contrat backend. La vitesse ne préjuge pas de la recette native ni du durcissement réseau. Confiance moyenne |
 | Prévision 12 — lot 08, clôture locale 2026-09-11 vers 22:49 CEST | Home : sections articles, cafés, prochaine étape Pass et expériences personnelles | 0,25 à 1 jour pour une composition UI fondée sur les lectures existantes | Fenêtre observée d'environ 25 min depuis 22:24, incluant inventaire, implémentation, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Zéro pour le code local ; contrôle visuel sur appareils et durcissement transverse du lot 09 restent ouverts | 0,25 à 0,75 jour concentré pour le lot 09 local, puis recette native/TestFlight/App Review séparés | Le contrat Pass, les selectors et les projections existantes ont permis une composition sans backend ni Redux write. Le hero éditorial et son bandeau vertical ont été explicitement préservés. La vitesse ne prouve pas le rendu sur appareil. Confiance moyenne |
 | Prévision 13 — lot 09, première slice 2026-09-12 | Vérification ticket durable, inbox concurrente et exposition du statut technique | Référence héritée de 0,25 à 0,75 jour pour le lot 09 local | Fenêtre réelle non exploitable : reprise après interruption de session, validations Docker/build incluses ; temps actif non isolé | Contrôles S3/AWS, migrations/restauration, reprise legacy, recette offline/native, accessibilité et exploitation restent ouverts | 0,5 à 1,5 jour concentré pour terminer les preuves locales du lot 09 ; TestFlight/App Review séparés | La faille transactionnelle a exigé un vrai processus durable et des tests de concurrence, plus large qu'un simple hardening de statut. FlowAtlas Java a accéléré le ciblage, mais ses fixtures doivent évoluer avec le code. Confiance moyenne-faible avant inventaire complet du reste |
+| Prévision 14 — lot 09, deuxième slice 2026-09-12 | Cache Experience par compte, contrôle AWS en lecture seule, IAM local minimal et rate limits | Référence précédente de 0,5 à 1,5 jour local | Fenêtre interrompue puis reprise ; temps actif non isolable. Deux suites complètes et contrôles statiques inclus | Observabilité du worker, preuve cleanup/restauration, accessibilité/performance et recette native restent à examiner ; déploiement séparé | 0,25 à 1 jour concentré pour les dernières preuves locales ; TestFlight/App Review séparés | Le code local a convergé vite, mais AWS déployé, appareil réel et opérations irréversibles ne peuvent pas être simulés. FlowAtlas Redux a révélé l'omission de persistance ; la requête Java figée s'est périmée après refactor. Confiance moyenne |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
