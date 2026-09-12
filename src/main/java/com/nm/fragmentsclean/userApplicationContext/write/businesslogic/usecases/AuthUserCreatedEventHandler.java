@@ -6,8 +6,8 @@ import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -27,6 +27,7 @@ public class AuthUserCreatedEventHandler {
 		this.dateTimeProvider = dateTimeProvider;
 	}
 
+	@Transactional
 	public void handle(AuthUserCreatedIntegrationEvent event) {
 		UUID authUserId = event.authUserId();
 		Instant now = dateTimeProvider.now();
@@ -53,16 +54,10 @@ public class AuthUserCreatedEventHandler {
 				now,
 				0L);
 
-		try {
-			appUserRepository.save(user);
-			log.info("AppUser created from auth.user.created integration event. id={}, displayName={}", authUserId,
-					displayName);
-		} catch (DataIntegrityViolationException e) {
-			String msg = String.valueOf(
-					e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage()
-							: e.getMessage());
-			log.warn("AppUser creation raced for id={}, ignoring. msg={}", authUserId, msg);
-		}
+		// Let persistence failures roll back and reach inbox retry. A concurrent
+		// successful creation will be detected by findById on redelivery.
+		appUserRepository.save(user);
+		log.info("AppUser created from auth.user.created integration event. id={}", authUserId);
 	}
 
 	private static String firstNonBlank(String... values) {

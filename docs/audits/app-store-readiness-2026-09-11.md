@@ -3,6 +3,15 @@
 Date : 11 septembre 2026. Constats et preuves de l'audit initial du code local.
 Plan d'intervention révisé après la première tranche, à la demande du produit.
 
+**Revue complémentaire du 12 septembre, Astra High :** les anciens totaux
+backend ne constituent pas une preuve exhaustive des `*IT`. La reprise a
+exécuté explicitement 490 tests et trouvé 19 échecs/erreurs, puis corrigé le
+câblage social, l'isolation/actualisation des fixtures et une transaction
+manquante de création du profil. Le contrôle de release utilise désormais des
+rapports neufs et refuse les tests ignorés. Voir le bilan 09/10 ci-dessous et le
+[dossier TestFlight/App Store](../deployment/testflight-app-store-release.md).
+Le lot 10 est démarré, mais aucune autorisation de soumission n'est présumée.
+
 ## Statut du document et décision de périmètre
 
 Le périmètre global comprend désormais **les deux parcours** : nouveau parcours
@@ -40,12 +49,11 @@ et de leur modération ; le mobile expose les parcours café et personnel sans
 exiger de ticket, et Studio traite commentaires et expériences dans une file
 unifiée. Les médias restent explicitement au lot 06.
 
-Le lot 09 a démarré le 12 septembre avec **GPT-5.6 Sol High**. Sa première slice
-durcit la vérification technique des tickets : travail durable avec lease,
-processus local hors transaction, completion idempotente, inbox revendiquée de
-façon exclusive et statut technique `FAILED` distinct de `REJECTED`. Le lot 09
-reste en cours : cette slice ne vaut ni recette native, ni validation AWS, ni
-clôture des autres contrôles d'exploitation.
+Le lot 09 a démarré le 12 septembre avec **GPT-5.6 Sol High**, puis reçu une revue
+corrective **Astra High** : travail durable ticket, médias bornés, composition
+Spring et transactions réparées, tests exhaustifs consolidés. Les validations
+native, AWS et d'exploitation restent ouvertes. Le lot 10 dispose maintenant de
+sa préparation locale et de son dossier, sans build signé ni soumission.
 
 ## Conclusion
 
@@ -811,6 +819,63 @@ mobile `c6809dc` (cache Experience), `077ff6b` (429 retryable), `1c2c0b2`
 (accessibilité) et `cc9b848` (index carte). Aucun push, déploiement ou changement
 AWS n'est inclus.
 
+### Revue de fin 09 et préparation 10 — Astra High, 12 septembre
+
+L'utilisateur a demandé le passage à Astra pour cette revue et le lot 10. Les
+écarts suivants sont corrigés localement, sans changement des contrats métier :
+
+- S3 : lecture plafonnée avant allocation, interruption sans drainage du corps,
+  dimensions contrôlées avant décodage. Tests de rejet avant lecture/décodage,
+  panne technique retryable et vraie normalisation S3 LocalStack.
+- Câblage social : une seule source des repositories d'écriture, dans la
+  configuration write, avec JPA hors profil `fake`. Le read side ne fournit plus
+  les repositories métier ni le use case d'effacement.
+- Profil issu de l'identité : transaction explicite du handler autour du verrou
+  et de l'écriture ; erreur de persistance propagée, non avalée comme un succès.
+  La verticale authentification passe par routeur/inbox avec livraisons doublées.
+- Tests : fixtures SQL typées et isolées, statut commentaire `PUBLISHED`, UUID
+  d'auteur stable. Aucun invariant n'est assoupli. `bash scripts/test-release.sh`
+  inclut `*IT`, sépare les rapports de chaque exécution et refuse les skips.
+- iOS : permission Photos et entitlement Apple dans le projet natif ; plugin et
+  garde-fous alignés avec les nouveaux parcours. Huit tests de configuration,
+  dont rejets de permission/capability/URL légale manquantes.
+- Publication : liens légaux avant/après connexion, deux URL HTTPS obligatoires
+  en production ; retrait du bouton invité et du switch notifications sans
+  comportement. Aucun changement du Home, de son hero ou de son bandeau scroll.
+
+La première exécution exhaustive était rouge (490 tests, 3 failures, 16 errors).
+Une correction a ensuite exposé le verrou JPA du profil sans transaction : la
+preuve initiale « 400 tests verts » ne permettait pas de détecter ce défaut.
+La dernière exécution du 12 septembre à 11:11:22 CEST est verte : **496 tests
+backend, 0 failure, 0 error, 0 skipped**, 206 classes, en 3 min 31. Les rapports
+locaux dédiés sont `target/release-verification.wAMPe0` ; ne pas les additionner
+aux anciens. La compilation cible Java 21, mais la JVM de test locale est Java
+23 Valhalla : une validation du binaire de production reste nécessaire.
+Les 77 suites/289 tests mobile, 8 tests de configuration et les 31 suites/146
+tests Studio sont verts ;
+types, carte Redux, contrôle natif et build/contrat Studio sont vérifiés. Le lint
+mobile conserve 20 avertissements préexistants et aucune erreur.
+
+Le build Studio a d'abord refusé les tokens navigateur de la configuration
+locale, conformément au garde-fou. Le build vérifié utilise des variables
+publiques sans tokens, fournies au processus uniquement ; aucun `.env` modifié.
+Le scanner de secrets conservateur signale deux marqueurs PEM dans le parseur
+Apple et un test qui génère sa clé à l'exécution : revue manuelle, aucun bloc de
+clé privée stocké identifié dans ces deux fichiers. Le scanner n'est pas présenté
+comme vert et aucune exclusion de ces fichiers n'est ajoutée.
+
+**Limites :** pas de Xcode/simulateur utilisable ici, pas d'archive signée ni
+recette iPhone. Pas de push, de déploiement, d'upload App Store ou de mutation
+AWS. Le dossier recense aussi les liens légaux à publier, la modération des
+images UGC (distincte de la validation du format), les données de revue,
+capabilities Apple, manifestes de confidentialité, migrations et restauration.
+Le legacy sans propriétaire prouvé reste inerte ; aucune purge autorisée.
+
+Traçabilité locale : backend `f39ee74` (médias), `9bdf9fa` (composition,
+transaction et fixtures), `726c254` (contrôle release) ; mobile `9eebdd9`, merge
+`32f4413`. Les commits sont séparés par correction vérifiable, sous la même
+branche de revue backend. Studio n'a pas été modifié.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -855,8 +920,8 @@ simultanées ne doivent pas être additionnées deux fois.
 | 06 | Clos et intégré localement ; GPT-5.6 Sol High | Fenêtre observée d'environ 1 h 20, de 20:45 à 22:05 CEST ; temps actif non isolé | Médias privés, avatar, reprise et effacement ; IAM/CORS réel et recette appareil restent ouverts |
 | 07 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 19 min, de 22:05 à 22:24 CEST ; temps actif non isolé | Barre flottante, carte et fiche ; recette appareil/VoiceOver ouverte |
 | 08 | Clos et intégré localement ; GPT-5.6 Terra Medium | Fenêtre observée d'environ 25 min depuis la clôture 07, incluant inventaire, composition, tests, TypeScript, lint, documentation et intégration Git ; temps actif non isolé | Mobile `629933c`/merge `ff3b984` ; hero et bandeau de scroll préservés, recette native et contrôle visuel sur appareil ouverts |
-| 09 | En cours ; première slice ticket implémentée avec GPT-5.6 Sol High | Fenêtre reprise observée le 12 septembre, temps actif non isolé d'une interruption de session | Worker durable hors transaction, leases job/inbox, échec technique distinct et tests backend/mobile/Studio ; recette native, AWS, legacy et autres contrôles transverses ouverts |
-| 10 | Planifié, non démarré | Non démarré | TestFlight, corrections, dossier et autorisation de soumission |
+| 09 | Implémentation Sol High puis revue/corrections Astra High ; validation d'environnement ouverte | Reprise du 12 septembre, plusieurs exécutions exhaustives ; temps actif non isolé | Médias bornés, composition Spring et transaction profil corrigées ; preuves locales consolidées, exploitation/native encore à valider |
+| 10 | Préparation locale avec Astra High ; non clos | Fenêtre partagée avec la revue 09 | Configuration iOS, liens légaux et dossier de recette prêts ; build signé, environnement, TestFlight et soumission non effectués |
 
 Le suivi fonctionne en boucle : **projection → réalisation observée → analyse
 des écarts → nouvelle projection**. Il ne faut ni attendre la fin du chantier
@@ -917,6 +982,20 @@ Gabarit du journal à compléter sans valeurs inventées :
 | Prévision 16 — lot 09, quatrième slice 2026-09-12 | Suppression différée des médias privés sur S3 LocalStack | Référence précédente de 0,25 à 0,75 jour local | Fenêtre incluse dans la reprise, avec verticale LocalStack et suite complète ; temps actif non isolé | Revue accessibilité/performance et recette native ; preuve staging upload/cleanup et restore drill séparée | 0,25 à 0,5 jour concentré pour le dernier audit local ; TestFlight/App Review séparés | La combinaison fake en panne + vrai `DeleteObject` prouve ordre et retry localement. Le stockage AWS réel reste volontairement inchangé. Confiance moyenne |
 | Prévision 17 — lot 09, point local 2026-09-12 | Accessibilité critique, index carte et inventaire des scénarios de résilience | Référence précédente de 0,25 à 0,5 jour local | Fenêtre incluse dans la reprise ; suite complète, TypeScript, lint et contrôles release inclus | Purge legacy soumise à décision ; VoiceOver/appareil, staging upload/cleanup, restore drill et TestFlight externes | 0 à 0,25 jour local selon la décision legacy ; campagne environnement/appareil séparée | Les écarts locaux identifiés ont été corrigés sans refonte UI. Les tests statiques ne prouvent pas l'expérience assistive ni les performances réelles. Confiance élevée sur le code local, faible sur l'environnement non exécuté |
 | Prévisions suivantes — à chaque point de contrôle | Lot en cours ou terminé | Référence conservée | À mesurer | À réestimer, zéro seulement si clos | Nouvelle fourchette datée | Causes des écarts et changements depuis la projection précédente |
+
+Prévision 18 — revue Astra 09/10 du 12 septembre : la prévision 17 (« 0 à
+0,25 jour » et confiance élevée locale) était trop optimiste avant l'exécution
+réelle de tous les `*IT`. La revue a trouvé des défauts applicatifs et de fixtures,
+plus un contrôle natif périmé. Le temps de correction et de régression est
+constaté dans les logs : environ 21 minutes entre les premiers tests à 10:50 et
+la fin du run vert à 11:11, hors exploration initiale, documentation et Git ;
+ce n'est pas du temps actif pur.
+Après livraison locale, réserver **0,5 à 1 jour de recette/configuration active**
+si comptes, pages légales et appareil sont disponibles, **plus 0,5 à 1,5 jour de
+marge de correction** selon la recette. Ce n'est pas une estimation ferme d'une
+éventuelle nouvelle solution de filtrage visuel. Attentes Apple, disponibilité
+des credentials, publication des pages et TestFlight sont hors temps de code.
+Confiance moyenne sur le reste local et faible sur le calendrier externe.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
@@ -993,6 +1072,19 @@ preuves. La requête externe est devenue invalide après ajout du port durable,
 ce qui donne un retour concret à FlowAtlas : conserver le scope explicite, mais
 signaler et faciliter la mise à jour des sources de résolution lors d'un refactor.
 
+Retour de revue Astra 09/10 : une seule requête MCP `get_context` sur le handler
+SQS ticket a rendu 3 nœuds, 2 relations et 3 240 octets (`complete` et
+`frontierComplete` vrais), sans `find` préalable ni scan Java global. Les chemins
+sources ont permis une lecture ciblée du sender, du resolver et du consommateur.
+La fixture reste donc utile après le découpage du worker. En revanche elle ne
+couvre ni injection Spring, ni ouverture des transactions, ni sélection des tests
+Maven : les défauts découverts dans cette revue sont hors de son scope. Évolutions
+utiles : provenance/scope des fichiers de résolution, relations d'injection et
+profil des beans, frontières transactionnelles déclarées, déclencheurs scheduled
+vers ports. Ces éléments doivent rester des preuves statiques, pas des garanties
+runtime. Le volume de contexte retourné est mesuré ; le gain total de tokens ou
+de temps ne l'est pas, donc aucun pourcentage d'économie n'est revendiqué.
+
 ### Modèles Codex et niveau d'exigence
 
 Le modèle est choisi et annoncé avant chaque lot afin d'utiliser le niveau le
@@ -1015,8 +1107,8 @@ raisonnement monte seulement avec la complexité et les compromis du lot.
 | 06 — médias/avatar/S3 | GPT-5.6 Sol | High | Sécurité objet, reprise et nettoyage ; revue Astra ciblée possible |
 | 07 — navigation/carte/fiche | GPT-5.6 Terra ou Sol | Medium à High | Choisir Terra si les écrans et contrats sont figés, Sol si des interactions transverses restent ouvertes |
 | 08 — Home/cohérence produit | GPT-5.6 Terra | Medium | Réalisé : lectures et navigation existantes, aucune nouvelle décision de contrat |
-| 09 — durcissement | GPT-5.6 Sol | High | Analyse des courses, sécurité, migrations et reprise |
-| 10 — TestFlight/App Store | GPT-5.6 Sol, revue Astra ciblée | High | Corrections de release et jugement final ; pas d'Ultra par défaut |
+| 09 — durcissement | GPT-5.6 Sol puis GPT-6 Astra | High | Sol pour les slices ; Astra choisi par l'utilisateur pour la fin et la revue corrective du 12 septembre |
+| 10 — TestFlight/App Store | GPT-6 Astra | High | Choix utilisateur pour la préparation et les corrections de release ; campagne externe non réalisée |
 
 Le choix sera réévalué avant chaque lot avec la projection de temps. Un lot peut
 passer à Terra Medium lorsque ses décisions sont figées et ses critères de sortie
@@ -1075,8 +1167,9 @@ introduits. Toute solution qui exige une perversion de ces règles est arrêtée
 documentée et remplacée par une alternative conforme avant de poursuivre.
 
 **État actuel : lots 00 à 08 implémentés, testés et intégrés localement. Le lot
-09 est en cours avec GPT-5.6 Sol High ; sa première slice ticket est implémentée
-et testée mais pas encore déployée. Les lots
+09 a reçu la revue corrective Astra High après l'implémentation Sol High. Le lot
+10 est préparé localement avec Astra High mais reste non clos, sans build signé
+ni campagne TestFlight. Aucun de ces changements n'est déployé. Les lots
 07 et 08 ont utilisé GPT-5.6 Terra Medium, conformément au choix de modèle :
 changements UI bornés, contrats et navigation métier figés. Le lot 08 compose
 les lectures réelles sous le grand visuel existant, sans `homeContext` ni données

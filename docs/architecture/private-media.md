@@ -53,6 +53,10 @@ for retry. `/commands/{commandId}` remains the confirmation source of truth.
   expected content type and server-side AES-256 encryption header.
 - JPEG and PNG are accepted. File signatures, decoded dimensions, pixel count
   and actual byte size are checked server-side; declared metadata is not trusted.
+- S3 response size is checked before reading; the stream is limited to the
+  configured maximum plus one detection byte and aborted rather than drained.
+  Image dimensions are inspected through the decoder header before pixel
+  allocation. Interrupted transfers remain technical/retryable failures.
 - Decoding and JPEG re-encoding remove EXIF, including GPS data. Avatars are
   center-cropped to a square; experience photos retain their aspect ratio.
 - An experience cannot publish while one of its media items is still pending.

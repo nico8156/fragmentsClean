@@ -1,6 +1,9 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateImageStore;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.media.ImageUploadRejectedException;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -39,12 +42,37 @@ public final class S3PrivateImageStore implements PrivateImageStore {
 
   @Override
   public ProcessedImage normalize(String pendingObjectKey, String finalObjectKey, String declaredContentType, ImageRules rules) {
-    var response = client.getObjectAsBytes(GetObjectRequest.builder().bucket(properties.requiredBucket()).key(pendingObjectKey).build());
-    var normalized = normalizer.normalize(response.asByteArray(), declaredContentType, rules);
+    var normalized = normalizer.normalize(readBounded(pendingObjectKey, rules.maxInputBytes()), declaredContentType, rules);
     client.putObject(
         PutObjectRequest.builder().bucket(properties.requiredBucket()).key(finalObjectKey).contentType(normalized.contentType()).contentLength((long) normalized.bytes().length).cacheControl("private, max-age=21600").serverSideEncryption(ServerSideEncryption.AES256).build(),
         RequestBody.fromBytes(normalized.bytes()));
     return new ProcessedImage(finalObjectKey, normalized.contentType(), normalized.bytes().length, normalized.width(), normalized.height(), normalized.sha256());
+  }
+
+  private byte[] readBounded(String objectKey, long maximumBytes) {
+    if (maximumBytes <= 0 || maximumBytes >= Integer.MAX_VALUE) {
+      throw new IllegalArgumentException("Invalid image byte limit configuration");
+    }
+    var response = client.getObject(GetObjectRequest.builder()
+        .bucket(properties.requiredBucket()).key(objectKey).build());
+    try {
+      Long length = response.response().contentLength();
+      if (length != null && length > maximumBytes) rejectTooLarge();
+      byte[] bytes = response.readNBytes((int) maximumBytes + 1);
+      if (bytes.length > maximumBytes) rejectTooLarge();
+      return bytes;
+    } catch (IOException failure) {
+      // A broken transfer is retryable, not an explicit business rejection.
+      throw new UncheckedIOException("Unable to read pending image", failure);
+    } finally {
+      // close() may drain the entire response with the Apache client. Abort
+      // instead, including on early size rejection, to bound network work too.
+      response.abort();
+    }
+  }
+
+  private static void rejectTooLarge() {
+    throw new ImageUploadRejectedException("IMAGE_TOO_LARGE", "Image exceeds the upload limit");
   }
 
   @Override

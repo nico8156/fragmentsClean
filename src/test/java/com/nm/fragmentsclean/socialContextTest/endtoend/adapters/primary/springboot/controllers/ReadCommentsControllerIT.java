@@ -36,6 +36,8 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 	@BeforeEach
 	void setup() {
 		jdbcTemplate.update("DELETE FROM social_comments_projection");
+		jdbcTemplate.update("DELETE FROM social_user_blocks_projection");
+		jdbcTemplate.update("DELETE FROM social_content_reports_projection");
 
 		Instant older = Instant.parse("2024-01-01T10:00:00Z");
 		Instant newer = Instant.parse("2024-01-01T11:00:00Z");
@@ -61,7 +63,7 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 				Timestamp.from(older),
 				null,
 				null,
-				"ACCEPTED",
+				"PUBLISHED",
 				1L,
 				0L,
 				1L);
@@ -82,7 +84,7 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 				Timestamp.from(newer),
 				null,
 				null,
-				"ACCEPTED",
+				"PUBLISHED",
 				2L,
 				1L,
 				2L);
@@ -103,7 +105,7 @@ public class ReadCommentsControllerIT extends AbstractBaseE2E {
 				Timestamp.from(newer),
 				null,
 				Timestamp.from(deleted),
-				"ACCEPTED",
+				"PUBLISHED",
 				5L,
 				0L,
 				3L);

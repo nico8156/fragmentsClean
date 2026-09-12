@@ -1,6 +1,10 @@
 package com.nm.fragmentsclean.socialContext.write.adapters.primary.springboot.controllers;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.SocialAccountDataEraser;
+import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.EraseSocialAccountData;
+import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jdbc.JdbcSocialAccountDataEraser;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeLikeRepository;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeContentReportRepository;
@@ -47,6 +51,17 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 public class SocialContextWriteDependenciesConfiguration {
 
     @Bean
+    SocialAccountDataEraser socialAccountDataEraser(JdbcTemplate jdbc) {
+        return new JdbcSocialAccountDataEraser(jdbc);
+    }
+
+    @Bean
+    EraseSocialAccountData eraseSocialAccountData(
+            SocialAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock) {
+        return new EraseSocialAccountData(eraser, events, clock);
+    }
+
+    @Bean
     CommentContentPolicy commentContentPolicy(
             @Value("${fragments.social.moderation.forbidden-terms:}") String rawTerms) {
         Set<String> terms = Arrays.stream(("kill yourself,va te suicider," + rawTerms).split(","))
@@ -61,9 +76,9 @@ public class SocialContextWriteDependenciesConfiguration {
         return new FakeLikeRepository();
     }
 
-    // Profil "database" : utilisé pour les tests avec Postgres / JPA
+    // Persistent adapters are the runtime default; fake is an explicit alternative.
     @Bean
-    @Profile("database")
+    @Profile("!fake")
     public LikeRepository likeRepositoryJpa(SpringLikeRepository springLikeRepository) {
         return new JpaLikeRepository(springLikeRepository);
     }
@@ -77,17 +92,17 @@ public class SocialContextWriteDependenciesConfiguration {
     @Bean @Profile("fake") public ContentReportRepository fakeContentReportRepository() { return new FakeContentReportRepository(); }
     @Bean @Profile("fake") public UserBlockRepository fakeUserBlockRepository() { return new FakeUserBlockRepository(); }
 
-    @Bean @Profile("database")
+    @Bean @Profile("!fake")
     public ContentReportRepository jpaContentReportRepository(SpringContentReportRepository repository) {
         return new JpaContentReportRepository(repository);
     }
-    @Bean @Profile("database")
+    @Bean @Profile("!fake")
     public UserBlockRepository jpaUserBlockRepository(SpringUserBlockRepository repository) {
         return new JpaUserBlockRepository(repository);
     }
 
     @Bean
-    @Profile("database")
+    @Profile("!fake")
     public CommentRepository jpaCommentRepository(SpringCommentRepository springCommentRepository) {
         return new JpaCommentRepository(springCommentRepository);
     }

@@ -33,7 +33,7 @@ class StructuredArticleProjectionIT extends AbstractJpaIntegrationTest {
                     created_at, updated_at, status, version, working_revision_id)
                 VALUES (?, 'choisir-son-cafe', 'fr-FR', ?, 'Jules Moreau', 'Shell', 'Shell',
                     '[]', 'Shell', '[]', 1, '[]', ?, ?, 'DRAFT', 1, ?)
-                """, articleId, authorId, now, now, revisionId);
+                """, articleId, authorId, java.sql.Timestamp.from(now), java.sql.Timestamp.from(now), revisionId);
         jdbcTemplate.update("""
                 INSERT INTO article_revisions(revision_id, article_id, revision_number, title,
                     introduction, conclusion, cover_reference, cover_width, cover_height, cover_alt,
@@ -41,7 +41,7 @@ class StructuredArticleProjectionIT extends AbstractJpaIntegrationTest {
                 VALUES (?, ?, 1, 'Découvrir et choisir son café', 'Une introduction structurée.',
                     'Une conclusion structurée.', 's3://articles/cover.jpg', 1200, 800, 'Tasses de café',
                     5, 'PUBLISHED', ?, ?, 3)
-                """, revisionId, articleId, now, now);
+                """, revisionId, articleId, java.sql.Timestamp.from(now), java.sql.Timestamp.from(now));
         jdbcTemplate.update("""
                 INSERT INTO article_revision_sections(section_id, revision_id, position, heading)
                 VALUES (?, ?, 0, 'Comprendre ses goûts')

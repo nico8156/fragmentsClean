@@ -59,8 +59,9 @@ class CoffeeProjectionMonotonicityIT extends TestContainers {
 	@BeforeEach
 	void resetProjection() {
 		syncPublisher.fail = false;
-		jdbcTemplate.update("DELETE FROM coffee_summaries_projection WHERE id = ?", COFFEE_ID);
-		jdbcTemplate.update("DELETE FROM coffee_projection_checkpoints WHERE coffee_id = ?", COFFEE_ID);
+		// findAll assertions require an isolated catalogue, including after seed tests.
+		jdbcTemplate.update("DELETE FROM coffee_summaries_projection");
+		jdbcTemplate.update("DELETE FROM coffee_projection_checkpoints");
 	}
 
 	@Test

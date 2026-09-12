@@ -13,6 +13,7 @@ import java.util.HexFormat;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
 public final class SafeImageNormalizer {
   public Normalized normalize(byte[] input, String declaredContentType, ImageRules rules) {
@@ -24,8 +25,24 @@ public final class SafeImageNormalizer {
     }
 
     BufferedImage source;
-    try {
-      source = ImageIO.read(new ByteArrayInputStream(input));
+    try (var stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(input))) {
+      var readers = ImageIO.getImageReaders(stream);
+      if (!readers.hasNext()) reject("IMAGE_INVALID", "Image cannot be decoded");
+      var reader = readers.next();
+      try {
+        reader.setInput(stream, true, true);
+        int width = reader.getWidth(0);
+        int height = reader.getHeight(0);
+        if (width <= 0 || height <= 0) reject("IMAGE_INVALID", "Image dimensions are invalid");
+        if ((long) width * height > rules.maxPixels()) {
+          reject("IMAGE_PIXEL_LIMIT", "Image dimensions exceed the safety limit");
+        }
+        source = reader.read(0);
+      } finally {
+        reader.dispose();
+      }
+    } catch (ImageUploadRejectedException rejected) {
+      throw rejected;
     } catch (Exception failure) {
       throw new ImageUploadRejectedException("IMAGE_INVALID", "Image cannot be decoded");
     }

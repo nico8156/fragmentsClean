@@ -65,7 +65,8 @@ class PrivateMediaCleanupLocalStackTest {
             assertThat(repository.inspect(media.id()).orElseThrow().status()).isEqualTo(ExperienceMediaStatus.DELETED);
             assertThatThrownBy(() -> client.headObject(
                     HeadObjectRequest.builder().bucket(bucket).key(objectKey).build()))
-                    .isInstanceOf(S3Exception.class);
+                    .isInstanceOfSatisfying(S3Exception.class, failure ->
+                            assertThat(failure.statusCode()).isEqualTo(404));
         }
     }
 
@@ -74,6 +75,38 @@ class PrivateMediaCleanupLocalStackTest {
             return DockerClientFactory.instance().isDockerAvailable();
         } catch (RuntimeException exception) {
             return false;
+        }
+    }
+
+    @Test
+    void pending_png_is_streamed_and_normalized_to_a_private_jpeg() throws Exception {
+        try (var localStack = localStack();
+             var client = s3Client(localStack);
+             var presigner = s3Presigner(localStack)) {
+            String bucket = "fragments-normalization-test";
+            client.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
+            var image = new java.awt.image.BufferedImage(32, 16, java.awt.image.BufferedImage.TYPE_INT_RGB);
+            var png = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(image, "png", png);
+            client.putObject(PutObjectRequest.builder().bucket(bucket).key("pending.png").build(),
+                    RequestBody.fromBytes(png.toByteArray()));
+            var properties = new PrivateImageStorageProperties();
+            properties.setBucket(bucket);
+            var store = new S3PrivateImageStore(properties, client, presigner, new SafeImageNormalizer());
+
+            var result = store.normalize("pending.png", "normalized.jpg", "image/png",
+                    new com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateImageStore.ImageRules(
+                            1024, 1024, 16, 16, false, .8f));
+
+            assertThat(result.width()).isEqualTo(16);
+            assertThat(result.height()).isEqualTo(8);
+            var saved = client.getObjectAsBytes(software.amazon.awssdk.services.s3.model.GetObjectRequest
+                    .builder().bucket(bucket).key("normalized.jpg").build());
+            assertThat(saved.response().contentType()).isEqualTo("image/jpeg");
+            assertThat(saved.response().serverSideEncryptionAsString()).isEqualTo("AES256");
+            assertThat(saved.response().cacheControl()).isEqualTo("private, max-age=21600");
+            assertThat(saved.asByteArray()).hasSize((int) result.size());
+            assertThat(javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(saved.asByteArray())).getWidth()).isEqualTo(16);
         }
     }
 

@@ -19,4 +19,14 @@ import org.springframework.test.context.ContextConfiguration;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = AuthenticationContextWriteE2EConfiguration.class)
 @ActiveProfiles("auth_test")
-public abstract class AbstractBaseE2E extends TestContainers {}
+public abstract class AbstractBaseE2E extends TestContainers {
+    @org.springframework.beans.factory.annotation.Autowired
+    private org.springframework.jdbc.core.JdbcTemplate authenticationFixtureJdbc;
+
+    @org.junit.jupiter.api.BeforeEach
+    void clearAccountFixtures() {
+        // Testcontainers database only: child account rows from other verticals
+        // must not leak into these tests. Never weaken production FK constraints.
+        authenticationFixtureJdbc.execute("TRUNCATE TABLE app_users, auth_users CASCADE");
+    }
+}

@@ -10,12 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nm.fragmentsclean.authenticationContext.write.adapters.primary.springboot.sqs.AppUserDeletionRequestedAuthenticationSqsHandler;
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations;
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
-import com.nm.fragmentsclean.userApplicationContext.write.adapters.primary.springboot.sqs.AuthUserCreatedSqsIntegrationEventHandler;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRouter;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserDeletionRequestedEvent;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,8 +34,7 @@ public class AuthMeIT extends AbstractBaseE2E {
   @Autowired JdbcTemplate jdbcTemplate;
   @Autowired SpringOutboxEventRepository outboxEventRepository;
   @Autowired TransactionTemplate transactionTemplate;
-  @Autowired AuthUserCreatedSqsIntegrationEventHandler authUserCreatedSqsIntegrationEventHandler;
-  @Autowired AppUserDeletionRequestedAuthenticationSqsHandler accountDeletionHandler;
+  @Autowired SqsIntegrationEventRouter eventRouter;
 
   @BeforeEach
   void setup() {
@@ -89,7 +87,8 @@ public class AuthMeIT extends AbstractBaseE2E {
               return new IntegrationEventEnvelopeFactory(objectMapper)
                   .from(outboxEvent, IntegrationEventDestinations.AUTH_USERS_EVENTS);
             });
-    authUserCreatedSqsIntegrationEventHandler.handle(envelope);
+    eventRouter.route(envelope);
+    eventRouter.route(envelope);
 
     // THEN : attendre que app_users soit créé (pipeline async)
     await()
@@ -148,7 +147,8 @@ public class AuthMeIT extends AbstractBaseE2E {
               return new IntegrationEventEnvelopeFactory(objectMapper)
                   .from(event, IntegrationEventDestinations.AUTH_USERS_EVENTS);
             });
-    accountDeletionHandler.handle(deletionEnvelope);
+    eventRouter.route(deletionEnvelope);
+    eventRouter.route(deletionEnvelope);
 
     mockMvc
         .perform(get("/api/users/me").header("Authorization", "Bearer " + accessToken))
