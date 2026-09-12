@@ -3,7 +3,10 @@ set -euo pipefail
 
 RELEASE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${RELEASE_ROOT}"
-command -v rg >/dev/null
+if ! command -v rg >/dev/null 2>&1; then
+  echo "ripgrep (rg) is required for release verification." >&2
+  exit 1
+fi
 ./scripts/testcontainers-check.sh
 mkdir -p target
 RELEASE_REPORTS="$(mktemp -d "${RELEASE_ROOT}/target/release-verification.XXXXXX")"
