@@ -8,13 +8,13 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 
 | Vérification du 12 septembre | Résultat |
 | --- | --- |
-| Backend, `bash scripts/test-release.sh` | 496 tests / 206 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 11:11:22 CEST, 3 min 31 |
+| Backend, `bash scripts/test-release.sh` | 497 tests / 206 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 12:13:17 CEST, 2 min 33 |
 | Mobile Jest | 77 suites, 289 tests verts |
 | Configuration release mobile | 8 tests verts, dont le vrai plugin de permissions |
 | Mobile types/lint/Redux/natif | TypeScript et contrôles verts ; lint 0 erreur, 20 avertissements préexistants |
 | Studio | 31 suites, 146 tests verts ; build public sans tokens, vérification du bundle et contrat API verts |
 
-Rapports backend isolés : `target/release-verification.wAMPe0`. La JVM locale
+Rapports backend isolés : `target/release-verification.2W5I8L`. La JVM locale
 est Java 23 Valhalla, avec compilation `release 21`. Ce résultat n'est pas une
 preuve sur le runtime de production ni sur une archive iOS. La première
 régression exhaustive avait trouvé 19 cas en échec/erreur sur 490 tests ; les
@@ -23,6 +23,13 @@ corrections et tests ajoutés sont détaillés dans
 
 Commits backend : `f39ee74` (médias), `9bdf9fa` (Spring/profil), `726c254`
 (contrôle de release) ; mobile `9eebdd9`, intégré localement par `32f4413`.
+
+Le [préflight AWS du lot 10](aws-release-preflight-2026-09-12.md) a commencé :
+inventaire réel en lecture seule, corrections infra locales et CI complète
+préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
+restauration et migration explicite restent à prouver avant déploiement. Aucun
+push ni changement AWS effectué. Le préflight consigne aussi l'avertissement
+de terminaison Surefire du dernier run, malgré ses 497 tests verts.
 
 ## Conditions de passage
 

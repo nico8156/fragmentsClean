@@ -142,6 +142,12 @@ Resources:
                     s3:prefix:
                       - fragments/staging/coffees/*
               - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: Fragments/Staging
+              - Effect: Allow
                 Action:
                   - ssm:GetParameter
                   - ssm:GetParameters

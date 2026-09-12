@@ -38,11 +38,9 @@ jobs:
           java-version: '21'
           cache: maven
 
-      - name: Test backend deployment guard
+      - name: Verify full backend release on Java 21
         run: |
-          ./mvnw -q \
-            -Dtest=BoundedContextArchitectureTest,StoragePresignerWiringTest,CreateArticleCommandHandlerTest,MakeLikeCommandHandlerTest,CreateCommentCommandHandlerTest,UpdateCommentCommandHandlerTest,IntegrationEventDestinationResolverTest,DeleteCommentCommandHandlerTest,VerifyTicketCommandHandlerTest,IntegrationEventEnvelopeFactoryTest,StableEnvelopeOutboxEventSenderTest,OutboxDomainEventPublisherTest,BusHandlerRegistrationListenerTest,AdminTokenSecurityTest,CreateCoffeeCommandHandlerTest,HttpGooglePlacePhotosGatewayTest,ImportGooglePhotosForCoffeeTest,CoffeePhotosImportedEventHandlerTest,CoffeePhotoCommandHandlerTest,CoffeePhotoAddedEventHandlerTest,CoffeePhotoDeletedEventHandlerTest \
-            test
+          bash scripts/test-release.sh
 
       - name: Package backend
         run: ./mvnw -q -DskipTests package
