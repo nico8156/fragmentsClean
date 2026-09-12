@@ -2,18 +2,16 @@ name: Deploy Staging Backend
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'bin/**'
-      - 'pom.xml'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'infra/aws/compose/platform/staging/fragments/**'
-      - 'infra/aws/cloudformation/staging-minimal.yaml'
-      - '.github/workflows/deploy-staging-backend.yml'
+    inputs:
+      approve_staging_release:
+        description: 'Infra, SSM, restore proof and maintenance window reviewed; authorize this staging deployment'
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: fragments-staging-release
+  cancel-in-progress: false
 
 env:
   AWS_REGION: eu-west-3
@@ -22,6 +20,7 @@ env:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main' && inputs.approve_staging_release
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,6 +48,7 @@ jobs:
         run: |
           bash -n infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh
           bash -n infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh
+          bash -n infra/aws/compose/platform/staging/fragments/render-release-migration.sh
 
       - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -112,7 +112,7 @@ jobs:
           set -euo pipefail
           deploy_script_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh"
           backend_image="${ECR_REPOSITORY}:${IMAGE_TAG}"
-          remote_command="curl --fail --silent --show-error --location '${deploy_script_url}' --output /tmp/fragments-deploy-via-ssm.sh && chmod 700 /tmp/fragments-deploy-via-ssm.sh && /tmp/fragments-deploy-via-ssm.sh '${backend_image}' '${GITHUB_SHA}'"
+          remote_command="curl --fail --silent --show-error --location '${deploy_script_url}' --output /tmp/fragments-deploy-via-ssm.sh && chmod 700 /tmp/fragments-deploy-via-ssm.sh && /tmp/fragments-deploy-via-ssm.sh '${backend_image}' '${GITHUB_SHA}' --approved-staging-release"
           command_parameters="$(jq -nc --arg command "${remote_command}" '{commands:[$command]}')"
           command_id="$(aws ssm send-command \
             --region "${AWS_REGION}" \

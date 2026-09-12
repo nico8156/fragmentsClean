@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-runtime_root=/srv/fragments/staging
+runtime_root=${2:-/srv/fragments/staging}
 aws_region=eu-west-3
 backend_image=${1:?"Usage: bootstrap-runtime.sh <backend-image>"}
 
@@ -22,7 +22,18 @@ runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" 
 
 umask 077
 : > "$runtime_root/.env"
-write_env() { printf '%s=%s\n' "$1" "$2" >> "$runtime_root/.env"; }
+write_env() {
+  local value=$2
+  [[ "$value" != *$'\r'* ]] || { echo "Unsupported CR in $1." >&2; return 1; }
+  case "$value" in
+    *'$'*|*'#'*|*"'"*|*$'\n'*)
+      # Compose single-quoted values preserve dollars and multiline PEMs.
+      value=${value//\'/\\\'}
+      printf "%s='%s'\n" "$1" "$value" >> "$runtime_root/.env"
+      ;;
+    *) printf '%s=%s\n' "$1" "$value" >> "$runtime_root/.env" ;;
+  esac
+}
 
 write_env BACKEND_IMAGE "$backend_image"
 write_env POSTGRES_USER fragments
