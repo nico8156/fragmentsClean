@@ -6,15 +6,22 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
+import java.time.Duration;
 import java.time.Instant;
 
 @Repository
 public class InboxMessageRepository {
 
     private final JdbcTemplate jdbcTemplate;
+    private final Duration claimLease;
 
     public InboxMessageRepository(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, Duration.ofMinutes(5));
+    }
+
+    InboxMessageRepository(JdbcTemplate jdbcTemplate, Duration claimLease) {
         this.jdbcTemplate = jdbcTemplate;
+        this.claimLease = claimLease;
     }
 
     public boolean claim(IntegrationEventEnvelope envelope) {
@@ -22,47 +29,37 @@ public class InboxMessageRepository {
             jdbcTemplate.update("""
                     INSERT INTO inbox_messages (
                         destination, event_id, event_type, event_version,
-                        received_at, status
+                        received_at, status, lease_until
                     )
-                    VALUES (?, ?, ?, ?, ?, 'RECEIVED')
+                    VALUES (?, ?, ?, ?, ?, 'RECEIVED', ?)
                     """,
                     envelope.destination(),
                     envelope.eventId(),
                     envelope.eventType(),
                     envelope.eventVersion(),
-                    Timestamp.from(Instant.now()));
+                    Timestamp.from(Instant.now()),
+                    Timestamp.from(Instant.now().plus(claimLease)));
             return true;
         } catch (DuplicateKeyException duplicate) {
-            String status = statusFor(envelope);
-            if ("PROCESSED".equals(status)) {
-                return false;
-            }
-            jdbcTemplate.update("""
+            Instant now = Instant.now();
+            return jdbcTemplate.update("""
                     UPDATE inbox_messages
                     SET status = 'RECEIVED',
                         received_at = ?,
+                        lease_until = ?,
                         processed_at = NULL,
                         error_message = NULL
                     WHERE destination = ?
                       AND event_id = ?
+                      AND (status = 'FAILED'
+                           OR (status = 'RECEIVED' AND (lease_until IS NULL OR lease_until <= ?)))
                     """,
-                    Timestamp.from(Instant.now()),
+                    Timestamp.from(now),
+                    Timestamp.from(now.plus(claimLease)),
                     envelope.destination(),
-                    envelope.eventId());
-            return true;
+                    envelope.eventId(),
+                    Timestamp.from(now)) == 1;
         }
-    }
-
-    private String statusFor(IntegrationEventEnvelope envelope) {
-        return jdbcTemplate.queryForObject("""
-                SELECT status
-                FROM inbox_messages
-                WHERE destination = ?
-                  AND event_id = ?
-                """,
-                String.class,
-                envelope.destination(),
-                envelope.eventId());
     }
 
     public void markProcessed(IntegrationEventEnvelope envelope) {
@@ -70,6 +67,7 @@ public class InboxMessageRepository {
                 UPDATE inbox_messages
                 SET status = 'PROCESSED',
                     processed_at = ?,
+                    lease_until = NULL,
                     error_message = NULL
                 WHERE destination = ?
                   AND event_id = ?
@@ -83,6 +81,7 @@ public class InboxMessageRepository {
         jdbcTemplate.update("""
                 UPDATE inbox_messages
                 SET status = 'FAILED',
+                    lease_until = NULL,
                     error_message = ?
                 WHERE destination = ?
                   AND event_id = ?

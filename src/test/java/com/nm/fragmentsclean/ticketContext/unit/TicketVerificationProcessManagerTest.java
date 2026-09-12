@@ -1,120 +1,55 @@
 package com.nm.fragmentsclean.ticketContext.unit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
 import com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.fake.FakeTicketRepository;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationProvider;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.gateways.TicketVerificationJobRepository;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.Ticket;
-import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerificationCompletedEvent;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.models.TicketVerifyAcceptedEvent;
+import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationJob;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class TicketVerificationProcessManagerTest {
-	private static final UUID COMMAND_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
-	private static final UUID TICKET_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-	private static final UUID USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
-	private static final Instant CLIENT_AT = Instant.parse("2023-10-01T09:59:00Z");
+    private static final UUID EVENT_ID = UUID.fromString("44444444-4444-4444-4444-444444444444");
+    private static final UUID COMMAND_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
+    private static final UUID TICKET_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
-	private FakeTicketRepository ticketRepository;
-	private FakeDomainEventPublisher eventPublisher;
-	private DeterministicDateTimeProvider dateTimeProvider;
+    @Test
+    void accepted_event_persists_one_pending_job_and_does_not_call_the_provider() {
+        var tickets = new FakeTicketRepository();
+        var clock = new DeterministicDateTimeProvider();
+        tickets.save(Ticket.createNewAnalyzing(TICKET_ID, USER_ID, "TOTAL 4,00", "s3://ticket", clock.now()));
+        var jobs = new FakeJobs();
+        var manager = new TicketVerificationProcessManager(tickets, jobs, clock);
 
-	@BeforeEach
-	void setUp() {
-		ticketRepository = new FakeTicketRepository();
-		eventPublisher = new FakeDomainEventPublisher();
-		dateTimeProvider = new DeterministicDateTimeProvider();
-		ticketRepository.save(Ticket.createNewAnalyzing(
-				TICKET_ID,
-				USER_ID,
-				"CAFE\nTOTAL 4,00 EUR",
-				"s3://bucket/tickets/111.png",
-				dateTimeProvider.now()));
-	}
+        manager.handle(event());
+        manager.handle(event());
 
-	@Test
-	void business_rejection_publishes_completed_event() {
-		var handler = new TicketVerificationProcessManager(
-				ticketRepository,
-				(ocrText, imageRef) -> new TicketVerificationProvider.Rejected(
-						"PARTIAL_VERIFICATION",
-						"ticketverify returned a partial result",
-						"tv:test"),
-				eventPublisher,
-				dateTimeProvider);
+        assertThat(jobs.values).hasSize(1);
+        var job = jobs.byId(EVENT_ID).orElseThrow().snapshot();
+        assertThat(job.state()).isEqualTo(TicketVerificationJob.State.PENDING);
+        assertThat(job.ticketId()).isEqualTo(TICKET_ID);
+        assertThat(job.commandId()).isEqualTo(COMMAND_ID);
+    }
 
-		handler.handle(acceptedEvent());
+    private TicketVerifyAcceptedEvent event() {
+        return new TicketVerifyAcceptedEvent(EVENT_ID, COMMAND_ID, TICKET_ID, USER_ID, "TOTAL 4,00", "s3://ticket",
+                Ticket.TicketStatus.ANALYZING.name(), 0, Instant.parse("2026-09-12T08:00:00Z"),
+                Instant.parse("2026-09-12T07:59:00Z"));
+    }
 
-		assertThat(eventPublisher.published).hasSize(1);
-		var event = (TicketVerificationCompletedEvent) eventPublisher.published.getFirst();
-		assertThat(event.outcome()).isEqualTo(TicketVerificationCompletedEvent.Outcome.REJECTED);
-		assertThat(event.rejected().reasonCode()).isEqualTo("PARTIAL_VERIFICATION");
-		assertThat(ticketRepository.byId(TICKET_ID).orElseThrow().toSnapshot().status())
-				.isEqualTo(Ticket.TicketStatus.REJECTED);
-	}
-
-	@Test
-	void retryable_technical_failure_throws_so_sqs_can_redeliver() {
-		var handler = new TicketVerificationProcessManager(
-				ticketRepository,
-				(ocrText, imageRef) -> new TicketVerificationProvider.FailedRetryable("timeout", "tv:timeout"),
-				eventPublisher,
-				dateTimeProvider);
-
-		assertThatThrownBy(() -> handler.handle(acceptedEvent()))
-				.isInstanceOf(TicketVerificationProcessManager.TicketVerificationRetryableException.class)
-				.hasMessageContaining(TICKET_ID.toString());
-
-		assertThat(eventPublisher.published).isEmpty();
-		assertThat(ticketRepository.byId(TICKET_ID).orElseThrow().toSnapshot().status())
-				.isEqualTo(Ticket.TicketStatus.ANALYZING);
-	}
-
-	@Test
-	void approved_result_publishes_completed_event() {
-		var handler = new TicketVerificationProcessManager(
-				ticketRepository,
-				(ocrText, imageRef) -> new TicketVerificationProvider.Approved(
-						400,
-						"EUR",
-						null,
-						"CAFE",
-						null,
-						null,
-						List.of(),
-						"tv:ok"),
-				eventPublisher,
-				dateTimeProvider);
-
-		handler.handle(acceptedEvent());
-
-		assertThat(eventPublisher.published).hasSize(1);
-		var event = (TicketVerificationCompletedEvent) eventPublisher.published.getFirst();
-		assertThat(event.outcome()).isEqualTo(TicketVerificationCompletedEvent.Outcome.APPROVED);
-		assertThat(event.approved().amountCents()).isEqualTo(400);
-		assertThat(ticketRepository.byId(TICKET_ID).orElseThrow().toSnapshot().status())
-				.isEqualTo(Ticket.TicketStatus.CONFIRMED);
-	}
-
-	private TicketVerifyAcceptedEvent acceptedEvent() {
-		return new TicketVerifyAcceptedEvent(
-				UUID.fromString("44444444-4444-4444-4444-444444444444"),
-				COMMAND_ID,
-				TICKET_ID,
-				USER_ID,
-				"CAFE\nTOTAL 4,00 EUR",
-				"s3://bucket/tickets/111.png",
-				Ticket.TicketStatus.ANALYZING.name(),
-				0L,
-				dateTimeProvider.now(),
-				CLIENT_AT);
-	}
+    static final class FakeJobs implements TicketVerificationJobRepository {
+        final LinkedHashMap<UUID, TicketVerificationJob> values = new LinkedHashMap<>();
+        @Override public Optional<TicketVerificationJob> byId(UUID id) { return Optional.ofNullable(values.get(id)); }
+        @Override public void save(TicketVerificationJob job) { values.put(job.snapshot().jobId(), TicketVerificationJob.reconstitute(job.snapshot())); }
+        @Override public List<UUID> claimableIds(Instant now, int limit) { return values.values().stream().filter(job -> job.claimableAt(now)).limit(limit).map(job -> job.snapshot().jobId()).toList(); }
+    }
 }

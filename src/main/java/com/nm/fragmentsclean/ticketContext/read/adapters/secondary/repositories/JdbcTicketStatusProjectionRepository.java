@@ -68,7 +68,8 @@ public class JdbcTicketStatusProjectionRepository {
         String status = switch (evt.outcome()) {
             case APPROVED -> Ticket.TicketStatus.CONFIRMED.name();
             case REJECTED -> Ticket.TicketStatus.REJECTED.name();
-            case FAILED_RETRYABLE, FAILED_FINAL -> Ticket.TicketStatus.ANALYZING.name();
+            case FAILED_RETRYABLE -> Ticket.TicketStatus.ANALYZING.name();
+            case FAILED_FINAL -> Ticket.TicketStatus.FAILED.name();
         };
 
         Integer amountCents = evt.approved() != null ? evt.approved().amountCents() : null;
