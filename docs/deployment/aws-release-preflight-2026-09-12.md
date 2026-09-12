@@ -124,7 +124,11 @@ règle de rétention doit cibler les préfixes Fragments et tenir compte des
 uploads non confirmés, effacements, sauvegardes et fenêtre de rollback.
 Une URL présignée privée ne remplace pas un test d'autorisation applicative.
 
-Les paramètres Apple et l'adresse recevant les alarmes sont des entrées opérateur
-manquantes. L'accord de restauration locale a été obtenu et exécuté ; il ne
+L'adresse recevant les alarmes a depuis été fournie par l'opérateur, hors Git ;
+les paramètres Apple/chiffrement restent à fournir. La
+[revue chiffrée](aws-change-review-2026-09-12.md) complète ce préflight : validation
+AWS des templates réussie, mais AMI courante différente et changement IAM legacy
+à examiner avant exécution. Aucun change set créé.
+L'accord de restauration locale a été obtenu et exécuté ; il ne
 couvre pas la création/modification de ressources AWS ou la migration staging,
 qui nécessitent toujours une revue des cibles et un accord distinct.
