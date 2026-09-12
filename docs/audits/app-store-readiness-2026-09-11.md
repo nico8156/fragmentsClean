@@ -962,6 +962,43 @@ réexécutée : la preuve backend précédente reste 500 tests verts. Le lot 10 
 ouvert : journal/checksums de migration et déploiement contrôlé à préparer,
 change sets AWS à valider, configuration Apple puis recette déployée/App Store.
 
+### Lot 10B — journal et préparation du déploiement, Astra High, 12 septembre
+
+Le [déploiement journalisé](../deployment/journaled-staging-deployment.md) remplace
+localement l'application de `schema.sql`. Version/checksum/révision/date sont
+enregistrés atomiquement avec le DDL ; même checksum = saut, checksum modifié =
+refus sans écrasement. Tests PostgreSQL réels pour rollback, concurrence et refus.
+Le test de refus a révélé que `\quit 3` ne fournissait pas le code d'échec attendu
+sur PostgreSQL 15 ; le garde-fou utilise maintenant une erreur SQL contrôlée.
+
+Le workflow devient manuel, main seulement, booléen d'accord false par défaut,
+concurrence sérialisée et non annulée. Le script exige un accord, la concordance
+image/révision et la topologie exacte. Configuration SSM et image préparées avant
+arrêt ; backend Fragments arrêté avant backup et migration ; Anchor/PostgreSQL
+ne sont pas stoppés. Backup échoué : ancien backend redémarré seulement s'il
+tournait avant la tentative ; un backend déjà arrêté reste arrêté. Migration tentée :
+pas de rollback d'image automatique sans inspection du journal. Valeurs PEM et
+caractères sensibles Compose testés avec secrets synthétiques uniquement.
+
+Le script complet est testé avec des fakes aux frontières AWS/Docker/systemd ;
+ce n'est pas une preuve d'application réelle sur l'hôte. Le drill précédent
+reste la preuve du candidat `184e2ba`, sans nouveau téléchargement du backup.
+Cette tranche ajoute seulement l'enveloppe technique journalisée autour des
+huit fragments métier inchangés. Aucun domaine ou contrat mobile modifié.
+Régression complète : **512 tests / 209 classes**, aucun échec/erreur/ignoré,
+13:17:01 CEST, 3 min 40, rapports `target/release-verification.XoPLs2`. JVM locale
+Java 23 (cible 21), avertissements de terminaison déjà documentés conservés.
+Shell/YAML vérifiés ; aucune suite mobile/Studio réexécutée, ces dépôts inchangés.
+La revue finale a ajouté la conservation d'un backend déjà arrêté sur échec
+de backup. Dernière preuve : **513 tests / 209 classes**, tous verts sans ignoré,
+13:21:32 CEST, 2 min 45, `target/release-verification.3MRx3v`. Commit local
+`571fa51` ; aucun push.
+
+Inventaire AWS en lecture seule : 17 ressources existantes, 47 déclarées dans le
+template ; 28 ajouts proposés, ou 29 avec email. Le fournisseur GitHub OIDC
+existant doit être réutilisé, pas recréé. Aucun change set créé ou exécuté,
+aucun SSM secret lu, aucun push ni déploiement. L'adresse d'alerte a été demandée.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1111,6 +1148,16 @@ correction restent séparées. Les durées SQL de 1 seconde ne sont pas extrapol
 au déploiement sur l'hôte partagé. Confiance moyenne sur la copie éprouvée,
 moyenne-faible sur l'intégration AWS non encore exécutée ; attentes Apple et
 validation TestFlight hors estimation active.
+
+Prévision 22 — journalisation/déploiement du 12 septembre : le suivi des
+migrations et les chemins de refus/reprise sont maintenant implémentés et testés
+localement. Les preuves couvrent aussi la concurrence SQL et la sérialisation
+native Compose. La régression complète dure 3 min 40 ; la tranche inclut des
+tests rouges/corrections et sa durée active n'est pas isolée. La fourchette
+**0,25 à 0,75 jour actif** est conservée pour finaliser/appliquer les changements
+infra et la migration contrôlée, hors attente d'accords, email d'alerte et SSM.
+Pas de réduction fondée seulement sur des tests locaux : change sets, Java 21
+ARM64 et recette déployée restent à exécuter. TestFlight et sa marge restent séparés.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater

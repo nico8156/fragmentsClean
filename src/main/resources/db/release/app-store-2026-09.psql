@@ -1,14 +1,48 @@
 -- Explicit upgrade for the schema observed on staging at backend 18ae517.
 -- Candidate only: execute on an isolated restore before operator-approved staging use.
--- Run with psql -X -v ON_ERROR_STOP=1 -f app-store-2026-09.psql.
+-- Render with render-release-migration.sh; pipe the result to psql -X -v ON_ERROR_STOP=1.
 -- All referenced files must come from the same reviewed immutable Git revision.
 -- Do not substitute schema.sql, glob release files, or run this at application startup.
 \set ON_ERROR_STOP on
+\if :{?release_checksum}
+\else
+  \echo Missing release checksum; use render-release-migration.sh
+  SELECT 1 / 0 AS migration_precondition_failed;
+\endif
+\if :{?source_revision}
+\else
+  \echo Missing immutable source revision
+  SELECT 1 / 0 AS migration_precondition_failed;
+\endif
+SELECT :'release_checksum' ~ '^[0-9a-f]{64}$' AND :'source_revision' ~ '^[0-9a-f]{40}$' AS valid_metadata \gset
+\if :valid_metadata
+\else
+  \echo Invalid migration metadata
+  SELECT 1 / 0 AS migration_precondition_failed;
+\endif
 BEGIN;
 SET LOCAL search_path TO public, pg_catalog;
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '5min';
 SELECT pg_advisory_xact_lock(20260912, 10);
+
+CREATE TABLE IF NOT EXISTS release_schema_history (
+    version VARCHAR(100) PRIMARY KEY,
+    checksum CHAR(64) NOT NULL CHECK (checksum ~ '^[0-9a-f]{64}$'),
+    source_revision CHAR(40) NOT NULL CHECK (source_revision ~ '^[0-9a-f]{40}$'),
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+SELECT EXISTS (SELECT 1 FROM release_schema_history WHERE version='app-store-2026-09') AS already_applied,
+       NOT EXISTS (SELECT 1 FROM release_schema_history WHERE version='app-store-2026-09'
+                   AND checksum <> :'release_checksum') AS checksum_matches \gset
+\if :checksum_matches
+\else
+  \echo Migration checksum mismatch; refusing to replay or overwrite history
+  SELECT 1 / 0 AS migration_precondition_failed;
+\endif
+\if :already_applied
+  \echo Migration already applied; backfills skipped
+\else
 
 -- Fail closed on a fresh/wrong database before any DDL or data backfill.
 DO $preflight$
@@ -34,5 +68,9 @@ $preflight$;
 \ir 2026-09-11-experience-text.sql
 \ir 2026-09-11-private-media.sql
 \ir 2026-09-12-ticket-verification-jobs.sql
+
+INSERT INTO release_schema_history(version,checksum,source_revision)
+VALUES ('app-store-2026-09', :'release_checksum', :'source_revision');
+\endif
 
 COMMIT;

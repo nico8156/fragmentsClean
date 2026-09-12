@@ -3,6 +3,9 @@
 Lot 10B, Astra High. **Testé sur une restauration réelle locale, pas appliqué au staging.**
 Ce document complète le [préflight AWS](aws-release-preflight-2026-09-12.md).
 Implémentation locale : `184e2ba` ; aucun push ni déploiement.
+La suite du lot ajoute le [déploiement journalisé](journaled-staging-deployment.md) :
+ce document conserve la preuve du candidat initial ; utiliser désormais le
+renderer et son journal, pas l'invocation directe du driver historique.
 
 ## Point de départ effectivement observé
 
@@ -53,7 +56,7 @@ receipts → cycle de vie compte → Pass → historique tickets → modération
   tickets ou messages de DLQ.
 - Tous les fichiers doivent venir de la même révision Git immuable revue.
 
-Ce candidat n'est pas encore un moteur général de migrations : pas de journal
+Ce candidat initial n'était pas encore un moteur général de migrations : pas de journal
 versionné/checksummé ni de détection exhaustive de dérive. La présence des tables
 prérequises ne prouve pas à elle seule la compatibilité de leurs colonnes.
 L'inspection, la restauration et les tests ci-dessous restent donc obligatoires.
@@ -92,7 +95,8 @@ Studio ; leurs suites ne sont pas présentées comme réexécutées ici.
 ## Avant application réelle
 
 Les étapes 1 et 2 ci-dessous ont été autorisées puis réalisées le 12 septembre
-(preuve détaillée en fin de document). Les étapes 3 à 5 restent ouvertes ; une
+(preuve détaillée en fin de document). L'étape 3 est maintenant préparée localement
+dans le déploiement journalisé ; les étapes 4 et 5 restent ouvertes. Une
 nouvelle sauvegarde sera nécessaire avant une migration réelle du staging.
 
 1. Accord explicite sur la cible de restauration et le traitement de sa copie.

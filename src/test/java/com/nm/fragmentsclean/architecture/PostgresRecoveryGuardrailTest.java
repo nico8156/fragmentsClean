@@ -13,6 +13,14 @@ class PostgresRecoveryGuardrailTest {
             Path.of("infra/aws/compose/platform/staging/fragments");
 
     @Test
+    void deployment_is_manual_approved_and_never_cancelled_by_a_new_push() throws IOException {
+        String workflow = Files.readString(Path.of(".github/workflows/deploy-staging-backend.yml"));
+        assertThat(workflow).contains("workflow_dispatch:", "approve_staging_release:", "default: false",
+                "inputs.approve_staging_release", "cancel-in-progress: false", "--approved-staging-release")
+                .doesNotContain("  push:");
+    }
+
+    @Test
     void deployment_installs_a_daily_backup_and_runs_it_before_schema_mutation() throws IOException {
         String deployment = Files.readString(RUNTIME.resolve("deploy-via-ssm.sh"));
         String timer = Files.readString(RUNTIME.resolve("fragments-postgres-backup.timer"));
@@ -20,9 +28,10 @@ class PostgresRecoveryGuardrailTest {
         assertThat(deployment)
                 .contains("systemctl enable --now fragments-postgres-backup.timer")
                 .contains("systemctl start fragments-postgres-backup.service")
-                .contains("< \"$runtime_root/db/schema.sql\"");
+                .contains("< \"$deployment_tmp/migration.psql\"")
+                .doesNotContain("< \"$runtime_root/db/schema.sql\"");
         assertThat(deployment.indexOf("systemctl start fragments-postgres-backup.service"))
-                .isLessThan(deployment.indexOf("< \"$runtime_root/db/schema.sql\""));
+                .isLessThan(deployment.indexOf("< \"$deployment_tmp/migration.psql\""));
         assertThat(timer)
                 .contains("OnCalendar=*-*-* 03:15:00 UTC")
                 .contains("Persistent=true")
@@ -44,8 +53,8 @@ class PostgresRecoveryGuardrailTest {
                 .doesNotContain("docker compose exec")
                 .doesNotContain("source \"$environment_file\"");
         assertThat(Files.readString(RUNTIME.resolve("deploy-via-ssm.sh")))
-                .contains("journalctl -u fragments-postgres-backup.service")
-                .contains("schema and backend were left unchanged");
+                .doesNotContain("journalctl -u fragments-postgres-backup.service")
+                .contains("Pre-deployment PostgreSQL backup failed");
         assertThat(restore)
                 .contains("expected_prefix=")
                 .contains("pg_restore")

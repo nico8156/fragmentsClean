@@ -59,6 +59,9 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT display_name FROM experience_user_profiles")).containsExactly("Existing visitor");
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
+            var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
+            assertThat(receipt).hasSize(1);
+            assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
 
             String fresh = database();
             try (var target = connect(fresh)) {
@@ -82,6 +85,8 @@ class StagingReleaseUpgradeIT {
             try (var statement = connection.createStatement()) {
                 statement.execute("UPDATE experience_user_profiles SET display_name='New profile', version=42");
                 statement.execute("UPDATE user_pass_projection SET version=42, published_experiences=7");
+                // A replay must skip the one-time receipt backfill, not merely rely on upserts.
+                statement.execute("UPDATE command_status SET requester_id=NULL WHERE command_id='" + COMMAND + "'");
             }
             result = upgrade(database, false);
             assertThat(result.getExitCode()).as(result.getStderr()).isZero();
@@ -90,6 +95,10 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT published_experiences::text, version::text FROM user_pass_projection"))
                     .containsExactly("7|42");
             assertThat(rows(connection, "SELECT count(*)::text FROM tickets")).containsExactly("11");
+            assertThat(rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history"))
+                    .isEqualTo(receipt);
+            assertThat(rows(connection, "SELECT count(*)::text FROM command_status WHERE requester_id IS NOT NULL"))
+                    .containsExactly("0");
         }
     }
 
@@ -117,6 +126,37 @@ class StagingReleaseUpgradeIT {
         }
     }
 
+    @Test void changed_checksum_is_rejected_before_replaying_any_sql() throws Exception {
+        String database = database();
+        try (var connection = connect(database)) {
+            baseline(connection);
+            assertThat(upgrade(database, false).getExitCode()).isZero();
+            var before = rows(connection, "SELECT checksum,applied_at::text FROM release_schema_history");
+            var result = upgrade(database, true);
+            assertThat(result.getExitCode()).isNotZero();
+            assertThat(result.getStdout()).contains("Migration checksum mismatch");
+            assertThat(result.getStderr()).doesNotContain("intentional_release_failure");
+            assertThat(rows(connection, "SELECT checksum,applied_at::text FROM release_schema_history")).isEqualTo(before);
+        }
+    }
+
+    @Test void concurrent_deliveries_commit_one_history_entry_and_skip_the_other() throws Exception {
+        String database = database();
+        try (var connection = connect(database)) { baseline(connection); }
+        try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> upgrade(database, false));
+            var second = executor.submit(() -> upgrade(database, false));
+            var a = first.get(30, java.util.concurrent.TimeUnit.SECONDS);
+            var b = second.get(30, java.util.concurrent.TimeUnit.SECONDS);
+            assertThat(a.getExitCode()).as(a.getStderr()).isZero();
+            assertThat(b.getExitCode()).as(b.getStderr()).isZero();
+            assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
+        }
+        try (var connection = connect(database)) {
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("1");
+        }
+    }
+
     private static String database() throws Exception {
         String name = "release_" + UUID.randomUUID().toString().replace("-", "");
         var result = POSTGRES.execInContainer("createdb", "-U", POSTGRES.getUsername(), name);
@@ -135,7 +175,7 @@ class StagingReleaseUpgradeIT {
     }
 
     private static Container.ExecResult upgrade(String database, boolean failAtEnd) throws Exception {
-        String directory = "/tmp/" + database + (failAtEnd ? "_failure" : "_upgrade");
+        String directory = "/tmp/" + database + "_" + UUID.randomUUID();
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(RELEASE), directory);
         if (failAtEnd) {
             String file = "2026-09-12-ticket-verification-jobs.sql";
@@ -143,8 +183,13 @@ class StagingReleaseUpgradeIT {
                     .getBytes(StandardCharsets.UTF_8);
             POSTGRES.copyFileToContainer(Transferable.of(sql), directory + "/" + file);
         }
+        POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
+                "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
+        var rendered = POSTGRES.execInContainer("bash", "-c", "bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"",
+                "render", directory, "a".repeat(40));
+        assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),
-                "-d", database, "-f", directory + "/app-store-2026-09.psql");
+                "-d", database, "-f", directory + "/bundle.psql");
     }
 
     private static List<String> columns(Connection connection) throws Exception {
