@@ -9,6 +9,8 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nm.fragmentsclean.authenticationContext.read.AuthAccountStatusReader;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.JwtAuthConverters;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.ReleaseRateLimitFilter;
+import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.security.ReleaseRequestRateLimiter;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +36,7 @@ import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity // 👈 IMPORTANT
@@ -46,7 +49,8 @@ public class AuthSecurityConfiguration {
   @Bean
   @Order(1)
   public SecurityFilterChain securityFilterChain(
-      HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter) throws Exception {
+      HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter,
+      ReleaseRequestRateLimiter rateLimiter) throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
         .cors(Customizer.withDefaults())
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -96,6 +100,7 @@ public class AuthSecurityConfiguration {
                     jwt ->
                         jwt.jwtAuthenticationConverter(
                             JwtAuthConverters.jwtAuthenticationConverter())))
+        .addFilterAfter(new ReleaseRateLimitFilter(rateLimiter), BearerTokenAuthenticationFilter.class)
         .build();
   }
 

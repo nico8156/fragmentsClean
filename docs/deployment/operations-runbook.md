@@ -251,6 +251,42 @@ Every hide or restore decision is projected in
 `social_moderation_actions_projection`. A restore is a new audited domain
 transition; it must not delete prior history.
 
+## Private Media And Release Rate Limits
+
+The iOS application uploads directly through short-lived S3 presigned URLs.
+The configured bucket must keep all four public-access blocks enabled and a
+default encryption rule. Native iOS requests do not use browser CORS; no bucket
+CORS policy is therefore the least permissive staging configuration. If a web
+uploader is introduced later, add only its exact HTTPS origin and the signed
+`PUT` headers instead of a wildcard rule.
+
+Verify configuration without listing user objects:
+
+```bash
+aws s3api get-public-access-block --bucket "$PRIVATE_MEDIA_S3_BUCKET"
+aws s3api get-bucket-encryption --bucket "$PRIVATE_MEDIA_S3_BUCKET"
+aws s3api get-bucket-cors --bucket "$PRIVATE_MEDIA_S3_BUCKET"
+```
+
+`NoSuchCORSConfiguration` is expected for the native-only flow. The runtime IAM
+policy grants `GetObject`, `PutObject` and `DeleteObject` only below the known
+coffee, article, private-media and PostgreSQL-backup prefixes. It must not regain
+the broad `fragments/staging/*` object resource.
+
+Staging enables per-user, single-node rate limits for costly authenticated
+intentions:
+
+- ticket verification: 10 per minute;
+- private media upload/confirmation: 30 per minute;
+- experience, comment, report and block writes: 60 per minute.
+
+A limited call returns HTTP `429`, the stable `RATE_LIMITED` error and a
+`Retry-After` header. Mobile treats it as a technical retryable response: the
+optimistic intent and outbox record remain. These counters intentionally live in
+memory because release staging is a single backend node. Before horizontal
+scaling, move enforcement to a shared edge/gateway facility or another explicitly
+approved technical mechanism; do not introduce Redis implicitly.
+
 ## Coffee Photos
 
 Read model stores stable photo references. S3 or local URLs are resolved at the
