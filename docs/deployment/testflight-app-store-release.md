@@ -8,14 +8,14 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 
 | Vérification du 12 septembre | Résultat |
 | --- | --- |
-| Backend, `bash scripts/test-release.sh` | 500 tests / 207 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 12:30:03 CEST, 2 min 30 |
+| Backend, `bash scripts/test-release.sh` | 513 tests / 209 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 13:21:32 CEST, 2 min 45 |
 | Mobile Jest | 77 suites, 289 tests verts |
 | Configuration release mobile | 8 tests verts, dont le vrai plugin de permissions |
 | Mobile types/lint/Redux/natif | TypeScript et contrôles verts ; lint 0 erreur, 20 avertissements préexistants |
 | Studio | 31 suites, 146 tests verts ; build public sans tokens, vérification du bundle et contrat API verts |
 | Backup réel / upgrade | 12:50:06 CEST : checksum valide, restauration locale réussie, 46 tables sources préservées, réexécution stable sur 69 tables ; copies nettoyées |
 
-Rapports backend isolés : `target/release-verification.tv3Agm`. La JVM locale
+Rapports backend isolés : `target/release-verification.3MRx3v`. La JVM locale
 est Java 23 Valhalla, avec compilation `release 21`. Ce résultat n'est pas une
 preuve sur le runtime de production ni sur une archive iOS. La première
 régression exhaustive avait trouvé 19 cas en échec/erreur sur 490 tests ; les
@@ -28,10 +28,11 @@ Commits backend : `f39ee74` (médias), `9bdf9fa` (Spring/profil), `726c254`
 Le [préflight AWS du lot 10](aws-release-preflight-2026-09-12.md) a commencé :
 inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
-la restauration/upgrade est désormais prouvée sur copie locale réelle, mais
-son intégration sûre au déploiement reste à réaliser. Aucun
+la restauration/upgrade est désormais prouvée sur copie locale réelle et
+le déploiement journalisé est préparé localement. Son exécution réelle reste
+à valider. Aucun
 push ni changement AWS effectué. Le préflight consigne aussi l'avertissement
-de terminaison Surefire, également observé sur le dernier run de 500 tests verts.
+de terminaison Surefire, également observé sur le dernier run de 513 tests verts.
 
 ## Conditions de passage
 
@@ -198,8 +199,9 @@ cohérentes avec la politique publiée.
 Suivre le [runbook d'exploitation](operations-runbook.md) et le
 [candidat d'upgrade SQL](app-store-schema-upgrade.md). Le runtime et ses 46 tables
 ont été inspectés ; le script global est testé sur le DDL réel avec des données
-synthétiques, puis sur une restauration autorisée du vrai backup. L'intégration
-au déploiement et un backup frais avant application restent nécessaires.
+synthétiques, puis sur une restauration autorisée du vrai backup. Le
+[journal et le déploiement contrôlé](journaled-staging-deployment.md) sont
+préparés ; l'exécution réelle et un backup frais avant application restent nécessaires.
 Ne pas exécuter tous les scripts à l'aveugle, ne pas remplacer une
 migration par `schema.sql` sur une base existante. Aucun script de release n'a
 été appliqué à distance dans ce lot.

@@ -86,28 +86,30 @@ restent celles du [dossier TestFlight](testflight-app-store-release.md).
 | Étape | Action | Critère de passage |
 | --- | --- | --- |
 | 10A — réalisé | Inventaire en lecture seule et préparation locale ci-dessus | Constats et tests consignés |
-| 10B — restauration validée, préparation déploiement ouverte | Runtime/schéma inspectés ; backup réel restauré, upgrade et réexécution vérifiés localement. Traçabilité de migration et revue des change sets restent à faire | Aucun remplacement EC2/EBS, aucune modification Anchor ; application staging toujours non autorisée |
+| 10B — préparation locale et restauration validées | Journal/checksums, saut des reprises de données, workflow manuel et séquence stop/backup/migration préparés ; revue du futur change set reste à faire | Aucun remplacement EC2/EBS, aucune modification Anchor ; application staging toujours non autorisée |
 | 10C — infra après accord | Files/DLQ/alarmes ; liste IAM SQS, droits métriques et S3 restreints ; abonnement opérateur confirmé | Routes existantes conservées, aucune purge/relecture des 5 messages legacy |
 | 10D — configuration | Fournir les valeurs Apple/chiffrement en SSM par un canal sûr ; confirmer capacité Apple et opérateur de modération/alertes | Ne jamais coller de clé privée dans le chat ni dans Git |
 | 10E — migration et application | Upgrade SQL explicite et testé sur copie, puis image backend ARM64 Java 21 identifiée | Sauvegarde vérifiée, migration transactionnelle, santé et reprise correctes |
 | 10F — recette déployée | Expérience libre, ticket, avatar/photo, signalement/blocage, suppression, commandes sans socket et SSE | Vérification mobile + Studio + S3, jobs, projections et DLQ |
 | 10G — TestFlight | Build signé et campagne appareils sur cette candidate | Matrice du dossier TestFlight remplie, accord produit avant soumission |
 
-Le déploiement actuel `deploy-via-ssm.sh` applique encore `schema.sql` à une base
-existante. **Ce chemin n'est pas validé pour cette release.** Ne pas le remplacer
-aveuglément par tous les scripts de `db/release` : certains supposent un schéma
-initial déterminé, et des évolutions antérieures sont dans le bootstrap.
+Le déploiement historique appliquait `schema.sql` à une base existante. Le
+[chemin local journalisé](journaled-staging-deployment.md) remplace maintenant
+cette application par un bundle explicite, avec contrôle de checksum et un
+backup après arrêt du writer Fragments. Ce chemin n'est pas encore déployé.
 Le runtime identifié est `18ae517`, Java 21.0.12, PostgreSQL 15.19 et 46 tables.
 Le schéma réel a été exporté sans données et le candidat
 `db/release/app-store-2026-09.psql` est maintenant testé sur cette structure.
 La restauration du backup et l'upgrade sur ses lignes réelles sont maintenant
 validés localement (46 tables sources préservées, 69 tables après upgrade).
-La traçabilité des migrations et l'intégration sûre au déploiement restent à faire.
+La traçabilité et l'intégration au script sont préparées et testées localement ;
+la validation du binaire et du déroulement sur l'hôte partagé reste ouverte.
 
-Un push de `main` touchant les chemins suivis déclenche le workflow de déploiement.
-Ne pas utiliser ce push comme simple transfert de code tant que le SQL, SSM et
-les changements infra ne sont pas prêts. Cette branche est intégrée localement
-uniquement ; aucun workflow GitHub n'a été lancé.
+Le workflow local devient manuel avec approbation explicite, mais il n'a pas été
+poussé : le workflow distant historique est toujours celui de l'ancien pipeline.
+Aucun push n'est autorisé implicitement ; aucun workflow GitHub n'a été lancé.
+La proposition précise (28 ajouts, ou 29 avec abonnement email ; OIDC existant
+conservé) est détaillée dans le dossier journalisé. Ce diff n'est pas un change set.
 
 ## Périmètre d'accord et risques
 
