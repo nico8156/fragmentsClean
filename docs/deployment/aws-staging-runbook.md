@@ -51,8 +51,15 @@ Before executing the historical deployment commands below, read the
 [12 September release preflight](aws-release-preflight-2026-09-12.md). The
 deployed stacks and local templates differ materially. Do not apply the whole
 standalone stack or push `main` as an unreviewed shortcut: the host is shared,
-the workflow deploys automatically, and the SQL upgrade path still requires
-validation against the actual staging schema.
+the remote historical workflow still deploys automatically until the local
+manual workflow is pushed. SQL restore/migration proofs are documented in the
+release dossier; deployed acceptance remains pending.
+
+`InstanceImageId` is now required, without a default. For an existing stack,
+read the current EC2 image and supply that exact ID. `UbuntuAmiParameter` is
+retained for compatibility but no longer controls the image. Always inspect a
+non-executed change set first: no EC2/EBS/EIP change is allowed in the Fragments
+messaging release. See the [corrected previews](aws-preserved-preview-2026-09-12.md).
 
 Deploy the stack:
 
@@ -71,6 +78,7 @@ aws cloudformation deploy \
     VpcId=<vpc-id> \
     SubnetId=<public-subnet-id> \
     AllowedSshCidr=<your-ip>/32 \
+    InstanceImageId=<existing-instance-ami-id> \
     GitHubRepository=nico8156/fragmentsClean \
     GitHubBranch=main
 ```

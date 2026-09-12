@@ -1,5 +1,9 @@
 # Déploiement staging journalisé — préparation locale, 12 septembre 2026
 
+**Dernier résultat AWS :** les [candidats corrigés](aws-preserved-preview-2026-09-12.md)
+passent les critères de prévisualisation sans remplacement ou changement EC2/EBS/EIP.
+Ils restent non exécutés, soumis à accord distinct.
+
 **Suivi AWS :** après accord distinct, deux change sets ont été créés sans
 exécution. Ils sont refusés car ils remplaceraient les instances EC2 ; voir les
 [résultats de prévisualisation](aws-preview-results-2026-09-12.md).

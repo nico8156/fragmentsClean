@@ -1043,6 +1043,30 @@ les stacks. États EC2 et dates de mise à jour des stacks inchangés après ins
 Aucun push, déploiement, SQL, lecture de secret ou abonnement SNS. Documentation
 seulement modifiée ; preuve backend précédente de 513 tests non réexécutée.
 
+### Lot 10C — candidats corrigés, Astra High, 12 septembre
+
+Après accord produit, les templates exigent un `InstanceImageId` explicite sans
+défaut mouvant. Les AMI réellement utilisées sont conservées ; le paramètre Ubuntu
+historique reste inutilisé pour compatibilité. Le rôle GitHub legacy retrouve
+exactement son bloc déployé, sans changer le rôle SSM du workflow actuel.
+Deux nouveaux garde-fous d'abord rouges puis verts couvrent ces contraintes.
+
+Les [deux nouvelles prévisualisations](../deployment/aws-preserved-preview-2026-09-12.md)
+sont créées et inspectées sans exécution : **29 ajouts et 9 modifications** dans
+le stack legacy, **une seule modification IAM** sur la plateforme. Zéro changement
+EC2/EBS/EIP, zéro suppression/remplacement, zéro changement OIDC/rôle GitHub legacy.
+Paramètres Anchor conservés et projection des statements IAM Anchor/KMS identique.
+Les anciennes prévisualisations restent refusées ; ne pas les exécuter.
+
+Régression backend complète : **515 tests / 209 classes**, zéro échec/erreur/ignoré,
+14:27:33 CEST, **2 min 49**, `target/release-verification.uWtZbL`. JVM Java 23
+(cible 21) et bruit de terminaison connu inchangés. Validation CloudFormation
+réussie ; états EC2/dates des stacks inchangés après inspection. Mobile/Studio
+inchangés, suites non relancées. Aucun code métier, contrat ou migration modifié.
+Templates et tests : commit local `29d714e`.
+Les candidats peuvent être présentés pour accord d'application des ressources,
+pas pour déploiement applicatif implicite. Aucun push ni exécution AWS.
+
 **10 — TestFlight puis App Store.** Valider un build natif compatible avec les
 exigences à revérifier au moment de la soumission. Recette sur petit/grand iPhone
 et versions iOS retenues, puis campagne TestFlight et corrections. Préparer compte
@@ -1217,6 +1241,13 @@ La préparation/application infra n'est donc pas prête. La fourchette précéde
 **0,25 à 0,75 jour actif** reste provisoire, à réévaluer après candidats AMI figés
 et nouveaux change sets ; aucune réduction ni date ferme avant cette preuve.
 Recette, Apple/SSM, maintenance et TestFlight restent des jalons séparés.
+
+Prévision 25 — candidats AWS corrigés du 12 septembre : le risque de remplacement
+est levé **dans les nouvelles prévisualisations**, pas par une application réelle.
+La préparation des candidats est terminée. Conserver provisoirement **0,25 à 0,75
+jour actif** pour application, contrôles et migration, conditionné aux accords et
+paramètres Apple/SSM ; ne pas confondre les 2 min 49 de tests avec la durée totale
+de la tranche. Recette appareil/TestFlight et marges de correction restent séparées.
 
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater

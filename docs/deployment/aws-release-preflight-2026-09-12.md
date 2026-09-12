@@ -1,5 +1,8 @@
 # AWS / infra — préflight de release, 12 septembre 2026
 
+**Dernier résultat :** deux [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
+préservent compute/réseau et rôle GitHub legacy ; aucune exécution autorisée ici.
+
 **Suivi :** les [deux change sets autorisés](aws-preview-results-2026-09-12.md)
 ont depuis été créés, jamais exécutés. Le remplacement EC2 annoncé impose leur
 refus et la préparation de nouveaux candidats. Les ressources déployées restent

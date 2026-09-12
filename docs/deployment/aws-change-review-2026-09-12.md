@@ -1,5 +1,9 @@
 # Revue AWS et chiffrage — 12 septembre 2026
 
+**Dernier résultat :** les [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
+préservent désormais les serveurs, disques, réseau et rôle GitHub legacy. Aucune
+exécution ; le chiffrage de ce document reste applicable.
+
 **Complément après autorisation :** les deux prévisualisations ont été créées,
 sans exécution. Elles prévoient le remplacement des deux instances EC2 et sont
 refusées ; voir les [résultats détaillés](aws-preview-results-2026-09-12.md).

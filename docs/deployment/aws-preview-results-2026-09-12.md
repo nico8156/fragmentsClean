@@ -1,5 +1,9 @@
 # Prévisualisations AWS — refus d'exécution, 12 septembre 2026
 
+**Suivi :** les [candidats corrigés](aws-preserved-preview-2026-09-12.md) ne
+prévoient plus de remplacement ni changement EC2/EBS/EIP. Les deux prévisualisations
+historiques ci-dessous restent refusées et ne doivent pas être exécutées.
+
 Lot 10C, Astra High. L'opérateur a explicitement autorisé la création des deux
 change sets, **sans exécution**. Les deux sont créés avec succès et consultés
 avec `--include-property-values`. Verdict : **NO GO sur ces deux candidats**.

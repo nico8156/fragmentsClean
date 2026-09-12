@@ -8,14 +8,14 @@ ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
 
 | Vérification du 12 septembre | Résultat |
 | --- | --- |
-| Backend, `bash scripts/test-release.sh` | 513 tests / 209 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 13:21:32 CEST, 2 min 45 |
+| Backend, `bash scripts/test-release.sh` | 515 tests / 209 classes, 0 échec, 0 erreur, 0 ignoré ; terminé à 14:27:33 CEST, 2 min 49 |
 | Mobile Jest | 77 suites, 289 tests verts |
 | Configuration release mobile | 8 tests verts, dont le vrai plugin de permissions |
 | Mobile types/lint/Redux/natif | TypeScript et contrôles verts ; lint 0 erreur, 20 avertissements préexistants |
 | Studio | 31 suites, 146 tests verts ; build public sans tokens, vérification du bundle et contrat API verts |
 | Backup réel / upgrade | 12:50:06 CEST : checksum valide, restauration locale réussie, 46 tables sources préservées, réexécution stable sur 69 tables ; copies nettoyées |
 
-Rapports backend isolés : `target/release-verification.3MRx3v`. La JVM locale
+Rapports backend isolés : `target/release-verification.uWtZbL`. La JVM locale
 est Java 23 Valhalla, avec compilation `release 21`. Ce résultat n'est pas une
 preuve sur le runtime de production ni sur une archive iOS. La première
 régression exhaustive avait trouvé 19 cas en échec/erreur sur 490 tests ; les
@@ -30,9 +30,12 @@ inventaire réel en lecture seule, corrections infra locales et CI complète
 préparées. File Experience, paramètres Apple et alarmes manquent au staging ;
 la restauration/upgrade est désormais prouvée sur copie locale réelle et
 le déploiement journalisé est préparé localement. Son exécution réelle reste
-à valider. Aucun
-push ni changement AWS effectué. Le préflight consigne aussi l'avertissement
-de terminaison Surefire, également observé sur le dernier run de 513 tests verts.
+à valider. Les [prévisualisations corrigées](aws-preserved-preview-2026-09-12.md)
+ne prévoient plus de remplacement ni changement EC2/EBS/EIP ; les premières
+prévisualisations dangereuses restent refusées. Seuls les change sets ont été
+créés dans AWS, jamais exécutés. Aucun push, changement de ressource applicative
+ou déploiement. L'avertissement de terminaison Surefire est également observé
+sur le dernier run de 515 tests verts.
 
 ## Conditions de passage
 
