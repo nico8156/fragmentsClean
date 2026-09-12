@@ -131,7 +131,7 @@ class ArticleReadSeedRunnerIT extends TestContainers {
 				.andExpect(jsonPath("$.blocks[0].photo.alt").isNotEmpty())
 				.andExpect(jsonPath("$.cover.url").isString())
 				.andExpect(jsonPath("$.tags").isArray())
-				.andExpect(jsonPath("$.author.id").value("author-helene-martin"))
+				.andExpect(jsonPath("$.author.id").value("346abea5-0160-372f-9130-5bc9c2bfc51a"))
 				.andExpect(jsonPath("$.readingTimeMin").value(6))
 				.andExpect(jsonPath("$.status").value("published"))
 				.andExpect(jsonPath("$.conclusion").isNotEmpty());
