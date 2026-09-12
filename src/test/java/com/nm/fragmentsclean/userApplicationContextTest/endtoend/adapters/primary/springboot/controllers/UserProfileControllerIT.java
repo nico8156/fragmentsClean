@@ -34,6 +34,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
     jdbc.update("DELETE FROM account_deletion_processes");
     outbox.deleteAll();
     jdbc.update("DELETE FROM user_avatar_media");
+    jdbc.update("DELETE FROM saved_coffees");
     jdbc.update("DELETE FROM app_users");
     jdbc.update("DELETE FROM auth_users");
     seedUser();

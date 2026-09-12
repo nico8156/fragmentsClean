@@ -1297,6 +1297,17 @@ pour configuration/déploiement journalisé/migration, seulement une fois les
 paramètres Apple disponibles et la maintenance autorisée. Ce n'est ni une durée
 garantie ni le délai TestFlight : recette appareil et corrections restent séparées.
 
+Prévision 27 — CI Java 21 du 12 septembre, lot 10D / Astra High : Apple/SSM
+est débloqué et le backend poussé. Le runner révèle d'abord ripgrep manquant,
+puis dix cas en échec/erreur d'isolation des fixtures parmi 516 tests. Les tests
+locaux verts ne suffisaient donc pas à garantir la reproductibilité en CI.
+Conserver **0,25 à 0,5 jour actif** pour correction/revalidation/déploiement,
+avec une marge possible de **0,5 jour** si de nouveaux écarts runtime émergent ;
+ne pas réduire la prévision avant passage réel de la CI et migration. La seconde
+vérification Java 21 dure environ 3 min 10 ; ce n'est pas le temps actif du lot.
+Recette native et délais Apple/TestFlight restent séparés. FlowAtlas n'est pas
+sollicité pour ces scripts CI/fixtures, sans parcours Redux ni contrat métier modifié.
+
 La tranche 00 reste « durée non mesurée » et ne sert pas de donnée de vitesse
 inventée. Ce mécanisme permet de constater
 progressivement si l'ensemble converge plus vite ou plus lentement que prévu,

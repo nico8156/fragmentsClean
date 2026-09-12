@@ -5,6 +5,7 @@ import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.re
 import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleRepository;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.Article;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,6 +26,12 @@ public class JpaArticleRepositoryIT extends AbstractJpaIntegrationTest {
 
 	@Autowired
 	private SpringArticleRepository springArticleRepository; // repo Spring Data (JPA)
+
+	@BeforeEach
+	void isolateRepositoryFixtures() {
+		// The shared container may already contain committed HTTP-test fixtures.
+		springArticleRepository.deleteAllInBatch();
+	}
 
 	@Test
 	void repositories_are_injected() {

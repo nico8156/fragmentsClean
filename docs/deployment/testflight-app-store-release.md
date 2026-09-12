@@ -32,7 +32,8 @@ avec accord : deux stacks `UPDATE_COMPLETE`, instances et disques préservés.
 Un événement EIP legacy non annoncé par l'aperçu a été vérifié et documenté.
 Confirmation email SNS vérifiée ; clé de chiffrement et trois paramètres Apple
 créés dans SSM. Le backend `5437112` a été poussé, mais le premier pipeline
-manuel a échoué avant Maven (prérequis CI ripgrep en cours de correction) :
+manuel a échoué avant Maven. Ripgrep est corrigé ; la seconde tentative exécute
+516 tests et révèle 10 cas en échec/erreur liés aux fixtures partagées :
 [passage de configuration](staging-configuration-2026-09-12.md).
 La restauration/upgrade est prouvée sur copie locale réelle et le déploiement
 journalisé est préparé localement, mais ni SQL staging ni application déployés.
