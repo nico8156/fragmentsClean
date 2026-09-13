@@ -1,4 +1,25 @@
 {$FRAGMENTS_API_DOMAIN} {
+	@fragmentsHome path /
+	handle @fragmentsHome {
+		root * /data/fragments-public
+		header {
+			Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options nosniff
+			Referrer-Policy no-referrer
+		}
+		file_server
+	}
+
+	handle_path /legal/* {
+		root * /data/fragments-public
+		header {
+			Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+			X-Content-Type-Options nosniff
+			Referrer-Policy no-referrer
+		}
+		file_server
+	}
+
 	@sse path /api/sync/events /api/admin/sync/events
 	handle @sse {
 		reverse_proxy fragments-backend:8080 {

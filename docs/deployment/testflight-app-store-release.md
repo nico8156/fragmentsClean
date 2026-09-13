@@ -1,5 +1,14 @@
 # Fragments — dossier de recette TestFlight / App Store
 
+## Décision courante — 13 septembre 2026
+
+L'opérateur demande de préparer le prochain TestFlight et reporte la résolution
+complète conservation/restauration après ces essais. Pas de validation App Store
+publique ni de clôture de ces réserves. Le NO GO ci-dessous appartient au cadrage
+initial ; distinguer préparation du build, recette interne et publication finale.
+État, versions, pages et configuration :
+[candidate TestFlight du 13 septembre](testflight-2026-09-13.md).
+
 Préparation du 12 septembre 2026, fin du lot 09 et lot 10 avec Astra High,
 à la demande du produit. Ce document ne vaut ni déploiement, ni soumission,
 ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
