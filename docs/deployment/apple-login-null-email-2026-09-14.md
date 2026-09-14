@@ -88,9 +88,12 @@ adapter, auth JPA email mapping and Fragments JWT generation.
 - Mobile `tsc --noEmit`: passed; no mobile files modified.
 - `bash -n` for migration renderer and deployment script, `git diff --check`: passed.
 
-Delivery status: implemented and verified locally, not deployed. Native Apple
-login on TestFlight remains to be checked after the corrected backend and migration
-are deployed. No AWS settings, keys, live accounts or production data were changed.
+Initial delivery status: implemented and verified locally, before deployment.
+Following explicit operator authorization, the isolated correction and migration
+were deployed successfully at approximately 20:32 UTC on September 14.
+See the [deployment receipt](apple-staging-deployment-2026-09-14.md) for CI,
+backup, migration and live-image evidence. Native Apple login remains an operator
+check on TestFlight. No Apple key or account was changed.
 
 This change does not close the separately paused retention/restoration work.
 
@@ -108,5 +111,6 @@ working branch and suspended privacy work are preserved locally.
 The environment approval guard rejected a combined commit/push operation because
 it would update remote `main` without separate explicit authorization. That
 operation did not run. No workflow was dispatched and no live data/runtime was
-changed. The existing deployment workflow requires `main`; publication to that
-branch awaits explicit operator permission. Do not bypass this guard.
+changed by that rejected operation. The operator subsequently explicitly
+authorized merge/push. Revision `df222cd` was fast-forwarded to remote `main`,
+then the authorized workflow succeeded. The guard was not bypassed.
