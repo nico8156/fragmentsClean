@@ -56,19 +56,21 @@ public class JwtTokenService implements TokenService {
         Instant now = dateTimeProvider.now();
 
         // Access token → on utilise les claims enrichis
-        JwtClaimsSet accessTokenClaims = JwtClaimsSet.builder()
+        var accessTokenClaimsBuilder = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .issuedAt(claims.issuedAt())
                 .expiresAt(claims.expiresAt())
                 .subject(claims.subject())
                 .id(UUID.randomUUID().toString())
-                .claim("email", claims.email())
                 .claim("roles", claims.roles()
                         .stream()
                         .map(AuthRole::name)
                         .collect(Collectors.toSet()))
-                .claim("scopes", claims.scopes())
-                .build();
+                .claim("scopes", claims.scopes());
+        // An authenticated Apple identity does not necessarily have an email.
+        // Omit the optional claim instead of inventing an address or serializing null.
+        if (claims.email() != null) accessTokenClaimsBuilder.claim("email", claims.email());
+        JwtClaimsSet accessTokenClaims = accessTokenClaimsBuilder.build();
 
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
 

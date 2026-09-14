@@ -4,7 +4,12 @@ set -Eeuo pipefail
 release_dir=${1:?'Usage: render-release-migration.sh <release-directory> <git-revision>'}
 source_revision=${2:?'An immutable Git revision is required'}
 [[ "$source_revision" =~ ^[0-9a-f]{40}$ ]] || { echo 'Invalid Git revision.' >&2; exit 2; }
-driver=app-store-2026-09.psql
+driver=${3:-app-store-2026-09.psql}
+case "$driver" in
+  app-store-2026-09.psql) expected_files=9 ;;
+  apple-login-2026-09.psql) expected_files=2 ;;
+  *) echo 'Unknown release driver.' >&2; exit 2 ;;
+esac
 [[ -f "$release_dir/$driver" && ! -L "$release_dir/$driver" ]]
 files=("$driver")
 while IFS= read -r line; do
@@ -20,7 +25,7 @@ while IFS= read -r line; do
     files+=("$file")
   fi
 done < "$release_dir/$driver"
-[[ ${#files[@]} -eq 9 ]] || { echo 'Unexpected release manifest size.' >&2; exit 2; }
+[[ ${#files[@]} -eq "$expected_files" ]] || { echo 'Unexpected release manifest size.' >&2; exit 2; }
 checksum=$(
   cd "$release_dir"
   sha256sum "${files[@]}" | sha256sum | awk '{print $1}'

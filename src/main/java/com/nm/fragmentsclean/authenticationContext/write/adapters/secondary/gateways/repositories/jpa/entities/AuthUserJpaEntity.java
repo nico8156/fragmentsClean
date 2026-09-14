@@ -19,7 +19,8 @@ public class AuthUserJpaEntity {
   @Column(name = "provider_user_id", nullable = false)
   private String providerUserId;
 
-  @Column(nullable = false)
+  // Provider + providerUserId identify the account; Apple may omit email.
+  @Column
   private String email;
 
   @Column(name = "email_verified", nullable = false)

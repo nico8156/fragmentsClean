@@ -76,9 +76,11 @@ public final class HttpAppleAuthService implements AppleAuthService {
     String token = response.idToken != null ? response.idToken : identityToken;
     Jwt jwt = decoder.decode(token);
     String email = jwt.getClaimAsString("email");
+    if (email != null && email.isBlank()) email = null;
     Object verified = jwt.getClaims().get("email_verified");
     boolean emailVerified =
-        Boolean.TRUE.equals(verified) || "true".equalsIgnoreCase(String.valueOf(verified));
+        email != null
+            && (Boolean.TRUE.equals(verified) || "true".equalsIgnoreCase(String.valueOf(verified)));
     if (response.refreshToken == null || response.refreshToken.isBlank())
       throw new IllegalStateException("Apple refresh_token is missing");
     return new AppleUserInfo(

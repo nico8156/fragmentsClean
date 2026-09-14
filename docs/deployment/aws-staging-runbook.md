@@ -204,6 +204,11 @@ must stay a single SSM value with PEM line breaks represented as `\n`. Validate
 native Apple login and account deletion/revocation on a real signed iOS build;
 Expo Go and backend unit tests do not prove the entitlement or Apple portal setup.
 
+For the Apple login failure caused by a missing email, apply the separate
+`apple-login-2026-09.psql` release with the corrected backend. See
+[diagnosis, migration and rollback constraints](apple-login-null-email-2026-09-14.md).
+Do not modify previously applied release manifests or invent an email address.
+
 The staging backend reuses the Anchor asset bucket with an isolated Fragments prefix:
 
 ```text

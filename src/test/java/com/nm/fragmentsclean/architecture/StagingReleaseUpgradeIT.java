@@ -60,8 +60,13 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(1);
+            assertThat(receipt).hasSize(2);
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
+            assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
+            assertThat(rows(connection, "SELECT email FROM auth_users WHERE id='" + USER + "'"))
+                    .containsExactly("existing@example.test");
+            assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='auth_users' AND column_name='email'"))
+                    .containsExactly("YES");
 
             String fresh = database();
             try (var target = connect(fresh)) {
@@ -153,7 +158,7 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("1");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("2");
         }
     }
 
@@ -185,7 +190,7 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"",
+        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"",
                 "render", directory, "a".repeat(40));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),

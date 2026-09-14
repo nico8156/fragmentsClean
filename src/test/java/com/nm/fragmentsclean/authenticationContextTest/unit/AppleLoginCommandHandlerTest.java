@@ -10,11 +10,16 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AppleLoginCommandHandlerTest {
-  @Test
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"relay@privaterelay.appleid.com"})
   void
-      creates_an_apple_identity_persists_the_provider_refresh_token_and_returns_a_fragments_session() {
+      creates_an_apple_identity_persists_the_provider_refresh_token_and_returns_a_fragments_session(String email) {
     var users = new Users();
     var credentials = new Credentials();
     var events = new FakeDomainEventPublisher();
@@ -23,7 +28,7 @@ class AppleLoginCommandHandlerTest {
           @Override
           public AppleUserInfo authenticate(String token, String code, String name) {
             return new AppleUserInfo(
-                "apple-sub", "relay@privaterelay.appleid.com", true, name, "apple-refresh");
+                "apple-sub", email, email != null, name, "apple-refresh");
           }
 
           @Override
@@ -54,6 +59,12 @@ class AppleLoginCommandHandlerTest {
     assertThat(credentials.token).isEqualTo("apple-refresh");
     assertThat(result.accessToken()).isEqualTo("access");
     assertThat(events.published).singleElement().isInstanceOf(AuthUserCreatedEvent.class);
+    assertThat(users.user.email()).isEqualTo(email);
+    var originalId = users.user.id();
+    handler.execute(new AppleLoginCommand("identity-2", "fresh-code", "Changed provider name"));
+    assertThat(users.user.id()).isEqualTo(originalId);
+    assertThat(users.user.displayName()).isEqualTo("Nicolas");
+    assertThat(events.published.stream().filter(AuthUserCreatedEvent.class::isInstance).count()).isEqualTo(1);
   }
 
   private static final class Users implements AuthUserRepository {

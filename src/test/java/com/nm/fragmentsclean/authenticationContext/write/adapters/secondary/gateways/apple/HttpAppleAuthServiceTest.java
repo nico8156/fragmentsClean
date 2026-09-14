@@ -20,6 +20,28 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
 class HttpAppleAuthServiceTest {
+  @org.junit.jupiter.params.ParameterizedTest
+  @org.junit.jupiter.params.provider.NullSource
+  @org.junit.jupiter.params.provider.ValueSource(strings = {"", "   "})
+  void missing_email_remains_absent_and_cannot_be_verified(String email) throws Exception {
+    var http = new RestTemplate();
+    var server = MockRestServiceServer.bindTo(http).build();
+    var properties = properties();
+    var builder = Jwt.withTokenValue("validated-token").header("alg", "RS256")
+        .subject("apple-user").claim("email_verified", true);
+    if (email != null) builder.claim("email", email);
+    var jwt = builder.build();
+    var service = new HttpAppleAuthService(http, properties,
+        new DeterministicDateTimeProvider(), ignored -> jwt);
+    server.expect(requestTo(properties.getTokenUri())).andRespond(withSuccess(
+        "{\"refresh_token\":\"provider-refresh\",\"id_token\":\"validated-token\"}",
+        MediaType.APPLICATION_JSON));
+    var profile = service.authenticate("native-token", "fresh-code", null);
+    assertThat(profile.sub()).isEqualTo("apple-user");
+    assertThat(profile.email()).isNull();
+    assertThat(profile.emailVerified()).isFalse();
+    server.verify();
+  }
   @Test
   void exchanges_the_authorization_code_and_revokes_the_provider_refresh_token() throws Exception {
     var http = new RestTemplate();

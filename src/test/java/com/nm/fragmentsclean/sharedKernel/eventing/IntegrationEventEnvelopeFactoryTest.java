@@ -61,8 +61,9 @@ class IntegrationEventEnvelopeFactoryTest {
                 .containsExactly("ticket-events", "ticket-verification-requested");
     }
 
-    @Test
-    void mapsAuthUserDomainPayloadToPublicIntegrationPayload() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void mapsAuthUserDomainPayloadToPublicIntegrationPayload(boolean withoutEmail) {
         var outbox = new OutboxEventJpaEntity(
                 "11111111-1111-1111-1111-111111111111",
                 "com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthUserCreatedEvent",
@@ -75,13 +76,13 @@ class IntegrationEventEnvelopeFactoryTest {
                           "authUserId":"22222222-2222-2222-2222-222222222222",
                           "provider":"GOOGLE",
                           "providerUserId":"google-user",
-                          "email":"user@example.test",
+                          "email":%s,
                           "emailVerified":true,
                           "displayName":"Test User",
                           "avatarUrl":"https://example.test/avatar.png",
                           "occurredAt":"2026-07-06T08:00:00Z"
                         }
-                        """,
+                        """.formatted(withoutEmail ? "null" : "\"user@example.test\""),
                 Instant.parse("2026-07-06T08:00:00Z"),
                 Instant.parse("2026-07-06T08:00:01Z"),
                 OutboxStatus.PENDING,

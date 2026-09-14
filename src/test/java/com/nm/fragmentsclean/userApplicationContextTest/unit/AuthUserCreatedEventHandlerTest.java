@@ -14,6 +14,20 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 class AuthUserCreatedEventHandlerTest {
   @Test
+  void apple_identity_without_email_or_name_creates_a_replay_safe_profile() {
+    var repository = new FailingOnceAppUserRepository();
+    repository.failNext = false;
+    var now = Instant.parse("2026-09-14T19:18:00Z");
+    var handler = new AuthUserCreatedEventHandler(repository, () -> now);
+    var event = new AuthUserCreatedIntegrationEvent(UUID.randomUUID(), UUID.randomUUID(),
+        "APPLE", "apple-sub", null, false, null, null, now);
+    handler.handle(event);
+    handler.handle(event);
+    assertThat(repository.saved.authUserId()).isEqualTo(event.authUserId());
+    assertThat(repository.saved.displayName()).isEqualTo("Utilisateur");
+    assertThat(repository.successfulSaves).isEqualTo(1);
+  }
+  @Test
   void failed_persistence_is_not_acknowledged_and_redelivery_can_create_the_profile() {
     var repository = new FailingOnceAppUserRepository();
     var now = Instant.parse("2026-09-12T10:00:00Z");

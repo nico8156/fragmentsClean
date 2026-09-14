@@ -572,7 +572,7 @@ CREATE TABLE IF NOT EXISTS auth_users (
                                           id               UUID PRIMARY KEY,
                                           provider         VARCHAR(32)      NOT NULL, -- "GOOGLE"
                                           provider_user_id VARCHAR(255)     NOT NULL, -- Google sub
-                                          email            VARCHAR(255)     NOT NULL,
+                                          email            VARCHAR(255),
                                           email_verified   BOOLEAN          NOT NULL,
                                           display_name     VARCHAR(255),
                                           avatar_url       VARCHAR(512),
