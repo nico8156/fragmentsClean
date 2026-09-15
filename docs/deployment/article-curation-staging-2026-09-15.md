@@ -38,7 +38,38 @@ the Spring integration test passed. The fresh full local release run completed
 on 2026-09-15 at 13:24 CEST: **537 tests, zero failures/errors/skips**, including
 infrastructure and vertical tests. The CI workflow will repeat it on Java 21.
 
-After rollout, record the workflow run, backup receipt, migration history,
-running image and HTTPS health. Then verify Studio commands and mobile
-visibility on a real device. The conservation/restoration chantier remains
-separate and paused; this release does not solve it.
+## Rollout receipt
+
+- [GitHub staging run](https://github.com/nico8156/fragmentsClean/actions/runs/34963268908),
+  job `104361658421`: **completed/success**. Java 21 release verification,
+  ARM64 image build/push, SSM deployment and post-deployment image/health check
+  all succeeded.
+- Read-only SSM check `01c0da3f-0fad-440d-894c-a956e700b149`:
+  running image is ECR `fragments/staging/backend:sha-e5c587a4cc2ba0d87b15aa5207309d620856345f`.
+  `release_schema_history` retains the App Store and Apple receipts unchanged
+  and adds `article-curation-2026-09` with source revision `e5c587a` at
+  `2026-09-15 11:41:51.952772 UTC`. Both article rank columns are queryable;
+  zero existing write/projection rows are featured. No automatic editorial
+  promotion occurred.
+- Fresh pre-migration backup service: `Result=success`, `ExecMainStatus=0`.
+  S3 contains `fragments-20260915T114149Z.dump` (713,026 bytes) and its
+  `.dump.sha256` companion under the exact Fragments staging backup prefix.
+  This verifies upload/receipt, **not** a fresh restoration drill.
+- Public HTTPS `/actuator/health`: global `UP`; database, readiness, liveness,
+  ticket verification and editorial operations `UP`. The
+  `articleAuthoringHealth` and `messagingRuntimeHealth` indicators remain
+  `DEGRADED`, previously documented and not fixed by this release.
+- `GET /api/articles?locale=fr-FR&limit=5`: five published items, pagination
+  cursor present, and nullable `featuredRank` present in every returned item.
+  No ranks are assigned yet, as intended until an editor curates Studio.
+
+## Operator acceptance still required
+
+Verify Studio withdrawal/featured-rank commands, projection/SSE freshness and
+mobile catalogue visibility on a real device. The Studio staging site was
+published automatically from its own `main` commit `b19ee73`; its deployment
+run completed successfully and the CloudFront manifest reports that same SHA.
+No new Studio publication was needed during this backend verification.
+
+The conservation/restoration chantier remains separate and paused; this
+release does not solve it.
