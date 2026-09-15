@@ -3,6 +3,13 @@ package com.nm.fragmentsclean.articleContextTest.integration.adapters.secondary.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.articleContextTest.integration.AbstractJpaIntegrationTest;
 import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories.JdbcArticleProjectionRepository;
+import com.nm.fragmentsclean.articleContext.read.GetArticleBySlugQuery;
+import com.nm.fragmentsclean.articleContext.read.GetArticleBySlugQueryHandler;
+import com.nm.fragmentsclean.articleContext.read.ListArticlesQuery;
+import com.nm.fragmentsclean.articleContext.read.ListArticlesQueryHandler;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleWithdrawnIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleFeaturedRankChangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +20,22 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class StructuredArticleProjectionIT extends AbstractJpaIntegrationTest {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @Test
+    void out_of_order_withdrawal_is_retried_instead_of_acknowledged_without_a_projection() {
+        var repository = new JdbcArticleProjectionRepository(jdbcTemplate, new ObjectMapper());
+        var articleId = UUID.randomUUID();
+        var now = Instant.parse("2026-09-15T10:00:00Z");
+        assertThatThrownBy(() -> repository.apply(new ArticleWithdrawnIntegrationEvent(
+                UUID.randomUUID(), UUID.randomUUID(), articleId, UUID.randomUUID(),
+                UUID.randomUUID(), 4, now, now))).isInstanceOf(IllegalStateException.class);
+    }
 
     @Test
     void published_structured_revision_creates_the_public_mobile_projection() throws Exception {
@@ -82,5 +100,31 @@ class StructuredArticleProjectionIT extends AbstractJpaIntegrationTest {
         var tags = mapper.readTree((String) projection.get("tags_json"));
         assertThat(List.of(tags.get(0).asText(), tags.get(1).asText()))
                 .containsExactly("Découverte", "Culture café");
+
+        var featured = new ArticleFeaturedRankChangedIntegrationEvent(UUID.randomUUID(), UUID.randomUUID(),
+                articleId, 2, 4, now.plusSeconds(15), now.plusSeconds(15));
+        repository.apply(featured);
+        repository.apply(featured);
+        var publicDetail = new GetArticleBySlugQueryHandler(jdbcTemplate, mapper, reference -> reference);
+        assertThat(publicDetail.handle(new GetArticleBySlugQuery("choisir-son-cafe", "fr-FR")).featuredRank())
+                .isEqualTo(2);
+        var withdrawn = new ArticleWithdrawnIntegrationEvent(UUID.randomUUID(), UUID.randomUUID(),
+                articleId, revisionId, UUID.randomUUID(), 5, now.plusSeconds(30), now.plusSeconds(30));
+        repository.apply(withdrawn);
+        repository.apply(withdrawn);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM articles_projection WHERE id = ?", String.class, articleId))
+                .isEqualTo("draft");
+        var archive = new ArticleArchivedIntegrationEvent(UUID.randomUUID(), UUID.randomUUID(),
+                articleId, revisionId, 6, now.plusSeconds(60), now.plusSeconds(60));
+        repository.apply(archive);
+        repository.apply(archive);
+        var publicList = new ListArticlesQueryHandler(jdbcTemplate, publicDetail);
+        assertThat(publicDetail.handle(new GetArticleBySlugQuery("choisir-son-cafe", "fr-FR"))).isNull();
+        assertThat(publicList.handle(new ListArticlesQuery("fr-FR", 10, null)).items())
+                .noneMatch(item -> item.id().equals(articleId));
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT status FROM articles_projection WHERE id = ?", String.class, articleId))
+                .isEqualTo("archived");
     }
 }

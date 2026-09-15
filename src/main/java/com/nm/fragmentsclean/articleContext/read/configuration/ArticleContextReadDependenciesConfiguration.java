@@ -16,6 +16,8 @@ import com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.sto
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleCreatedEventHandler;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleRevisionPublishedEventHandler;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleArchivedEventHandler;
+import com.nm.fragmentsclean.articleContext.read.projections.ArticleWithdrawnEventHandler;
+import com.nm.fragmentsclean.articleContext.read.projections.ArticleFeaturedRankChangedEventHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa.JpaArticleRepository;
 import com.nm.fragmentsclean.articleContext.write.adapters.secondary.gateways.repositorie.jpa.SpringArticleRepository;
@@ -83,6 +85,18 @@ public class ArticleContextReadDependenciesConfiguration {
 			ArticleProjectionRepository articleRepository,
 			ProjectionSyncPublisher projectionSyncPublisher) {
 		return new ArticleArchivedEventHandler(articleRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	ArticleWithdrawnEventHandler articleWithdrawnEventHandler(ArticleProjectionRepository articleRepository,
+			ProjectionSyncPublisher projectionSyncPublisher) {
+		return new ArticleWithdrawnEventHandler(articleRepository, projectionSyncPublisher);
+	}
+
+	@Bean
+	ArticleFeaturedRankChangedEventHandler articleFeaturedRankChangedEventHandler(
+			ArticleProjectionRepository articleRepository, ProjectionSyncPublisher projectionSyncPublisher) {
+		return new ArticleFeaturedRankChangedEventHandler(articleRepository, projectionSyncPublisher);
 	}
 
 	@Bean

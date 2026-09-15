@@ -33,12 +33,14 @@ class PublicArticleSerializationContractTest {
 				updatedAt,
 				1,
 				"published",
-				List.of());
+				List.of(),
+				2);
 
 		String json = new SharedKernelDependenciesConfiguration().objectMapper().writeValueAsString(article);
 
 		assertThat(json).contains("\"publishedAt\":\"2026-08-28T17:31:53.136Z\"");
 		assertThat(json).contains("\"updatedAt\":\"2026-08-28T17:32:04.250Z\"");
+		assertThat(json).contains("\"featuredRank\":2");
 		assertThat(json).doesNotContain("1787938313.136");
 	}
 }

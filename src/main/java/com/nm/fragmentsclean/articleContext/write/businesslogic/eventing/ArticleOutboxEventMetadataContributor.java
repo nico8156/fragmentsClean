@@ -2,6 +2,8 @@ package com.nm.fragmentsclean.articleContext.write.businesslogic.eventing;
 
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleArchivedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleWithdrawnEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleFeaturedRankChangedEvent;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDraftCreatedEvent;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDraftEditedEvent;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionPublishedEvent;
@@ -24,6 +26,12 @@ public class ArticleOutboxEventMetadataContributor implements OutboxEventMetadat
 			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
 		}
 		if (event instanceof ArticleArchivedEvent articleEvent) {
+			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
+		}
+		if (event instanceof ArticleWithdrawnEvent articleEvent) {
+			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
+		}
+		if (event instanceof ArticleFeaturedRankChangedEvent articleEvent) {
 			return Optional.of(aggregate("Article", articleEvent.articleId().toString(), "article"));
 		}
 		if (event instanceof ArticleDraftCreatedEvent articleEvent) {

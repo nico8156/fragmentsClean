@@ -58,6 +58,16 @@ class ArticleRevisionPublishedEventHandlerTest {
 			throw new AssertionError("archive projection path must not be used");
 		}
 
+		@Override
+		public void apply(com.nm.fragmentsclean.platform.eventing.contracts.ArticleWithdrawnIntegrationEvent event) {
+			throw new AssertionError("withdraw projection path must not be used");
+		}
+
+		@Override
+		public void apply(com.nm.fragmentsclean.platform.eventing.contracts.ArticleFeaturedRankChangedIntegrationEvent event) {
+			throw new AssertionError("featured projection path must not be used");
+		}
+
         @Override
         public long count() {
             return 0;

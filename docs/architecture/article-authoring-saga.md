@@ -128,12 +128,19 @@ The article lifecycle is:
 
 ```text
 DRAFT -> IN_REVIEW -> PUBLISHED -> ARCHIVED
+                     PUBLISHED -> new DRAFT revision -> IN_REVIEW -> PUBLISHED
 ```
 
 A published revision is immutable. Editing a published article creates a new
 working revision while the published revision remains visible to mobile. A new
 revision replaces the visible one only after an explicit successful publish
 command.
+
+The explicit withdrawal command hides a published article immediately and
+creates a new working draft revision. This differs from merely starting a
+working revision while leaving the published revision visible. Featured
+curation is a property of published articles, not a lifecycle state; see
+`article-curation-and-mobile-freshness.md`.
 
 The aggregate is the only component allowed to select the working and
 published revision. Persistence adapters reconstruct state; they do not make

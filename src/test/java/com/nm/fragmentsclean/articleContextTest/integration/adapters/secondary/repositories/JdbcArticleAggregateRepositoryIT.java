@@ -48,6 +48,53 @@ class JdbcArticleAggregateRepositoryIT extends AbstractJpaIntegrationTest {
                 Integer.class, revisionId)).isEqualTo(1);
     }
 
+    @Test
+    void persists_featured_rank_and_a_withdrawn_editable_revision_without_losing_publication_history() {
+        var repository = new JdbcArticleAggregateRepository(jdbc, new ObjectMapper());
+        var articleId = UUID.randomUUID();
+        var publishedRevisionId = UUID.randomUUID();
+        var draftRevisionId = UUID.randomUUID();
+        var now = Instant.parse("2026-09-15T10:00:00Z");
+        var article = ArticleAggregate.draft(articleId, "manuel-featured", "fr-FR", UUID.randomUUID(),
+                "Fragments Studio", ArticleRevision.draft(publishedRevisionId, publishableDraft(), now), now);
+        article.submitForReview(now.plusSeconds(30));
+        article.publishWorkingRevision(now.plusSeconds(60));
+        repository.save(article);
+
+        var published = repository.byId(articleId).orElseThrow();
+        published.setFeaturedRank(2, now.plusSeconds(90));
+        repository.save(published);
+        assertThat(repository.byId(articleId).orElseThrow().featuredRank()).isEqualTo(2);
+
+        var featured = repository.byId(articleId).orElseThrow();
+        featured.withdrawToDraft(draftRevisionId, now.plusSeconds(120));
+        repository.save(featured);
+        var withdrawn = repository.byId(articleId).orElseThrow();
+        assertThat(withdrawn.lifecycle()).isEqualTo(ArticleLifecycle.DRAFT);
+        assertThat(withdrawn.featuredRank()).isNull();
+        assertThat(withdrawn.workingRevisionId()).isEqualTo(draftRevisionId);
+        assertThat(withdrawn.publishedRevisionId()).isEqualTo(publishedRevisionId);
+        assertThat(withdrawn.publishedRevision().status()).isEqualTo(ArticleRevisionStatus.PUBLISHED);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM article_revisions WHERE article_id = ?",
+                Integer.class, articleId)).isEqualTo(2);
+    }
+
+    private static ArticleRevisionDraft publishableDraft() {
+        var content = ArticleContent.draft(ArticleTitle.from("Article à la une"),
+                ArticleIntroduction.from("Une introduction."),
+                List.of(
+                        ArticleSection.draft("Comprendre").withParagraph(ArticleParagraph.from("Un texte."))
+                                .withImage(ArticleImageRef.from("s3://articles/comprendre.jpg", 1000, 700, "Comprendre")),
+                        ArticleSection.draft("Explorer").withParagraph(ArticleParagraph.from("Un autre texte."))
+                                .withImage(ArticleImageRef.from("s3://articles/explorer.jpg", 1000, 700, "Explorer")),
+                        ArticleSection.draft("Partager").withParagraph(ArticleParagraph.from("Encore un texte."))
+                                .withImage(ArticleImageRef.from("s3://articles/partager.jpg", 1000, 700, "Partager"))),
+                ArticleParagraph.from("Une conclusion."));
+        return ArticleRevisionDraft.editable(content,
+                ArticleImageRef.from("s3://articles/cover.jpg", 1200, 800, "Couverture"),
+                List.of(ArticleEditorialTag.DECOUVERTE));
+    }
+
     private static ArticleRevisionDraft draft(String title) {
         var section = ArticleSection.draft("Comprendre")
                 .withParagraph(ArticleParagraph.from("Un contenu éditorial manuel."))

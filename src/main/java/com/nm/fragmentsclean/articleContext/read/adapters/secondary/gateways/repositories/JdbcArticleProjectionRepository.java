@@ -8,6 +8,8 @@ import com.nm.fragmentsclean.articleContext.read.projections.ImageRefView;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleWithdrawnIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleFeaturedRankChangedIntegrationEvent;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -174,11 +176,46 @@ public class JdbcArticleProjectionRepository implements ArticleProjectionReposit
 
 	@Override
 	public void apply(ArticleArchivedIntegrationEvent event) {
+		var current = currentState(event.articleId());
+		if (current.version() >= event.version()) return;
 		jdbcTemplate.update("""
-				UPDATE articles_projection SET status = 'archived', updated_at = ?, version = ?
+				UPDATE articles_projection SET status = 'archived', featured_rank = NULL, updated_at = ?, version = ?
 				WHERE id = ? AND version < ?
 				""", Timestamp.from(event.occurredAt()), event.version(), event.articleId(), event.version());
 	}
+
+	@Override
+	public void apply(ArticleWithdrawnIntegrationEvent event) {
+		var current = currentState(event.articleId());
+		if (current.version() >= event.version()) return;
+		jdbcTemplate.update("""
+				UPDATE articles_projection SET status = 'draft', featured_rank = NULL, updated_at = ?, version = ?
+				WHERE id = ? AND version < ?
+				""", Timestamp.from(event.occurredAt()), event.version(), event.articleId(), event.version());
+	}
+
+	@Override
+	public void apply(ArticleFeaturedRankChangedIntegrationEvent event) {
+		var current = currentState(event.articleId());
+		if (current.version() >= event.version()) return;
+		if (!"published".equals(current.status())) {
+			throw new IllegalStateException("Feature change arrived before publication for " + event.articleId());
+		}
+		jdbcTemplate.update("""
+				UPDATE articles_projection SET featured_rank = ?, updated_at = ?, version = ?
+				WHERE id = ? AND status = 'published' AND version < ?
+				""", event.featuredRank(), Timestamp.from(event.occurredAt()), event.version(),
+				event.articleId(), event.version());
+	}
+
+	private ProjectionState currentState(UUID articleId) {
+		var rows = jdbcTemplate.query("SELECT version, status FROM articles_projection WHERE id = ?",
+				(rs, row) -> new ProjectionState(rs.getLong("version"), rs.getString("status")), articleId);
+		if (rows.isEmpty()) throw new IllegalStateException("Article projection is missing for " + articleId);
+		return rows.getFirst();
+	}
+
+	private record ProjectionState(long version, String status) { }
 
 	@Override
 	public long count() {

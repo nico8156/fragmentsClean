@@ -8,4 +8,8 @@ public interface ArticleAuthoringPort {
 	void publish(java.util.UUID commandId, java.time.Instant clientAt,
 			java.util.UUID articleId, java.util.UUID revisionId);
 	void archive(java.util.UUID commandId, java.time.Instant clientAt, java.util.UUID articleId);
+	void withdraw(java.util.UUID commandId, java.time.Instant clientAt, java.util.UUID articleId,
+			java.util.UUID draftRevisionId);
+	void setFeaturedRank(java.util.UUID commandId, java.time.Instant clientAt,
+			java.util.UUID articleId, Integer featuredRank);
 }

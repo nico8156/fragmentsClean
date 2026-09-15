@@ -102,7 +102,8 @@ public class GetArticleBySlugQueryHandler
                 updatedAt,
                 version,
                 status,
-                coffeeIds
+                coffeeIds,
+                (Integer) rs.getObject("featured_rank")
         );
     }
 

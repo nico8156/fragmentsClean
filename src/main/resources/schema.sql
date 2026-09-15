@@ -434,6 +434,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
                           status            VARCHAR(32)    NOT NULL,
                           version           BIGINT         NOT NULL,
+                          featured_rank     INTEGER,
 
                           -- Compatibility pointers used during revision migration.
                           working_revision_id   UUID,
@@ -445,6 +446,12 @@ ALTER TABLE articles
 
 ALTER TABLE articles
     ADD COLUMN IF NOT EXISTS published_revision_id UUID;
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS featured_rank INTEGER;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_articles_featured_rank
+    ON articles(featured_rank) WHERE status = 'PUBLISHED' AND featured_rank IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS article_revisions (
     revision_id       UUID PRIMARY KEY,
@@ -548,6 +555,8 @@ CREATE TABLE IF NOT EXISTS articles_projection (
                                      version          BIGINT       NOT NULL,
                                      status           VARCHAR(32)  NOT NULL, -- "published", "draft", "archived"
 
+                                     featured_rank    INTEGER,
+
                                      coffee_ids_json  TEXT         NOT NULL  -- UUID[] sérialisés en JSON
 );
 
@@ -557,6 +566,11 @@ CREATE TABLE IF NOT EXISTS articles_projection (
 --
 CREATE INDEX IF NOT EXISTS idx_articles_projection_public_page
     ON articles_projection (locale, status, published_at DESC, id DESC);
+
+ALTER TABLE articles_projection ADD COLUMN IF NOT EXISTS featured_rank INTEGER;
+
+CREATE INDEX IF NOT EXISTS idx_articles_projection_featured
+    ON articles_projection (locale, featured_rank) WHERE status = 'published' AND featured_rank IS NOT NULL;
 
 
 

@@ -61,6 +61,37 @@ class RichArticleDomainTest {
     }
 
     @Test
+    void withdrawing_a_published_article_creates_an_editable_draft_without_rewriting_its_published_revision() {
+        var article = draftArticle();
+        article.submitForReview(NOW.plusSeconds(60));
+        article.publishWorkingRevision(NOW.plusSeconds(120));
+
+        article.withdrawToDraft(NEXT_REVISION_ID, NOW.plusSeconds(180));
+
+        assertThat(article.lifecycle()).isEqualTo(ArticleLifecycle.DRAFT);
+        assertThat(article.workingRevisionId()).isEqualTo(NEXT_REVISION_ID);
+        assertThat(article.publishedRevisionId()).isEqualTo(REVISION_ID);
+        assertThat(article.publishedRevision().status()).isEqualTo(ArticleRevisionStatus.PUBLISHED);
+        assertThat(article.workingRevision().status()).isEqualTo(ArticleRevisionStatus.DRAFT);
+        assertThat(article.workingRevision().content().title().value()).isEqualTo("Version initiale");
+        assertThatThrownBy(() -> article.withdrawToDraft(UUID.randomUUID(), NOW.plusSeconds(240)))
+                .isInstanceOf(ArticleDomainException.class);
+    }
+
+    @Test
+    void featured_rank_is_only_allowed_on_published_articles_and_is_cleared_on_withdrawal() {
+        var article = draftArticle();
+        assertThatThrownBy(() -> article.setFeaturedRank(1, NOW.plusSeconds(10)))
+                .isInstanceOf(ArticleDomainException.class);
+        article.submitForReview(NOW.plusSeconds(60));
+        article.publishWorkingRevision(NOW.plusSeconds(120));
+        article.setFeaturedRank(2, NOW.plusSeconds(130));
+        assertThat(article.featuredRank()).isEqualTo(2);
+        article.withdrawToDraft(NEXT_REVISION_ID, NOW.plusSeconds(180));
+        assertThat(article.featuredRank()).isNull();
+    }
+
+    @Test
     void review_rejects_a_section_without_paragraph() {
         var emptySection = ArticleSection.draft("Une section vide");
         var content = ArticleContent.draft(

@@ -23,7 +23,8 @@ public record ArticleStudioDraftView(
         List<UUID> coffeeIds,
         Instant createdAt,
         Instant updatedAt,
-        Instant publishedAt) {
+        Instant publishedAt,
+        Integer featuredRank) {
     public record Section(String heading, String paragraph, Image image) { }
     public record Image(String storageReference, String url, int width, int height, String alt) { }
 }
