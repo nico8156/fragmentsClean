@@ -10,4 +10,5 @@ public record StudioArticleDraftDocument(
         StudioArticleSubmission draft,
         Instant createdAt,
         Instant updatedAt,
-        Instant publishedAt) { }
+        Instant publishedAt,
+        Integer featuredRank) { }

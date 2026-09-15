@@ -24,6 +24,7 @@ public record ArticleView(
 
         long version,
         String status,            // "published" | "draft" | "archived"
-        List<UUID> coffeeIds
+        List<UUID> coffeeIds,
+        Integer featuredRank
 ) {
 }

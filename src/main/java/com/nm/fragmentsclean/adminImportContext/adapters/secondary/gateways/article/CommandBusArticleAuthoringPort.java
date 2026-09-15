@@ -6,6 +6,8 @@ import com.nm.fragmentsclean.articleContext.write.businesslogic.models.*;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleEditorialTag;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.PublishArticleRevisionCommand;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.ArchiveArticleCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.WithdrawArticleCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SetArticleFeaturedRankCommand;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommand;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.UpsertArticleDraftCommand;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -59,6 +61,18 @@ public class CommandBusArticleAuthoringPort implements ArticleAuthoringPort {
 	@Override
 	public void archive(java.util.UUID commandId, java.time.Instant clientAt, java.util.UUID articleId) {
 		commandBus.dispatch(new ArchiveArticleCommand(commandId, clientAt, articleId));
+	}
+
+	@Override
+	public void withdraw(java.util.UUID commandId, java.time.Instant clientAt, java.util.UUID articleId,
+			java.util.UUID draftRevisionId) {
+		commandBus.dispatch(new WithdrawArticleCommand(commandId, clientAt, articleId, draftRevisionId));
+	}
+
+	@Override
+	public void setFeaturedRank(java.util.UUID commandId, java.time.Instant clientAt,
+			java.util.UUID articleId, Integer featuredRank) {
+		commandBus.dispatch(new SetArticleFeaturedRankCommand(commandId, clientAt, articleId, featuredRank));
 	}
 
 	private static ArticleImageRef image(com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef image) {

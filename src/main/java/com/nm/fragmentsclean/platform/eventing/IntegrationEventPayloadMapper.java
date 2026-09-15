@@ -7,6 +7,8 @@ import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrati
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserDeletionRequestedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserProfileUpdatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleWithdrawnIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleFeaturedRankChangedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleCreatedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationCompletedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleGenerationRequestedIntegrationEvent;
@@ -357,6 +359,25 @@ public class IntegrationEventPayloadMapper {
                     uuidOrFallback(node, "commandId", event.getEventId()),
                     uuidOrFallback(node, "articleId", event.getAggregateId()),
                     uuidOrFallback(node, "revisionId", event.getAggregateId()),
+                    longValue(node, "version"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    instantOrFallback(node, "clientAt", event.getOccurredAt()));
+            case "article.withdrawn" ->
+                new ArticleWithdrawnIntegrationEvent(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuidOrFallback(node, "articleId", event.getAggregateId()),
+                    uuid(node, "publishedRevisionId"),
+                    uuid(node, "draftRevisionId"),
+                    longValue(node, "version"),
+                    instantOrFallback(node, "occurredAt", event.getOccurredAt()),
+                    instantOrFallback(node, "clientAt", event.getOccurredAt()));
+            case "article.featured_rank.changed" ->
+                new ArticleFeaturedRankChangedIntegrationEvent(
+                    uuidOrFallback(node, "eventId", event.getEventId()),
+                    uuidOrFallback(node, "commandId", event.getEventId()),
+                    uuidOrFallback(node, "articleId", event.getAggregateId()),
+                    nullableInt(node, "featuredRank"),
                     longValue(node, "version"),
                     instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                     instantOrFallback(node, "clientAt", event.getOccurredAt()));

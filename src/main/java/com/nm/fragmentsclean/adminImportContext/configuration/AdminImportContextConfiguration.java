@@ -50,6 +50,8 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudi
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ApproveStudioArticlePublication;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.WithdrawStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SetStudioArticleFeaturedRank;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ManageEditorialSource;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.AnalyzeStudioEditorialSignals;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.DecideStudioTopicCandidate;
@@ -150,6 +152,16 @@ public class AdminImportContextConfiguration {
 	@Bean ArchiveStudioArticle archiveStudioArticle(
 			ArticleAuthoringPort port, UuidGenerator ids, DateTimeProvider clock) {
 		return new ArchiveStudioArticle(port, ids, clock);
+	}
+
+	@Bean WithdrawStudioArticle withdrawStudioArticle(ArticleAuthoringPort port, UuidGenerator ids,
+			DateTimeProvider clock) {
+		return new WithdrawStudioArticle(port, ids, clock);
+	}
+
+	@Bean SetStudioArticleFeaturedRank setStudioArticleFeaturedRank(ArticleAuthoringPort port,
+			UuidGenerator ids, DateTimeProvider clock) {
+		return new SetStudioArticleFeaturedRank(port, ids, clock);
 	}
 
 	@Bean

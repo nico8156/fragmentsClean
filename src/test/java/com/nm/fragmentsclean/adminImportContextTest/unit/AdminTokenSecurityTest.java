@@ -133,6 +133,45 @@ class AdminTokenSecurityTest {
 	}
 
 	@Test
+	void studio_article_archive_route_requires_admin_token_and_accepts_valid_archive() throws Exception {
+		var articleId = "11111111-1111-1111-1111-111111111111";
+		mockMvc("admin-secret").perform(delete("/api/admin/studio/articles/" + articleId))
+				.andExpect(status().isUnauthorized());
+		mockMvc("admin-secret").perform(delete("/api/admin/studio/articles/" + articleId)
+					.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.articleId").value(articleId))
+				.andExpect(jsonPath("$.status").value("PENDING"));
+	}
+
+	@Test
+	void studio_article_withdraw_route_requires_admin_token_and_accepts_valid_withdrawal() throws Exception {
+		var articleId = "11111111-1111-1111-1111-111111111111";
+		mockMvc("admin-secret").perform(post("/api/admin/studio/articles/" + articleId + "/withdraw"))
+				.andExpect(status().isUnauthorized());
+		mockMvc("admin-secret").perform(post("/api/admin/studio/articles/" + articleId + "/withdraw")
+					.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.articleId").value(articleId))
+				.andExpect(jsonPath("$.status").value("PENDING"));
+	}
+
+	@Test
+	void studio_article_featured_rank_route_requires_admin_token_and_accepts_a_rank_change() throws Exception {
+		var articleId = "11111111-1111-1111-1111-111111111111";
+		mockMvc("admin-secret").perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+				.put("/api/admin/studio/articles/" + articleId + "/featured")
+				.contentType("application/json").content("{\"featuredRank\":2}"))
+				.andExpect(status().isUnauthorized());
+		mockMvc("admin-secret").perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+				.put("/api/admin/studio/articles/" + articleId + "/featured")
+				.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret")
+				.contentType("application/json").content("{\"featuredRank\":2}"))
+				.andExpect(status().isAccepted())
+				.andExpect(jsonPath("$.articleId").value(articleId));
+	}
+
+	@Test
 	void admin_delete_coffee_with_valid_token_dispatches_archive_command() throws Exception {
 		var queryHandler = new CountingListCoffeesQueryHandler();
 		var archiveHandler = new RecordingArchiveCoffeeCommandHandler();
@@ -416,11 +455,15 @@ class AdminTokenSecurityTest {
 			public void submitForReview(UUID commandId, Instant clientAt, UUID articleId) { }
 			public void publish(UUID commandId, Instant clientAt, UUID articleId, UUID revisionId) { }
 			public void archive(UUID commandId, Instant clientAt, UUID articleId) { }
+			public void withdraw(UUID commandId, Instant clientAt, UUID articleId, UUID draftRevisionId) { }
+			public void setFeaturedRank(UUID commandId, Instant clientAt, UUID articleId, Integer featuredRank) { }
 		};
 		return new AdminStudioArticlesController(
 				new SubmitStudioArticle(authoring, ids, clock),
 				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SaveStudioArticleDraft(authoring, ids, clock),
 				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ArchiveStudioArticle(authoring, ids, clock),
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.WithdrawStudioArticle(authoring, ids, clock),
+				new com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SetStudioArticleFeaturedRank(authoring, ids, clock),
 				new StoreStudioArticleImage((articleId, fileName, contentType, bytes, alt) ->
 						new StudioArticleImageAsset(
 								UUID.fromString("dddddddd-dddd-dddd-dddd-dddddddddddd"),

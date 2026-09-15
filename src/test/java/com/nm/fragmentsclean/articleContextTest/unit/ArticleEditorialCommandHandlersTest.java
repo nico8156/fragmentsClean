@@ -19,6 +19,13 @@ import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.PublishArticleRevisionCommandHandler;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommand;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SubmitArticleRevisionForReviewCommandHandler;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.WithdrawArticleCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.WithdrawArticleCommandHandler;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SetArticleFeaturedRankCommand;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.SetArticleFeaturedRankCommandHandler;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleFeaturedRankChangedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDomainException;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleWithdrawnEvent;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionPublishedEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
@@ -32,6 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ArticleEditorialCommandHandlersTest {
 
@@ -72,6 +80,52 @@ class ArticleEditorialCommandHandlersTest {
                 .isEqualTo(2L);
         assertThat(status.applied).containsExactly(
                 CREATE_COMMAND_ID, EDIT_COMMAND_ID, REVIEW_COMMAND_ID, PUBLISH_COMMAND_ID);
+    }
+
+    @Test
+    void withdrawal_is_applied_once_and_emits_a_fact_for_the_public_projection() {
+        var repository = new FakeArticleAggregateRepository();
+        var publisher = new RecordingPublisher();
+        var status = new RecordingCommandStatus();
+        var article = ArticleAggregate.draft(ARTICLE_ID, "guide-cafe", "fr-FR", AUTHOR_ID,
+                "Studio", ArticleRevision.draft(REVISION_ID, draft(content()), NOW), NOW);
+        article.submitForReview(NOW.plusSeconds(30));
+        article.publishWorkingRevision(NOW.plusSeconds(60));
+        repository.save(article);
+        var handler = new WithdrawArticleCommandHandler(repository, publisher, () -> NOW.plusSeconds(120), status);
+        var command = new WithdrawArticleCommand(UUID.randomUUID(), NOW, ARTICLE_ID, UUID.randomUUID());
+
+        handler.execute(command);
+        handler.execute(command);
+
+        assertThat(repository.byId(ARTICLE_ID).orElseThrow().lifecycle().name()).isEqualTo("DRAFT");
+        assertThat(publisher.events).filteredOn(ArticleWithdrawnEvent.class::isInstance).hasSize(1);
+        assertThat(status.applied).containsExactly(command.commandId());
+    }
+
+    @Test
+    void featured_rank_command_rejects_an_occupied_slot_and_is_idempotent_after_success() {
+        var repository = new FakeArticleAggregateRepository();
+        var publisher = new RecordingPublisher();
+        var status = new RecordingCommandStatus();
+        var article = ArticleAggregate.draft(ARTICLE_ID, "guide-cafe", "fr-FR", AUTHOR_ID,
+                "Studio", ArticleRevision.draft(REVISION_ID, draft(content()), NOW), NOW);
+        article.submitForReview(NOW.plusSeconds(30));
+        article.publishWorkingRevision(NOW.plusSeconds(60));
+        repository.save(article);
+        var command = new SetArticleFeaturedRankCommand(UUID.randomUUID(), NOW, ARTICLE_ID, 2);
+        var rejected = new SetArticleFeaturedRankCommandHandler(repository, (id, rank) -> true,
+                publisher, () -> NOW.plusSeconds(90), status);
+        assertThatThrownBy(() -> rejected.execute(command)).isInstanceOf(ArticleDomainException.class);
+        assertThat(status.applied).isEmpty();
+
+        var handler = new SetArticleFeaturedRankCommandHandler(repository, (id, rank) -> false,
+                publisher, () -> NOW.plusSeconds(120), status);
+        handler.execute(command);
+        handler.execute(command);
+        assertThat(repository.byId(ARTICLE_ID).orElseThrow().featuredRank()).isEqualTo(2);
+        assertThat(publisher.events).filteredOn(ArticleFeaturedRankChangedEvent.class::isInstance).hasSize(1);
+        assertThat(status.applied).containsExactly(command.commandId());
     }
 
     private ArticleContent content() {

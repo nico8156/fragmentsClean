@@ -23,6 +23,7 @@ public final class ArticleAggregate extends AggregateRoot {
     private UUID workingRevisionId;
     private UUID publishedRevisionId;
     private ArticleLifecycle lifecycle;
+    private Integer featuredRank;
     private long version;
 
     private ArticleAggregate(UUID articleId,
@@ -58,6 +59,14 @@ public final class ArticleAggregate extends AggregateRoot {
                              String authorName, Instant createdAt, List<ArticleRevision> revisions,
                              UUID workingRevisionId, UUID publishedRevisionId,
                              ArticleLifecycle lifecycle, long version) {
+        this(articleId, slug, locale, authorId, authorName, createdAt, revisions,
+                workingRevisionId, publishedRevisionId, lifecycle, version, null);
+    }
+
+    private ArticleAggregate(UUID articleId, String slug, String locale, UUID authorId,
+                             String authorName, Instant createdAt, List<ArticleRevision> revisions,
+                             UUID workingRevisionId, UUID publishedRevisionId,
+                             ArticleLifecycle lifecycle, long version, Integer featuredRank) {
         super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
         this.slug = requireText(slug, "Le slug est obligatoire.");
         this.locale = requireText(locale, "La locale est obligatoire.");
@@ -68,6 +77,10 @@ public final class ArticleAggregate extends AggregateRoot {
         this.workingRevisionId = workingRevisionId;
         this.publishedRevisionId = publishedRevisionId;
         this.lifecycle = Objects.requireNonNull(lifecycle, "Le cycle de vie est obligatoire.");
+        if (featuredRank != null && (lifecycle != ArticleLifecycle.PUBLISHED || featuredRank < 1 || featuredRank > 5)) {
+            throw new ArticleDomainException("La sélection à la une est invalide.");
+        }
+        this.featuredRank = featuredRank;
         if (version < 0) throw new ArticleDomainException("La version article est invalide.");
         this.version = version;
     }
@@ -94,6 +107,15 @@ public final class ArticleAggregate extends AggregateRoot {
                                                 long version) {
         return new ArticleAggregate(articleId, slug, locale, authorId, authorName, createdAt,
                 revisions, workingRevisionId, publishedRevisionId, lifecycle, version);
+    }
+
+    public static ArticleAggregate reconstitute(UUID articleId, String slug, String locale,
+                                                UUID authorId, String authorName, Instant createdAt,
+                                                List<ArticleRevision> revisions, UUID workingRevisionId,
+                                                UUID publishedRevisionId, ArticleLifecycle lifecycle,
+                                                long version, Integer featuredRank) {
+        return new ArticleAggregate(articleId, slug, locale, authorId, authorName, createdAt,
+                revisions, workingRevisionId, publishedRevisionId, lifecycle, version, featuredRank);
     }
 
     public boolean awaitsGeneratedRevision() {
@@ -144,12 +166,27 @@ public final class ArticleAggregate extends AggregateRoot {
         if (lifecycle == ArticleLifecycle.ARCHIVED) return;
         workingRevision().archive(now);
         lifecycle = ArticleLifecycle.ARCHIVED;
+        featuredRank = null;
         version++;
     }
 
     public void registerArchived(UUID commandId, Instant clientAt, Instant now) {
         registerEvent(new ArticleArchivedEvent(
                 UUID.randomUUID(), commandId, id, workingRevisionId, version, now, clientAt));
+    }
+
+    public void withdrawToDraft(UUID newRevisionId, Instant now) {
+        ensureLifecycle(ArticleLifecycle.PUBLISHED, "Seul un article publié peut être dépublié.");
+        if (revisions.stream().anyMatch(revision -> revision.revisionId().equals(newRevisionId))) {
+            throw new ArticleDomainException("La nouvelle révision existe déjà.");
+        }
+        startWorkingRevision(newRevisionId, publishedRevision().draft(), now);
+        featuredRank = null;
+    }
+
+    public void registerWithdrawn(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleWithdrawnEvent(UUID.randomUUID(), commandId, id,
+                publishedRevisionId, workingRevisionId, version, now, clientAt));
     }
 
     public UUID startWorkingRevision(UUID revisionId, ArticleRevisionDraft draft, Instant now) {
@@ -160,8 +197,26 @@ public final class ArticleAggregate extends AggregateRoot {
         revisions.add(revision);
         workingRevisionId = revisionId;
         lifecycle = ArticleLifecycle.DRAFT;
+        featuredRank = null;
         version++;
         return revisionId;
+    }
+
+    public boolean setFeaturedRank(Integer rank, Instant now) {
+        ensureLifecycle(ArticleLifecycle.PUBLISHED, "Seul un article publié peut être à la une.");
+        if (rank != null && (rank < 1 || rank > 5)) {
+            throw new ArticleDomainException("Le rang à la une doit être compris entre 1 et 5.");
+        }
+        Objects.requireNonNull(now, "La date est obligatoire.");
+        if (Objects.equals(featuredRank, rank)) return false;
+        featuredRank = rank;
+        version++;
+        return true;
+    }
+
+    public void registerFeaturedRankChanged(UUID commandId, Instant clientAt, Instant now) {
+        registerEvent(new ArticleFeaturedRankChangedEvent(UUID.randomUUID(), commandId, id,
+                featuredRank, version, now, clientAt));
     }
 
     public ArticleRevision workingRevision() {
@@ -205,4 +260,5 @@ public final class ArticleAggregate extends AggregateRoot {
     public UUID publishedRevisionId() { return publishedRevisionId; }
     public ArticleLifecycle lifecycle() { return lifecycle; }
     public long version() { return version; }
+    public Integer featuredRank() { return featuredRank; }
 }

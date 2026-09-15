@@ -28,7 +28,7 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
     public Optional<ArticleAggregate> byId(UUID articleId) {
         return jdbc.query("""
                 SELECT article_id, slug, locale, author_id, author_name, created_at,
-                       working_revision_id, published_revision_id, status, version
+                       working_revision_id, published_revision_id, status, version, featured_rank
                 FROM articles WHERE article_id = ?
                 """, (rs, row) -> ArticleAggregate.reconstitute(
                 rs.getObject("article_id", UUID.class), rs.getString("slug"), rs.getString("locale"),
@@ -36,7 +36,8 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
                 rs.getTimestamp("created_at").toInstant(), revisions(articleId),
                 rs.getObject("working_revision_id", UUID.class),
                 rs.getObject("published_revision_id", UUID.class),
-                ArticleLifecycle.valueOf(rs.getString("status")), rs.getLong("version")), articleId)
+                ArticleLifecycle.valueOf(rs.getString("status")), rs.getLong("version"),
+                (Integer) rs.getObject("featured_rank")), articleId)
                 .stream().findFirst();
     }
 
@@ -53,11 +54,11 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
         int updated = jdbc.update("""
                 UPDATE articles
                 SET status = ?, working_revision_id = ?, published_revision_id = ?,
-                    published_at = ?, updated_at = ?, version = ?
+                    published_at = ?, updated_at = ?, version = ?, featured_rank = ?
                 WHERE article_id = ?
                 """, article.lifecycle().name(), article.workingRevisionId(), article.publishedRevisionId(),
                 timestamp(article.publishedRevisionId() == null ? null : article.publishedRevision().publishedAt()),
-                Timestamp.from(updatedAt), article.version(), article.id());
+                Timestamp.from(updatedAt), article.version(), article.featuredRank(), article.id());
         if (updated != 1) throw new IllegalStateException("Article aggregate no longer exists: " + article.id());
         persistRevisions(article);
     }
@@ -114,8 +115,8 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
                 INSERT INTO articles(article_id, slug, locale, author_id, author_name, title, intro,
                     blocks_json, conclusion, cover_url, cover_width, cover_height, cover_alt,
                     tags_json, reading_time_min, coffee_ids_json, created_at, updated_at,
-                    status, version, working_revision_id, published_revision_id, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, ?, ?, ?, ?, ?)
+                    status, version, working_revision_id, published_revision_id, published_at, featured_rank)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, ?, ?, ?, ?, ?, ?)
                 """, article.id(), article.slug(), article.locale(), article.authorId(), article.authorName(),
                 draft.content().title().value(), draft.content().introduction().value(), blocksJson(draft),
                 draft.content().conclusion().value(), cover == null ? null : cover.storageReference(),
@@ -123,7 +124,7 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
                 cover == null ? null : cover.alt(), tagsJson(draft.tags()), readingTime(draft.content()),
                 Timestamp.from(article.createdAt()), Timestamp.from(revision.updatedAt()),
                 article.lifecycle().name(), article.version(), article.workingRevisionId(),
-                article.publishedRevisionId(), timestamp(revision.publishedAt()));
+                article.publishedRevisionId(), timestamp(revision.publishedAt()), article.featuredRank());
     }
 
     private void persistRevisions(ArticleAggregate article) {

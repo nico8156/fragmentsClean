@@ -21,6 +21,8 @@ public final class AdminStudioArticlesController {
     private final SubmitStudioArticle submit;
     private final SaveStudioArticleDraft save;
     private final ArchiveStudioArticle archive;
+    private final WithdrawStudioArticle withdraw;
+    private final SetStudioArticleFeaturedRank feature;
     private final StoreStudioArticleImage storeImage;
     private final StudioArticleDraftCatalog catalog;
     private final RecordAdminAudit audit;
@@ -28,10 +30,13 @@ public final class AdminStudioArticlesController {
 
     @Autowired
     public AdminStudioArticlesController(SubmitStudioArticle submit, SaveStudioArticleDraft save,
-                                         ArchiveStudioArticle archive, StoreStudioArticleImage storeImage,
+                                         ArchiveStudioArticle archive, WithdrawStudioArticle withdraw,
+                                         SetStudioArticleFeaturedRank feature,
+                                         StoreStudioArticleImage storeImage,
                                          StudioArticleDraftCatalog catalog, RecordAdminAudit audit,
                                          DateTimeProvider clock) {
-        this.submit = submit; this.save = save; this.archive = archive;
+        this.submit = submit; this.save = save; this.archive = archive; this.withdraw = withdraw;
+        this.feature = feature;
         this.storeImage = storeImage; this.catalog = catalog; this.audit = audit;
         this.clock = clock;
     }
@@ -69,6 +74,25 @@ public final class AdminStudioArticlesController {
         record(authentication, "ARTICLE_ARCHIVED", articleId, commandId, "APPLIED");
         return ResponseEntity.accepted().body(new CommandAccepted(commandId, articleId, "PENDING"));
     }
+
+    @PostMapping("/{articleId}/withdraw")
+    public ResponseEntity<CommandAccepted> withdrawArticle(@PathVariable UUID articleId,
+                                                            Authentication authentication) {
+        UUID commandId = withdraw.execute(articleId);
+        record(authentication, "ARTICLE_WITHDRAWN", articleId, commandId, "APPLIED");
+        return ResponseEntity.accepted().body(new CommandAccepted(commandId, articleId, "PENDING"));
+    }
+
+    @PutMapping("/{articleId}/featured")
+    public ResponseEntity<CommandAccepted> setFeaturedRank(@PathVariable UUID articleId,
+                                                           @RequestBody FeaturedRankRequest body,
+                                                           Authentication authentication) {
+        UUID commandId = feature.execute(articleId, body.featuredRank());
+        record(authentication, "ARTICLE_FEATURED_RANK_CHANGED", articleId, commandId, "APPLIED");
+        return ResponseEntity.accepted().body(new CommandAccepted(commandId, articleId, "PENDING"));
+    }
+
+    public record FeaturedRankRequest(Integer featuredRank) { }
 
     @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ArticleImageResponse> uploadImage(@RequestPart("articleId") String rawArticleId,
@@ -131,12 +155,12 @@ public final class AdminStudioArticlesController {
 
     public record ArticleDocumentResponse(UUID articleId, UUID revisionId, String status,
                                           ArticleDraftRequest draft, Instant createdAt, Instant updatedAt,
-                                          Instant publishedAt, UUID lastCommandId) {
+                                          Instant publishedAt, Integer featuredRank, UUID lastCommandId) {
         static ArticleDocumentResponse from(StudioArticleDraftDocument source) { return from(source, null); }
         static ArticleDocumentResponse from(StudioArticleDraftDocument source, UUID commandId) {
             return new ArticleDocumentResponse(source.articleId(), source.revisionId(), source.status(),
                     ArticleDraftRequest.from(source.draft()), source.createdAt(), source.updatedAt(),
-                    source.publishedAt(), commandId);
+                    source.publishedAt(), source.featuredRank(), commandId);
         }
     }
 

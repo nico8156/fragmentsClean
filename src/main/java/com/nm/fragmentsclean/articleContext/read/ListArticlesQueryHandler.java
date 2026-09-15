@@ -31,7 +31,7 @@ public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery,
                 SELECT id, slug, locale, title, intro, blocks_json, conclusion,
                        cover_json, tags_json, author_id, author_name,
                        reading_time_min, published_at, updated_at, version,
-                       status, coffee_ids_json
+                       status, coffee_ids_json, featured_rank
                 FROM articles_projection
                 WHERE locale = ? AND status = 'published'
                 """);

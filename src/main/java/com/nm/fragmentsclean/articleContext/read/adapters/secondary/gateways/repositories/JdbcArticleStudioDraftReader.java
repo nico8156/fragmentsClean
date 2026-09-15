@@ -41,7 +41,7 @@ public class JdbcArticleStudioDraftReader implements ArticleStudioDraftReader {
         return """
                 SELECT a.article_id, a.working_revision_id, a.status, a.slug, a.locale,
                        a.author_id, a.author_name, a.coffee_ids_json, a.created_at,
-                       a.updated_at, a.published_at, r.title, r.introduction, r.conclusion,
+                       a.updated_at, a.published_at, a.featured_rank, r.title, r.introduction, r.conclusion,
                        r.cover_reference, r.cover_width, r.cover_height, r.cover_alt,
                        r.reading_time_min
                 FROM articles a
@@ -63,7 +63,8 @@ public class JdbcArticleStudioDraftReader implements ArticleStudioDraftReader {
                 rs.getString("conclusion"), cover, tags(revisionId), rs.getInt("reading_time_min"),
                 uuids(rs.getString("coffee_ids_json")), rs.getTimestamp("created_at").toInstant(),
                 rs.getTimestamp("updated_at").toInstant(),
-                rs.getTimestamp("published_at") == null ? null : rs.getTimestamp("published_at").toInstant());
+                rs.getTimestamp("published_at") == null ? null : rs.getTimestamp("published_at").toInstant(),
+                (Integer) rs.getObject("featured_rank"));
     }
 
     private List<ArticleStudioDraftView.Section> sections(UUID revisionId) {

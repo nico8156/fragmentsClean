@@ -29,7 +29,7 @@ public final class ArticleContextStudioDraftCatalog implements StudioArticleDraf
                         section.paragraph(), image(section.image()))).toList(), source.conclusion(),
                 image(source.cover()), source.tags(), source.readingTimeMin(), source.coffeeIds());
         return new StudioArticleDraftDocument(source.articleId(), source.revisionId(), source.status().toLowerCase(),
-                draft, source.createdAt(), source.updatedAt(), source.publishedAt());
+                draft, source.createdAt(), source.updatedAt(), source.publishedAt(), source.featuredRank());
     }
 
     private static StudioArticleImageRef image(ArticleStudioDraftView.Image source) {

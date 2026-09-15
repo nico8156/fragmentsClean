@@ -76,6 +76,8 @@ class SubmitStudioArticleTest {
 		public void submitForReview(UUID commandId, Instant clientAt, UUID articleId) { }
 		public void publish(UUID commandId, Instant clientAt, UUID articleId, UUID revisionId) { }
 		public void archive(UUID commandId, Instant clientAt, UUID articleId) { }
+		public void withdraw(UUID commandId, Instant clientAt, UUID articleId, UUID draftRevisionId) { }
+		public void setFeaturedRank(UUID commandId, Instant clientAt, UUID articleId, Integer featuredRank) { }
 	}
 
 	private static class SequenceUuidGenerator implements UuidGenerator {
