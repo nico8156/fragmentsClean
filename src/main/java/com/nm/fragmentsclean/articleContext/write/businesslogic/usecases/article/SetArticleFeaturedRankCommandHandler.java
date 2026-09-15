@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Transactional
-public final class SetArticleFeaturedRankCommandHandler implements CommandHandler<SetArticleFeaturedRankCommand> {
+public class SetArticleFeaturedRankCommandHandler implements CommandHandler<SetArticleFeaturedRankCommand> {
     private final ArticleAggregateRepository articles;
     private final ArticleFeaturedRankAvailabilityPort ranks;
     private final DomainEventPublisher events;

@@ -7,7 +7,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 import java.util.List;
 import org.springframework.transaction.annotation.Transactional;
 
-public final class ArticleWithdrawnEventHandler {
+public class ArticleWithdrawnEventHandler {
     private final ArticleProjectionRepository articles;
     private final ProjectionSyncPublisher sync;
     public ArticleWithdrawnEventHandler(ArticleProjectionRepository articles, ProjectionSyncPublisher sync) {

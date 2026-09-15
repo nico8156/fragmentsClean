@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Transactional
-public final class WithdrawArticleCommandHandler implements CommandHandler<WithdrawArticleCommand> {
+public class WithdrawArticleCommandHandler implements CommandHandler<WithdrawArticleCommand> {
     private final ArticleAggregateRepository articles;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;

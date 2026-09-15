@@ -43,6 +43,19 @@ class ReleaseManifestTest {
         assertThat(render("a".repeat(40)).exit).isNotZero();
     }
 
+    @Test void article_curation_manifest_is_rendered_and_hashes_its_sql_fragment() throws Exception {
+        copy();
+        var first = render("a".repeat(40), "article-curation-2026-09.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("article-curation-2026-09", "ALTER TABLE articles")
+                .doesNotContain("\\ir ");
+        var fragment = temporary.resolve("2026-09-15-article-curation.sql");
+        Files.writeString(fragment, Files.readString(fragment) + "\n-- Reviewed change\n");
+        var changed = render("a".repeat(40), "article-curation-2026-09.psql");
+        assertThat(changed.exit).isZero();
+        assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));
@@ -50,7 +63,11 @@ class ReleaseManifestTest {
     }
 
     private Result render(String revision) throws Exception {
-        var process = new ProcessBuilder("bash", RENDERER.toAbsolutePath().toString(), temporary.toString(), revision)
+        return render(revision, "app-store-2026-09.psql");
+    }
+
+    private Result render(String revision, String driver) throws Exception {
+        var process = new ProcessBuilder("bash", RENDERER.toAbsolutePath().toString(), temporary.toString(), revision, driver)
                 .redirectErrorStream(true).start();
         String output = new String(process.getInputStream().readAllBytes());
         return new Result(process.waitFor(), output);

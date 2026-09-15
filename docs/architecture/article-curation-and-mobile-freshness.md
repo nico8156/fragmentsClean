@@ -65,8 +65,12 @@ to its domain `Article` model. Public list/detail queries continue to filter
 `src/main/resources/db/release/2026-09-15-article-curation.sql` adds nullable
 `featured_rank` to write and projection tables, a unique partial write-side
 index, and a public read index. `schema.sql` also contains these additions for
-fresh test databases. The release migration must run before deploying the new
-backend binary. Do not rely on `schema.sql` to upgrade staging. No existing
+fresh test databases. The separate, checksum-tracked
+`article-curation-2026-09.psql` release manifest replays only after the Apple
+login baseline, and the staging deployment script runs it after a fresh backup
+and before starting the candidate backend. The release migration must run
+before deploying the new backend binary. Do not rely on `schema.sql` to upgrade
+staging. No existing
 article is automatically promoted to featured. Rank choices are editorial.
 
 Deploy order: database migration -> backend -> Studio -> mobile. Each step must

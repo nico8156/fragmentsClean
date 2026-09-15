@@ -8,6 +8,7 @@ driver=${3:-app-store-2026-09.psql}
 case "$driver" in
   app-store-2026-09.psql) expected_files=9 ;;
   apple-login-2026-09.psql) expected_files=2 ;;
+  article-curation-2026-09.psql) expected_files=2 ;;
   *) echo 'Unknown release driver.' >&2; exit 2 ;;
 esac
 [[ -f "$release_dir/$driver" && ! -L "$release_dir/$driver" ]]

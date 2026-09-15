@@ -79,7 +79,8 @@ class DeploymentSafetyIT {
         assertThat(trace).doesNotContain("docker rm", "compose down", "schema.sql");
         assertThat(environment()).contains("BACKEND_IMAGE=" + IMAGE);
         var sql = SANDBOX.execInContainer("cat", "/tmp/received-migration.psql").getStdout();
-        assertThat(sql).contains("release_schema_history", "Migration checksum mismatch").doesNotContain("\\ir ");
+        assertThat(sql).contains("release_schema_history", "Migration checksum mismatch", "article-curation-2026-09",
+                "uq_articles_featured_rank").doesNotContain("\\ir ");
     }
 
     @Test void approval_and_matching_image_revision_are_required_before_external_calls() throws Exception {
