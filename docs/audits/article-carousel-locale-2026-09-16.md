@@ -115,10 +115,14 @@ timeouts UI (écrans non modifiés). La suite complète relancée seule avec
 Backend : tests ciblés domaine, génération, repository JDBC, projection structurée,
 compatibilité de locale avec HTTP MockMvc et frontières d'architecture verts.
 La suite backend globale et la recette physique iPhone ne sont pas attestées ici.
-Pas de merge, push, déploiement ou mutation métier distante exécuté par cette correction.
+Lors de la validation locale, aucun merge, push, déploiement ou mutation métier
+distante n'avait été exécuté. Livraison autorisée ensuite : les trois correctifs
+sont mergés/poussés, Studio est déployé et vérifié ; le workflow backend est lancé,
+mais son suivi a été rendu à l'opérateur à sa demande, avant son résultat final.
+Voir le [reçu de livraison](../deployment/article-locale-staging-2026-09-16.md).
 Après déploiement backend, le TestFlight actuel pourra recevoir les articles via
 refresh ; la correction visuelle nécessite une nouvelle distribution mobile.
-Un nouveau déploiement Studio sera nécessaire pour le texte de confirmation.
+Le texte de confirmation Studio est désormais publié.
 Recette iPhone réelle restante : glisser sur les cinq cartes, ouvrir chacune,
 rafraîchir après curation, vérifier centrage et retour du bandeau vertical.
 Conservation/restauration reste en pause et hors périmètre.
