@@ -1503,3 +1503,12 @@ SNS est confirmé et la clé de chiffrement SSM créée. Les trois paramètres A
 la recette effective IAM/CORS
 S3 et SQS, la recette native petit/grand iPhone et VoiceOver, les migrations
 d'environnement et le déploiement applicatif restent explicitement ouverts.**
+
+## Suivi du 16 septembre — Home et curation éditoriale
+
+Le chantier approuvé de démarrage/cache, images prioritaires, rafraîchissement
+visible, titre compact et protection des rangs est documenté dans
+[le reçu dédié](home-startup-editorial-hardening-2026-09-16.md).
+Ce suivi distingue tests locaux et recette iPhone/staging restant à faire.
+Il ne clôt pas le chantier conservation/restauration, toujours en pause, ni les
+autres points historiques de l'audit sans preuves de résolution dédiées.

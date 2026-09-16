@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class CommandStatusRepository implements CommandStatusRecorder, CommandReceiptStore, CommandStatusReader {
+public class CommandStatusRepository implements CommandStatusRecorder, CommandReceiptStore, CommandStatusReader, AdminCommandRejectionRecorder {
     private static final CommandStatusView PENDING_VIEW = new CommandStatusView("PENDING", null, null, null, null);
 
     private final JdbcTemplate jdbcTemplate;
@@ -45,6 +45,22 @@ public class CommandStatusRepository implements CommandStatusRecorder, CommandRe
     @Override
     public boolean isApplied(UUID commandId) {
         return "APPLIED".equals(find(commandId).status());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void reject(UUID commandId, String code, String reason, Instant at) {
+        jdbcTemplate.update("""
+                INSERT INTO command_status(command_id, status, rejection_code, reason, rejected_at, updated_at)
+                VALUES (?, 'REJECTED', ?, ?, ?, ?)
+                ON CONFLICT (command_id) DO NOTHING
+                """, commandId, code, reason, Timestamp.from(at), Timestamp.from(at));
+    }
+
+    @Override
+    public Optional<String> rejectionReason(UUID commandId) {
+        var status = find(commandId);
+        return "REJECTED".equals(status.status()) ? Optional.ofNullable(status.reason()) : Optional.empty();
     }
 
     @Override

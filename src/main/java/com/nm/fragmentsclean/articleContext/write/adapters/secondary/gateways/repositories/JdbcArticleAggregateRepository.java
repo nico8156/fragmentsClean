@@ -42,6 +42,12 @@ public class JdbcArticleAggregateRepository implements ArticleAggregateRepositor
     }
 
     @Override
+    public Optional<ArticleAggregate> byIdForUpdate(UUID articleId) {
+        jdbc.query("SELECT article_id FROM articles WHERE article_id = ? FOR UPDATE", (rs, row) -> rs.getObject(1), articleId);
+        return byId(articleId);
+    }
+
+    @Override
     public void save(ArticleAggregate article) {
         Integer existing = jdbc.queryForObject(
                 "SELECT count(*) FROM articles WHERE article_id = ?", Integer.class, article.id());

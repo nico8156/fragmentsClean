@@ -139,3 +139,15 @@ backend `./mvnw -q test` suite passed with Docker/LocalStack available; the full
 Studio suite passed (152 tests, including the new vertical fake-gateway tests), and
 the full mobile suite passed (341 tests). TypeScript checks passed in both front
 repositories. Do not label this slice release-ready before the staging checks.
+
+## Follow-up — 2026-09-16
+
+Rank allocation now locks the article through its repository port and serializes
+competing claims through a transaction-scoped PostgreSQL rank lock. The existing
+unique index remains the final guard. Business rank conflicts retain an admin
+REJECTED receipt outside the rolled-back write transaction. This is not a change
+to requester-scoped mobile command processing. Studio disables known occupied
+and locally pending positions and refreshes after conflicts.
+
+Mobile boot, bounded image prewarming and refresh feedback were hardened without
+changing editorial selection. See [delivery evidence and remaining device checks](../audits/home-startup-editorial-hardening-2026-09-16.md).

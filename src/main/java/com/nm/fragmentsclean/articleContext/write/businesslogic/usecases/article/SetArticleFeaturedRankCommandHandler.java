@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.reposit
 import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleFeaturedRankAvailabilityPort;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDomainException;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.AdminCommandRejectionRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
@@ -18,29 +19,37 @@ public class SetArticleFeaturedRankCommandHandler implements CommandHandler<SetA
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;
     private final CommandStatusRecorder statuses;
+    private final AdminCommandRejectionRecorder rejections;
     public SetArticleFeaturedRankCommandHandler(ArticleAggregateRepository articles,
                                                ArticleFeaturedRankAvailabilityPort ranks,
                                                DomainEventPublisher events, DateTimeProvider clock,
-                                               CommandStatusRecorder statuses) {
+                                               CommandStatusRecorder statuses, AdminCommandRejectionRecorder rejections) {
         this.articles = articles; this.ranks = ranks; this.events = events;
         this.clock = clock; this.statuses = statuses;
+        this.rejections = rejections;
     }
     @Override public void execute(SetArticleFeaturedRankCommand command) {
         if (statuses.isApplied(command.commandId())) return;
-        var article = articles.byId(command.articleId()).orElseThrow(() ->
-                new IllegalArgumentException("Article introuvable."));
-        var rank = command.featuredRank();
-        if (rank != null && ranks.occupiedByAnother(article.id(), rank)) {
-            throw new ArticleDomainException("Ce rang à la une est déjà attribué.");
+        rejections.rejectionReason(command.commandId()).ifPresent(reason -> { throw new ArticleDomainException(reason); });
+        try {
+            var article = articles.byIdForUpdate(command.articleId()).orElseThrow(() ->
+                    new IllegalArgumentException("Article introuvable."));
+            var rank = command.featuredRank();
+            if (rank != null && ranks.occupiedByAnother(article.id(), rank)) {
+                throw new ArticleDomainException("Ce rang à la une est déjà attribué.");
+            }
+            var now = clock.now();
+            if (article.setFeaturedRank(rank, now)) {
+                article.registerFeaturedRankChanged(command.commandId(), command.clientAt(), now);
+                articles.save(article);
+                article.domainEvents().forEach(events::publish);
+                article.clearDomainEvents();
+            }
+            statuses.markApplied(command.commandId(), "Article", article.id().toString(),
+                    "article.featured_rank.changed", now);
+        } catch (ArticleDomainException rejection) {
+            rejections.reject(command.commandId(), "ARTICLE_FEATURED_RANK_REJECTED", rejection.getMessage(), clock.now());
+            throw rejection;
         }
-        var now = clock.now();
-        if (article.setFeaturedRank(rank, now)) {
-            article.registerFeaturedRankChanged(command.commandId(), command.clientAt(), now);
-            articles.save(article);
-            article.domainEvents().forEach(events::publish);
-            article.clearDomainEvents();
-        }
-        statuses.markApplied(command.commandId(), "Article", article.id().toString(),
-                "article.featured_rank.changed", now);
     }
 }

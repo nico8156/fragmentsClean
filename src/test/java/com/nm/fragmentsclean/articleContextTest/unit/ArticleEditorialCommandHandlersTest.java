@@ -115,17 +115,43 @@ class ArticleEditorialCommandHandlersTest {
         repository.save(article);
         var command = new SetArticleFeaturedRankCommand(UUID.randomUUID(), NOW, ARTICLE_ID, 2);
         var rejected = new SetArticleFeaturedRankCommandHandler(repository, (id, rank) -> true,
-                publisher, () -> NOW.plusSeconds(90), status);
+                publisher, () -> NOW.plusSeconds(90), status, status);
         assertThatThrownBy(() -> rejected.execute(command)).isInstanceOf(ArticleDomainException.class);
         assertThat(status.applied).isEmpty();
+        assertThat(status.rejections).containsKey(command.commandId());
 
         var handler = new SetArticleFeaturedRankCommandHandler(repository, (id, rank) -> false,
-                publisher, () -> NOW.plusSeconds(120), status);
-        handler.execute(command);
-        handler.execute(command);
+                publisher, () -> NOW.plusSeconds(120), status, status);
+        assertThatThrownBy(() -> handler.execute(command)).isInstanceOf(ArticleDomainException.class);
+        var freshCommand = new SetArticleFeaturedRankCommand(UUID.randomUUID(), NOW, ARTICLE_ID, 2);
+        handler.execute(freshCommand);
+        handler.execute(freshCommand);
         assertThat(repository.byId(ARTICLE_ID).orElseThrow().featuredRank()).isEqualTo(2);
         assertThat(publisher.events).filteredOn(ArticleFeaturedRankChangedEvent.class::isInstance).hasSize(1);
-        assertThat(status.applied).containsExactly(command.commandId());
+        assertThat(status.applied).containsExactly(freshCommand.commandId());
+    }
+
+    @Test
+    void technical_rank_failure_is_not_recorded_as_business_rejection() {
+        var repository = new FakeArticleAggregateRepository();
+        var publisher = new RecordingPublisher();
+        var status = new RecordingCommandStatus();
+        var article = ArticleAggregate.draft(ARTICLE_ID, "guide-cafe", "fr-FR", AUTHOR_ID,
+                "Studio", ArticleRevision.draft(REVISION_ID, draft(content()), NOW), NOW);
+        article.submitForReview(NOW.plusSeconds(30));
+        article.publishWorkingRevision(NOW.plusSeconds(60));
+        repository.save(article);
+        var handler = new SetArticleFeaturedRankCommandHandler(repository,
+                (id, rank) -> { throw new IllegalStateException("Database unavailable"); },
+                publisher, () -> NOW, status, status);
+
+        assertThatThrownBy(() -> handler.execute(new SetArticleFeaturedRankCommand(
+                UUID.randomUUID(), NOW, ARTICLE_ID, 1))).isInstanceOf(IllegalStateException.class);
+
+        assertThat(status.rejections).isEmpty();
+        assertThat(status.applied).isEmpty();
+        assertThat(publisher.events).isEmpty();
+        assertThat(article.featuredRank()).isNull();
     }
 
     private ArticleContent content() {
@@ -175,8 +201,11 @@ class ArticleEditorialCommandHandlersTest {
         }
     }
 
-    private static final class RecordingCommandStatus implements CommandStatusRecorder {
+    private static final class RecordingCommandStatus implements CommandStatusRecorder, com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.AdminCommandRejectionRecorder {
         private final List<UUID> applied = new ArrayList<>();
+        private final java.util.Map<UUID, String> rejections = new java.util.HashMap<>();
+        @Override public void reject(UUID id, String code, String reason, Instant at) { rejections.putIfAbsent(id, reason); }
+        @Override public java.util.Optional<String> rejectionReason(UUID id) { return java.util.Optional.ofNullable(rejections.get(id)); }
 
         @Override
         public void markApplied(UUID commandId, String aggregateType, String aggregateId,

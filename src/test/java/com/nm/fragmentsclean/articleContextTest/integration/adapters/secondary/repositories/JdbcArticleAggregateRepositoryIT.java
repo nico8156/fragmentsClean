@@ -79,7 +79,7 @@ class JdbcArticleAggregateRepositoryIT extends AbstractJpaIntegrationTest {
                 Integer.class, articleId)).isEqualTo(2);
     }
 
-    private static ArticleRevisionDraft publishableDraft() {
+    static ArticleRevisionDraft publishableDraft() {
         var content = ArticleContent.draft(ArticleTitle.from("Article à la une"),
                 ArticleIntroduction.from("Une introduction."),
                 List.of(
