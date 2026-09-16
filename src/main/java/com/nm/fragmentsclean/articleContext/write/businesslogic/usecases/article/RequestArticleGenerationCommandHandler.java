@@ -48,8 +48,9 @@ public class RequestArticleGenerationCommandHandler implements CommandHandler<Re
         // rejection, never an asynchronous worker failure with a stranded lease.
         var subject = ArticleSubject.from(command.theme());
         var now = clock.now();
-        articles.save(ArticleAggregate.awaitingGeneration(command.articleId(), command.slug(), command.locale(),
-                command.authorId(), command.authorName(), now));
+        var article = ArticleAggregate.awaitingGeneration(command.articleId(), command.slug(), command.locale(),
+                command.authorId(), command.authorName(), now);
+        articles.save(article);
         var saga = ArticleAuthoringSaga.request(command.sagaId(), command.articleId(), command.revisionId(),
                 subject.value(), command.trigger(), now);
         // Persist the REQUESTED snapshot first. The transition increments the
@@ -59,7 +60,7 @@ public class RequestArticleGenerationCommandHandler implements CommandHandler<Re
         sagas.save(saga);
         var s = saga.snapshot();
         events.publish(new ArticleGenerationRequestedEvent(UUID.randomUUID(), command.commandId(), s.sagaId(),
-                s.articleId(), s.revisionId(), s.theme(), command.locale(), s.trigger(), s.version(), now, command.clientAt()));
+                s.articleId(), s.revisionId(), s.theme(), article.locale(), s.trigger(), s.version(), now, command.clientAt()));
         statuses.markApplied(command.commandId(), "ArticleAuthoringSaga", s.sagaId().toString(),
                 "article.generation.requested", now);
         observability.generationRequested(command.trigger());

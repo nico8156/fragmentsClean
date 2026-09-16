@@ -35,7 +35,7 @@ public final class ArticleAggregate extends AggregateRoot {
                              Instant now) {
         super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
         this.slug = requireText(slug, "Le slug est obligatoire.");
-        this.locale = requireText(locale, "La locale est obligatoire.");
+        this.locale = new ArticleLocale(locale).value();
         this.authorId = Objects.requireNonNull(authorId, "L'auteur est obligatoire.");
         this.authorName = requireText(authorName, "Le nom de l'auteur est obligatoire.");
         this.createdAt = Objects.requireNonNull(now, "La date de création est obligatoire.");
@@ -48,7 +48,7 @@ public final class ArticleAggregate extends AggregateRoot {
                              String authorName, Instant now) {
         super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
         this.slug = requireText(slug, "Le slug est obligatoire.");
-        this.locale = requireText(locale, "La locale est obligatoire.");
+        this.locale = new ArticleLocale(locale).value();
         this.authorId = Objects.requireNonNull(authorId, "L'auteur est obligatoire.");
         this.authorName = requireText(authorName, "Le nom de l'auteur est obligatoire.");
         this.createdAt = Objects.requireNonNull(now, "La date de création est obligatoire.");
@@ -69,7 +69,7 @@ public final class ArticleAggregate extends AggregateRoot {
                              ArticleLifecycle lifecycle, long version, Integer featuredRank) {
         super(Objects.requireNonNull(articleId, "L'identifiant article est obligatoire."));
         this.slug = requireText(slug, "Le slug est obligatoire.");
-        this.locale = requireText(locale, "La locale est obligatoire.");
+        this.locale = new ArticleLocale(locale).value();
         this.authorId = Objects.requireNonNull(authorId, "L'auteur est obligatoire.");
         this.authorName = requireText(authorName, "Le nom de l'auteur est obligatoire.");
         this.createdAt = Objects.requireNonNull(createdAt, "La date de création est obligatoire.");

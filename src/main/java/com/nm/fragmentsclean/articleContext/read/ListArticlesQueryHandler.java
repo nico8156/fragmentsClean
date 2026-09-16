@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.articleContext.read;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleCursor;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleListView;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleView;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleLocale;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -27,16 +28,18 @@ public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery,
         int limit = normalizeLimit(query.limit());
         ArticleCursor cursor = ArticleCursor.decode(query.cursor()).orElse(null);
         boolean previous = cursor != null && cursor.direction() == ArticleCursor.Direction.PREVIOUS;
+        var locale = new ArticleLocale(query.locale());
         StringBuilder sql = new StringBuilder("""
                 SELECT id, slug, locale, title, intro, blocks_json, conclusion,
                        cover_json, tags_json, author_id, author_name,
                        reading_time_min, published_at, updated_at, version,
                        status, coffee_ids_json, featured_rank
                 FROM articles_projection
-                WHERE locale = ? AND status = 'published'
+                WHERE locale IN (?, ?) AND status = 'published'
                 """);
         List<Object> parameters = new ArrayList<>();
-        parameters.add(query.locale());
+        parameters.add(locale.value());
+        parameters.add(locale.legacyTag());
 
         if (cursor != null) {
             String comparison = previous ? ">" : "<";
@@ -61,7 +64,7 @@ public class ListArticlesQueryHandler implements QueryHandler<ListArticlesQuery,
                 List.copyOf(items),
                 nextCursor(items, cursor, hasMore),
                 previousCursor(items, cursor, hasMore),
-                listEtag(query.locale(), items));
+                listEtag(locale.value(), items));
     }
 
     private int normalizeLimit(Integer requested) {

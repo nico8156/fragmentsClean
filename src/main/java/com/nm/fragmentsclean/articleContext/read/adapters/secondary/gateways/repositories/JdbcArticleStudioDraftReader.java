@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.articleContext.read.ArticleImageUriResolver;
 import com.nm.fragmentsclean.articleContext.read.ArticleStudioDraftReader;
 import com.nm.fragmentsclean.articleContext.read.ArticleStudioDraftView;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleLocale;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -57,7 +58,7 @@ public class JdbcArticleStudioDraftReader implements ArticleStudioDraftReader {
                 coverReference, images.resolve(coverReference), rs.getInt("cover_width"),
                 rs.getInt("cover_height"), rs.getString("cover_alt"));
         return new ArticleStudioDraftView(rs.getObject("article_id", UUID.class), revisionId,
-                rs.getString("status"), rs.getString("slug"), rs.getString("locale"),
+                rs.getString("status"), rs.getString("slug"), new ArticleLocale(rs.getString("locale")).value(),
                 rs.getObject("author_id", UUID.class), rs.getString("author_name"),
                 rs.getString("title"), rs.getString("introduction"), sections(revisionId),
                 rs.getString("conclusion"), cover, tags(revisionId), rs.getInt("reading_time_min"),

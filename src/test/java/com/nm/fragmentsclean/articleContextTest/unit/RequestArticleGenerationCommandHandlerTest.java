@@ -20,6 +20,27 @@ import org.junit.jupiter.api.Test;
 
 class RequestArticleGenerationCommandHandlerTest {
     @Test
+    void emits_the_canonical_article_locale_to_the_generation_worker() {
+        var shells = new java.util.ArrayList<com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleAggregate>();
+        var emitted = new java.util.ArrayList<com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent>();
+        ArticleAuthoringSagaRepository sagas = new ArticleAuthoringSagaRepository() {
+            @Override public Optional<ArticleAuthoringSaga> byId(UUID ignored) { return Optional.empty(); }
+            @Override public void save(ArticleAuthoringSaga ignored) { }
+        };
+        var handler = new RequestArticleGenerationCommandHandler(sagas, shells::add, emitted::add,
+                () -> Instant.parse("2026-09-16T12:00:00Z"),
+                (id, type, aggregateId, eventType, at) -> {}, ArticleAuthoringObservability.noop());
+        var source = command("Découvrir le café");
+        handler.execute(new RequestArticleGenerationCommand(source.commandId(), source.clientAt(), source.sagaId(),
+                source.articleId(), source.revisionId(), source.theme(), source.slug(), "fr", source.authorId(),
+                source.authorName(), source.trigger()));
+        assertThat(shells).singleElement().extracting(article -> article.locale()).isEqualTo("fr-FR");
+        assertThat(emitted).singleElement().isInstanceOfSatisfying(
+                com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleGenerationRequestedEvent.class,
+                event -> assertThat(event.locale()).isEqualTo("fr-FR"));
+    }
+
+    @Test
     void rejects_an_invalid_theme_before_creating_a_shell_saga_or_outbox_event() {
         var writes = new AtomicInteger();
         ArticleAuthoringSagaRepository sagas = new ArticleAuthoringSagaRepository() {

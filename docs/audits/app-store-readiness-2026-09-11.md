@@ -1512,3 +1512,11 @@ visible, titre compact et protection des rangs est documenté dans
 Ce suivi distingue tests locaux et recette iPhone/staging restant à faire.
 Il ne clôt pas le chantier conservation/restauration, toujours en pause, ni les
 autres points historiques de l'audit sans preuves de résolution dédiées.
+
+### Retour TestFlight : carrousel et langues éditoriales
+
+Le [diagnostic complémentaire](article-carousel-locale-2026-09-16.md) identifie
+quatre articles publiés sous `fr` exclus de la lecture `fr-FR`, plus cinq seeds
+publics sans agrégat Studio. Correction locale de compatibilité des langues,
+pagination visuelle et feedback de sauvegarde ; déploiement et recette restant à
+faire. Le traitement des seeds demande une décision éditoriale distincte.

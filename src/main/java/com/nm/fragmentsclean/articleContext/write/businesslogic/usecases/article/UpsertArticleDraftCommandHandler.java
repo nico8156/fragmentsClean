@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.articl
 
 import com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.repositories.ArticleAggregateRepository;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleAggregate;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleLocale;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevision;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandStatusRecorder;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
@@ -58,7 +59,7 @@ public class UpsertArticleDraftCommandHandler implements CommandHandler<UpsertAr
         if (!command.revisionId().equals(article.workingRevisionId())) {
             throw new IllegalArgumentException("Working revision mismatch");
         }
-        if (!command.slug().equals(article.slug()) || !command.locale().equals(article.locale())
+        if (!command.slug().equals(article.slug()) || !new ArticleLocale(command.locale()).value().equals(article.locale())
                 || !command.authorId().equals(article.authorId())) {
             throw new IllegalArgumentException("Article identity is immutable");
         }

@@ -4,6 +4,7 @@ import com.nm.fragmentsclean.articleContext.read.projections.ArticleBlockView;
 import com.nm.fragmentsclean.articleContext.read.projections.ArticleView;
 import com.nm.fragmentsclean.articleContext.read.projections.AuthorView;
 import com.nm.fragmentsclean.articleContext.read.projections.ImageRefView;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleLocale;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -35,15 +36,18 @@ public class GetArticleBySlugQueryHandler
 
     @Override
     public ArticleView handle(GetArticleBySlugQuery query) {
+        var locale = new ArticleLocale(query.locale());
         try {
             return jdbcTemplate.queryForObject("""
                     SELECT *
                     FROM articles_projection
-                    WHERE slug = ? AND locale = ? AND status = 'published'
+                    WHERE slug = ? AND locale IN (?, ?) AND status = 'published'
+                    ORDER BY CASE WHEN locale = ? THEN 0 ELSE 1 END, updated_at DESC, id DESC
+                    LIMIT 1
                     """,
                     (rs, rowNum) -> mapRow(rs),
                     query.slug(),
-                    query.locale()
+                    locale.value(), locale.legacyTag(), locale.value()
             );
         } catch (EmptyResultDataAccessException e) {
             // à toi de voir : null, exception métier, etc.
@@ -58,7 +62,7 @@ public class GetArticleBySlugQueryHandler
     private ArticleView mapRow(ResultSet rs) throws SQLException {
         UUID id = UUID.fromString(rs.getString("id"));
         String slug = rs.getString("slug");
-        String locale = rs.getString("locale");
+        String locale = new ArticleLocale(rs.getString("locale")).value();
 
         String title = rs.getString("title");
         String intro = rs.getString("intro");

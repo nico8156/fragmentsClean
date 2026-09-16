@@ -58,7 +58,7 @@ public class Article extends AggregateRoot {
                     long version) {
         super(articleId);
         this.slug = slug;
-        this.locale = locale;
+        this.locale = new ArticleLocale(locale).value();
         this.authorId = authorId;
         this.authorName = authorName;
         this.title = title;
