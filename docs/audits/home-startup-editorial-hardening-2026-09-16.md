@@ -86,8 +86,11 @@ restent inchangés.
    pour l'autre, catalogue actualisé, autres articles utilisables.
 5. Mobile : rangs réellement attribués, retrait/archivage puis actualisation.
 
-Travail local sur trois branches `fix/*`. Aucun déploiement backend/S3 ni build
-TestFlight dans cette tranche. Ordre proposé : backend, Studio OAuth, mobile.
+À la livraison initiale : travail local sur trois branches `fix/*`, sans déploiement
+ni build TestFlight. Après autorisation complémentaire, les trois branches ont été
+intégrées et poussées sur `main`, puis Studio publié sur S3/CloudFront ; voir le
+[reçu de publication](../deployment/home-editorial-studio-2026-09-16.md).
+Le backend et le nouveau build mobile restent à déployer/distribuer.
 Aucune migration supplémentaire. Retour possible aux artefacts précédents sans
 rollback de schéma, mais avec les protections précédentes moins fortes.
 
