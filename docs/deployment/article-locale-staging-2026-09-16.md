@@ -79,9 +79,36 @@ After completion, verify the running image matches the backend SHA and check
 `/api/articles?locale=fr-FR&limit=100`: expected ten published articles, including
 five distinct featured ranks 1..5. Verify each featured detail returns HTTP 200
 with canonical locale `fr-FR`, and that the `fr` alias returns the same catalogue.
-These post-deployment checks remain pending. Baseline health was globally `UP`
+At the initial handoff, these post-deployment checks were pending (completion below).
+Baseline health was globally `UP`
 with `articleAuthoringHealth` and `messagingRuntimeHealth` already `DEGRADED`;
 this delivery does not claim to resolve those indicators.
+
+## Backend — successful retry and public API verification
+
+After the operator reported completion, run `35097611720`, job `104798776344`,
+was verified **completed / success**. Full Java 21 release verification passed:
+**544 tests, zero failures, zero errors, zero skips**, including infra/vertical
+tests. Packaging, ARM64 publication, SSM deployment and deployed-image verification
+all succeeded. Runtime release:
+`851725375299.dkr.ecr.eu-west-3.amazonaws.com/fragments/staging/backend:sha-7bac6146e5670a899a26da4b2a2429c9633412f9`.
+The SSM deployment reported success at `2026-09-16T12:59:44Z`. The existing workflow
+retains its mandatory pre-migration backup gate; no new restore drill is claimed.
+
+Independent public HTTPS checks after completion:
+
+- `GET /api/articles?locale=fr-FR&limit=100`: HTTP 200, ten articles, no next page,
+  five distinct featured ranks **1, 2, 3, 4, 5**.
+- The `fr` alias returns the same ten article identifiers; responses use `fr-FR`.
+- All five featured detail routes return HTTP 200 with matching identifier, rank
+  and canonical locale. No editorial commands were executed.
+- Health: HTTP 200 / `UP`; `articleAuthoringHealth` and `messagingRuntimeHealth`
+  remain `DEGRADED` as before; other reported components are `UP`.
+
+Server locale correction and previous rank-concurrency hardening are now deployed.
+Studio remains on the verified release above. Mobile build supplied by the operator:
+`7300b4d2-fa83-436b-9d4e-77624b692fac`; its submission/physical-device acceptance
+has not been independently verified here.
 
 ## Boundaries retained
 
