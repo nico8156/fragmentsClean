@@ -64,6 +64,13 @@ tests passed, zero failures/errors/skips. PostgreSQL Testcontainers was used;
 the original CI failure is the pre-fix evidence. Full release verification must
 still succeed in the next workflow before deployment.
 
+Follow-up merged/pushed: `7bac6146e5670a899a26da4b2a2429c9633412f9`.
+The deployment workflow was dispatched for that revision (HTTP 204):
+[retry run 35097611720](https://github.com/nico8156/fragmentsClean/actions/runs/35097611720),
+observed `in_progress`. Final success and runtime/API checks are not yet attested.
+The operator retains deployment monitoring as requested; no Studio or mobile
+rebuild is required specifically for this backend-test-only follow-up.
+
 Post-failure read-only checks: health HTTP 200 / `UP`, same pre-existing degraded
 components; public `fr-FR` list still six articles with only featured rank 3.
 The locale correction therefore remains undeployed until a new run succeeds.
