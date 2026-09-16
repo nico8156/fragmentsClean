@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,10 @@ import java.util.concurrent.*;
 import static org.assertj.core.api.Assertions.*;
 
 @Import(CommandStatusRepository.class)
+@TestPropertySource(properties = {
+        "spring.datasource.hikari.maximum-pool-size=2",
+        "spring.datasource.hikari.minimum-idle=0"
+})
 class ArticleFeaturedRankConcurrencyIT extends AbstractJpaIntegrationTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired PlatformTransactionManager transactions;
@@ -51,7 +56,10 @@ class ArticleFeaturedRankConcurrencyIT extends AbstractJpaIntegrationTest {
             for (var attempt : attempts) assertThat(attempt.get(20, TimeUnit.SECONDS)).isTrue();
             assertThat(events.stream().map(event -> ((ArticleFeaturedRankChangedEvent) event).version()).sorted())
                     .containsExactly(article.version() + 1, article.version() + 2);
-            assertThat(repository.byId(id).orElseThrow().version()).isEqualTo(article.version() + 2);
+            // Reload after both commits, with the same transaction boundary as application use cases.
+            // Nested aggregate queries must share one connection even with the release pool of two.
+            Long persistedVersion = transaction.execute(status -> repository.byId(id).orElseThrow().version());
+            assertThat(persistedVersion).isEqualTo(article.version() + 2);
         } finally {
             executor.shutdownNow();
             transaction.executeWithoutResult(status -> jdbc.update("UPDATE articles SET featured_rank = NULL WHERE article_id = ?", id));

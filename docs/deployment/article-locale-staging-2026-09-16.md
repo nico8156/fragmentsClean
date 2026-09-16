@@ -31,7 +31,7 @@ Independent HTTPS verification of https://studio-staging.anchor-event.fr:
 - `/assets/index-DnyasE_2.js`: HTTP 200, `text/javascript`, 303656 bytes.
 - `/assets/index-DN4RkSnY.css`: HTTP 200, `text/css`, 13845 bytes.
 
-## Backend — deployment in progress
+## Backend — first deployment failed before runtime changes
 
 The existing manual workflow was dispatched once for `main` with explicit staging
 approval (GitHub HTTP 204):
@@ -41,8 +41,32 @@ Java 21 release verification, including infra/vertical tests with no skips,
 before packaging, building the ARM64 image and deploying through SSM.
 
 The operator requested handoff while the Java 21 release verification was still
-running. Monitoring stopped at that point; backend deployment success is not
-attested by this receipt. The operator is monitoring the run linked above.
+running. Monitoring stopped at that point. On the operator's subsequent alert,
+the run was inspected: release verification failed (544 tests, zero assertion
+failures, one error, zero skips). Packaging, image publication and SSM deployment
+were skipped. No runtime replacement or migration was performed by this run.
+
+`ArticleFeaturedRankConcurrencyIT.concurrent_rank_changes_on_one_article_keep_distinct_event_versions`
+failed at its final `repository.byId` verification outside a transaction. The
+aggregate repository's nested queries attempted a third connection while the
+release pool contained only two; Hikari timed out after 30 seconds. Concurrent
+commands and their distinct event-version assertions had already succeeded.
+
+The targeted test correction reloads the persisted aggregate inside a fresh
+transaction after both commands commit, matching the application use-case
+boundary. The test explicitly retains a two-connection pool to guard against
+regression. No assertions are removed, no pool/timeout is increased, and no
+production/domain code or migration is changed by this follow-up.
+
+Local verification with the same two-connection limit: `ArticleFeaturedRankConcurrencyIT`,
+`JdbcArticleAggregateRepositoryIT`, and `ArticleLocaleReadCompatibilityIT` — six
+tests passed, zero failures/errors/skips. PostgreSQL Testcontainers was used;
+the original CI failure is the pre-fix evidence. Full release verification must
+still succeed in the next workflow before deployment.
+
+Post-failure read-only checks: health HTTP 200 / `UP`, same pre-existing degraded
+components; public `fr-FR` list still six articles with only featured rank 3.
+The locale correction therefore remains undeployed until a new run succeeds.
 
 After completion, verify the running image matches the backend SHA and check
 `/api/articles?locale=fr-FR&limit=100`: expected ten published articles, including
