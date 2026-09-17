@@ -322,8 +322,17 @@ CREATE TABLE IF NOT EXISTS outbox_events (
                                created_at      TIMESTAMPTZ NOT NULL,           -- Instant
 
                                status          VARCHAR(32) NOT NULL,           -- OutboxStatus (enum string)
-                               retry_count     INTEGER     NOT NULL DEFAULT 0
+                               retry_count     INTEGER     NOT NULL DEFAULT 0,
+                               next_attempt_at TIMESTAMPTZ,
+                               lease_until     TIMESTAMPTZ,
+                               lease_owner     VARCHAR(128),
+                               last_error      VARCHAR(1000)
 );
+
+CREATE INDEX IF NOT EXISTS idx_outbox_events_due
+    ON outbox_events (status, COALESCE(next_attempt_at, created_at), id);
+CREATE INDEX IF NOT EXISTS idx_outbox_events_stream_order
+    ON outbox_events (stream_key, id, status);
 
 CREATE TABLE IF NOT EXISTS inbox_messages (
     id              BIGSERIAL PRIMARY KEY,
@@ -580,14 +589,6 @@ CREATE INDEX IF NOT EXISTS idx_articles_projection_featured
     ON articles_projection (locale, featured_rank) WHERE status = 'published' AND featured_rank IS NOT NULL;
 
 
-
--- -- Index utiles pour le dispatcher (batch sur PENDING, dans l'ordre d'id)
--- CREATE INDEX idx_outbox_events_status_id
---     ON outbox_events (status, id);
---
--- -- Optionnel : routing / replays par stream
--- CREATE INDEX idx_outbox_events_stream_key_id
---     ON outbox_events (stream_key, id);
 
 CREATE TABLE IF NOT EXISTS auth_users (
                                           id               UUID PRIMARY KEY,

@@ -3,7 +3,7 @@ package com.nm.fragmentsclean.platform.eventing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventData;
 
 public class IntegrationEventEnvelopeFactory {
 
@@ -17,7 +17,7 @@ public class IntegrationEventEnvelopeFactory {
         this.payloadMapper = new IntegrationEventPayloadMapper(objectMapper);
     }
 
-    public IntegrationEventEnvelope from(OutboxEventJpaEntity event, String destination) {
+    public IntegrationEventEnvelope from(OutboxEventData event, String destination) {
         String stableType = IntegrationEventTypeCatalog.stableTypeForClassName(event.getEventType(), destination);
         String publicPayloadJson = payloadMapper.toPublicPayloadJson(stableType, event);
         return new IntegrationEventEnvelope(

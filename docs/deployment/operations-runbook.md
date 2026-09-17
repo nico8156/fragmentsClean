@@ -62,7 +62,7 @@ Inspect pending or failed events without dumping payloads:
 
 ```bash
 docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-  -c "select id,event_id,event_type,aggregate_type,aggregate_id,status,retry_count,created_at from outbox_events where status <> 'SENT' order by id desc limit 50;"
+  -c "select id,event_id,event_type,aggregate_type,aggregate_id,status,retry_count,next_attempt_at,lease_until,left(last_error,180) as error,created_at from outbox_events where status <> 'SENT' order by id desc limit 50;"
 ```
 
 Failed outbox rows mean the backend could not publish to the configured
@@ -74,7 +74,34 @@ transport. Check:
 - backend logs around the outbox id.
 
 Replay must follow the normal dispatcher path. Do not write projections
-directly.
+directly. A `FAILED` row deliberately blocks later rows from the same
+`stream_key`: this preserves per-stream order instead of silently publishing a
+later fact first. After the transport/configuration or poison-payload cause has
+been fixed, redrive one reviewed event with:
+
+```bash
+docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -v event_id='REVIEWED_EVENT_ID' \
+  -c "update outbox_events set status='PENDING',retry_count=0,next_attempt_at=now(),lease_until=null,lease_owner=null,last_error=null where event_id=:'event_id' and status='FAILED';"
+```
+
+Confirm that exactly one row was updated, then watch `messagingRuntimeHealth`,
+the destination queue/DLQ and the consuming inbox. Delivery is at-least-once:
+a process crash after the external send but before `SENT` can cause a duplicate,
+which consumers must suppress through inbox/business idempotence.
+
+Dispatcher controls are configuration-driven:
+
+- `app.outbox.dispatcher.batch-size` (default `10`);
+- `app.outbox.dispatcher.lease-ms` (default `120000`);
+- `app.outbox.dispatcher.max-failures` (default `10`);
+- `app.outbox.dispatcher.base-delay-ms` (default `1000`);
+- `app.outbox.dispatcher.max-delay-ms` (default `300000`).
+
+The sender runs outside a database transaction. Claims and conditional
+completion/failure updates are separate short transactions. Expired leases are
+reported as `outboxExpiredLeases` and by the
+`fragments.outbox.expired.leases` meter.
 
 ## Inbox Diagnostics
 

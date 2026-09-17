@@ -31,7 +31,7 @@ import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrati
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegrationEvents;
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialLikeSetIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.TicketIntegrationEvents;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventData;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -45,7 +45,7 @@ public class IntegrationEventPayloadMapper {
     this.objectMapper = objectMapper;
   }
 
-  public String toPublicPayloadJson(String stableEventType, OutboxEventJpaEntity event) {
+  public String toPublicPayloadJson(String stableEventType, OutboxEventData event) {
     try {
       JsonNode node = readPayloadTree(event.getPayloadJson());
       Object publicPayload =
@@ -429,7 +429,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private AuthUserCreatedIntegrationEvent authUserCreated(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     return new AuthUserCreatedIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
         uuidOrFallback(node, "authUserId", event.getAggregateId()),
@@ -442,7 +442,7 @@ public class IntegrationEventPayloadMapper {
         instantOrFallback(node, "occurredAt", event.getOccurredAt()));
   }
 
-  private AppUserCreatedIntegrationEvent appUserCreated(JsonNode node, OutboxEventJpaEntity event) {
+  private AppUserCreatedIntegrationEvent appUserCreated(JsonNode node, OutboxEventData event) {
     return new AppUserCreatedIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
         uuidOrFallback(node, "userId", event.getAggregateId()),
@@ -454,7 +454,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private AppUserProfileUpdatedIntegrationEvent appUserProfileUpdated(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     return new AppUserProfileUpdatedIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
         uuidOrFallback(node, "userId", event.getAggregateId()),
@@ -464,7 +464,7 @@ public class IntegrationEventPayloadMapper {
         instantOrFallback(node, "occurredAt", event.getOccurredAt()));
   }
 
-  private CoffeeCreatedIntegrationEvent coffeeCreated(JsonNode node, OutboxEventJpaEntity event) {
+  private CoffeeCreatedIntegrationEvent coffeeCreated(JsonNode node, OutboxEventData event) {
     JsonNode address = node.get("address");
     return new CoffeeCreatedIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
@@ -482,7 +482,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private CoffeeLifecycleIntegrationEvent coffeeLifecycle(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     return new CoffeeLifecycleIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
         uuidOrFallback(node, "commandId", event.getEventId()),
@@ -492,7 +492,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private CoffeePhotoAddedIntegrationEvent coffeePhotoAdded(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     JsonNode photo = node.get("photo");
     return new CoffeePhotoAddedIntegrationEvent(
         uuidOrFallback(node, "eventId", event.getEventId()),
@@ -508,7 +508,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private CoffeePhotosImportedIntegrationEvent coffeePhotosImported(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     List<CoffeePhotosImportedIntegrationEvent.PhotoReference> photos = new java.util.ArrayList<>();
     JsonNode photoNodes = node.get("photos");
     if (photoNodes != null && photoNodes.isArray()) {
@@ -530,7 +530,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private CoffeePhotosArrangedIntegrationEvent coffeePhotosArranged(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     List<CoffeePhotosArrangedIntegrationEvent.Photo> photos = new java.util.ArrayList<>();
     JsonNode nodes = node.get("photos");
     if (nodes != null && nodes.isArray())
@@ -582,7 +582,7 @@ public class IntegrationEventPayloadMapper {
   }
 
   private TicketIntegrationEvents.VerificationCompleted ticketVerificationCompleted(
-      JsonNode node, OutboxEventJpaEntity event) {
+      JsonNode node, OutboxEventData event) {
     JsonNode approved = node.get("approved");
     TicketIntegrationEvents.Approved approvedContract = null;
     if (approved != null && !approved.isNull()) {

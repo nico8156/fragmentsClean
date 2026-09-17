@@ -1,13 +1,14 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventData;
 import jakarta.persistence.*;
 
 import java.time.Instant;
 
 @Entity
 @Table(name = "outbox_events")
-public class OutboxEventJpaEntity {
+public class OutboxEventJpaEntity implements OutboxEventData {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

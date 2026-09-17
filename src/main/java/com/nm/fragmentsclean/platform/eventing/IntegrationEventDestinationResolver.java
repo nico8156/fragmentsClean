@@ -2,12 +2,12 @@ package com.nm.fragmentsclean.platform.eventing;
 
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.*;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxEventData;
 import java.util.List;
 
 public class IntegrationEventDestinationResolver {
 
-  public List<String> destinationsFor(OutboxEventJpaEntity event) {
+  public List<String> destinationsFor(OutboxEventData event) {
     String aggregateType = event.getAggregateType();
     String eventType = event.getEventType();
 

@@ -48,8 +48,14 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT requester_id::text FROM command_status WHERE command_id='" + COMMAND + "'"))
                     .containsExactly(USER);
             assertThat(rows(connection, "SELECT count(*)::text FROM command_status WHERE requester_id IS NULL"))
-                    .containsExactly("2"); // No evidence, or conflicting retained event owners.
+                    // The historical receipt migration saw the regular retained event before the
+                    // later outbox migration recovered the legacy large-object payload. It therefore
+                    // assigned that receipt from the evidence available at the time; only the receipt
+                    // with no retained evidence remains ownerless.
+                    .containsExactly("1");
             assertThat(rows(connection, "SELECT count(*)::text FROM outbox_events")).containsExactly("3");
+            assertThat(rows(connection, "SELECT convert_from(lo_get(payload_json::oid),'UTF8') FROM outbox_events WHERE event_id='synthetic-3'"))
+                    .containsExactly("{\"commandId\":\"44444444-4444-4444-8444-444444444444\",\"userId\":\"" + COFFEE + "\"}");
             assertThat(rows(connection, "SELECT count(*)::text FROM ticket_verification_jobs")).containsExactly("0");
             assertThat(rows(connection, "SELECT count(*)::text FROM tickets")).containsExactly("11");
             assertThat(rows(connection, "SELECT validated_tickets::text, acquired_levels FROM user_pass_projection"))
@@ -60,7 +66,7 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(8);
+            assertThat(receipt).hasSize(9);
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
             assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
             assertThat(receipt.get(2)).startsWith("article-curation-2026-09|");
@@ -69,6 +75,7 @@ class StagingReleaseUpgradeIT {
             assertThat(receipt.get(5)).startsWith("projection-sync-audience-2026-09|");
 			assertThat(receipt.get(6)).startsWith("refresh-token-hardening-2026-09|");
 			assertThat(receipt.get(7)).startsWith("logout-revocation-2026-09|");
+			assertThat(receipt.get(8)).startsWith("outbox-delivery-2026-09|");
 			assertThat(rows(connection, "SELECT count(*)::text FROM refresh_tokens")).containsExactly("0");
 			assertThat(rows(connection, "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='refresh_tokens' AND column_name IN ('family_id','token','token_hash') ORDER BY column_name"))
 					.containsExactly("family_id", "token_hash");
@@ -77,6 +84,8 @@ class StagingReleaseUpgradeIT {
 					.containsExactly("PUBLIC|null", "USER|" + USER, "USER|" + USER, "ADMIN|null");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='inbox_messages' AND column_name='lease_owner'"))
                     .containsExactly("YES");
+            assertThat(rows(connection, "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='outbox_events' AND column_name IN ('next_attempt_at','lease_until','lease_owner','last_error') ORDER BY column_name"))
+                    .containsExactly("last_error", "lease_owner", "lease_until", "next_attempt_at");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='articles' AND column_name='featured_rank'"))
                     .containsExactly("YES");
             assertThat(indexes(connection)).anyMatch(row -> row.startsWith("articles|true|") && row.contains("featured_rank"));
@@ -121,8 +130,12 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(*)::text FROM tickets")).containsExactly("11");
             assertThat(rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history"))
                     .isEqualTo(receipt);
+            assertThat(rows(connection, "SELECT requester_id::text FROM command_status WHERE command_id='" + COMMAND + "'"))
+                    .containsExactly("null");
             assertThat(rows(connection, "SELECT count(*)::text FROM command_status WHERE requester_id IS NOT NULL"))
-                    .containsExactly("0");
+                    // Replaying the immutable release does not re-run the earlier receipt
+                    // backfill; the distinct receipt populated during the first pass remains.
+                    .containsExactly("1");
         }
     }
 
@@ -177,7 +190,7 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("8");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("9");
         }
     }
 
@@ -264,7 +277,7 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" refresh-token-hardening-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" logout-revocation-2026-09.psql >> \"$1/bundle.psql\"",
+        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" refresh-token-hardening-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" logout-revocation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" outbox-delivery-2026-09.psql >> \"$1/bundle.psql\"",
                 "render", directory, "a".repeat(40));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),
@@ -353,6 +366,9 @@ class StagingReleaseUpgradeIT {
                             '{"commandId":"44444444-4444-4444-8444-444444444444","userId":"%1$s"}',now(),now(),'SENT'),
                            ('synthetic-3','app.user.profile_updated','AppUser','%2$s','user:synthetic',
                             '{"commandId":"44444444-4444-4444-8444-444444444444","userId":"%2$s"}',now(),now(),'SENT');
+                    UPDATE outbox_events
+                    SET payload_json = lo_from_bytea(0, convert_to(payload_json, 'UTF8'))::text
+                    WHERE event_id = 'synthetic-3';
                     """.formatted(USER, COFFEE, COMMAND));
         }
     }

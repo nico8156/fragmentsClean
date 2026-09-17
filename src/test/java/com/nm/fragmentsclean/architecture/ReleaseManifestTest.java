@@ -121,6 +121,19 @@ class ReleaseManifestTest {
         assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
     }
 
+    @Test void outbox_delivery_manifest_is_rendered_and_hashes_its_sql_fragment() throws Exception {
+        copy();
+        var first = render("a".repeat(40), "outbox-delivery-2026-09.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("outbox-delivery-2026-09", "next_attempt_at", "lease_owner")
+                .doesNotContain("\\ir ");
+        var fragment = temporary.resolve("2026-09-17-outbox-delivery.sql");
+        Files.writeString(fragment, Files.readString(fragment) + "\n-- Reviewed change\n");
+        var changed = render("a".repeat(40), "outbox-delivery-2026-09.psql");
+        assertThat(changed.exit).isZero();
+        assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));
