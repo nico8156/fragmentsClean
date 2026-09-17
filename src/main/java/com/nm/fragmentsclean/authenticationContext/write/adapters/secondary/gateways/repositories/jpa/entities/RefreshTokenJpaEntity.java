@@ -15,6 +15,9 @@ public class RefreshTokenJpaEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "family_id", nullable = false)
+    private UUID familyId;
+
     @Column(name = "token_hash", nullable = false, unique = true, length = 64)
     private String tokenHash;
 
@@ -30,11 +33,13 @@ public class RefreshTokenJpaEntity {
 
     public RefreshTokenJpaEntity(UUID id,
                                  UUID userId,
+                                 UUID familyId,
                                  String tokenHash,
                                  Instant expiresAt,
                                  boolean revoked) {
         this.id = id;
         this.userId = userId;
+        this.familyId = familyId;
         this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
         this.revoked = revoked;
@@ -46,6 +51,10 @@ public class RefreshTokenJpaEntity {
 
     public UUID getUserId() {
         return userId;
+    }
+
+    public UUID getFamilyId() {
+        return familyId;
     }
 
     public String getTokenHash() {

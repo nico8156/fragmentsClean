@@ -126,8 +126,25 @@ class AccountDeletionContextHandlersTest {
     }
 
     @Override
+    public Optional<UUID> findFamilyIdByToken(String token) {
+      return findByToken(token).map(RefreshToken::familyId);
+    }
+
+    @Override
     public Optional<RefreshToken> findByTokenForUpdate(String token) {
       return findByToken(token);
+    }
+
+    @Override
+    public void lockFamily(UUID familyId) {}
+
+    @Override
+    public List<RefreshToken> findFamilyByTokenForUpdate(String token) {
+      return findByToken(token)
+          .map(found -> tokens.stream()
+              .filter(candidate -> candidate.familyId().equals(found.familyId()))
+              .toList())
+          .orElseGet(List::of);
     }
 
     @Override

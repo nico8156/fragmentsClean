@@ -708,6 +708,7 @@ CREATE TABLE IF NOT EXISTS user_saved_coffee_cafes_projection (
 CREATE TABLE IF NOT EXISTS refresh_tokens (
                                               id         UUID PRIMARY KEY,
                                               user_id    UUID        NOT NULL,
+                                              family_id  UUID        NOT NULL,
                                               token_hash CHAR(64)    NOT NULL,
                                               expires_at TIMESTAMPTZ NOT NULL,
                                               revoked    BOOLEAN      NOT NULL
@@ -715,6 +716,8 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token_hash
     ON refresh_tokens (token_hash);
+CREATE INDEX IF NOT EXISTS ix_refresh_tokens_family_id
+    ON refresh_tokens (family_id);
 
 CREATE TABLE IF NOT EXISTS auth_provider_credentials (
     user_id UUID NOT NULL,

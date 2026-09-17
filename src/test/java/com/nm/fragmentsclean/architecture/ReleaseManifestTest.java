@@ -108,6 +108,19 @@ class ReleaseManifestTest {
         assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
     }
 
+    @Test void logout_revocation_manifest_is_rendered_and_hashes_its_sql_fragment() throws Exception {
+        copy();
+        var first = render("a".repeat(40), "logout-revocation-2026-09.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("logout-revocation-2026-09", "family_id")
+                .doesNotContain("\\ir ");
+        var fragment = temporary.resolve("2026-09-17-refresh-token-family.sql");
+        Files.writeString(fragment, Files.readString(fragment) + "\n-- Reviewed change\n");
+        var changed = render("a".repeat(40), "logout-revocation-2026-09.psql");
+        assertThat(changed.exit).isZero();
+        assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));

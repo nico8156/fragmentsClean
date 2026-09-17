@@ -38,9 +38,17 @@ class AppleLoginCommandHandlerTest {
         new CompleteAppleLogin(
             users,
             credentials,
-            (id, claims) ->
-                new TokenService.TokenPair(
-                    "access", "refresh"),
+            new TokenService() {
+              @Override
+              public TokenPair generateTokensForUser(UUID id, JwtClaims claims) {
+                return new TokenPair("access", "refresh");
+              }
+
+              @Override
+              public TokenPair rotateTokensForUser(UUID id, JwtClaims claims, UUID familyId) {
+                throw new AssertionError("Token rotation is not part of the Apple login scenario");
+              }
+            },
             new DeterministicDateTimeProvider(),
             user ->
                 new JwtClaims(

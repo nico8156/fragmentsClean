@@ -201,6 +201,22 @@ persiste son successeur dans une seule transaction. Deux requêtes concurrentes
 ne peuvent donc pas créer deux descendants. Une panne avant le commit restaure
 l'ancien état. Le mobile regroupe les demandes simultanées en une seule requête.
 
+Chaque connexion crée une famille de refresh tokens distincte. Une rotation
+conserve cet identifiant et sérialise ses transitions sur la première ligne de
+la famille. `POST /auth/logout` est volontairement accessible sans access token :
+le refresh token opaque est la preuve présentée par le client, y compris lorsque
+son JWT a expiré. Le handler verrouille puis révoque toute la famille et répond
+`204` aussi pour un token inconnu ou déjà révoqué afin de ne pas révéler son
+existence. Ce verrou de famille couvre également la course entre une rotation
+du token courant et un logout présentant un ancien token de la même session.
+
+Le logout ne révoque pas immédiatement un access token stateless déjà émis. Il
+reste utilisable jusqu'à son expiration configurée (15 minutes par défaut). Une
+liste de révocation des JWT n'est pas introduite à ce stade : elle ajouterait un
+état partagé à chaque requête. Les opérations particulièrement sensibles doivent
+continuer à contrôler le statut actif du compte, et ce compromis doit être
+réévalué si la durée de vie du JWT augmente.
+
 La migration `refresh-token-hardening-2026-09` supprime les anciens bearers en
 clair au lieu de prolonger une compatibilité moins sûre. Son déploiement impose
 une reconnexion unique aux sessions déjà ouvertes. Si la réponse d'une rotation

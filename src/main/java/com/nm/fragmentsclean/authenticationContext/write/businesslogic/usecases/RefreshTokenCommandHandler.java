@@ -44,8 +44,13 @@ public class RefreshTokenCommandHandler
 		}
 		Instant now = dateTimeProvider.now();
 
+		UUID familyId = refreshTokenRepository.findFamilyIdByToken(command.refreshToken())
+				.orElseThrow(InvalidRefreshTokenException::new);
+		refreshTokenRepository.lockFamily(familyId);
+
 		RefreshToken existing = refreshTokenRepository.findByTokenForUpdate(command.refreshToken())
 				.orElseThrow(InvalidRefreshTokenException::new);
+		if (!existing.familyId().equals(familyId)) throw new InvalidRefreshTokenException();
 
 		if (existing.revoked() || existing.isExpiredAt(now)) {
 			throw new InvalidRefreshTokenException();
@@ -61,7 +66,7 @@ public class RefreshTokenCommandHandler
 
 		var claims = jwtClaimsFactory.forAuthUser(authUser);
 
-		var tokenPair = tokenService.generateTokensForUser(userId, claims);
+		var tokenPair = tokenService.rotateTokensForUser(userId, claims, existing.familyId());
 
 		return new RefreshTokenResult(
 				tokenPair.accessToken(),

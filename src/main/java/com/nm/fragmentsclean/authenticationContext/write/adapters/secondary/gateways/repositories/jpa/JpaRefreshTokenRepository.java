@@ -28,8 +28,26 @@ public class JpaRefreshTokenRepository implements RefreshTokenRepository {
   }
 
   @Override
+  public Optional<UUID> findFamilyIdByToken(String token) {
+    return springRepo.findFamilyIdByTokenHash(refreshTokenHasher.hash(token));
+  }
+
+  @Override
   public Optional<RefreshToken> findByTokenForUpdate(String token) {
     return springRepo.findByTokenHashForUpdate(refreshTokenHasher.hash(token)).map(this::toDomain);
+  }
+
+  @Override
+  public void lockFamily(UUID familyId) {
+    springRepo.findFirstByFamilyIdOrderById(familyId)
+        .orElseThrow(() -> new IllegalStateException("Refresh-token family disappeared"));
+  }
+
+  @Override
+  public List<RefreshToken> findFamilyByTokenForUpdate(String token) {
+    return springRepo.findFamilyByTokenHashForUpdate(refreshTokenHasher.hash(token)).stream()
+        .map(this::toDomain)
+        .toList();
   }
 
   @Override
@@ -46,11 +64,11 @@ public class JpaRefreshTokenRepository implements RefreshTokenRepository {
 
   private RefreshToken toDomain(RefreshTokenJpaEntity e) {
     return RefreshToken.rehydrate(
-        e.getId(), e.getUserId(), e.getTokenHash(), e.getExpiresAt(), e.isRevoked());
+        e.getId(), e.getUserId(), e.getFamilyId(), e.getTokenHash(), e.getExpiresAt(), e.isRevoked());
   }
 
   private RefreshTokenJpaEntity toEntity(RefreshToken rt) {
     return new RefreshTokenJpaEntity(
-        rt.id(), rt.userId(), rt.tokenHash(), rt.expiresAt(), rt.revoked());
+        rt.id(), rt.userId(), rt.familyId(), rt.tokenHash(), rt.expiresAt(), rt.revoked());
   }
 }

@@ -54,6 +54,18 @@ public class JwtTokenService implements TokenService {
     @Override
     @Transactional
     public TokenPair generateTokensForUser(UUID appUserId, JwtClaims claims) {
+        return issueTokens(appUserId, claims, UUID.randomUUID());
+    }
+
+    @Override
+    @Transactional
+    public TokenPair rotateTokensForUser(
+            UUID appUserId, JwtClaims claims, UUID refreshTokenFamilyId) {
+        return issueTokens(appUserId, claims, refreshTokenFamilyId);
+    }
+
+    private TokenPair issueTokens(
+            UUID appUserId, JwtClaims claims, UUID refreshTokenFamilyId) {
         Instant now = dateTimeProvider.now();
 
         var accessTokenClaimsBuilder = JwtClaimsSet.builder()
@@ -81,10 +93,11 @@ public class JwtTokenService implements TokenService {
         Instant refreshExpiresAt = now.plus(refreshTokenTtl);
         String refreshTokenValue = "rft-" + UUID.randomUUID();
 
-        RefreshToken refreshToken = RefreshToken.createNew(
+        RefreshToken refreshToken = RefreshToken.createInFamily(
                 appUserId,
                 refreshTokenHasher.hash(refreshTokenValue),
-                refreshExpiresAt
+                refreshExpiresAt,
+                refreshTokenFamilyId
         );
         refreshTokenRepository.save(refreshToken);
 

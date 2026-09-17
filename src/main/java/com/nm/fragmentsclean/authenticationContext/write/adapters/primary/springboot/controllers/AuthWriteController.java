@@ -127,6 +127,7 @@ public class AuthWriteController {
 
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(@RequestBody LogoutRequestDto body) {
+    requirePresent(body.refreshToken(), "refreshToken");
     var command = new LogoutCommand(body.refreshToken());
     commandBus.dispatch(command);
     return ResponseEntity.noContent().build();

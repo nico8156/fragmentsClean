@@ -27,4 +27,13 @@ class RefreshTokenTest {
 		assertThatThrownBy(() -> RefreshToken.createNew(UUID.randomUUID(), "rft-secret", EXPIRY))
 				.isInstanceOf(IllegalArgumentException.class);
 	}
+
+	@Test
+	void rotation_can_preserve_an_existing_session_family() {
+		var familyId = UUID.randomUUID();
+		var token = RefreshToken.createInFamily(
+				UUID.randomUUID(), "b".repeat(64), EXPIRY, familyId);
+
+		assertThat(token.familyId()).isEqualTo(familyId);
+	}
 }

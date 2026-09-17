@@ -177,6 +177,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-007 — Déconnexion mobile sans Authorization ; Studio ne révoque pas côté serveur
 
+> **Remédiation engagée le 2026-09-17 :** endpoint public-client idempotent,
+> familles de refresh tokens sérialisées, révocation verticale mobile/Studio et
+> vérification PostgreSQL des courses sont documentés dans
+> `docs/audits/2026-09-17-p1-logout-revocation.md`. Le diagnostic initial reste
+> conservé jusqu'au déploiement de la migration et du backend, puis à la recette
+> des deux clients.
+
 - **Module / catégorie :** Mobile + Studio + backend · session — Bug de sécurité fonctionnelle.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** /Users/nicolasmaldiney/fragmentsCleanFront/app/adapters/secondary/gateways/auth/authServerGateway.ts:87-99 ; src/main/java/com/nm/fragmentsclean/authenticationContext/write/adapters/primary/springboot/configuration/AuthSecurityConfiguration.java:61-96 ; AuthWriteController.java:126-130 (dossier controllers) ; /Users/nicolasmaldiney/fragments-admin/fragments-studio/src/authContext/write/model/studioAuthSession.ts:55.

@@ -110,6 +110,9 @@ bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$g
 download src/main/resources/db/release/refresh-token-hardening-2026-09.psql "$deployment_tmp/release/refresh-token-hardening-2026-09.psql"
 download src/main/resources/db/release/2026-09-17-refresh-token-hashing.sql "$deployment_tmp/release/2026-09-17-refresh-token-hashing.sql"
 bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" refresh-token-hardening-2026-09.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/logout-revocation-2026-09.psql "$deployment_tmp/release/logout-revocation-2026-09.psql"
+download src/main/resources/db/release/2026-09-17-refresh-token-family.sql "$deployment_tmp/release/2026-09-17-refresh-token-family.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" logout-revocation-2026-09.psql >> "$deployment_tmp/migration.psql"
 
 # Resolve every SSM prerequisite and validate Compose before changing the live config or stopping a writer.
 bash "$deployment_tmp/bootstrap-runtime.sh" "$backend_image" "$deployment_tmp"

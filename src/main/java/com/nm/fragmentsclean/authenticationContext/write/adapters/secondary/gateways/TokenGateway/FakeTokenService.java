@@ -29,13 +29,24 @@ public class FakeTokenService implements TokenService {
 
     @Override
     public TokenPair generateTokensForUser(UUID appUserId, JwtClaims claims) {
+        return issueTokens(appUserId, UUID.randomUUID());
+    }
+
+    @Override
+    public TokenPair rotateTokensForUser(
+            UUID appUserId, JwtClaims claims, UUID refreshTokenFamilyId) {
+        return issueTokens(appUserId, refreshTokenFamilyId);
+    }
+
+    private TokenPair issueTokens(UUID appUserId, UUID refreshTokenFamilyId) {
         String access = "access-" + appUserId + "-" + System.currentTimeMillis();
         String refreshValue = "refresh-" + appUserId + "-" + System.currentTimeMillis();
 
         var now = clock.now();
         var expiresAt = now.plusSeconds(7 * 24 * 3600); // 7 jours pour l’exemple
 
-        var refreshToken = RefreshToken.createNew(appUserId, refreshTokenHasher.hash(refreshValue), expiresAt);
+        var refreshToken = RefreshToken.createInFamily(
+                appUserId, refreshTokenHasher.hash(refreshValue), expiresAt, refreshTokenFamilyId);
         refreshTokenRepository.save(refreshToken);
 
         return new TokenPair(access, refreshValue);

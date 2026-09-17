@@ -191,13 +191,102 @@ public class AuthRefreshIT extends AbstractBaseE2E {
     void failure_while_issuing_the_successor_rolls_back_the_consumption() throws Exception {
         String refreshToken = loginAndGetRefreshToken("refresh-rollback");
         doThrow(new IllegalStateException("simulated token issue failure"))
-                .when(tokenService).generateTokensForUser(any(), any());
+                .when(tokenService).rotateTokensForUser(any(), any(), any());
 
         assertThatThrownBy(() -> refresh(refreshToken))
                 .hasRootCauseMessage("simulated token issue failure");
 
         reset(tokenService);
         assertThat(refresh(refreshToken).getResponse().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void logout_without_access_token_revokes_the_presented_session_family() throws Exception {
+        String initialRefresh = loginAndGetRefreshToken("logout-family");
+        String rotatedRefresh = objectMapper.readTree(refresh(initialRefresh).getResponse().getContentAsByteArray())
+                .path("refreshToken")
+                .asText();
+
+        mockMvc.perform(post("/auth/logout")
+                        .contentType("application/json")
+                        .content("""
+                            {"refreshToken":"%s"}
+                            """.formatted(initialRefresh)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content("""
+                            {"refreshToken":"%s"}
+                            """.formatted(rotatedRefresh)))
+                .andExpect(status().isUnauthorized());
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM refresh_tokens WHERE revoked=false", Integer.class)).isZero();
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(DISTINCT family_id) FROM refresh_tokens", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void logout_is_idempotent_and_does_not_disclose_an_unknown_refresh_token() throws Exception {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(post("/auth/logout")
+                            .contentType("application/json")
+                            .content("""
+                                {"refreshToken":"unknown-refresh-token"}
+                                """))
+                    .andExpect(status().isNoContent());
+        }
+    }
+
+    @Test
+    void logout_revokes_only_the_presented_session_not_another_login_for_the_same_user() throws Exception {
+        String firstSession = loginAndGetRefreshToken("same-user-two-sessions");
+        String secondSession = loginAndGetRefreshToken("same-user-two-sessions");
+
+        assertThat(logout(firstSession).getResponse().getStatus()).isEqualTo(204);
+        assertThat(refresh(firstSession).getResponse().getStatus()).isEqualTo(401);
+        assertThat(refresh(secondSession).getResponse().getStatus()).isEqualTo(200);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(DISTINCT family_id) FROM refresh_tokens", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void logout_serializes_with_rotation_even_when_presenting_an_older_family_token() throws Exception {
+        String initialRefresh = loginAndGetRefreshToken("logout-rotation-race");
+        String currentRefresh = objectMapper.readTree(refresh(initialRefresh).getResponse().getContentAsByteArray())
+                .path("refreshToken")
+                .asText();
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var rotation = executor.submit(() -> {
+                ready.countDown();
+                start.await();
+                return refresh(currentRefresh);
+            });
+            var logout = executor.submit(() -> {
+                ready.countDown();
+                start.await();
+                return logout(initialRefresh);
+            });
+            ready.await();
+            start.countDown();
+
+            MvcResult rotationResult = rotation.get();
+            assertThat(logout.get().getResponse().getStatus()).isEqualTo(204);
+            assertThat(rotationResult.getResponse().getStatus()).isIn(200, 401);
+            if (rotationResult.getResponse().getStatus() == 200) {
+                String issuedDuringRace = objectMapper.readTree(
+                                rotationResult.getResponse().getContentAsByteArray())
+                        .path("refreshToken")
+                        .asText();
+                assertThat(refresh(issuedDuringRace).getResponse().getStatus()).isEqualTo(401);
+            }
+        }
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM refresh_tokens WHERE revoked=false", Integer.class)).isZero();
     }
 
     private String loginAndGetRefreshToken(String authorizationCode) throws Exception {
@@ -217,6 +306,15 @@ public class AuthRefreshIT extends AbstractBaseE2E {
 
     private MvcResult refresh(String refreshToken) throws Exception {
         return mockMvc.perform(post("/auth/refresh")
+                        .contentType("application/json")
+                        .content("""
+                            {"refreshToken":"%s"}
+                            """.formatted(refreshToken)))
+                .andReturn();
+    }
+
+    private MvcResult logout(String refreshToken) throws Exception {
+        return mockMvc.perform(post("/auth/logout")
                         .contentType("application/json")
                         .content("""
                             {"refreshToken":"%s"}
