@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gateways.TokenGateway;
 
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenRepository;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenHasher;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.JwtClaims;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.RefreshToken;
@@ -16,11 +17,14 @@ public class FakeTokenService implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final DateTimeProvider clock;
+    private final RefreshTokenHasher refreshTokenHasher;
 
     public FakeTokenService(RefreshTokenRepository refreshTokenRepository,
-                            DateTimeProvider clock) {
+                            DateTimeProvider clock,
+                            RefreshTokenHasher refreshTokenHasher) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.clock = clock;
+        this.refreshTokenHasher = refreshTokenHasher;
     }
 
     @Override
@@ -31,9 +35,9 @@ public class FakeTokenService implements TokenService {
         var now = clock.now();
         var expiresAt = now.plusSeconds(7 * 24 * 3600); // 7 jours pour l’exemple
 
-        var refreshToken = RefreshToken.createNew(appUserId, refreshValue, expiresAt);
+        var refreshToken = RefreshToken.createNew(appUserId, refreshTokenHasher.hash(refreshValue), expiresAt);
         refreshTokenRepository.save(refreshToken);
 
-        return new TokenPair(access, refreshToken);
+        return new TokenPair(access, refreshValue);
     }
 }

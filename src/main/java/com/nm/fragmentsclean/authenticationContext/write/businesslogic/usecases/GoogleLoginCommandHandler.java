@@ -91,7 +91,7 @@ public class GoogleLoginCommandHandler implements CommandHandlerWithResult<Googl
 		// 6) Result for HTTP adapter
 		return new GoogleLoginResult(
 				tokens.accessToken(),
-				tokens.refreshToken().token(),
+				tokens.refreshToken(),
 				authUser.id(),
 				google.name(),
 				google.email(),

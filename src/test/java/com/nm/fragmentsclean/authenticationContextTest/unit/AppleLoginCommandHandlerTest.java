@@ -40,7 +40,7 @@ class AppleLoginCommandHandlerTest {
             credentials,
             (id, claims) ->
                 new TokenService.TokenPair(
-                    "access", RefreshToken.createNew(id, "refresh", Instant.now().plusSeconds(60))),
+                    "access", "refresh"),
             new DeterministicDateTimeProvider(),
             user ->
                 new JwtClaims(

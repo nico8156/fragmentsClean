@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.authenticationContext.write.adapters.secondary.gat
 
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.TokenService;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenRepository;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.RefreshTokenHasher;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.AuthRole;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.JwtClaims;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.models.RefreshToken;
@@ -27,6 +28,7 @@ public class JwtTokenService implements TokenService {
 
     private final JwtEncoder jwtEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final RefreshTokenHasher refreshTokenHasher;
     private final DateTimeProvider dateTimeProvider;
     private final Duration accessTokenTtl;
     private final Duration refreshTokenTtl;
@@ -35,15 +37,14 @@ public class JwtTokenService implements TokenService {
     public JwtTokenService(
             JwtEncoder jwtEncoder,
             RefreshTokenRepository refreshTokenRepository,
+            RefreshTokenHasher refreshTokenHasher,
             DateTimeProvider dateTimeProvider,
             @Value("${auth.jwt.access-token-ttl:PT15M}") Duration accessTokenTtl,
             @Value("${auth.jwt.refresh-token-ttl:P30D}") Duration refreshTokenTtl,
-            @Value("${auth.jwt.issuer:https://auth.fragments}") String issuer
-
-
-    ) {
+            @Value("${auth.jwt.issuer:https://auth.fragments}") String issuer) {
         this.jwtEncoder = jwtEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
+        this.refreshTokenHasher = refreshTokenHasher;
         this.dateTimeProvider = dateTimeProvider;
         this.accessTokenTtl = accessTokenTtl;
         this.refreshTokenTtl = refreshTokenTtl;
@@ -55,7 +56,6 @@ public class JwtTokenService implements TokenService {
     public TokenPair generateTokensForUser(UUID appUserId, JwtClaims claims) {
         Instant now = dateTimeProvider.now();
 
-        // Access token → on utilise les claims enrichis
         var accessTokenClaimsBuilder = JwtClaimsSet.builder()
                 .issuer(issuer)
                 .issuedAt(claims.issuedAt())
@@ -78,17 +78,16 @@ public class JwtTokenService implements TokenService {
                 .encode(JwtEncoderParameters.from(header, accessTokenClaims))
                 .getTokenValue();
 
-        // Refresh token → on garde ta logique actuelle
         Instant refreshExpiresAt = now.plus(refreshTokenTtl);
         String refreshTokenValue = "rft-" + UUID.randomUUID();
 
         RefreshToken refreshToken = RefreshToken.createNew(
                 appUserId,
-                refreshTokenValue,
+                refreshTokenHasher.hash(refreshTokenValue),
                 refreshExpiresAt
         );
         refreshTokenRepository.save(refreshToken);
 
-        return new TokenPair(accessToken, refreshToken);
+        return new TokenPair(accessToken, refreshTokenValue);
     }
 }

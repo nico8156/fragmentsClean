@@ -60,13 +60,17 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(6);
+            assertThat(receipt).hasSize(7);
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
             assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
             assertThat(receipt.get(2)).startsWith("article-curation-2026-09|");
             assertThat(receipt.get(3)).startsWith("messaging-safety-2026-09|");
             assertThat(receipt.get(4)).startsWith("account-erasure-safety-2026-09|");
             assertThat(receipt.get(5)).startsWith("projection-sync-audience-2026-09|");
+			assertThat(receipt.get(6)).startsWith("refresh-token-hardening-2026-09|");
+			assertThat(rows(connection, "SELECT count(*)::text FROM refresh_tokens")).containsExactly("0");
+			assertThat(rows(connection, "SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='refresh_tokens' AND column_name IN ('token','token_hash') ORDER BY column_name"))
+					.containsExactly("token_hash");
 			assertThat(rows(connection, "SELECT audience,recipient_id FROM projection_sync_events ORDER BY id"))
 					.containsExactly("PUBLIC|null", "USER|" + USER, "USER|" + USER, "ADMIN|null");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='inbox_messages' AND column_name='lease_owner'"))
@@ -88,7 +92,9 @@ class StagingReleaseUpgradeIT {
                 // modified/new tables against bootstrap. Unique constraints are covered
                 // by the unique indexes, including history_position's explicit index.
                 assertThat(constraints(connection)).containsAll(beforeConstraints);
-                assertThat(indexes(connection)).containsAll(beforeIndexes);
+                assertThat(indexes(connection)).containsAll(beforeIndexes.stream()
+                        .filter(row -> !row.equals("refresh_tokens|true| USING btree (token)"))
+                        .toList());
                 var changedTables = columns(target).stream().filter(row -> !beforeColumns.contains(row))
                         .map(row -> row.split("\\|", 2)[0]).collect(Collectors.toSet());
                 assertThat(constraints(connection)).containsAll(constraints(target).stream()
@@ -169,7 +175,7 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("6");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("7");
         }
     }
 
@@ -182,8 +188,8 @@ class StagingReleaseUpgradeIT {
             assertThat(upgrade(database, false).getExitCode()).isZero();
             try (var statement = connection.createStatement()) {
                 statement.execute("""
-                        INSERT INTO refresh_tokens(id,user_id,token,expires_at,revoked)
-                        VALUES (md5('refresh')::uuid,'%1$s','secret-refresh',now()+interval '1 day',false);
+                        INSERT INTO refresh_tokens(id,user_id,token_hash,expires_at,revoked)
+                        VALUES (md5('refresh')::uuid,'%1$s',repeat('c',64),now()+interval '1 day',false);
                         INSERT INTO auth_provider_credentials(user_id,provider,encrypted_refresh_token,updated_at)
                         VALUES ('%1$s','GOOGLE','encrypted-secret',now());
                         INSERT INTO admin_user_access(user_id,granted_at) VALUES ('%1$s',now());
@@ -256,7 +262,7 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"",
+        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" refresh-token-hardening-2026-09.psql >> \"$1/bundle.psql\"",
                 "render", directory, "a".repeat(40));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),

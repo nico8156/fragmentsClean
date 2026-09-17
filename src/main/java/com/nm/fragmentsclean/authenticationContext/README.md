@@ -124,6 +124,7 @@ L’authentification est organisée comme un **domaine** à part entière :
 * `JwtClaimsFactory`
 * `AuthUserRepository`
 * `RefreshTokenRepository`
+* `RefreshTokenHasher`
 
 ➡️ Le domaine dépend uniquement d’abstractions.
 
@@ -187,6 +188,25 @@ La sécurité est **une couche**, pas une dépendance métier.
 Les credentials Apple nécessaires à la révocation sont chiffrés au repos. La
 suppression distante Apple précède l'effacement transactionnel local ; un échec
 provider est rejoué par la consommation SQS/inbox.
+
+### Rotation des sessions Fragments
+
+Les refresh tokens Fragments sont opaques pour le client et ne sont jamais
+stockés en clair côté serveur. PostgreSQL ne conserve que leur empreinte
+SHA-256 ; leur entropie aléatoire rend cette empreinte impropre à une recherche
+exhaustive réaliste.
+
+Une rotation charge l'ancien token avec un verrou pessimiste, le révoque et
+persiste son successeur dans une seule transaction. Deux requêtes concurrentes
+ne peuvent donc pas créer deux descendants. Une panne avant le commit restaure
+l'ancien état. Le mobile regroupe les demandes simultanées en une seule requête.
+
+La migration `refresh-token-hardening-2026-09` supprime les anciens bearers en
+clair au lieu de prolonger une compatibilité moins sûre. Son déploiement impose
+une reconnexion unique aux sessions déjà ouvertes. Si la réponse d'une rotation
+est perdue après commit, le client conserve temporairement sa session locale,
+mais la prochaine réponse d'authentification explicite provoque une reconnexion ;
+le serveur ne réémet jamais un successeur secret à partir d'un ancien token.
 
 ---
 

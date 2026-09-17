@@ -12,6 +12,7 @@ case "$driver" in
   messaging-safety-2026-09.psql) expected_files=2 ;;
   account-erasure-safety-2026-09.psql) expected_files=2 ;;
   projection-sync-audience-2026-09.psql) expected_files=2 ;;
+  refresh-token-hardening-2026-09.psql) expected_files=2 ;;
   *) echo 'Unknown release driver.' >&2; exit 2 ;;
 esac
 [[ -f "$release_dir/$driver" && ! -L "$release_dir/$driver" ]]

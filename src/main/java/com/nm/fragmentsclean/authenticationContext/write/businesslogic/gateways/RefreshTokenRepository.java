@@ -9,6 +9,8 @@ public interface RefreshTokenRepository {
 
   Optional<RefreshToken> findByToken(String token);
 
+  Optional<RefreshToken> findByTokenForUpdate(String token);
+
   RefreshToken save(RefreshToken refreshToken);
 
   List<RefreshToken> findAllByUserId(UUID userId);

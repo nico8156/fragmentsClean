@@ -81,8 +81,8 @@ class DeploymentSafetyIT {
         var sql = SANDBOX.execInContainer("cat", "/tmp/received-migration.psql").getStdout();
         assertThat(sql).contains("release_schema_history", "Migration checksum mismatch", "article-curation-2026-09",
                 "messaging-safety-2026-09", "account-erasure-safety-2026-09",
-                "projection-sync-audience-2026-09", "lease_owner",
-                "account_erasure_barriers", "recipient_id", "uq_articles_featured_rank").doesNotContain("\\ir ");
+                "projection-sync-audience-2026-09", "refresh-token-hardening-2026-09", "lease_owner",
+                "account_erasure_barriers", "recipient_id", "token_hash", "uq_articles_featured_rank").doesNotContain("\\ir ");
     }
 
     @Test void approval_and_matching_image_revision_are_required_before_external_calls() throws Exception {

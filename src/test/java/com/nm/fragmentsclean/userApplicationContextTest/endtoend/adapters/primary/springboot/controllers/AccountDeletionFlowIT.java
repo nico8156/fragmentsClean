@@ -272,8 +272,8 @@ VALUES (?, ?, 'Deletion Test', null, ?, ?, 0)
         at);
     jdbc.update(
         """
-        INSERT INTO refresh_tokens (id, user_id, token, expires_at, revoked)
-        VALUES (?, ?, 'refresh-deletion-test', ?, false)
+        INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, revoked)
+        VALUES (?, ?, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', ?, false)
         """,
         CONTENT_ID,
         USER_ID,

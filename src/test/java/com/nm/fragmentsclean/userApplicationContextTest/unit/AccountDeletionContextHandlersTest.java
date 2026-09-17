@@ -51,8 +51,8 @@ class AccountDeletionContextHandlersTest {
     var tokens =
         new FakeTokens(
             List.of(
-                RefreshToken.createNew(USER_ID, "one", Instant.now().plusSeconds(60)),
-                RefreshToken.createNew(USER_ID, "two", Instant.now().plusSeconds(60))));
+                RefreshToken.createNew(USER_ID, "a".repeat(64), Instant.now().plusSeconds(60)),
+                RefreshToken.createNew(USER_ID, "b".repeat(64), Instant.now().plusSeconds(60))));
     var events = new FakeDomainEventPublisher();
 
     var clock = new DeterministicDateTimeProvider();
@@ -122,7 +122,12 @@ class AccountDeletionContextHandlersTest {
 
     @Override
     public Optional<RefreshToken> findByToken(String token) {
-      return tokens.stream().filter(x -> x.token().equals(token)).findFirst();
+      return tokens.stream().filter(x -> x.tokenHash().equals(token)).findFirst();
+    }
+
+    @Override
+    public Optional<RefreshToken> findByTokenForUpdate(String token) {
+      return findByToken(token);
     }
 
     @Override

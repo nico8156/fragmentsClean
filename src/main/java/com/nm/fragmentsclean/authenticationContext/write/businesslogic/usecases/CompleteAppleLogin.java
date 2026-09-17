@@ -69,7 +69,7 @@ public class CompleteAppleLogin {
     var pair = tokens.generateTokensForUser(user.id(), claims.forAuthUser(user));
     return new AppleLoginResult(
         pair.accessToken(),
-        pair.refreshToken().token(),
+        pair.refreshToken(),
         user.id(),
         user.displayName(),
         user.email(),

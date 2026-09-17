@@ -161,6 +161,11 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-006 — Rotation refresh non atomique et non protégée contre la concurrence
 
+> **Remédiation engagée le 2026-09-17 :** verrou pessimiste, transaction unique,
+> réponse 401 uniforme et single-flight mobile sont documentés dans
+> `docs/audits/2026-09-17-p1-refresh-token-hardening.md`. Le diagnostic initial
+> reste conservé jusqu'à la validation complète et au déploiement.
+
 - **Module / catégorie :** Backend · authentification — Sécurité / disponibilité session.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/authenticationContext/write/businesslogic/usecases/RefreshTokenCommandHandler.java:39-65 ; src/main/java/com/nm/fragmentsclean/authenticationContext/write/adapters/secondary/gateways/repositories/jpa/SpringRefreshTokenRepository.java:10-13 ; src/main/java/com/nm/fragmentsclean/authenticationContext/write/adapters/primary/springboot/controllers/AuthWriteController.java:115-123 ; src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/primary/springboot/CommandBus.java:69-76.
@@ -358,6 +363,11 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Matrice signée de recette réelle, compte/démo revue sans 2FA bloquante, suppression effective et suivi modération ; preuve de symbolication.
 
 ### FR-024 — Secrets : contrôles utiles mais historique non certifié ; refresh en clair dans la base
+
+> **Remédiation partielle engagée le 2026-09-17 :** le stockage des refresh en
+> clair est remplacé par SHA-256 avec invalidation explicite des anciennes
+> sessions. La certification de l'historique, des artefacts, logs et backups
+> reste ouverte ; voir `docs/audits/2026-09-17-p1-refresh-token-hardening.md`.
 
 - **Module / catégorie :** Authentification · CI · données — Sécurité / dette d’audit.
 - **Sévérité / priorité :** HIGH / P1.
