@@ -3,6 +3,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.SocialAccountDataEraser;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.EraseSocialAccountData;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.jdbc.JdbcSocialAccountDataEraser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.nm.fragmentsclean.socialContext.write.adapters.secondary.gateways.repositories.fake.FakeCommentRepository;
@@ -57,8 +58,9 @@ public class SocialContextWriteDependenciesConfiguration {
 
     @Bean
     EraseSocialAccountData eraseSocialAccountData(
-            SocialAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock) {
-        return new EraseSocialAccountData(eraser, events, clock);
+            SocialAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock,
+            AccountErasureBarrier barrier) {
+        return new EraseSocialAccountData(eraser, events, clock, barrier);
     }
 
     @Bean

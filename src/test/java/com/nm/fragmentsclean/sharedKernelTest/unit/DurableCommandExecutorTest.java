@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernelTest.unit;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.AuthenticatedCommand;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -19,11 +20,13 @@ class DurableCommandExecutorTest {
     private static final UUID USER_ID = UUID.fromString("22222222-2222-4222-8222-222222222222");
 
     private final FakeReceiptStore receipts = new FakeReceiptStore();
+    private final TestBarrier barrier = new TestBarrier();
     private final DurableCommandExecutor executor = new DurableCommandExecutor(
             receipts,
             command -> "fingerprint:" + ((TestCommand) command).value(),
             Runnable::run,
-            () -> NOW);
+            () -> NOW,
+            barrier);
 
     @Test
     void successful_command_is_applied_even_when_it_emits_no_event() {
@@ -53,7 +56,8 @@ class DurableCommandExecutorTest {
                 receipts,
                 candidate -> "fingerprint:" + ((TestCommand) candidate).value(),
                 Runnable::run,
-                () -> NOW.plusSeconds(30));
+                () -> NOW.plusSeconds(30),
+                barrier);
         restartedExecutor.execute(command, executions::incrementAndGet);
 
         assertThat(executions).hasValue(1);
@@ -87,6 +91,20 @@ class DurableCommandExecutorTest {
                 .isSameAs(failure);
 
         assertThat(receipts.get(COMMAND_ID).status()).isEqualTo(CommandReceiptStatus.PENDING);
+    }
+
+    @Test
+    void erased_account_is_durably_rejected_without_running_business_logic() {
+        barrier.active = false;
+
+        assertThatThrownBy(() -> executor.execute(
+                new TestCommand(COMMAND_ID, USER_ID, "after-erasure"),
+                () -> { throw new AssertionError("must not run"); }))
+                .isInstanceOf(BusinessCommandRejectedException.class)
+                .hasMessage("Account data has already been erased");
+
+        assertThat(receipts.get(COMMAND_ID).status()).isEqualTo(CommandReceiptStatus.REJECTED);
+        assertThat(receipts.get(COMMAND_ID).rejectionCode()).isEqualTo("ACCOUNT_ERASED");
     }
 
     @Test
@@ -168,6 +186,23 @@ class DurableCommandExecutorTest {
 
         private CommandReceipt pending(CommandDescriptor descriptor) {
             return new CommandReceipt(descriptor, CommandReceiptStatus.PENDING, null, null, null, null);
+        }
+    }
+
+    private static final class TestBarrier implements AccountErasureBarrier {
+        private boolean active = true;
+
+        @Override
+        public boolean ifAllActive(Scope scope, java.util.Collection<UUID> userIds, Runnable mutation) {
+            if (!active) return false;
+            mutation.run();
+            return true;
+        }
+
+        @Override
+        public void erase(Scope scope, UUID userId, UUID requestId, Instant erasedAt, Runnable erasure) {
+            active = false;
+            erasure.run();
         }
     }
 }

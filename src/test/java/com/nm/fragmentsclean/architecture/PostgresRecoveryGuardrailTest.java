@@ -70,6 +70,32 @@ class PostgresRecoveryGuardrailTest {
                 .contains("pg_restore")
                 .contains("fragments_restore_drill_")
                 .contains("drop_drill_database")
+                .contains("replay-account-erasures.sh")
+                .contains("read_environment_value")
+                .doesNotContain("source \"$environment_file\"")
                 .doesNotContain("dropdb --username \"$POSTGRES_USER\" \"$POSTGRES_DB\"");
+    }
+
+    @Test
+    void account_erasure_replay_is_isolated_idempotent_and_includes_private_objects() throws IOException {
+        String replay = Files.readString(RUNTIME.resolve("replay-account-erasures.sh"));
+        String sql = Files.readString(RUNTIME.resolve("replay-account-erasures.sql"));
+
+        assertThat(replay)
+                .contains("fragments_restore_drill_")
+                .contains("ACCOUNT_ERASURE_JOURNAL_S3_BUCKET")
+                .contains("aws s3 sync")
+                .contains("aws s3api delete-object")
+                .contains("aws s3api list-object-versions")
+                .contains("user_avatar_media")
+                .contains("experience_media")
+                .contains("--set ON_ERROR_STOP=1");
+        assertThat(sql)
+                .contains("BEGIN;", "COMMIT;")
+                .contains("DELETE FROM tickets", "DELETE FROM comments", "DELETE FROM experiences")
+                .contains("DELETE FROM auth_provider_credentials")
+                .contains("UPDATE refresh_tokens SET revoked = true")
+                .contains("INSERT INTO account_erasure_barriers")
+                .contains("ON CONFLICT(context_name, user_id) DO UPDATE");
     }
 }

@@ -19,6 +19,7 @@ runtime_provider_credential_encryption_key=$(aws ssm get-parameter --region "$aw
 # This is deliberately a normal SSM String, not a secret: it identifies the
 # operator account allowed to bootstrap an otherwise empty admin allow-list.
 runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
+runtime_aws_account_id=$(aws sts get-caller-identity --query Account --output text)
 
 umask 077
 : > "$runtime_root/.env"
@@ -117,5 +118,9 @@ write_env FRAGMENTS_RATE_LIMIT_UGC_PER_MINUTE 60
 write_env TICKETVERIFY_HEALTH_STALE_AFTER_SECONDS 300
 write_env POSTGRES_BACKUP_S3_BUCKET anchor-assets-prod-851725375299
 write_env POSTGRES_BACKUP_S3_PREFIX fragments/staging/backups/postgres
+write_env ACCOUNT_ERASURE_JOURNAL_ENABLED true
+write_env ACCOUNT_ERASURE_JOURNAL_S3_BUCKET "fragments-account-erasure-staging-${runtime_aws_account_id}"
+write_env ACCOUNT_ERASURE_JOURNAL_S3_PREFIX fragments/staging/account-erasure-journal/v1
+write_env ACCOUNT_ERASURE_JOURNAL_S3_REGION "$aws_region"
 
-unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_apple_team_id runtime_apple_key_id runtime_apple_private_key runtime_provider_credential_encryption_key runtime_admin_bootstrap_user_ids
+unset runtime_pg_password runtime_jwt_secret runtime_google_places_key runtime_google_studio_secret runtime_openai_key runtime_openai_project_id runtime_editorial_approval_secret runtime_apple_team_id runtime_apple_key_id runtime_apple_private_key runtime_provider_credential_encryption_key runtime_admin_bootstrap_user_ids runtime_aws_account_id

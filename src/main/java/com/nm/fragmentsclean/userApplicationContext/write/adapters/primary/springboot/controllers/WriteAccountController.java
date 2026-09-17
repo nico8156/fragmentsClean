@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.userApplicationContext.write.adapters.primary.springboot.controllers;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
+import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.RequestAccountDeletion;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.RequestAccountDeletionCommand;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -13,10 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/users/me")
 public final class WriteAccountController {
-  private final CommandBus commandBus;
+  private final RequestAccountDeletion requestAccountDeletion;
 
-  public WriteAccountController(CommandBus commandBus) {
-    this.commandBus = commandBus;
+  public WriteAccountController(RequestAccountDeletion requestAccountDeletion) {
+    this.requestAccountDeletion = requestAccountDeletion;
   }
 
   @DeleteMapping
@@ -25,7 +25,7 @@ public final class WriteAccountController {
     if (body.commandId() == null) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "commandId is required");
     }
-    commandBus.dispatch(
+    requestAccountDeletion.execute(
         new RequestAccountDeletionCommand(body.commandId(), UUID.fromString(jwt.getSubject())));
     return ResponseEntity.accepted().build();
   }

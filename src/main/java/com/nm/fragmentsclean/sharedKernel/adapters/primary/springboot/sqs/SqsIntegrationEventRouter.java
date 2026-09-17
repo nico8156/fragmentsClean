@@ -1,7 +1,8 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxClaim;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxMessageStore;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -15,11 +16,11 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
 
     private static final Logger log = LoggerFactory.getLogger(SqsIntegrationEventRouter.class);
 
-    private final InboxMessageRepository inbox;
+    private final InboxMessageStore inbox;
     private final Map<SqsIntegrationEventRoute, SqsIntegrationEventHandler> handlers;
 
     public SqsIntegrationEventRouter(
-            InboxMessageRepository inbox,
+            InboxMessageStore inbox,
             List<SqsIntegrationEventHandler> handlers
     ) {
         this.inbox = inbox;
@@ -34,20 +35,29 @@ public class SqsIntegrationEventRouter implements SqsIntegrationEventRouting {
     }
 
     @Override
-    public void route(IntegrationEventEnvelope envelope) {
-        if (!inbox.claim(envelope)) {
-            log.info("[sqs] duplicate suppressed eventId={} destination={}",
+    public Result route(IntegrationEventEnvelope envelope) {
+        var claim = inbox.claim(envelope);
+        if (claim.status() == InboxClaim.Status.ALREADY_PROCESSED) {
+            log.info("[sqs] processed duplicate suppressed eventId={} destination={}",
                     envelope.eventId(), envelope.destination());
-            return;
+            return Result.alreadyProcessed();
+        }
+        if (claim.status() == InboxClaim.Status.BUSY) {
+            log.info("[sqs] active claim retained eventId={} destination={} leaseUntil={}",
+                    envelope.eventId(), envelope.destination(), claim.leaseUntil());
+            return Result.busyUntil(claim.leaseUntil());
         }
 
         try {
             dispatch(envelope);
-            inbox.markProcessed(envelope);
         } catch (Exception e) {
-            inbox.markFailed(envelope, e);
+            inbox.markFailed(envelope, claim.ownerToken(), e);
             throw e;
         }
+        if (!inbox.markProcessed(envelope, claim.ownerToken())) {
+            throw new IllegalStateException("Inbox lease lost before completion for event " + envelope.eventId());
+        }
+        return Result.processed();
     }
 
     private void dispatch(IntegrationEventEnvelope envelope) {

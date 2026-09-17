@@ -18,12 +18,18 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandFin
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandReceiptStore;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.CommandTransaction;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCommandExecutor;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.PersonalDataResidueStore;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.JdbcPersonalDataResidueStore;
+import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.JdbcAccountErasureBarrier;
 
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 
@@ -36,6 +42,10 @@ import java.time.Instant;
         "com.nm.fragmentsclean.sharedKernel.adapters.secondary"
 })
 public class SharedKernelDependenciesConfiguration {
+    @Bean
+    public PersonalDataResidueStore personalDataResidueStore(org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        return new JdbcPersonalDataResidueStore(jdbc);
+    }
 
     @Bean
     public DomainEventPublisher domainEventPublisher(SpringOutboxEventRepository outboxRepo,
@@ -62,8 +72,15 @@ public class SharedKernelDependenciesConfiguration {
             CommandReceiptStore receipts,
             CommandFingerprint fingerprint,
             CommandTransaction transactions,
-            DateTimeProvider dateTimeProvider) {
-        return new DurableCommandExecutor(receipts, fingerprint, transactions, dateTimeProvider);
+            DateTimeProvider dateTimeProvider,
+            AccountErasureBarrier erasureBarrier) {
+        return new DurableCommandExecutor(receipts, fingerprint, transactions, dateTimeProvider, erasureBarrier);
+    }
+
+    @Bean
+    public AccountErasureBarrier accountErasureBarrier(
+            JdbcTemplate jdbcTemplate, PlatformTransactionManager transactionManager) {
+        return new JdbcAccountErasureBarrier(jdbcTemplate, transactionManager);
     }
 
     @Bean

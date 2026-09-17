@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserDeletionRequestedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventPublisher.FakeDomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.gateways.SocialAccountDataEraser;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.models.SocialAccountDataErasedEvent;
 import com.nm.fragmentsclean.socialContext.write.businesslogic.usecases.EraseSocialAccountData;
@@ -56,8 +57,9 @@ class AccountDeletionContextHandlersTest {
 
     var clock = new DeterministicDateTimeProvider();
     var credentials = new FakeCredentials();
+    var barrier = new ImmediateBarrier();
     var completion =
-        new CompleteAuthenticationAccountDataErasure(users, tokens, credentials, events, clock);
+        new CompleteAuthenticationAccountDataErasure(users, tokens, credentials, events, clock, barrier);
     new EraseAuthenticationAccountData(users, credentials, new FakeApple(), completion)
         .handle(REQUEST);
 
@@ -75,9 +77,10 @@ class AccountDeletionContextHandlersTest {
     var ticket = new RecordingTicketEraser();
     var events = new FakeDomainEventPublisher();
     var clock = new DeterministicDateTimeProvider();
+    var barrier = new ImmediateBarrier();
 
-    new EraseSocialAccountData(social, events, clock).handle(REQUEST);
-    new EraseTicketAccountData(ticket, events, clock).handle(REQUEST);
+    new EraseSocialAccountData(social, events, clock, barrier).handle(REQUEST);
+    new EraseTicketAccountData(ticket, events, clock, barrier).handle(REQUEST);
 
     assertThat(social.erased).isEqualTo(USER_ID);
     assertThat(ticket.erased).isEqualTo(USER_ID);
@@ -169,6 +172,19 @@ class AccountDeletionContextHandlersTest {
 
     public void erase(UUID id) {
       erased = id;
+    }
+  }
+
+  private static final class ImmediateBarrier implements AccountErasureBarrier {
+    @Override
+    public boolean ifAllActive(Scope scope, Collection<UUID> userIds, Runnable mutation) {
+      mutation.run();
+      return true;
+    }
+
+    @Override
+    public void erase(Scope scope, UUID userId, UUID requestId, Instant erasedAt, Runnable erasure) {
+      erasure.run();
     }
   }
 }

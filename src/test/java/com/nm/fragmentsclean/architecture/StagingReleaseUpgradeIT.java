@@ -60,10 +60,14 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(3);
+            assertThat(receipt).hasSize(5);
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
             assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
             assertThat(receipt.get(2)).startsWith("article-curation-2026-09|");
+            assertThat(receipt.get(3)).startsWith("messaging-safety-2026-09|");
+            assertThat(receipt.get(4)).startsWith("account-erasure-safety-2026-09|");
+            assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='inbox_messages' AND column_name='lease_owner'"))
+                    .containsExactly("YES");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='articles' AND column_name='featured_rank'"))
                     .containsExactly("YES");
             assertThat(indexes(connection)).anyMatch(row -> row.startsWith("articles|true|") && row.contains("featured_rank"));
@@ -162,7 +166,62 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("3");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("5");
+        }
+    }
+
+    @Test void restore_replay_erases_a_pre_deletion_snapshot_and_is_idempotent() throws Exception {
+        String database = database();
+        String request = "55555555-5555-4555-8555-555555555555";
+        try (var connection = connect(database)) {
+            baseline(connection);
+            seed(connection);
+            assertThat(upgrade(database, false).getExitCode()).isZero();
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        INSERT INTO refresh_tokens(id,user_id,token,expires_at,revoked)
+                        VALUES (md5('refresh')::uuid,'%1$s','secret-refresh',now()+interval '1 day',false);
+                        INSERT INTO auth_provider_credentials(user_id,provider,encrypted_refresh_token,updated_at)
+                        VALUES ('%1$s','GOOGLE','encrypted-secret',now());
+                        INSERT INTO admin_user_access(user_id,granted_at) VALUES ('%1$s',now());
+                        INSERT INTO saved_coffees(saved_coffee_id,user_id,coffee_id,active,updated_at,version)
+                        VALUES (md5('saved')::uuid,'%1$s','%2$s',true,now(),1);
+                        INSERT INTO user_avatar_media(media_id,user_id,declared_content_type,declared_size,pending_object_key,status,object_key,content_type,size_bytes,width,height,sha256,created_at,updated_at,version)
+                        VALUES (md5('avatar')::uuid,'%1$s','image/jpeg',10,'pending/avatar','AVAILABLE','avatar/current.jpg','image/jpeg',10,32,32,repeat('a',64),now(),now(),1);
+                        INSERT INTO experience_media(media_id,experience_id,coffee_id,user_id,declared_content_type,declared_size,pending_object_key,status,object_key,content_type,size_bytes,width,height,sha256,created_at,updated_at,version)
+                        VALUES (md5('experience-media')::uuid,md5('experience')::uuid,'%2$s','%1$s','image/jpeg',10,'pending/experience','AVAILABLE','experience/current.jpg','image/jpeg',10,32,24,repeat('b',64),now(),now(),1);
+                        """.formatted(USER, COFFEE));
+            }
+
+            var first = replayErasures(database, request);
+            assertThat(first.getExitCode()).as(first.getStderr()).isZero();
+            assertThat(rows(connection, "SELECT count(*)::text FROM tickets WHERE user_id='" + USER + "'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT count(*)::text FROM social_comments_projection WHERE author_id='" + USER + "'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT count(*)::text FROM saved_coffees WHERE user_id='" + USER + "'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT count(*)::text FROM auth_provider_credentials WHERE user_id='" + USER + "'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT count(*)::text FROM admin_user_access WHERE user_id='" + USER + "'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT lifecycle_status,display_name,avatar_url FROM app_users WHERE id='" + USER + "'"))
+                    .containsExactly("DELETED|Compte supprimé|null");
+            assertThat(rows(connection, "SELECT lifecycle_status,email,display_name FROM auth_users WHERE id='" + USER + "'"))
+                    .containsExactly("DELETED|deleted+" + USER + "@invalid.local|null");
+            assertThat(rows(connection, "SELECT count(*)::text FROM account_erasure_barriers WHERE user_id='" + USER + "' AND status='ERASED'"))
+                    .containsExactly("5");
+            assertThat(rows(connection, "SELECT count(*)::text FROM outbox_events WHERE payload_json LIKE '%" + USER + "%'"))
+                    .containsExactly("0");
+            assertThat(rows(connection, "SELECT status,user_id::text FROM user_avatar_media"))
+                    .containsExactly("DELETED|null");
+            assertThat(rows(connection, "SELECT status,user_id::text FROM experience_media"))
+                    .containsExactly("DELETED|null");
+
+            var second = replayErasures(database, request);
+            assertThat(second.getExitCode()).as(second.getStderr()).isZero();
+            assertThat(rows(connection, "SELECT count(*)::text FROM account_erasure_barriers WHERE user_id='" + USER + "'"))
+                    .containsExactly("5");
         }
     }
 
@@ -194,11 +253,21 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"",
+        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"",
                 "render", directory, "a".repeat(40));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),
                 "-d", database, "-f", directory + "/bundle.psql");
+    }
+
+    private static Container.ExecResult replayErasures(String database, String requestId) throws Exception {
+        String path = "/tmp/replay-account-erasures-" + database + ".sql";
+        POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
+                "infra/aws/compose/platform/staging/fragments/replay-account-erasures.sql")), path);
+        return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1",
+                "-v", "request_id=" + requestId, "-v", "user_id=" + USER,
+                "-v", "auth_user_id=" + USER, "-v", "requested_at=2026-09-17T10:00:00Z",
+                "-U", POSTGRES.getUsername(), "-d", database, "-f", path);
     }
 
     private static List<String> columns(Connection connection) throws Exception {

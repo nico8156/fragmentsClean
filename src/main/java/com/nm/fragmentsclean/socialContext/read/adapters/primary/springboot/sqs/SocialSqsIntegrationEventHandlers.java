@@ -19,6 +19,8 @@ import com.nm.fragmentsclean.platform.eventing.contracts.SocialCommentIntegratio
 import com.nm.fragmentsclean.platform.eventing.contracts.SocialLikeSetIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
+import java.util.List;
 
 @Configuration
 public class SocialSqsIntegrationEventHandlers {
@@ -30,66 +32,59 @@ public class SocialSqsIntegrationEventHandlers {
     }
 
     @Bean
-    SqsIntegrationEventHandler socialCommentCreatedSqsIntegrationEventHandler(CommentCreatedEventHandler handler) {
+    SqsIntegrationEventHandler socialCommentCreatedSqsIntegrationEventHandler(CommentCreatedEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.created",
-                envelope -> handler.handle(SocialIntegrationEventAcl.created(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Created.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.Created.class);barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.authorId(),()->handler.handle(SocialIntegrationEventAcl.created(event)));});
     }
 
     @Bean
-    SqsIntegrationEventHandler socialCommentUpdatedSqsIntegrationEventHandler(CommentUpdatedEventHandler handler) {
+    SqsIntegrationEventHandler socialCommentUpdatedSqsIntegrationEventHandler(CommentUpdatedEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.updated",
-                envelope -> handler.handle(SocialIntegrationEventAcl.updated(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Updated.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.Updated.class);barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.authorId(),()->handler.handle(SocialIntegrationEventAcl.updated(event)));});
     }
 
     @Bean
-    SqsIntegrationEventHandler socialCommentDeletedSqsIntegrationEventHandler(CommentDeletedEventHandler handler) {
+    SqsIntegrationEventHandler socialCommentDeletedSqsIntegrationEventHandler(CommentDeletedEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.deleted",
-                envelope -> handler.handle(SocialIntegrationEventAcl.deleted(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Deleted.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.Deleted.class);barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.authorId(),()->handler.handle(SocialIntegrationEventAcl.deleted(event)));});
     }
 
     @Bean
-    SqsIntegrationEventHandler socialLikeSetSqsIntegrationEventHandler(LikeSetEventHandler handler) {
+    SqsIntegrationEventHandler socialLikeSetSqsIntegrationEventHandler(LikeSetEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.like.set",
-                envelope -> handler.handle(SocialIntegrationEventAcl.likeSet(
-                        payloadReader.read(envelope, SocialLikeSetIntegrationEvent.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialLikeSetIntegrationEvent.class);barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.userId(),()->handler.handle(SocialIntegrationEventAcl.likeSet(event)));});
     }
 
-    @Bean SqsIntegrationEventHandler socialCommentReportedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+    @Bean SqsIntegrationEventHandler socialCommentReportedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.reported",
-                envelope -> handler.handle(SocialIntegrationEventAcl.reported(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Reported.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.Reported.class);barrier.ifAllActive(AccountErasureBarrier.Scope.SOCIAL,List.of(event.authorId(),event.reporterId()),()->handler.handle(SocialIntegrationEventAcl.reported(event)));});
     }
 
-    @Bean SqsIntegrationEventHandler socialCommentModeratedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+    @Bean SqsIntegrationEventHandler socialCommentModeratedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.comment.moderated",
-                envelope -> handler.handle(SocialIntegrationEventAcl.moderated(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.Moderated.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.Moderated.class);barrier.ifAllActive(AccountErasureBarrier.Scope.SOCIAL,List.of(event.authorId(),event.operatorId()),()->handler.handle(SocialIntegrationEventAcl.moderated(event)));});
     }
 
-    @Bean SqsIntegrationEventHandler socialUserBlockChangedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler) {
+    @Bean SqsIntegrationEventHandler socialUserBlockChangedSqsIntegrationEventHandler(ModerationProjectionEventHandler handler,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(DOMAIN_EVENTS, "social.user_block.changed",
-                envelope -> handler.handle(SocialIntegrationEventAcl.blockChanged(
-                        payloadReader.read(envelope, SocialCommentIntegrationEvents.UserBlockChanged.class))));
+                envelope -> {var event=payloadReader.read(envelope,SocialCommentIntegrationEvents.UserBlockChanged.class);barrier.ifAllActive(AccountErasureBarrier.Scope.SOCIAL,List.of(event.blockerId(),event.blockedUserId()),()->handler.handle(SocialIntegrationEventAcl.blockChanged(event)));});
     }
 
     @Bean
     SqsIntegrationEventHandler appUserCreatedSocialProjectionSqsIntegrationEventHandler(
-            UserSocialProjectionProjector projector) {
+            UserSocialProjectionProjector projector,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "app.user.created", envelope -> {
             AppUserCreatedIntegrationEvent event = payloadReader.read(envelope, AppUserCreatedIntegrationEvent.class);
-            projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt());
+            barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.userId(),()->projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt()));
         });
     }
 
     @Bean
     SqsIntegrationEventHandler appUserProfileUpdatedSocialProjectionSqsIntegrationEventHandler(
-            UserSocialProjectionProjector projector) {
+            UserSocialProjectionProjector projector,AccountErasureBarrier barrier) {
         return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "app.user.profile_updated", envelope -> {
             AppUserProfileUpdatedIntegrationEvent event = payloadReader.read(envelope, AppUserProfileUpdatedIntegrationEvent.class);
-            projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt());
+            barrier.ifActive(AccountErasureBarrier.Scope.SOCIAL,event.userId(),()->projector.upsert(event.userId(), event.displayName(), event.avatarUrl(), event.version(), event.occurredAt()));
         });
     }
 

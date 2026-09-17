@@ -364,9 +364,12 @@ sudo systemctl status fragments-postgres-backup.service
 ```
 
 The restore drill never overwrites the live database. It downloads one
-allow-listed artifact, verifies its checksum, restores it into a uniquely named
-temporary database, verifies that public tables exist, then removes that
-temporary database:
+allow-listed artifact, verifies its checksum and restores it into a uniquely
+named temporary database. Before validation, it then downloads the independent
+account-erasure journal, deletes every private-media object and object version
+referenced by an erased account in that snapshot, reapplies the cross-context
+purge, recreates all five local barriers and checks for residual rows. The
+temporary database is removed even when one of these steps fails:
 
 ```bash
 sudo /srv/fragments/staging/restore-postgres-drill.sh \
@@ -377,6 +380,39 @@ A successful upload is not proof of recoverability. Run and record a restore
 drill after this mechanism is first deployed, then at least monthly and after a
 PostgreSQL image upgrade. A live restore remains a separate incident procedure
 requiring an explicit recovery decision and maintenance window.
+
+The runtime must have these four journal settings and deletion must remain
+unavailable when the independent journal cannot accept a create-only marker:
+
+```text
+ACCOUNT_ERASURE_JOURNAL_ENABLED=true
+ACCOUNT_ERASURE_JOURNAL_S3_BUCKET=fragments-account-erasure-staging-<account-id>
+ACCOUNT_ERASURE_JOURNAL_S3_PREFIX=fragments/staging/account-erasure-journal/v1
+ACCOUNT_ERASURE_JOURNAL_S3_REGION=eu-west-3
+```
+
+The journal bucket is separate from PostgreSQL backups, encrypted, versioned,
+publicly blocked and Object-Locked in governance mode for 45 days. Its markers
+expire after 46 days, which is valid only while every restorable PostgreSQL copy
+expires within 30 days. If backup retention grows, increase journal retention
+first. The runtime role may create and read markers but cannot delete them or
+bypass retention.
+
+Recovery order is mandatory:
+
+1. stop every Fragments writer/consumer and retain the damaged database;
+2. restore the selected dump under an isolated `fragments_restore_drill_*` name;
+3. run the independent erasure replay and private-media version purge;
+4. require the per-marker residual check and five `ERASED` barriers;
+5. validate authentication, command receipts and representative snapshots;
+6. only after an explicit incident decision, promote the sanitized database and
+   reopen traffic.
+
+Never restore directly over `POSTGRES_DB`, never disable the journal to make an
+account deletion succeed, and never reopen a restored database before replay.
+SQS can retain already-published encrypted payloads for at most 14 days; local
+barriers make those messages effect-free and normal queue expiry removes the
+transport copy. Do not redrive pre-erasure personal events after recovery.
 
 ## Schema Policy For Release 1
 

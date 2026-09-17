@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 import com.nm.fragmentsclean.userApplicationContext.pass.application.PassContributionProjector;
 import com.nm.fragmentsclean.userApplicationContext.pass.domain.PassProgressPolicy;
 import com.nm.fragmentsclean.userApplicationContext.pass.domain.PassSnapshot;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,44 +29,44 @@ public class PassSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler passTicketCompletedHandler(PassContributionProjector projector,
-                                                           ProjectionSyncPublisher sync) {
+                                                           ProjectionSyncPublisher sync,AccountErasureBarrier barrier) {
         return handler("ticket.verification.completed", envelope -> {
             var event = payloadReader.read(envelope, TicketIntegrationEvents.VerificationCompleted.class);
-            publish(projector.ticketChanged(event.ticketId(), event.userId(), "APPROVED".equals(event.outcome()),
-                    false, event.version(), event.occurredAt()), sync);
+            barrier.ifActive(AccountErasureBarrier.Scope.USER_APPLICATION,event.userId(),()->publish(projector.ticketChanged(event.ticketId(), event.userId(), "APPROVED".equals(event.outcome()),
+                    false, event.version(), event.occurredAt()), sync));
         });
     }
 
     @Bean
     SqsIntegrationEventHandler passTicketAdminUpdatedHandler(PassContributionProjector projector,
-                                                              ProjectionSyncPublisher sync) {
+                                                              ProjectionSyncPublisher sync,AccountErasureBarrier barrier) {
         return handler("ticket.admin.updated", envelope -> {
             var event = payloadReader.read(envelope, TicketIntegrationEvents.AdminUpdated.class);
-            publish(projector.ticketChanged(event.ticketId(), event.userId(), "CONFIRMED".equals(event.status()),
-                    true, event.version(), event.occurredAt()), sync);
+            barrier.ifActive(AccountErasureBarrier.Scope.USER_APPLICATION,event.userId(),()->publish(projector.ticketChanged(event.ticketId(), event.userId(), "CONFIRMED".equals(event.status()),
+                    true, event.version(), event.occurredAt()), sync));
         });
     }
 
     @Bean
     SqsIntegrationEventHandler passTicketAdminDeletedHandler(PassContributionProjector projector,
-                                                              ProjectionSyncPublisher sync) {
+                                                              ProjectionSyncPublisher sync,AccountErasureBarrier barrier) {
         return handler("ticket.admin.deleted", envelope -> {
             var event = payloadReader.read(envelope, TicketIntegrationEvents.AdminDeleted.class);
-            publish(projector.ticketChanged(event.ticketId(), event.userId(), false,
-                    true, event.version(), event.occurredAt()), sync);
+            barrier.ifActive(AccountErasureBarrier.Scope.USER_APPLICATION,event.userId(),()->publish(projector.ticketChanged(event.ticketId(), event.userId(), false,
+                    true, event.version(), event.occurredAt()), sync));
         });
     }
 
     @Bean
     SqsIntegrationEventHandler passExperienceContributionHandler(PassContributionProjector projector,
-                                                                  ProjectionSyncPublisher sync) {
+                                                                  ProjectionSyncPublisher sync,AccountErasureBarrier barrier) {
         return handler("experience.lifecycle.changed", envelope -> {
             var event = payloadReader.read(envelope, ExperienceIntegrationEvents.LifecycleChanged.class);
             boolean active = PassProgressPolicy.countsExperience(
                     event.publicationStatus(), event.moderationStatus());
-            publish(projector.experienceChanged(event.experienceId(), event.userId(), event.coffeeId(), active,
+            barrier.ifActive(AccountErasureBarrier.Scope.USER_APPLICATION,event.userId(),()->publish(projector.experienceChanged(event.experienceId(), event.userId(), event.coffeeId(), active,
                     PassProgressPolicy.revokesAcquiredLevels(active, event.reason()),
-                    event.version(), event.occurredAt()), sync);
+                    event.version(), event.occurredAt()), sync));
         });
     }
 

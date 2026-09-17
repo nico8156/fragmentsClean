@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.userApplicationContext.read.projections.SavedCoffee
 import com.nm.fragmentsclean.platform.eventing.contracts.SavedCoffeeSetIntegrationEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 
 @Configuration
 public class UserApplicationSqsIntegrationEventHandlers {
@@ -23,10 +24,9 @@ public class UserApplicationSqsIntegrationEventHandlers {
 	}
 
 	@Bean
-	SqsIntegrationEventHandler savedCoffeeSetSqsIntegrationEventHandler(SavedCoffeeSetEventHandler handler) {
+	SqsIntegrationEventHandler savedCoffeeSetSqsIntegrationEventHandler(SavedCoffeeSetEventHandler handler,AccountErasureBarrier barrier) {
 		return new SimpleSqsIntegrationEventHandler(APP_USERS_EVENTS, "user.saved_coffee.set",
-                envelope -> handler.handle(UserApplicationIntegrationEventAcl.savedCoffeeSet(
-                        payloadReader.read(envelope, SavedCoffeeSetIntegrationEvent.class))));
+				envelope -> {var event=payloadReader.read(envelope,SavedCoffeeSetIntegrationEvent.class);barrier.ifActive(AccountErasureBarrier.Scope.USER_APPLICATION,event.userId(),()->handler.handle(UserApplicationIntegrationEventAcl.savedCoffeeSet(event)));});
 	}
 
 	@Bean

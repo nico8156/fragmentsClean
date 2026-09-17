@@ -2,6 +2,9 @@ package com.nm.fragmentsclean.sharedKernel.eventing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.reflect.Proxy;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,8 +12,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxClaim;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 
 class InboxMessageRepositoryTest {
@@ -19,9 +24,9 @@ class InboxMessageRepositoryTest {
 		var jdbc = new DuplicateInboxJdbcTemplate("PROCESSED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
-		boolean claimed = repository.claim(envelope());
+		var claimed = repository.claim(envelope());
 
-		assertThat(claimed).isFalse();
+		assertThat(claimed.status()).isEqualTo(InboxClaim.Status.ALREADY_PROCESSED);
 		assertThat(jdbc.resetCalls).isEqualTo(1);
 	}
 
@@ -30,9 +35,9 @@ class InboxMessageRepositoryTest {
 		var jdbc = new DuplicateInboxJdbcTemplate("FAILED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
-		boolean claimed = repository.claim(envelope());
+		var claimed = repository.claim(envelope());
 
-		assertThat(claimed).isTrue();
+		assertThat(claimed.acquired()).isTrue();
 		assertThat(jdbc.resetCalls).isEqualTo(1);
 		assertThat(jdbc.sqlCalls).anyMatch(sql -> sql.contains("SET status = 'RECEIVED'"));
 	}
@@ -42,16 +47,16 @@ class InboxMessageRepositoryTest {
 		var jdbc = new DuplicateInboxJdbcTemplate("RECEIVED", false);
 		var repository = new InboxMessageRepository(jdbc);
 
-		boolean claimed = repository.claim(envelope());
+		var claimed = repository.claim(envelope());
 
-		assertThat(claimed).isFalse();
+		assertThat(claimed.status()).isEqualTo(InboxClaim.Status.BUSY);
 		assertThat(jdbc.resetCalls).isEqualTo(1);
 	}
 
 	@Test
 	void received_duplicate_is_claimed_again_after_lease_expiry() {
 		var jdbc = new DuplicateInboxJdbcTemplate("RECEIVED", true);
-		assertThat(new InboxMessageRepository(jdbc).claim(envelope())).isTrue();
+		assertThat(new InboxMessageRepository(jdbc).claim(envelope()).acquired()).isTrue();
 	}
 
 	private static IntegrationEventEnvelope envelope() {
@@ -90,6 +95,25 @@ class InboxMessageRepositoryTest {
 				return "FAILED".equals(existingStatus) || expired ? 1 : 0;
 			}
 			return 1;
+		}
+
+		@Override
+		public <T> List<T> query(String sql, RowMapper<T> rowMapper, Object... args) {
+			try {
+				ResultSet resultSet = (ResultSet) Proxy.newProxyInstance(
+						ResultSet.class.getClassLoader(),
+						new Class<?>[]{ResultSet.class},
+						(proxy, method, methodArgs) -> switch (method.getName()) {
+							case "getString" -> existingStatus;
+							case "getTimestamp" -> Timestamp.from(Instant.parse("2026-07-05T10:05:00Z"));
+							case "wasNull", "isClosed" -> false;
+							case "close" -> null;
+							default -> throw new UnsupportedOperationException(method.getName());
+						});
+				return List.of(rowMapper.mapRow(resultSet, 0));
+			} catch (Exception exception) {
+				throw new IllegalStateException(exception);
+			}
 		}
 	}
 }

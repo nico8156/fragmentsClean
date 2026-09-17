@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerifyAccepted
 import com.nm.fragmentsclean.platform.eventing.contracts.TicketIntegrationEvents;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketAdminEventHandlers;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.TicketVerificationProcessManager;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,38 +27,39 @@ public class TicketSqsIntegrationEventHandlers {
 
     @Bean
     SqsIntegrationEventHandler ticketVerifyAcceptedReadSqsIntegrationEventHandler(
-            TicketVerifyAcceptedEventHandler handler) {
+            TicketVerifyAcceptedEventHandler handler, AccountErasureBarrier barrier) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.verify.accepted",
-                envelope -> handler.handle(TicketIntegrationEventAcl.verifyAccepted(
-                        payloadReader.read(envelope, TicketIntegrationEvents.VerifyAccepted.class))));
+                envelope -> { var event=payloadReader.read(envelope, TicketIntegrationEvents.VerifyAccepted.class);
+                    barrier.ifActive(AccountErasureBarrier.Scope.TICKET,event.userId(),
+                        ()->handler.handle(TicketIntegrationEventAcl.verifyAccepted(event))); });
     }
 
     @Bean
     SqsIntegrationEventHandler ticketVerificationCompletedReadSqsIntegrationEventHandler(
-            TicketVerificationCompletedEventHandler handler) {
+            TicketVerificationCompletedEventHandler handler, AccountErasureBarrier barrier) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.verification.completed",
-                envelope -> handler.handle(TicketIntegrationEventAcl.verificationCompleted(
-                        payloadReader.read(envelope, TicketIntegrationEvents.VerificationCompleted.class))));
+                envelope -> { var event=payloadReader.read(envelope, TicketIntegrationEvents.VerificationCompleted.class);
+                    barrier.ifActive(AccountErasureBarrier.Scope.TICKET,event.userId(),
+                        ()->handler.handle(TicketIntegrationEventAcl.verificationCompleted(event))); });
     }
 
     @Bean
     SqsIntegrationEventHandler ticketVerificationRequestedSqsIntegrationEventHandler(
-            TicketVerificationProcessManager handler) {
+            TicketVerificationProcessManager handler, AccountErasureBarrier barrier) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_VERIFICATION_REQUESTED, "ticket.verify.accepted",
-                envelope -> handler.handle(TicketIntegrationEventAcl.verifyAccepted(
-                        payloadReader.read(envelope, TicketIntegrationEvents.VerifyAccepted.class))));
+                envelope -> { var event=payloadReader.read(envelope, TicketIntegrationEvents.VerifyAccepted.class);
+                    barrier.ifActive(AccountErasureBarrier.Scope.TICKET,event.userId(),
+                        ()->handler.handle(TicketIntegrationEventAcl.verifyAccepted(event))); });
     }
 
-    @Bean SqsIntegrationEventHandler ticketAdminUpdatedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler) {
+    @Bean SqsIntegrationEventHandler ticketAdminUpdatedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler,AccountErasureBarrier barrier) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.admin.updated",
-                envelope -> handler.updated(TicketIntegrationEventAcl.adminUpdated(
-                        payloadReader.read(envelope, TicketIntegrationEvents.AdminUpdated.class))));
+                envelope -> {var event=payloadReader.read(envelope,TicketIntegrationEvents.AdminUpdated.class);barrier.ifActive(AccountErasureBarrier.Scope.TICKET,event.userId(),()->handler.updated(TicketIntegrationEventAcl.adminUpdated(event)));});
     }
 
-    @Bean SqsIntegrationEventHandler ticketAdminDeletedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler) {
+    @Bean SqsIntegrationEventHandler ticketAdminDeletedReadSqsIntegrationEventHandler(TicketAdminEventHandlers handler,AccountErasureBarrier barrier) {
         return new SimpleTicketSqsIntegrationEventHandler(TICKET_EVENTS, "ticket.admin.deleted",
-                envelope -> handler.deleted(TicketIntegrationEventAcl.adminDeleted(
-                        payloadReader.read(envelope, TicketIntegrationEvents.AdminDeleted.class))));
+                envelope -> {var event=payloadReader.read(envelope,TicketIntegrationEvents.AdminDeleted.class);barrier.ifActive(AccountErasureBarrier.Scope.TICKET,event.userId(),()->handler.deleted(TicketIntegrationEventAcl.adminDeleted(event)));});
     }
 
     private record SimpleTicketSqsIntegrationEventHandler(

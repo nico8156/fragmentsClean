@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest;
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -124,6 +126,54 @@ class SqsIntegrationEventConsumerTest {
 		assertThat(sqsClient.deleted).isEmpty();
 	}
 
+	@Test
+	void already_processed_duplicate_is_deleted_without_recording_delivery_latency() throws Exception {
+		var meters = new SimpleMeterRegistry();
+		var sqsClient = new FakeSqsClient();
+		var router = new RecordingRouter();
+		router.result = SqsIntegrationEventRouting.Result.alreadyProcessed();
+		sqsClient.messages.add(Message.builder()
+				.messageId("message-duplicate")
+				.receiptHandle("receipt-duplicate")
+				.body(json(envelope("event-duplicate")))
+				.build());
+		var consumer = new SqsIntegrationEventConsumer(
+				sqsClient,
+				properties(MapBuilder.queues().queue("coffees-events", "https://sqs.example/coffees").build()),
+				JsonMapper.builder().addModule(new JavaTimeModule()).build(),
+				router,
+				workerCount -> new RecordingExecutorService(),
+				meters);
+
+		consumer.pollDestination("coffees-events", "https://sqs.example/coffees");
+
+		assertThat(sqsClient.deleted).hasSize(1);
+		assertThat(meters.find("fragments.projection.delivery.latency").timer()).isNull();
+	}
+
+	@Test
+	void actively_claimed_message_is_not_deleted_and_visibility_is_extended() throws Exception {
+		var sqsClient = new FakeSqsClient();
+		var router = new RecordingRouter();
+		router.result = SqsIntegrationEventRouting.Result.busyUntil(Instant.now().plusSeconds(90));
+		sqsClient.messages.add(Message.builder()
+				.messageId("message-busy")
+				.receiptHandle("receipt-busy")
+				.body(json(envelope("event-busy")))
+				.build());
+		var consumer = consumerWith(sqsClient, router, properties(MapBuilder.queues()
+				.queue("coffees-events", "https://sqs.example/coffees")
+				.build()));
+
+		consumer.pollDestination("coffees-events", "https://sqs.example/coffees");
+
+		assertThat(sqsClient.deleted).isEmpty();
+		assertThat(sqsClient.visibilityChanges).singleElement().satisfies(request -> {
+			assertThat(request.receiptHandle()).isEqualTo("receipt-busy");
+			assertThat(request.visibilityTimeout()).isBetween(89, 90);
+		});
+	}
+
 	private static SqsIntegrationEventConsumer consumerWith(SqsMessagingProperties properties) {
 		return consumerWith(properties, new RecordingExecutorService());
 	}
@@ -225,19 +275,22 @@ class SqsIntegrationEventConsumerTest {
 	private static class RecordingRouter implements SqsIntegrationEventRouting {
 		private final List<IntegrationEventEnvelope> routed = new ArrayList<>();
 		private RuntimeException failure;
+		private Result result = Result.processed();
 
 		@Override
-		public void route(IntegrationEventEnvelope envelope) {
+		public Result route(IntegrationEventEnvelope envelope) {
 			routed.add(envelope);
 			if (failure != null) {
 				throw failure;
 			}
+			return result;
 		}
 	}
 
 	private static class FakeSqsClient implements SqsClient {
 		private final Queue<Message> messages = new ConcurrentLinkedQueue<>();
 		private final List<DeleteMessageRequest> deleted = new ArrayList<>();
+		private final List<ChangeMessageVisibilityRequest> visibilityChanges = new ArrayList<>();
 
 		@Override
 		public ReceiveMessageResponse receiveMessage(ReceiveMessageRequest receiveMessageRequest) {
@@ -256,6 +309,12 @@ class SqsIntegrationEventConsumerTest {
 		public DeleteMessageResponse deleteMessage(DeleteMessageRequest deleteMessageRequest) {
 			deleted.add(deleteMessageRequest);
 			return DeleteMessageResponse.builder().build();
+		}
+
+		@Override
+		public ChangeMessageVisibilityResponse changeMessageVisibility(ChangeMessageVisibilityRequest request) {
+			visibilityChanges.add(request);
+			return ChangeMessageVisibilityResponse.builder().build();
 		}
 
 		@Override

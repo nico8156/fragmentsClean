@@ -16,6 +16,7 @@ import com.nm.fragmentsclean.ticketContext.write.businesslogic.processManagers.T
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminDeleteTicketCommandHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.AdminUpdateTicketCommandHandler;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.EraseTicketAccountData;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import com.nm.fragmentsclean.ticketContext.write.businesslogic.usecases.VerifyTicketCommandHandler;
 import java.time.Duration;
 import java.util.List;
@@ -96,7 +97,8 @@ public class TicketWriteDependenciesConfiguration {
 
   @Bean
   EraseTicketAccountData eraseTicketAccountData(
-      TicketAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock) {
-    return new EraseTicketAccountData(eraser, events, clock);
+      TicketAccountDataEraser eraser, DomainEventPublisher events, DateTimeProvider clock,
+      AccountErasureBarrier barrier) {
+    return new EraseTicketAccountData(eraser, events, clock, barrier);
   }
 }

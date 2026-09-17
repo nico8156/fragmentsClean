@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.experienceContext.write.businesslogic.usecases.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCommandExecutor;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.media.*;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.PrivateImageStorageProperties;
 import java.time.Duration;import java.util.*;import java.util.stream.Collectors;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.autoconfigure.domain.EntityScan;import org.springframework.boot.context.properties.EnableConfigurationProperties;import org.springframework.context.annotation.*;import org.springframework.data.jpa.repository.config.EnableJpaRepositories;import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -34,7 +35,7 @@ public class ExperienceContextWriteConfiguration{
     @Bean DeleteExperienceCommandHandler deleteExperienceCommandHandler(ExperienceRepository r,ExperienceMediaRepository m,DomainEventPublisher e,DateTimeProvider d){return new DeleteExperienceCommandHandler(r,m,e,d);}
     @Bean ReportExperienceCommandHandler reportExperienceCommandHandler(ExperienceRepository r,ExperienceReportRepository reports,DomainEventPublisher e,DateTimeProvider d){return new ReportExperienceCommandHandler(r,reports,e,d);}
     @Bean ModerateExperienceCommandHandler moderateExperienceCommandHandler(ExperienceRepository r,ExperienceReportRepository reports,DomainEventPublisher e,DateTimeProvider d){return new ModerateExperienceCommandHandler(r,reports,e,d);}
-    @Bean EraseExperienceAccountData eraseExperienceAccountData(ExperienceAccountDataEraser eraser,DomainEventPublisher e,DateTimeProvider d){return new EraseExperienceAccountData(eraser,e,d);}
+    @Bean EraseExperienceAccountData eraseExperienceAccountData(ExperienceAccountDataEraser eraser,DomainEventPublisher e,DateTimeProvider d,AccountErasureBarrier b){return new EraseExperienceAccountData(eraser,e,d,b);}
     @Bean RegisterExperienceMediaUploadIntent registerExperienceMediaUploadIntent(ExperienceRepository e,ExperienceMediaRepository m,PrivateMediaObjectKeys k,DateTimeProvider d,@Value("${fragments.experience.media.max-count:4}")int max){return new RegisterExperienceMediaUploadIntent(e,m,k,d,max);}
     @Bean IssueExperienceMediaUploadIntent issueExperienceMediaUploadIntent(RegisterExperienceMediaUploadIntent r,PrivateImageStore s,DateTimeProvider d,PrivateImageStorageProperties p){return new IssueExperienceMediaUploadIntent(r,s,d,p.getUploadTtl());}
     @Bean ConfirmExperienceMediaCommandHandler confirmExperienceMediaCommandHandler(ExperienceRepository e,ExperienceMediaRepository m,DomainEventPublisher p,DateTimeProvider d){return new ConfirmExperienceMediaCommandHandler(e,m,p,d);}

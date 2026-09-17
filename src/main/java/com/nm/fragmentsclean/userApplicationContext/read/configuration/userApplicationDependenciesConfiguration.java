@@ -22,6 +22,9 @@ import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCommandExecutor;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.media.*;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureJournal;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.PersonalDataResidueStore;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.PrivateImageStorageProperties;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
@@ -128,6 +131,15 @@ public class userApplicationDependenciesConfiguration {
   }
 
   @Bean
+  RequestAccountDeletion requestAccountDeletion(
+      AccountErasureJournal journal,
+      DateTimeProvider clock,
+      DurableCommandExecutor durable,
+      RequestAccountDeletionCommandHandler handler) {
+    return new RequestAccountDeletion(journal, clock, durable, handler);
+  }
+
+  @Bean
   UserAccountDataEraser userAccountDataEraser(JdbcTemplate jdbc) {
     return new JdbcUserAccountDataEraser(jdbc);
   }
@@ -137,7 +149,9 @@ public class userApplicationDependenciesConfiguration {
       AccountDeletionProcessRepository processes,
       AppUserRepository users,
       UserAccountDataEraser eraser,
-      DateTimeProvider clock) {
-    return new AccountDeletionProcessManager(processes, users, eraser, clock);
+      DateTimeProvider clock,
+      AccountErasureBarrier barrier,
+      PersonalDataResidueStore technicalResidues) {
+    return new AccountDeletionProcessManager(processes, users, eraser, clock, barrier, technicalResidues);
   }
 }

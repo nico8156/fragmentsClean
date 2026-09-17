@@ -6,33 +6,42 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AccountDeletionProcessRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.AppUserRepository;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.gateways.UserAccountDataEraser;
-import jakarta.transaction.Transactional;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.PersonalDataResidueStore;
 
 public class AccountDeletionProcessManager {
   private final AccountDeletionProcessRepository processes;
   private final AppUserRepository users;
   private final UserAccountDataEraser eraser;
   private final DateTimeProvider clock;
+  private final AccountErasureBarrier barrier;
+  private final PersonalDataResidueStore technicalResidues;
 
   public AccountDeletionProcessManager(
       AccountDeletionProcessRepository processes,
       AppUserRepository users,
       UserAccountDataEraser eraser,
-      DateTimeProvider clock) {
+      DateTimeProvider clock,
+      AccountErasureBarrier barrier,
+      PersonalDataResidueStore technicalResidues) {
     this.processes = processes;
     this.users = users;
     this.eraser = eraser;
     this.clock = clock;
+    this.barrier = barrier;
+    this.technicalResidues = technicalResidues;
   }
 
-  @Transactional
   public void eraseLocalData(AppUserDeletionRequestedIntegrationEvent request) {
-    eraser.erase(request.userId());
-    acknowledge(
-        request.requestId(), request.userId(), AccountDeletionProcess.Context.USER_APPLICATION);
+    var now = clock.now();
+    barrier.erase(AccountErasureBarrier.Scope.USER_APPLICATION, request.userId(), request.requestId(), now, () -> {
+      eraser.erase(request.userId());
+      acknowledge(
+          request.requestId(), request.userId(), AccountDeletionProcess.Context.USER_APPLICATION);
+    });
   }
 
-  @Transactional
+  @org.springframework.transaction.annotation.Transactional
   public void acknowledge(AccountDataErasedIntegrationEvent event) {
     acknowledge(
         event.requestId(), event.userId(), AccountDeletionProcess.Context.valueOf(event.context()));
@@ -52,6 +61,7 @@ public class AccountDeletionProcessManager {
       var user =
           users.findById(userId).orElseThrow(() -> new IllegalStateException("App user not found"));
       if (user.completeAccountDeletion(clock.now())) users.save(user);
+      technicalResidues.purge(userId, user.authUserId());
     }
   }
 }

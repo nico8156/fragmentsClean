@@ -69,6 +69,36 @@ distinct acknowledgements. Its acknowledgement load is pessimistically locked,
 preventing concurrent SQS deliveries from losing one context's completion.
 Duplicate request or completion events are safe.
 
+### Durable anti-resurrection barriers
+
+Each participant also owns a durable `(context_name, user_id)` erasure barrier.
+The barrier is set to `ERASED` in the same transaction as the context cleanup
+and its acknowledgement event. User-owned integration-event handlers lock and
+check their local context barrier in the same transaction as their projection
+mutation. Consequently, a delayed or duplicated event cannot recreate profile,
+social, ticket, experience or Pass data after erasure.
+
+Authenticated commands are guarded by all five barriers inside the durable
+command transaction. This closes the short interval during which an access JWT
+may still be cryptographically valid while deletion is propagating. A command
+that loses the race against erasure is persisted as `REJECTED` with
+`ACCOUNT_ERASED`; a command that wins completes before the eraser obtains its
+lock and is then removed by the context cleanup.
+
+Database barriers remain for the lifetime of the restored/current database and
+must not be pruned by normal application cleanup. Before command acceptance, an
+independent create-only S3 erasure marker is written outside PostgreSQL. Its
+Object Lock retention must exceed the lifetime of every restorable database
+copy; it need not be permanent once no backup capable of resurrecting the user
+exists. Every restore drill reapplies those markers, purges private object
+versions and recreates all five barriers before the database can be promoted.
+
+After the five acknowledgements complete, technical outbox and projection-sync
+payload copies containing the erased identity are purged. Inbox metadata stays
+in place for idempotence because it stores no event payload. See the recovery
+procedure in `docs/deployment/operations-runbook.md` and its implementation
+receipt in `docs/audits/2026-09-17-p0-account-erasure-restoration.md`.
+
 The mobile deletion action is deliberately not an optimistic destructive
 outbox mutation. It requires an explicit confirmation and a live session. A
 technical uncertainty keeps the same command identifier for retry, so the user

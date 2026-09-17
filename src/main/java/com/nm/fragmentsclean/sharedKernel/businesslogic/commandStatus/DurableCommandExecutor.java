@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.AuthenticatedCommand;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 
 import java.util.Objects;
 
@@ -14,16 +15,19 @@ public final class DurableCommandExecutor {
     private final CommandFingerprint fingerprint;
     private final CommandTransaction transactions;
     private final DateTimeProvider clock;
+    private final AccountErasureBarrier erasureBarrier;
 
     public DurableCommandExecutor(
             CommandReceiptStore receipts,
             CommandFingerprint fingerprint,
             CommandTransaction transactions,
-            DateTimeProvider clock) {
+            DateTimeProvider clock,
+            AccountErasureBarrier erasureBarrier) {
         this.receipts = receipts;
         this.fingerprint = fingerprint;
         this.transactions = transactions;
         this.clock = clock;
+        this.erasureBarrier = erasureBarrier;
     }
 
     public void execute(AuthenticatedCommand command, Runnable businessExecution) {
@@ -66,7 +70,10 @@ public final class DurableCommandExecutor {
             throw new BusinessCommandRejectedException(receipt.rejectionCode(), receipt.reason());
         }
 
-        businessExecution.run();
+        if (!erasureBarrier.ifAccountActive(descriptor.requesterId(), businessExecution)) {
+            throw new BusinessCommandRejectedException(
+                    "ACCOUNT_ERASED", "Account data has already been erased");
+        }
         receipts.markApplied(descriptor, clock.now());
     }
 
