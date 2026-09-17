@@ -3,8 +3,9 @@ package com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxClaim;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxMessageStore;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,7 @@ class SqsIntegrationEventRouterTest {
         var router = new SqsIntegrationEventRouter(inbox, List.of(handler));
         var envelope = envelope("event-1", "coffee.created");
 
-        router.route(envelope);
+        assertThat(router.route(envelope)).isEqualTo(SqsIntegrationEventRouting.Result.processed());
 
         assertThat(handler.handled).containsExactly(envelope);
         assertThat(inbox.processed).containsExactly(envelope);
@@ -29,14 +30,46 @@ class SqsIntegrationEventRouterTest {
     @Test
     void suppresses_processed_duplicate_without_dispatching_handler() {
         var inbox = new FakeInboxMessageRepository();
-        inbox.claimResult = false;
+        inbox.claimResult = InboxClaim.alreadyProcessed();
         var handler = new RecordingHandler(route());
         var router = new SqsIntegrationEventRouter(inbox, List.of(handler));
 
-        router.route(envelope("event-1", "coffee.created"));
+        assertThat(router.route(envelope("event-1", "coffee.created")))
+                .isEqualTo(SqsIntegrationEventRouting.Result.alreadyProcessed());
 
         assertThat(handler.handled).isEmpty();
         assertThat(inbox.processed).isEmpty();
+        assertThat(inbox.failed).isEmpty();
+    }
+
+    @Test
+    void reports_active_claim_as_busy_without_dispatching_or_finalizing() {
+        var inbox = new FakeInboxMessageRepository();
+        var leaseUntil = Instant.parse("2026-07-05T10:05:00Z");
+        inbox.claimResult = InboxClaim.busyUntil(leaseUntil);
+        var handler = new RecordingHandler(route());
+        var router = new SqsIntegrationEventRouter(inbox, List.of(handler));
+
+        assertThat(router.route(envelope("event-1", "coffee.created")))
+                .isEqualTo(SqsIntegrationEventRouting.Result.busyUntil(leaseUntil));
+
+        assertThat(handler.handled).isEmpty();
+        assertThat(inbox.processed).isEmpty();
+        assertThat(inbox.failed).isEmpty();
+    }
+
+    @Test
+    void lost_lease_after_dispatch_is_not_reported_as_processed() {
+        var inbox = new FakeInboxMessageRepository();
+        inbox.processedResult = false;
+        var handler = new RecordingHandler(route());
+        var router = new SqsIntegrationEventRouter(inbox, List.of(handler));
+
+        assertThatThrownBy(() -> router.route(envelope("event-1", "coffee.created")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Inbox lease lost");
+
+        assertThat(handler.handled).hasSize(1);
         assertThat(inbox.failed).isEmpty();
     }
 
@@ -121,28 +154,27 @@ class SqsIntegrationEventRouterTest {
         }
     }
 
-    private static class FakeInboxMessageRepository extends InboxMessageRepository {
-        private boolean claimResult = true;
+    private static class FakeInboxMessageRepository implements InboxMessageStore {
+        private InboxClaim claimResult = InboxClaim.acquired("owner-1", Instant.parse("2026-07-05T10:05:00Z"));
+        private boolean processedResult = true;
         private final List<IntegrationEventEnvelope> processed = new ArrayList<>();
         private final List<IntegrationEventEnvelope> failed = new ArrayList<>();
 
-        private FakeInboxMessageRepository() {
-            super(null);
-        }
-
         @Override
-        public boolean claim(IntegrationEventEnvelope envelope) {
+        public InboxClaim claim(IntegrationEventEnvelope envelope) {
             return claimResult;
         }
 
         @Override
-        public void markProcessed(IntegrationEventEnvelope envelope) {
+        public boolean markProcessed(IntegrationEventEnvelope envelope, String ownerToken) {
             processed.add(envelope);
+            return processedResult;
         }
 
         @Override
-        public void markFailed(IntegrationEventEnvelope envelope, Exception error) {
+        public boolean markFailed(IntegrationEventEnvelope envelope, String ownerToken, Exception error) {
             failed.add(envelope);
+            return true;
         }
     }
 }

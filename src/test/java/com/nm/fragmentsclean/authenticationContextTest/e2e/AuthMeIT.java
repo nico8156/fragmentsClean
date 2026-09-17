@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations;
 import com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureJournal;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRouter;
 import com.nm.fragmentsclean.userApplicationContext.write.businesslogic.models.AppUserDeletionRequestedEvent;
@@ -20,13 +21,27 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @ActiveProfiles("test")
+@Import(AuthMeIT.AccountErasureJournalTestConfiguration.class)
 public class AuthMeIT extends AbstractBaseE2E {
+
+  @TestConfiguration
+  static class AccountErasureJournalTestConfiguration {
+    @Bean
+    @Primary
+    AccountErasureJournal accountErasureJournal() {
+      return entry -> {};
+    }
+  }
 
   @Autowired MockMvc mockMvc;
   @Autowired ObjectMapper objectMapper;

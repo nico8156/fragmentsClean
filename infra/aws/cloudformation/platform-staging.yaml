@@ -59,6 +59,56 @@ Parameters:
     Description: Existing AWS-managed or customer-managed KMS key used for SSM SecureString parameters.
 
 Resources:
+  AccountErasureJournalBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub fragments-account-erasure-${EnvironmentName}-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+        ObjectLockEnabled: Enabled
+        Rule:
+          DefaultRetention:
+            Mode: GOVERNANCE
+            Days: 45
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-erasure-markers-after-all-restorable-backups
+            Status: Enabled
+            ExpirationInDays: 46
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 46
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AccountErasureJournalBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccountErasureJournalBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !GetAtt AccountErasureJournalBucket.Arn
+              - !Sub ${AccountErasureJournalBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
   PlatformSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -139,12 +189,35 @@ Resources:
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/private-media/*
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/backups/postgres/*
               - Effect: Allow
+                Action: s3:DeleteObjectVersion
+                Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/private-media/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub ${AccountErasureJournalBucket.Arn}/fragments/staging/account-erasure-journal/*
+              - Effect: Allow
                 Action: s3:ListBucket
                 Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}
                 Condition:
                   StringLike:
                     s3:prefix:
                       - fragments/staging/coffees/*
+                      - fragments/staging/private-media/*
+              - Effect: Allow
+                Action: s3:ListBucketVersions
+                Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - fragments/staging/private-media/*
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt AccountErasureJournalBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix:
+                      - fragments/staging/account-erasure-journal/*
               - Effect: Allow
                 Action: cloudwatch:PutMetricData
                 Resource: '*'
@@ -222,3 +295,5 @@ Outputs:
     Value: !Ref PlatformSecurityGroup
   PlatformRuntimeRoleArn:
     Value: !GetAtt PlatformRuntimeRole.Arn
+  AccountErasureJournalBucketName:
+    Value: !Ref AccountErasureJournalBucket

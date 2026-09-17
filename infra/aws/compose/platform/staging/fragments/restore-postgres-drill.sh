@@ -5,10 +5,26 @@ backup_uri=${1:?'Usage: restore-postgres-drill.sh s3://bucket/fragments/staging/
 runtime_root=${FRAGMENTS_RUNTIME_ROOT:-/srv/fragments/staging}
 environment_file="$runtime_root/.env"
 
-set -a
-# shellcheck disable=SC1090
-source "$environment_file"
-set +a
+read_environment_value() {
+  local key=$1 value
+  value=$(awk -v key="$key" '
+    index($0, key "=") == 1 {
+      value = substr($0, length(key) + 2)
+      if (value ~ /^\047.*\047$/) value = substr(value, 2, length(value) - 2)
+      print value; found = 1; exit
+    }
+    END { if (!found) exit 1 }
+  ' "$environment_file") || {
+    echo "$key is missing from the Fragments runtime environment." >&2
+    return 1
+  }
+  printf '%s' "$value"
+}
+
+POSTGRES_USER=$(read_environment_value POSTGRES_USER)
+POSTGRES_BACKUP_S3_BUCKET=$(read_environment_value POSTGRES_BACKUP_S3_BUCKET)
+POSTGRES_BACKUP_S3_PREFIX=$(read_environment_value POSTGRES_BACKUP_S3_PREFIX)
+AWS_REGION=$(read_environment_value AWS_REGION)
 
 : "${POSTGRES_USER:?POSTGRES_USER is required}"
 : "${POSTGRES_BACKUP_S3_BUCKET:?POSTGRES_BACKUP_S3_BUCKET is required}"
@@ -64,4 +80,7 @@ if [[ ! "$table_count" =~ ^[1-9][0-9]*$ ]]; then
   exit 1
 fi
 
-echo "Restore drill succeeded with $table_count public tables; the temporary database will now be removed."
+FRAGMENTS_RUNTIME_ROOT="$runtime_root" \
+  "$runtime_root/replay-account-erasures.sh" "$drill_database"
+
+echo "Restore drill and mandatory account-erasure replay succeeded with $table_count public tables; the temporary database will now be removed."

@@ -22,6 +22,7 @@ import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -196,8 +197,14 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
     private void handleMessage(String queueUrl, Message message) {
         try {
             IntegrationEventEnvelope envelope = objectMapper.readValue(message.body(), IntegrationEventEnvelope.class);
-            router.route(envelope);
-            recordProjectionDeliveryLatency(envelope);
+            var result = router.route(envelope);
+            if (result.status() == SqsIntegrationEventRouting.Result.Status.BUSY) {
+                extendVisibility(queueUrl, message, result.retryAt());
+                return;
+            }
+            if (result.status() == SqsIntegrationEventRouting.Result.Status.PROCESSED) {
+                recordProjectionDeliveryLatency(envelope);
+            }
             sqsClient.deleteMessage(DeleteMessageRequest.builder()
                     .queueUrl(queueUrl)
                     .receiptHandle(message.receiptHandle())
@@ -206,6 +213,18 @@ public class SqsIntegrationEventConsumer implements SmartLifecycle {
         } catch (Exception e) {
             log.error("[sqs] failed to process messageId={}", message.messageId(), e);
         }
+    }
+
+    private void extendVisibility(String queueUrl, Message message, Instant retryAt) {
+        long millis = Math.max(1L, Duration.between(Instant.now(), retryAt).toMillis());
+        int seconds = (int) Math.min(43_200L, Math.max(1L, (millis + 999L) / 1_000L));
+        sqsClient.changeMessageVisibility(ChangeMessageVisibilityRequest.builder()
+                .queueUrl(queueUrl)
+                .receiptHandle(message.receiptHandle())
+                .visibilityTimeout(seconds)
+                .build());
+        log.info("[sqs] message remains claimed messageId={} queueUrl={} retryInSeconds={}",
+                message.messageId(), queueUrl, seconds);
     }
 
     private void recordProjectionDeliveryLatency(IntegrationEventEnvelope envelope) {

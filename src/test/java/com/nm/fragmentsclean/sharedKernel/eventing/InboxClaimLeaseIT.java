@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.sharedKernel.eventing;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.InboxMessageRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.InboxClaim;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import java.time.Instant;
 import org.junit.jupiter.api.AfterAll;
@@ -23,7 +24,7 @@ class InboxClaimLeaseIT {
                 CREATE TABLE inbox_messages (
                   id bigserial primary key, destination varchar(255) not null, event_id varchar(50) not null,
                   event_type varchar(255) not null, event_version integer not null, received_at timestamptz not null,
-                  processed_at timestamptz, lease_until timestamptz, status varchar(32) not null, error_message text,
+                  processed_at timestamptz, lease_until timestamptz, lease_owner varchar(36), status varchar(32) not null, error_message text,
                   unique(destination,event_id))
                 """);
     }
@@ -35,16 +36,20 @@ class InboxClaimLeaseIT {
         var second = new InboxMessageRepository(jdbc);
         var event = envelope("event-lease");
 
-        assertThat(first.claim(event)).isTrue();
-        assertThat(second.claim(event)).isFalse();
-        first.markFailed(event, new IllegalStateException("retry"));
-        assertThat(second.claim(event)).isTrue();
-        assertThat(first.claim(event)).isFalse();
+        var firstClaim = first.claim(event);
+        assertThat(firstClaim.acquired()).isTrue();
+        assertThat(second.claim(event).status()).isEqualTo(InboxClaim.Status.BUSY);
+        assertThat(first.markFailed(event, firstClaim.ownerToken(), new IllegalStateException("retry"))).isTrue();
+        var secondClaim = second.claim(event);
+        assertThat(secondClaim.acquired()).isTrue();
+        assertThat(first.claim(event).status()).isEqualTo(InboxClaim.Status.BUSY);
 
         jdbc.update("UPDATE inbox_messages SET lease_until=now()-interval '1 second' WHERE event_id=?", event.eventId());
-        assertThat(first.claim(event)).isTrue();
-        first.markProcessed(event);
-        assertThat(second.claim(event)).isFalse();
+        var replacementClaim = first.claim(event);
+        assertThat(replacementClaim.acquired()).isTrue();
+        assertThat(second.markProcessed(event, secondClaim.ownerToken())).isFalse();
+        assertThat(first.markProcessed(event, replacementClaim.ownerToken())).isTrue();
+        assertThat(second.claim(event).status()).isEqualTo(InboxClaim.Status.ALREADY_PROCESSED);
     }
 
     private IntegrationEventEnvelope envelope(String eventId) {

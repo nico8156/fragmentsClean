@@ -138,13 +138,15 @@ class SqsIntegrationEventConsumerLocalStackTest {
 	private static class RecordingRouter implements SqsIntegrationEventRouting {
 		private final List<IntegrationEventEnvelope> routed = new ArrayList<>();
 		private RuntimeException failure;
+		private Result result = Result.processed();
 
 		@Override
-		public void route(IntegrationEventEnvelope envelope) {
+		public Result route(IntegrationEventEnvelope envelope) {
 			routed.add(envelope);
 			if (failure != null) {
 				throw failure;
 			}
+			return result;
 		}
 	}
 

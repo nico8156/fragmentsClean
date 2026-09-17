@@ -75,6 +75,8 @@ download infra/aws/compose/platform/staging/fragments/docker-compose.yml "$deplo
 download infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh "$deployment_tmp/bootstrap-runtime.sh"
 download infra/aws/compose/platform/staging/fragments/backup-postgres.sh "$deployment_tmp/backup-postgres.sh"
 download infra/aws/compose/platform/staging/fragments/restore-postgres-drill.sh "$deployment_tmp/restore-postgres-drill.sh"
+download infra/aws/compose/platform/staging/fragments/replay-account-erasures.sh "$deployment_tmp/replay-account-erasures.sh"
+download infra/aws/compose/platform/staging/fragments/replay-account-erasures.sql "$deployment_tmp/replay-account-erasures.sql"
 download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.service "$deployment_tmp/fragments-postgres-backup.service"
 download infra/aws/compose/platform/staging/fragments/fragments-postgres-backup.timer "$deployment_tmp/fragments-postgres-backup.timer"
 download infra/aws/compose/platform/staging/fragments/publish-editorial-health.sh "$deployment_tmp/publish-editorial-health.sh"
@@ -96,6 +98,12 @@ bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$g
 download src/main/resources/db/release/article-curation-2026-09.psql "$deployment_tmp/release/article-curation-2026-09.psql"
 download src/main/resources/db/release/2026-09-15-article-curation.sql "$deployment_tmp/release/2026-09-15-article-curation.sql"
 bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" article-curation-2026-09.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/messaging-safety-2026-09.psql "$deployment_tmp/release/messaging-safety-2026-09.psql"
+download src/main/resources/db/release/2026-09-17-inbox-lease-owner.sql "$deployment_tmp/release/2026-09-17-inbox-lease-owner.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" messaging-safety-2026-09.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/account-erasure-safety-2026-09.psql "$deployment_tmp/release/account-erasure-safety-2026-09.psql"
+download src/main/resources/db/release/2026-09-17-account-erasure-barriers.sql "$deployment_tmp/release/2026-09-17-account-erasure-barriers.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" account-erasure-safety-2026-09.psql >> "$deployment_tmp/migration.psql"
 
 # Resolve every SSM prerequisite and validate Compose before changing the live config or stopping a writer.
 bash "$deployment_tmp/bootstrap-runtime.sh" "$backend_image" "$deployment_tmp"
@@ -110,6 +118,8 @@ docker pull "$backend_image" >/dev/null
 install -m 0700 "$deployment_tmp/bootstrap-runtime.sh" "$runtime_root/bootstrap-runtime.sh"
 install -m 0700 "$deployment_tmp/backup-postgres.sh" "$runtime_root/backup-postgres.sh"
 install -m 0700 "$deployment_tmp/restore-postgres-drill.sh" "$runtime_root/restore-postgres-drill.sh"
+install -m 0700 "$deployment_tmp/replay-account-erasures.sh" "$runtime_root/replay-account-erasures.sh"
+install -m 0600 "$deployment_tmp/replay-account-erasures.sql" "$runtime_root/replay-account-erasures.sql"
 install -m 0644 "$deployment_tmp/fragments-postgres-backup.service" /etc/systemd/system/fragments-postgres-backup.service
 install -m 0644 "$deployment_tmp/fragments-postgres-backup.timer" /etc/systemd/system/fragments-postgres-backup.timer
 install -m 0700 "$deployment_tmp/publish-editorial-health.sh" "$runtime_root/publish-editorial-health.sh"

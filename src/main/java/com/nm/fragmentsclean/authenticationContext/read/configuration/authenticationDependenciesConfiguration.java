@@ -21,6 +21,7 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -122,8 +123,9 @@ public class authenticationDependenciesConfiguration {
       RefreshTokenRepository tokens,
       ProviderCredentialRepository credentials,
       DomainEventPublisher events,
-      DateTimeProvider clock) {
-    return new CompleteAuthenticationAccountDataErasure(users, tokens, credentials, events, clock);
+      DateTimeProvider clock,
+      AccountErasureBarrier barrier) {
+    return new CompleteAuthenticationAccountDataErasure(users, tokens, credentials, events, clock, barrier);
   }
 
   @Bean
