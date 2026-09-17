@@ -150,6 +150,12 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-005 — Jetons HMAC valides rejetés à cause de la précision temporelle
 
+> **Remédiation engagée le 2026-09-17 :** émission canonique à la seconde,
+> compatibilité bornée des enregistrements historiques, expiration sans grâce,
+> consommation unique et rollback PostgreSQL sont documentés dans
+> `docs/audits/2026-09-17-p1-editorial-approval-timestamps.md`. Le constat ne
+> sera fermé qu'après fusion et déploiement du backend.
+
 - **Module / catégorie :** Backend · approbation éditoriale — Bug reproduit.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/articleContext/write/businesslogic/processManagers/ArticleReviewApprovalTokenService.java:39-42,73-83,99-104 ; src/main/java/com/nm/fragmentsclean/articleContext/write/adapters/secondary/gateways/repositories/JdbcArticleReviewApprovalRepository.java:60-71.
