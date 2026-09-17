@@ -2,7 +2,7 @@
 
 Date: 2026-09-17
 Branch: `fix/p0-inbox-sqs-ack-safety`
-Status: implementation complete locally; AWS application and real-backup drill pending
+Status: implementation and AWS journal active; dated real-backup drill pending
 
 ## Failure mode
 
@@ -102,8 +102,35 @@ aws cloudformation validate-template \
   --template-body file://infra/aws/cloudformation/platform-staging.yaml
 ```
 
-AWS returned the expected template description and parameter catalog. This was
-validation only: no change set was created and no AWS resource was mutated.
+AWS returned the expected template description and parameter catalog. That
+initial command was validation-only; the reviewed activation is recorded below.
+
+## AWS activation evidence
+
+Applied on 2026-09-17 to `platform-staging` in `eu-west-3` through change set
+`p0-account-erasure-20260917`. The reviewed change set contained exactly:
+
+- add `AccountErasureJournalBucket`;
+- add `AccountErasureJournalBucketPolicy`;
+- modify `PlatformRuntimeRole` in place (`Replacement: False`).
+
+It contained no EC2, network or volume replacement. CloudFormation completed
+with `UPDATE_COMPLETE`; the instance output remained
+`i-004d3e9cbca327d01`. Runtime checks against
+`fragments-account-erasure-staging-851725375299` confirmed:
+
+- versioning `Enabled`;
+- Object Lock `GOVERNANCE`, 45 days;
+- lifecycle current and noncurrent expiration at 46 days;
+- AES-256 default encryption;
+- all four public-access blocks enabled;
+- bucket policy status `IsPublic: false`.
+
+IAM simulation for `fragments-platform-staging-runtime` confirmed `GetObject`
+and `PutObject` are allowed on journal markers while `DeleteObject`,
+`DeleteObjectVersion` and `BypassGovernanceRetention` are implicitly denied.
+The operator reported the backend already deployed; it was deliberately not
+redeployed during this AWS-resource activation.
 
 Required after AWS/backend deployment: create a synthetic account and private
 media, take a backup, delete it, choose the earlier backup, run the restore
@@ -112,7 +139,7 @@ five barriers and absent S3 versions.
 
 ## Remaining operational condition
 
-The P0 implementation is code-complete but the audit blocker is not marked
-closed until the real CloudFormation change is applied, the backend uses the
-journal settings, and the dated staging restore drill succeeds. No production
-restore or AWS mutation was performed by this local tranche.
+The implementation and AWS journal resources are active. The audit blocker is
+not marked fully closed until a dated staging restore drill against a real
+backup succeeds and its aggregate/no-PII evidence is retained. No production
+restore was performed by this tranche.
