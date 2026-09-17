@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.ticketContext.unit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncAudience;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import com.nm.fragmentsclean.ticketContext.read.adapters.secondary.repositories.JdbcTicketStatusProjectionRepository;
 import com.nm.fragmentsclean.ticketContext.read.projections.TicketVerificationCompletedEventHandler;
@@ -51,6 +52,8 @@ class TicketProjectionSyncEventHandlerTest {
 		assertThat(event.version()).isZero();
 		assertThat(event.changedAt()).isEqualTo(NOW);
 		assertThat(event.hints()).containsExactly("status", "analyzing");
+		assertThat(event.audience()).isEqualTo(ProjectionSyncAudience.USER);
+		assertThat(event.recipientId()).isEqualTo(USER_ID.toString());
 	}
 
 	@Test
@@ -90,6 +93,8 @@ class TicketProjectionSyncEventHandlerTest {
 		assertThat(event.version()).isEqualTo(1L);
 		assertThat(event.changedAt()).isEqualTo(NOW);
 		assertThat(event.hints()).containsExactly("status", "approved");
+		assertThat(event.audience()).isEqualTo(ProjectionSyncAudience.USER);
+		assertThat(event.recipientId()).isEqualTo(USER_ID.toString());
 	}
 
 	@Test

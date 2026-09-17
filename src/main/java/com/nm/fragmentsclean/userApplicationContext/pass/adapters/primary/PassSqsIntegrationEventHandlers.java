@@ -75,7 +75,8 @@ public class PassSqsIntegrationEventHandlers {
     }
 
     private void publish(Optional<PassSnapshot> applied, ProjectionSyncPublisher sync) {
-        applied.ifPresent(pass -> sync.publish(ProjectionSyncEvent.projectionUpdated(
+        applied.ifPresent(pass -> sync.publish(ProjectionSyncEvent.userProjectionUpdated(
+                pass.userId().toString(),
                 "entitlements", "user", pass.userId().toString(), pass.version(), pass.updatedAt(),
                 List.of("pass", "policy-v" + pass.policyVersion()))));
     }

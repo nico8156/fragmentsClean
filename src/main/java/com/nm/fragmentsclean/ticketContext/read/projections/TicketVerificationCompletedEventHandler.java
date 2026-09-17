@@ -31,7 +31,8 @@ public class TicketVerificationCompletedEventHandler implements EventHandler<Tic
         if (!projectionRepository.applyCompleted(event)) {
             return;
         }
-        projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+        projectionSyncPublisher.publish(ProjectionSyncEvent.userProjectionUpdated(
+                event.userId().toString(),
                 "tickets",
                 "entity",
                 event.ticketId().toString(),

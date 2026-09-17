@@ -60,12 +60,15 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(5);
+            assertThat(receipt).hasSize(6);
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
             assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
             assertThat(receipt.get(2)).startsWith("article-curation-2026-09|");
             assertThat(receipt.get(3)).startsWith("messaging-safety-2026-09|");
             assertThat(receipt.get(4)).startsWith("account-erasure-safety-2026-09|");
+            assertThat(receipt.get(5)).startsWith("projection-sync-audience-2026-09|");
+			assertThat(rows(connection, "SELECT audience,recipient_id FROM projection_sync_events ORDER BY id"))
+					.containsExactly("PUBLIC|null", "USER|" + USER, "USER|" + USER, "ADMIN|null");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='inbox_messages' AND column_name='lease_owner'"))
                     .containsExactly("YES");
             assertThat(rows(connection, "SELECT is_nullable FROM information_schema.columns WHERE table_schema='public' AND table_name='articles' AND column_name='featured_rank'"))
@@ -166,7 +169,7 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("5");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("6");
         }
     }
 
@@ -253,7 +256,7 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"",
+        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"",
                 "render", directory, "a".repeat(40));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),
@@ -326,6 +329,11 @@ class StagingReleaseUpgradeIT {
                     FROM generate_series(1,5) n;
                     INSERT INTO social_likes_projection(like_id,target_id,user_id,active,updated_at,version)
                     SELECT md5('like-' || n)::uuid,'%2$s','%1$s',true,now(),1 FROM generate_series(1,5) n;
+					INSERT INTO projection_sync_events(event_name,projection,scope,entity_id,version,changed_at,payload_json)
+					VALUES ('projection.updated','coffees','entity','%2$s',1,now(),'{}'),
+					       ('projection.updated','entitlements','user','%1$s',1,now(),'{}'),
+					       ('projection.updated','tickets','entity',md5('ticket-1')::uuid::text,1,now(),'{}'),
+					       ('projection.updated','future-private-shape','opaque','opaque-id',1,now(),'{}');
                     INSERT INTO command_status(command_id,status,updated_at)
                     VALUES ('%3$s','APPLIED',now()), (md5('unknown')::uuid,'APPLIED',now()),
                            ('44444444-4444-4444-8444-444444444444','APPLIED',now());

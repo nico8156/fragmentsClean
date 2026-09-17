@@ -18,19 +18,20 @@ public class ModerationProjectionEventHandler implements EventHandler<CommentRep
     }
     @Override @Transactional public void handle(CommentReportedEvent event) {
         repository.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("moderation", "report", event.reportId().toString(),
+        sync.publish(ProjectionSyncEvent.adminProjectionUpdated("moderation", "report", event.reportId().toString(),
                 event.version(), event.occurredAt(), List.of("reported")));
     }
     @Transactional public void handle(UserBlockChangedEvent event) {
         repository.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("blocked-users", "user", event.blockerId().toString(),
+        sync.publish(ProjectionSyncEvent.userProjectionUpdated(event.blockerId().toString(),
+                "blocked-users", "user", event.blockerId().toString(),
                 event.version(), event.occurredAt(), List.of(event.active() ? "blocked" : "unblocked")));
     }
     @Transactional public void handle(CommentModeratedEvent event) {
         repository.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("comments", "target", event.targetId().toString(),
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("comments", "target", event.targetId().toString(),
                 event.version(), event.occurredAt(), List.of("moderated")));
-        sync.publish(ProjectionSyncEvent.projectionUpdated("moderation", "report", event.reportId().toString(),
+        sync.publish(ProjectionSyncEvent.adminProjectionUpdated("moderation", "report", event.reportId().toString(),
                 event.version(), event.occurredAt(), List.of("decided")));
     }
 }

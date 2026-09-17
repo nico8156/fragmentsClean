@@ -13,6 +13,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncRepository;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncSubscriber;
 
 @Component
 public class ProjectionSyncDispatcher {
@@ -32,7 +33,7 @@ public class ProjectionSyncDispatcher {
 		this.repository = repository;
 	}
 
-	public SseEmitter openStream(String lastEventId) {
+	public SseEmitter openStream(String lastEventId, ProjectionSyncSubscriber subscriber) {
 		var emitter = new SseEmitter(properties.getTimeoutMs());
 		var heartbeatTask = new AtomicReference<ScheduledFuture<?>>();
 		var pollingTask = new AtomicReference<ScheduledFuture<?>>();
@@ -46,7 +47,7 @@ public class ProjectionSyncDispatcher {
 		emitter.onError(error -> cancelAll(heartbeatTask.get(), pollingTask.get()));
 
 		send(emitter, ProjectionSyncEvent.connected(dateTimeProvider.now()));
-		replayAvailable(emitter, cursor);
+		replayAvailable(emitter, cursor, subscriber);
 
 		var scheduled = taskScheduler.scheduleAtFixedRate(
 				() -> sendHeartbeat(emitter, heartbeatTask),
@@ -54,7 +55,7 @@ public class ProjectionSyncDispatcher {
 		heartbeatTask.set(scheduled);
 
 		var polling = taskScheduler.scheduleAtFixedRate(
-				() -> poll(emitter, cursor, pollingTask),
+				() -> poll(emitter, cursor, pollingTask, subscriber),
 				Duration.ofMillis(properties.getPollIntervalMs()));
 		pollingTask.set(polling);
 
@@ -72,9 +73,13 @@ public class ProjectionSyncDispatcher {
 		}
 	}
 
-	private void poll(SseEmitter emitter, AtomicLong cursor, AtomicReference<ScheduledFuture<?>> pollingTask) {
+	private void poll(
+			SseEmitter emitter,
+			AtomicLong cursor,
+			AtomicReference<ScheduledFuture<?>> pollingTask,
+			ProjectionSyncSubscriber subscriber) {
 		try {
-			replayAvailable(emitter, cursor);
+			replayAvailable(emitter, cursor, subscriber);
 		} catch (ProjectionSyncDeliveryException error) {
 			cancel(pollingTask.get());
 			emitter.complete();
@@ -84,10 +89,15 @@ public class ProjectionSyncDispatcher {
 		}
 	}
 
-	private void replayAvailable(SseEmitter emitter, AtomicLong cursor) {
+	private void replayAvailable(
+			SseEmitter emitter,
+			AtomicLong cursor,
+			ProjectionSyncSubscriber subscriber) {
 		var events = repository.findAfter(cursor.get(), properties.getReplayBatchSize());
 		for (ProjectionSyncEvent event : events) {
-			send(emitter, event);
+			if (subscriber.mayReceive(event)) {
+				send(emitter, event);
+			}
 			cursor.set(Long.parseLong(event.id()));
 		}
 	}
@@ -109,7 +119,7 @@ public class ProjectionSyncDispatcher {
 			var builder = SseEmitter.event()
 					.name(event.eventName())
 					.reconnectTime(properties.getRetryMs())
-					.data(event);
+					.data(ProjectionSyncSseEvent.from(event));
 			if (event.id() != null && !event.id().isBlank()) {
 				builder.id(event.id());
 			}

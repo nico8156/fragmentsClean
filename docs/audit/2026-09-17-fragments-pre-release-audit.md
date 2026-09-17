@@ -132,6 +132,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-004 — Le SSE utilisateur diffuse des identifiants privés sans filtrage serveur
 
+> **Remédiation engagée le 2026-09-17 :** audience persistée `PUBLIC | USER |
+> ADMIN`, destinataire privé, filtrage serveur par principal et garde-fous
+> Redux, ainsi que route administrateur explicite par défaut dans Studio, sont documentés dans
+> `docs/audits/2026-09-17-p1-projection-sync-privacy.md`. Le diagnostic ci-dessous
+> reste la photographie initiale ; sa clôture dépend de la suite de vérification
+> et du déploiement de la migration/backend.
+
 - **Module / catégorie :** Backend + mobile · synchronisation — Autorisation / confidentialité / amplification.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/primary/springboot/projectionSync/ProjectionSyncController.java:19-21 ; ProjectionSyncDispatcher.java:35,87-92 ; src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/secondary/gateways/repositories/jdbc/JdbcProjectionSyncRepository.java:53-75 ; /Users/nicolasmaldiney/fragmentsCleanFront/app/core-logic/contextWL/projectionSyncWl/usecases/projectionSyncListenerFactory.ts:198-225.

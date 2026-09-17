@@ -48,6 +48,7 @@ import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configurat
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.configuration.cors.FragmentsCorsProperties;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncController;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncDispatcher;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncSubscriber;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.query.QueryHandler;
 
@@ -615,7 +616,7 @@ class AdminTokenSecurityTest {
 		}
 
 		@Override
-		public SseEmitter openStream(String lastEventId) {
+		public SseEmitter openStream(String lastEventId, ProjectionSyncSubscriber subscriber) {
 			return new SseEmitter(1_000L);
 		}
 	}

@@ -354,12 +354,18 @@ CREATE TABLE IF NOT EXISTS projection_sync_events (
     entity_id     VARCHAR(100),
     version       BIGINT,
     changed_at    TIMESTAMPTZ NOT NULL,
-    payload_json  JSONB NOT NULL
+    audience      VARCHAR(16) NOT NULL DEFAULT 'ADMIN',
+    recipient_id  VARCHAR(100),
+    payload_json  JSONB NOT NULL,
+    CONSTRAINT projection_sync_events_audience_check
+        CHECK (audience IN ('PUBLIC', 'USER', 'ADMIN')),
+    CONSTRAINT projection_sync_events_recipient_check
+        CHECK ((audience = 'USER' AND recipient_id IS NOT NULL AND recipient_id <> '')
+            OR (audience <> 'USER' AND recipient_id IS NULL))
 );
 
 CREATE INDEX IF NOT EXISTS idx_projection_sync_events_projection_id
     ON projection_sync_events (projection, id);
-
 CREATE TABLE IF NOT EXISTS command_status (
     command_id      UUID PRIMARY KEY,
     requester_id    UUID,

@@ -6,6 +6,7 @@ import com.nm.fragmentsclean.experienceContext.read.businesslogic.gateways.Exper
 import com.nm.fragmentsclean.experienceContext.read.projections.ExperienceProjectionEventHandler;
 import com.nm.fragmentsclean.platform.eventing.contracts.ExperienceIntegrationEvents;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncAudience;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncPublisher;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,6 +38,12 @@ class ExperienceProjectionSyncEventHandlerTest {
             org.assertj.core.groups.Tuple.tuple("experiences", "coffee", coffeeId.toString()),
             org.assertj.core.groups.Tuple.tuple("experiences", "user", userId.toString()),
             org.assertj.core.groups.Tuple.tuple("experience-moderation", "experience", experienceId.toString()));
+	assertThat(publisher.events)
+		.extracting(ProjectionSyncEvent::audience, ProjectionSyncEvent::recipientId)
+		.containsExactly(
+			org.assertj.core.groups.Tuple.tuple(ProjectionSyncAudience.PUBLIC, null),
+			org.assertj.core.groups.Tuple.tuple(ProjectionSyncAudience.USER, userId.toString()),
+			org.assertj.core.groups.Tuple.tuple(ProjectionSyncAudience.ADMIN, null));
   }
 
   private static final class RecordingPublisher implements ProjectionSyncPublisher {

@@ -41,7 +41,7 @@ public class CoffeeDeletedEventHandler implements EventHandler<CoffeeDeletedEven
 		photoProjectionRepository.deleteForCoffee(coffeeId);
 		openingHoursProjectionRepository.deleteForCoffee(coffeeId);
 		if (!wasPubliclyVisible) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

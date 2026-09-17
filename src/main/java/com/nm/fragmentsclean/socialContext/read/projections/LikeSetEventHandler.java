@@ -31,7 +31,7 @@ public class LikeSetEventHandler implements EventHandler<LikeSetEvent> {
 		log.info("[social-read] apply LikeSetEvent likeId={} targetId={} active={} v={}",
 				event.likeId(), event.targetId(), event.active(), event.version());
 		projectionRepository.apply(event);
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"likes",
 				"target",
 				event.targetId().toString(),

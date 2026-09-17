@@ -104,6 +104,9 @@ bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$g
 download src/main/resources/db/release/account-erasure-safety-2026-09.psql "$deployment_tmp/release/account-erasure-safety-2026-09.psql"
 download src/main/resources/db/release/2026-09-17-account-erasure-barriers.sql "$deployment_tmp/release/2026-09-17-account-erasure-barriers.sql"
 bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" account-erasure-safety-2026-09.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/projection-sync-audience-2026-09.psql "$deployment_tmp/release/projection-sync-audience-2026-09.psql"
+download src/main/resources/db/release/2026-09-17-projection-sync-audience.sql "$deployment_tmp/release/2026-09-17-projection-sync-audience.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" projection-sync-audience-2026-09.psql >> "$deployment_tmp/migration.psql"
 
 # Resolve every SSM prerequisite and validate Compose before changing the live config or stopping a writer.
 bash "$deployment_tmp/bootstrap-runtime.sh" "$backend_image" "$deployment_tmp"

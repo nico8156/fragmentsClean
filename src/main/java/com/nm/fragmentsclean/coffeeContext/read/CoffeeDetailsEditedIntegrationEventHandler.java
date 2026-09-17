@@ -29,7 +29,7 @@ public class CoffeeDetailsEditedIntegrationEventHandler {
         var mutation = projection.applyIfNewer(snapshot);
         if (!mutation.applied()) return;
         if (!"PUBLISHED".equals(snapshot.publicationStatus())) return;
-        sync.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity", event.coffeeId().toString(),
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("coffees", "entity", event.coffeeId().toString(),
                 mutation.version(), mutation.changedAt(), List.of("summary")));
     }
 }

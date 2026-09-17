@@ -58,6 +58,23 @@ GET /api/admin/sync/events
 The event contract must remain identical. The difference is authorization, not
 payload shape.
 
+The persisted platform journal carries internal routing metadata which is not
+part of that payload contract:
+
+- `PUBLIC`: delivered to authenticated mobile users and Studio;
+- `USER`: delivered only when `recipient_id` equals the authenticated mobile
+  subject;
+- `ADMIN`: delivered only to Studio administrators.
+
+Studio does not receive `USER` events merely because it is privileged. Its
+stream contains public and admin-specific freshness signals. The mobile stream
+contains public signals and only the current user's private signals. Audience
+and recipient are removed by the SSE primary adapter before serialization.
+
+Producers must use an explicit public, user, or admin factory. An ambiguous
+default factory is intentionally absent so a new projection cannot silently
+become public.
+
 Prefer one stream over one endpoint per context. Browsers and mobile runtimes
 have connection limits, mobile backgrounding is easier with a single
 connection, and `Last-Event-ID` is simpler when there is one ordered cursor.
@@ -180,6 +197,11 @@ Recommended levels:
 The payload should normally not include the full read model. Clients refetch
 through existing query APIs. This preserves read-side ownership and lets each
 client choose the cheapest refresh path.
+
+The global journal cursor advances over events that are not visible to a
+subscriber. Otherwise a full batch of another user's events could starve the
+next visible event. Invisible event identifiers are not sent to the client;
+after reconnect the server may scan them again, but it must never emit them.
 
 Full read-model payloads are allowed only for tiny, high-frequency counters
 where the read contract is already stable and the optimization is documented.

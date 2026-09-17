@@ -22,7 +22,7 @@ public class CoffeePublishedEventHandler implements EventHandler<CoffeePublished
 		var mutation = repository.markPublishedIfNewer(event.coffeeId().value(), event.version(), event.occurredAt());
 		if (!mutation.applied()) return;
 		if (!publicChangePolicy.isPubliclyVisible(event.coffeeId().value())) return;
-        syncPublisher.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity",
+        syncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated("coffees", "entity",
 				event.coffeeId().value().toString(), mutation.version(), mutation.changedAt(), List.of("summary", "publicationStatus")));
     }
 }
