@@ -1,4 +1,4 @@
-# P1 FR-015 et FR-016 — santé de promotion et CI backend
+# P1 FR-015 et FR-016 — santé de promotion et CI plateforme
 
 Date : 2026-09-18
 Branche : `fix/p1-release-health-ci`
@@ -16,6 +16,14 @@ Base : `0b2f508`
   `articleAuthoringHealth`.
 - `.github/workflows/backend-ci.yml` exécute sur PR et `main` le même
   `scripts/verify-backend-ci.sh` que la promotion staging.
+- le dépôt mobile exécute sur PR et `main` un gate unique couvrant lint,
+  typecheck, tests Jest, carte Redux, configuration publique/native et garde-fous
+  de release.
+- le CI Studio couvre désormais `main` et publie un bundle identifié par le SHA ;
+  le workflow de staging télécharge ce bundle exact sans reconstruire.
+- le workflow Studio privilégié refuse tout artefact ne provenant pas d'un
+  événement `push` sur `main` dans le dépôt courant ; une PR ou un fork ne peut
+  pas déclencher cette promotion.
 - le scanner de secrets distingue désormais un bloc PEM réel d'une simple
   chaîne de parsing/délimiteur ; les deux comportements sont testés sans
   imprimer la matière détectée.
@@ -39,12 +47,17 @@ limitée à `main`.
   il manque un compte de recette isolé et un secret court terme adapté. Utiliser
   un compte utilisateur réel ou introduire un endpoint de contournement serait
   moins sûr que conserver cette preuve ouverte.
-- Les workflows mobile et Studio vivent dans des dépôts séparés et ne sont pas
-  modifiés dans ce commit backend.
+- Les changements mobile et Studio vivent dans des dépôts séparés et doivent
+  être poussés puis observés dans GitHub Actions avant de constituer une preuve
+  distante.
 - Les règles de protection GitHub sont un état distant ; leur présence ne peut
   pas être déduite du YAML et doit être configurée/vérifiée séparément.
-- Le triage supply-chain détaillé reste FR-018 ; ce lot n'autorise aucune
-  exception CVE implicite.
+- Le gate `npm audit --audit-level=high` de Studio est rouge sur deux alertes
+  transitives `js-yaml` via `@redocly/openapi-core`. Ce résultat n'est ni masqué
+  ni contourné : son triage et sa correction appartiennent à FR-018.
+- Le `.env.local` Studio ignoré par Git contient encore des tokens navigateur
+  historiques. Le build production les refuse correctement ; comme leur valeur
+  a été exposée pendant l'inspection locale, ils doivent être révoqués/rotatés.
 
 ## Vérifications prévues
 
@@ -65,6 +78,32 @@ Le gate exact `bash scripts/verify-backend-ci.sh` est vert :
 - suite release avec Docker/Testcontainers : **617 tests**, 0 échec, 0 erreur,
   0 ignoré ;
 - packaging Maven : vert.
+
+Le gate exact `npm run verify:ci` du mobile est vert :
+
+- lint Expo : vert ;
+- typecheck TypeScript : vert ;
+- **93 suites Jest / 356 tests**, tous verts ;
+- carte Redux : à jour ;
+- **9 tests** de configuration/release, tous verts ;
+- configuration native source : alignée, sous réserve du build signé/appareil.
+
+La recette Studio a produit les preuves suivantes :
+
+- contrat OpenAPI généré : à jour ;
+- **35 suites Vitest / 164 tests**, tous verts ;
+- build Vite production avec l'environnement public CI : vert ;
+- distribution : 3 fichiers vérifiés ;
+- **2 tests** de workflow/promotion : verts ;
+- `npm audit --audit-level=high` : **rouge**, 2 vulnérabilités `high`
+  transitives. La future CI bloquera donc volontairement tant que FR-018 n'est
+  pas résolu ou qu'une décision bornée et documentée n'est pas prise.
+
+La première recette Studio locale a aussi échoué avant ce résultat : Vitest
+collectait le nouveau test Node de workflow. Le fichier a été séparé en
+`*.check.mjs`, puis les 164 tests ont été relancés avec succès. Un second build
+a refusé le `.env.local` historique contenant des secrets publics interdits ; le
+build reproduisant l'environnement CI, sans ces tokens, est ensuite passé.
 
 La première exécution complète a échoué avec 616 tests verts et un garde-fou
 statique rouge : `PostgresRecoveryGuardrailTest` attendait littéralement
@@ -107,3 +146,14 @@ Le gate distant ne sera considéré opérationnel qu'après push sur une branche
 exécution GitHub Actions, configuration du check requis et qualification des
 composants staging. Aucun de ces états externes n'est affirmé par le présent
 reçu local.
+
+## Dépôts et branches de ce lot
+
+- backend : `/Users/nicolasmaldiney/fragmentsClean`, branche
+  `fix/p1-release-health-ci`, commit initial du lot `e074046` ;
+- mobile : `/Users/nicolasmaldiney/fragmentsCleanFront`, branche
+  `ci/mobile-release-gate`, commit `f2b05a3` ;
+- Studio : `/Users/nicolasmaldiney/fragments-admin`, branche
+  `ci/studio-release-gate`, commit `8e2ba19`.
+
+Aucun merge, push ni déploiement n'est inclus dans ce reçu.

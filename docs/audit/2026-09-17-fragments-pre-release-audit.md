@@ -303,12 +303,14 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-016 — Pas de quality gate PR backend/mobile équivalent au gate de déploiement
 
-> **Remédiation backend engagée le 2026-09-18 :** un workflow PR/`main` Java 21
-> appelle le même `scripts/verify-backend-ci.sh` que le déploiement staging ; ce
-> gate couvre secrets connus, scripts, suite release Testcontainers sans skip et
-> packaging. Les workflows mobile, Studio, les protections de branche distantes
-> et le triage SCA FR-018 restent à vérifier/appliquer dans leurs dépôts :
-> FR-016 demeure partiellement ouvert à l'échelle de la plateforme.
+> **Remédiation locale engagée le 2026-09-18 :** le backend possède désormais un
+> workflow PR/`main` Java 21 appelant le même gate que le déploiement staging ; le
+> mobile possède un gate unique lint/typecheck/tests/Redux/configuration native ;
+> Studio vérifie aussi `main`, produit un artefact immuable et le déploiement
+> promeut exactement cet artefact après un `push` interne réussi. Les protections
+> de branche distantes et les premières exécutions GitHub restent à prouver. Le
+> gate SCA Studio est correctement rouge sur deux vulnérabilités `high` transitives
+> suivies par FR-018 : FR-016 n'autorise aucune exception implicite.
 
 - **Module / catégorie :** CI/CD · backend/mobile/Studio — Dette de test / release.
 - **Sévérité / priorité :** HIGH / P1.
