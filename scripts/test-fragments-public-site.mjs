@@ -56,6 +56,10 @@ test('beta pages are publishable information without hiding retention limitation
   assert.match(privacy, /expiration à 30 jours/);
   assert.match(privacy, /copies techniques/);
   assert.match(privacy, /redirigés vers la boîte Gmail de l’éditeur/);
+  assert.match(privacy, /Sentry/);
+  assert.match(privacy, /infrastructure européenne avec ingestion en Allemagne/);
+  assert.match(privacy, /diagnostics Sentry du plan Developer sont consultables pendant 30 jours/);
+  assert.match(privacy, /suivi de performance et l’enregistrement de session/);
   assert.doesNotMatch(privacy, /Aucun délai automatique de purge des sauvegardes n’a été prouvé/);
 });
 
