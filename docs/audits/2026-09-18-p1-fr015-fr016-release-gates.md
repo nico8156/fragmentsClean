@@ -52,9 +52,10 @@ limitée à `main`.
   distante.
 - Les règles de protection GitHub sont un état distant ; leur présence ne peut
   pas être déduite du YAML et doit être configurée/vérifiée séparément.
-- Le gate `npm audit --audit-level=high` de Studio est rouge sur deux alertes
-  transitives `js-yaml` via `@redocly/openapi-core`. Ce résultat n'est ni masqué
-  ni contourné : son triage et sa correction appartiennent à FR-018.
+- Le gate `npm audit --audit-level=high` de Studio était rouge sur deux alertes
+  transitives `js-yaml` via `@redocly/openapi-core`. FR-018 les a corrigées dans
+  le lockfile le 2026-09-18 ; la recette complète est consignée dans
+  `docs/audits/2026-09-18-p1-fr018-supply-chain.md`.
 - Le `.env.local` Studio ignoré par Git contient encore des tokens navigateur
   historiques. Le build production les refuse correctement ; comme leur valeur
   a été exposée pendant l'inspection locale, ils doivent être révoqués/rotatés.
@@ -95,9 +96,9 @@ La recette Studio a produit les preuves suivantes :
 - build Vite production avec l'environnement public CI : vert ;
 - distribution : 3 fichiers vérifiés ;
 - **2 tests** de workflow/promotion : verts ;
-- `npm audit --audit-level=high` : **rouge**, 2 vulnérabilités `high`
-  transitives. La future CI bloquera donc volontairement tant que FR-018 n'est
-  pas résolu ou qu'une décision bornée et documentée n'est pas prise.
+- `npm audit --audit-level=high` : **rouge au moment de FR-015/016**, avec 2
+  vulnérabilités `high` transitives. FR-018 a ensuite ramené ce gate à zéro ;
+  ce paragraphe conserve le résultat historique de la première recette.
 
 La première recette Studio locale a aussi échoué avant ce résultat : Vitest
 collectait le nouveau test Node de workflow. Le fichier a été séparé en

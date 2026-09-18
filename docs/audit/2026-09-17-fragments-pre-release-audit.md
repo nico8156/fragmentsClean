@@ -334,6 +334,14 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-018 — Supply chain : alertes npm et mises à jour Java non qualifiées complètement
 
+> **Remédiation locale du 2026-09-18 :** les alertes HIGH/CRITICAL sont ramenées
+> à zéro sur le SBOM Java, l'image backend, le Studio et le mobile. Les CI
+> bloquent leur réintroduction ; les actions et images sont épinglées. Le mobile
+> conserve 20 MODERATE de toolchain Expo, sans `audit fix --force`. Preuves,
+> échecs intermédiaires et limites :
+> `docs/audits/2026-09-18-p1-fr018-supply-chain.md`. La fermeture distante reste
+> conditionnée au push, aux CI GitHub vertes et au build EAS signé.
+
 - **Module / catégorie :** Mobile/Studio/backend/engine — Risque supply chain, pas exploit démontré.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** mobile package-lock.json ; Studio fragments-studio/package-lock.json ; backend pom.xml:10,95,116-146 ; Dockerfile:1-37. Résultats npm audit/outdated et versions Maven de cette session, annexes.
