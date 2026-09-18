@@ -82,12 +82,18 @@ public class TicketWriteDependenciesConfiguration {
   public TicketVerificationProvider ticketVerificationProvider(
       ObjectMapper objectMapper,
       @Value("${ticketverify.binary-path:./bin/ticketverify}") String binaryPath,
-      @Value("${ticketverify.timeout-ms:1500}") long timeoutMs) {
+      @Value("${ticketverify.timeout-ms:1500}") long timeoutMs,
+      @Value("${ticketverify.max-input-bytes:1048576}") int maxInputBytes,
+      @Value("${ticketverify.max-output-bytes:262144}") int maxOutputBytes) {
     log.info("[ticketverify] binaryPath={}", binaryPath);
     log.info("[ticketverify] timeoutMs={}", timeoutMs);
 
     return new ProcessBuilderTicketVerificationProvider(
-        objectMapper, List.of(binaryPath), Duration.ofMillis(timeoutMs));
+        objectMapper,
+        List.of(binaryPath),
+        Duration.ofMillis(timeoutMs),
+        maxInputBytes,
+        maxOutputBytes);
   }
 
   @Bean

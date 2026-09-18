@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.second
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.EditorialSourceDiscoveryException;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.EditorialSourceDiscoveryPort;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.models.EditorialSourceAccessMode;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.http.BoundedEditorialHttpFetcher;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -10,11 +11,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -26,10 +23,13 @@ import java.util.Objects;
 /** YouTube Atom feed ACL. It normalizes video entries without exposing Atom XML to the domain. */
 public final class YouTubeFeedEditorialSourceDiscoveryAdapter implements EditorialSourceDiscoveryPort {
     private static final String ACCEPT = "application/atom+xml, application/xml;q=0.9, text/xml;q=0.8";
-    private final HttpClient httpClient;
+    private final BoundedEditorialHttpFetcher httpFetcher;
+    private final int maxItems;
 
-    public YouTubeFeedEditorialSourceDiscoveryAdapter(HttpClient httpClient) {
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
+    public YouTubeFeedEditorialSourceDiscoveryAdapter(BoundedEditorialHttpFetcher httpFetcher, int maxItems) {
+        this.httpFetcher = Objects.requireNonNull(httpFetcher, "httpFetcher");
+        if (maxItems < 1) throw new IllegalArgumentException("maxItems must be positive");
+        this.maxItems = maxItems;
     }
 
     @Override public EditorialSourceAccessMode accessMode() { return EditorialSourceAccessMode.YOUTUBE_FEED; }
@@ -37,52 +37,32 @@ public final class YouTubeFeedEditorialSourceDiscoveryAdapter implements Editori
     @Override
     public DiscoveryResult discover(String endpoint, String etag, String lastModified) {
         try {
-            var response = httpClient.send(request(endpoint, etag, lastModified), HttpResponse.BodyHandlers.ofInputStream());
+            var response = httpFetcher.get(endpoint, ACCEPT, etag, lastModified);
             if (response.statusCode() == 304) {
-                close(response.body());
-                return DiscoveryResult.notModified(response.headers().firstValue("ETag").orElse(etag), response.headers().firstValue("Last-Modified").orElse(lastModified));
+                return DiscoveryResult.notModified(firstPresent(response.etag(), etag), firstPresent(response.lastModified(), lastModified));
             }
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                close(response.body());
                 throw EditorialSourceDiscoveryException.remoteFailure("YouTube feed returned HTTP " + response.statusCode());
             }
-            try (var body = response.body()) {
-                return DiscoveryResult.discovered(response.headers().firstValue("ETag").orElse(etag),
-                        response.headers().firstValue("Last-Modified").orElse(lastModified), parse(body));
-            }
+            return DiscoveryResult.discovered(firstPresent(response.etag(), etag),
+                    firstPresent(response.lastModified(), lastModified), parse(response.body(), maxItems));
         } catch (EditorialSourceDiscoveryException failure) {
             throw failure;
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
-            throw EditorialSourceDiscoveryException.remoteFailure("YouTube feed request interrupted", interrupted);
         } catch (Exception failure) {
             throw EditorialSourceDiscoveryException.remoteFailure("YouTube feed request failed", failure);
         }
     }
 
-    private static HttpRequest request(String endpoint, String etag, String lastModified) {
-        var builder = HttpRequest.newBuilder(validHttpUri(endpoint)).header("Accept", ACCEPT).GET();
-        if (etag != null && !etag.isBlank()) builder.header("If-None-Match", etag);
-        if (lastModified != null && !lastModified.isBlank()) builder.header("If-Modified-Since", lastModified);
-        return builder.build();
-    }
-
-    private static URI validHttpUri(String endpoint) {
+    private static List<DiscoveredItem> parse(byte[] input, int maxItems) {
         try {
-            var uri = URI.create(endpoint);
-            if (!"https".equalsIgnoreCase(uri.getScheme()) && !"http".equalsIgnoreCase(uri.getScheme())) throw new IllegalArgumentException("YouTube endpoint must use HTTP(S)");
-            return uri;
-        } catch (IllegalArgumentException invalid) {
-            throw EditorialSourceDiscoveryException.malformedEndpoint("Invalid YouTube feed endpoint", invalid);
-        }
-    }
-
-    private static List<DiscoveredItem> parse(InputStream input) {
-        try {
-            Document document = secureFactory().newDocumentBuilder().parse(input);
+            Document document = secureFactory().newDocumentBuilder().parse(new ByteArrayInputStream(input));
             var items = new ArrayList<DiscoveredItem>();
             var entries = document.getElementsByTagNameNS("http://www.w3.org/2005/Atom", "entry");
             if (entries.getLength() == 0) entries = document.getElementsByTagName("entry");
+            if (entries.getLength() > maxItems) {
+                throw EditorialSourceDiscoveryException.malformedPayload(
+                        "YouTube feed exceeds item limit", new IllegalArgumentException("Too many YouTube entries"));
+            }
             for (int index = 0; index < entries.getLength(); index++) {
                 var entry = (Element) entries.item(index);
                 var videoId = firstPresent(descendantText(entry, "videoId"), directText(entry, "id"));
@@ -152,7 +132,6 @@ public final class YouTubeFeedEditorialSourceDiscoveryAdapter implements Editori
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(String.join("\n", id, title, nullable(summary), url, nullable(author), nullable(publishedAt)).getBytes(StandardCharsets.UTF_8))); }
         catch (Exception impossible) { throw new IllegalStateException("SHA-256 is not available", impossible); }
     }
-    private static void close(InputStream body) { try { body.close(); } catch (Exception ignored) { } }
     private static String firstPresent(String first, String second) { return blank(first) ? second : first; }
     private static String normalized(String value) { return blank(value) ? null : value.trim(); }
     private static String nullable(Object value) { return value == null ? "" : value.toString(); }

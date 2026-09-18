@@ -3,14 +3,19 @@ package com.nm.fragmentsclean.ticketContext.write.adapters.secondary.gateways.ti
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,32 +28,54 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 	private final ObjectMapper objectMapper;
 	private final List<String> command;
 	private final Duration timeout;
+	private final int maxInputBytes;
+	private final int maxOutputBytes;
 
 	public ProcessBuilderTicketVerificationProvider(ObjectMapper objectMapper,
 			List<String> command,
 			Duration timeout) {
+		this(objectMapper, command, timeout, 1_048_576, 262_144);
+	}
+
+	public ProcessBuilderTicketVerificationProvider(ObjectMapper objectMapper,
+			List<String> command,
+			Duration timeout,
+			int maxInputBytes,
+			int maxOutputBytes) {
 		this.objectMapper = objectMapper;
 		this.command = List.copyOf(command);
+		if (this.command.isEmpty())
+			throw new IllegalArgumentException("command must not be empty");
+		if (timeout == null || timeout.isZero() || timeout.isNegative())
+			throw new IllegalArgumentException("timeout must be positive");
+		if (maxInputBytes < 1 || maxOutputBytes < 1)
+			throw new IllegalArgumentException("I/O limits must be positive");
 		this.timeout = timeout;
+		this.maxInputBytes = maxInputBytes;
+		this.maxOutputBytes = maxOutputBytes;
 	}
 
 	@Override
 	public Result verify(String ocrText, String imageRef) {
 		// ticketverify is a text-only engine. imageRef belongs to the capture/OCR flow.
-		String input = (ocrText == null) ? "" : ocrText;
-		if (!input.endsWith("\n"))
-			input += "\n"; // utile
-
 		String traceId = "tv:" + UUID.randomUUID();
 		if (ocrText == null || ocrText.isBlank()) {
 			return new Rejected("OCR_TEXT_MISSING", "ocrText is required for now", traceId);
 		}
+		String input = ocrText.endsWith("\n") ? ocrText : ocrText + "\n";
+		byte[] inputBytes = input.getBytes(StandardCharsets.UTF_8);
+		if (inputBytes.length > maxInputBytes) {
+			return new Rejected("OCR_TEXT_TOO_LARGE", "ocrText exceeds the configured byte limit", traceId);
+		}
 
 		Process process = null;
+		ExecutorService ioExecutor = null;
+		List<CompletableFuture<?>> ioTasks = new ArrayList<>();
 		List<String> cmd = new ArrayList<>(command);
 		log.debug("[ticketverify] binary={}", cmd.get(0));
 
 		cmd.addAll(List.of("--schema", "v1", "--format", "json"));
+		long deadline = System.nanoTime() + timeout.toNanos();
 
 		try {
 			ProcessBuilder pb = new ProcessBuilder(
@@ -56,37 +83,31 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 			pb.redirectErrorStream(false);
 
 			process = pb.start();
-			// IMPORTANT: écrire + FLUSH + CLOSE => envoie EOF au binaire
-			try (var os = process.getOutputStream()) {
-				writeUtf8(os, input); // writeUtf8 doit écrire en UTF-8
-				os.flush();
-			}
+			Process runningProcess = process;
+			ioExecutor = Executors.newThreadPerTaskExecutor(
+					Thread.ofVirtual().name("ticketverify-io-", 0).factory());
+			CompletableFuture<Void> inputTask = CompletableFuture.runAsync(
+					() -> writeInput(runningProcess, inputBytes), ioExecutor);
+			CompletableFuture<String> stdoutTask = CompletableFuture.supplyAsync(
+					() -> readBounded(runningProcess.getInputStream(), maxOutputBytes), ioExecutor);
+			CompletableFuture<String> stderrTask = CompletableFuture.supplyAsync(
+					() -> readBounded(runningProcess.getErrorStream(), maxOutputBytes), ioExecutor);
+			ioTasks.add(inputTask);
+			ioTasks.add(stdoutTask);
+			ioTasks.add(stderrTask);
+			stdoutTask.whenComplete((ignored, failure) -> destroyOnIoFailure(runningProcess, failure));
+			stderrTask.whenComplete((ignored, failure) -> destroyOnIoFailure(runningProcess, failure));
 
-			// lire stdout/stderr en parallèle pour éviter deadlocks
-			StreamCollector outCollector = new StreamCollector(process.getInputStream());
-			StreamCollector errCollector = new StreamCollector(process.getErrorStream());
-
-			Thread tOut = new Thread(outCollector, "ticketverify-stdout");
-			Thread tErr = new Thread(errCollector, "ticketverify-stderr");
-			tOut.start();
-			tErr.start();
-
-			boolean finished = process.waitFor(timeout.toMillis(),
-					java.util.concurrent.TimeUnit.MILLISECONDS);
+			boolean finished = process.waitFor(remainingNanos(deadline), TimeUnit.NANOSECONDS);
 			if (!finished) {
-				process.destroyForcibly();
 				return new FailedRetryable("ticketverify timeout after " + timeout.toMillis() + "ms",
 						traceId);
 			}
 
 			int exit = process.exitValue();
-
-			// s’assurer que les threads ont fini
-			tOut.join();
-			tErr.join();
-
-			String stdout = outCollector.getText();
-			String stderr = errCollector.getText();
+			await(inputTask, deadline);
+			String stdout = await(stdoutTask, deadline);
+			String stderr = await(stderrTask, deadline);
 			if (stdout == null)
 				stdout = "";
 			if (stderr == null)
@@ -127,17 +148,108 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 			}
 
 			return new FailedRetryable("ticketverify failed (exit=" + exit + ") " + errMsg, traceId);
+		} catch (TimeoutException e) {
+			return new FailedRetryable("ticketverify timeout after " + timeout.toMillis() + "ms", traceId);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return new FailedRetryable("ticketverify interrupted", traceId);
+		} catch (ExecutionException e) {
+			return new FailedRetryable("ticketverify I/O failure: " + rootMessage(e), traceId);
 		} catch (Exception e) {
 			return new FailedRetryable("ticketverify exception: " + e.getMessage(), traceId);
 		} finally {
+			ioTasks.forEach(task -> task.cancel(true));
+			terminate(process);
+			if (ioExecutor != null)
+				ioExecutor.shutdownNow();
 			log.debug("[ticketverify] process ended traceId={}", traceId);
 		}
 	}
 
-	private void writeUtf8(OutputStream os, String input) throws IOException {
-		try (OutputStreamWriter w = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
-			w.write(input);
-			w.flush();
+	private static void writeInput(Process process, byte[] input) {
+		try (var output = process.getOutputStream()) {
+			output.write(input);
+			output.flush();
+		} catch (IOException failure) {
+			throw new CompletionException(failure);
+		}
+	}
+
+	private static String readBounded(InputStream input, int maxBytes) {
+		try (input; var buffer = new ByteArrayOutputStream()) {
+			byte[] chunk = new byte[4096];
+			int read;
+			while ((read = input.read(chunk)) >= 0) {
+				if (read > maxBytes - buffer.size())
+					throw new IOException("ticketverify output exceeds byte limit");
+				buffer.write(chunk, 0, read);
+			}
+			return buffer.toString(StandardCharsets.UTF_8);
+		} catch (IOException failure) {
+			throw new CompletionException(failure);
+		}
+	}
+
+	private static void destroyOnIoFailure(Process process, Throwable failure) {
+		if (failure != null && process.isAlive())
+			process.destroyForcibly();
+	}
+
+	private static long remainingNanos(long deadline) throws TimeoutException {
+		long remaining = deadline - System.nanoTime();
+		if (remaining <= 0)
+			throw new TimeoutException("ticketverify deadline elapsed");
+		return remaining;
+	}
+
+	private static <T> T await(CompletableFuture<T> task, long deadline)
+			throws InterruptedException, ExecutionException, TimeoutException {
+		return task.get(remainingNanos(deadline), TimeUnit.NANOSECONDS);
+	}
+
+	private static String rootMessage(Throwable failure) {
+		Throwable current = failure;
+		while (current.getCause() != null)
+			current = current.getCause();
+		return current.getMessage() == null ? current.getClass().getSimpleName() : current.getMessage();
+	}
+
+	private static void terminate(Process process) {
+		if (process == null)
+			return;
+		List<ProcessHandle> descendants = descendantsOf(process);
+		descendants.forEach(ProcessHandle::destroy);
+		if (process.isAlive())
+			process.destroy();
+		try {
+			if (process.isAlive() && !process.waitFor(100, TimeUnit.MILLISECONDS)) {
+				descendants.forEach(ProcessHandle::destroyForcibly);
+				process.destroyForcibly();
+			}
+		} catch (InterruptedException interrupted) {
+			Thread.currentThread().interrupt();
+			descendants.forEach(ProcessHandle::destroyForcibly);
+			process.destroyForcibly();
+		} finally {
+			closeQuietly(process.getOutputStream());
+			closeQuietly(process.getInputStream());
+			closeQuietly(process.getErrorStream());
+		}
+	}
+
+	private static List<ProcessHandle> descendantsOf(Process process) {
+		try {
+			return process.descendants().toList();
+		} catch (RuntimeException unavailable) {
+			return List.of();
+		}
+	}
+
+	private static void closeQuietly(AutoCloseable stream) {
+		try {
+			stream.close();
+		} catch (Exception ignored) {
+			// Process termination is already best-effort at this point.
 		}
 	}
 
@@ -267,31 +379,6 @@ public class ProcessBuilderTicketVerificationProvider implements TicketVerificat
 			return value;
 		}
 		return value.substring(0, 200) + "...";
-	}
-
-	private static class StreamCollector implements Runnable {
-		private final InputStream is;
-		private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-
-		private StreamCollector(InputStream is) {
-			this.is = is;
-		}
-
-		@Override
-		public void run() {
-			try {
-				byte[] buf = new byte[4096];
-				int n;
-				while ((n = is.read(buf)) >= 0) {
-					buffer.write(buf, 0, n);
-				}
-			} catch (IOException ignored) {
-			}
-		}
-
-		public String getText() {
-			return buffer.toString(StandardCharsets.UTF_8);
-		}
 	}
 
 }

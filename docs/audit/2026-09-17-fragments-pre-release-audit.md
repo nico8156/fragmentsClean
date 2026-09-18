@@ -234,6 +234,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-011 — Bootstrap articles directement dans la projection, actif sans garde de profil
 
+> **Remédiation implémentée le 2026-09-18 :** suppression du runner read-side et de `insertSeed`; import `legacy-v1` explicitement activé, déterministe et routé par le port Studio vers les commandes Article. Tests unitaires et vertical PostgreSQL/Testcontainers verts ; l'ACL traduit explicitement les anciens tags vers la taxonomie actuelle.
+
 - **Module / catégorie :** Backend · articles — Dette architecturale avec effet produit.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/articleContext/read/adapters/secondary/bootstrap/ArticleReadSeedRunner.java:21,35-48,98 ; src/main/java/com/nm/fragmentsclean/articleContext/write/adapters/secondary/gateways/repositories/JdbcArticleRevisionMaterializer.java:15-18.
@@ -245,6 +247,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-012 — RSS opérateur : destination réseau peu contrainte, corps et durée non bornés
 
+> **Remédiation implémentée le 2026-09-18 :** politique HTTP commune RSS/YouTube, refus des adresses non publiques, absence de redirection, double validation DNS/URI, délai global et limites octets/items. Les tests de serveur lent, réponse excessive, redirection, rebinding simulé et XML hostile sont verts.
+
 - **Module / catégorie :** Backend · editorialIntelligenceContext — SSRF conditionnelle / déni de service.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/editorialIntelligenceContext/write/adapters/secondary/gateways/rss/RssEditorialSourceDiscoveryAdapter.java:46-63,75-96 ; src/main/java/com/nm/fragmentsclean/editorialIntelligenceContext/configuration/EditorialIntelligenceConfiguration.java:26-28.
@@ -255,6 +259,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Serveur local de test : slow body, body excessif, redirect vers privé, DNS rebinding simulé, XML hostile ; libération des ressources et échec retraçable.
 
 ### FR-013 — La limite de temps du processus ticket ne couvre pas son écriture d’entrée
+
+> **Remédiation implémentée le 2026-09-18 :** deadline monotone unique englobant stdin/stdout/stderr/wait, limites d'entrée/sortie, lecteurs concurrents, annulation et terminaison systématique. Les faux binaires qui ne lisent pas stdin ou produisent une sortie infinie sont couverts et verts.
 
 - **Module / catégorie :** Backend + moteur C++ — Résilience / ressources.
 - **Sévérité / priorité :** HIGH / P1.

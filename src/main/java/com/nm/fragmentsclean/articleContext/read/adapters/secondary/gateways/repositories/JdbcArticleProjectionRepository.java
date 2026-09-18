@@ -223,49 +223,6 @@ public class JdbcArticleProjectionRepository implements ArticleProjectionReposit
 		return n == null ? 0L : n;
 	}
 
-	@Override
-	public void insertSeed(ArticleProjectionRow row) {
-		jdbcTemplate.update("""
-				INSERT INTO articles_projection (
-				    id,
-				    slug,
-				    locale,
-				    title,
-				    intro,
-				    blocks_json,
-				    conclusion,
-				    cover_json,
-				    tags_json,
-				    author_id,
-				    author_name,
-				    reading_time_min,
-				    published_at,
-				    updated_at,
-				    version,
-				    status,
-				    coffee_ids_json
-				)
-				VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-				""",
-				row.id(),
-				row.slug(),
-				row.locale(),
-				row.title(),
-				row.intro(),
-				row.blocksJson(),
-				row.conclusion(),
-				row.coverJson(),
-				row.tagsJson(),
-				row.authorId(),
-				row.authorName(),
-				row.readingTimeMin(),
-				Timestamp.from(row.publishedAt()),
-				Timestamp.from(row.updatedAt()),
-				row.version(),
-				row.status(),
-				row.coffeeIdsJson());
-	}
-
 	// ─── Helpers JSON ────────────────────────────────────────────────────────
 
 	private String buildCoverJson(String url,

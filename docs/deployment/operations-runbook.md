@@ -183,6 +183,27 @@ to that address until the subscription is confirmed.
 
 ## Editorial operations
 
+### Import explicite du catalogue historique
+
+Le serveur ne remplit plus `articles_projection` au démarrage. Une base fraîche
+reste vide tant qu'un opérateur n'a pas demandé l'import. Pour importer le
+catalogue versionné fourni avec le serveur, démarrer **une** instance avec :
+
+```bash
+ARTICLE_SEED_IMPORT_ENABLED=true \
+ARTICLE_SEED_IMPORT_VERSION=legacy-v1 \
+java -jar fragmentsClean.jar
+```
+
+L'import traverse le port Studio et les commandes du domaine Article
+(`save -> review -> publish`). Les identifiants d'article, révision et commandes
+sont déterministes pour une version donnée : une reprise après interruption est
+donc idempotente via `command_status`. Les projections ne sont jamais écrites
+par l'importeur ; elles suivent le flux outbox/SQS/inbox normal. Après succès,
+redémarrer le service sans `ARTICLE_SEED_IMPORT_ENABLED=true`. Changer la version
+crée de nouveaux identifiants de commandes et constitue une opération éditoriale
+distincte qui doit être revue avant exécution.
+
 Inspect the health summary without exposing article or source payloads:
 
 ```bash
