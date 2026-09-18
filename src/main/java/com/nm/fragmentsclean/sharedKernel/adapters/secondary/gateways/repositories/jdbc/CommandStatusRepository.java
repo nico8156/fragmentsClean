@@ -2,8 +2,8 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositor
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.*;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -29,11 +29,11 @@ public class CommandStatusRepository implements CommandStatusRecorder, CommandRe
         this.objectMapper = objectMapper;
     }
 
-    public void markAppliedFromEvent(OutboxEventJpaEntity event) {
-        extractCommandId(event.getPayloadJson()).ifPresent(commandId -> {
-            Instant appliedAt = event.getOccurredAt() != null ? event.getOccurredAt() : Instant.now();
-            markAppliedFromEvent(commandId, event.getAggregateType(), event.getAggregateId(),
-                    event.getEventId(), event.getEventType(), appliedAt);
+    public void markAppliedFromEvent(OutboxMessage event, Instant completedAt) {
+        extractCommandId(event.payloadJson()).ifPresent(commandId -> {
+            Instant appliedAt = event.occurredAt() != null ? event.occurredAt() : completedAt;
+            markAppliedFromEvent(commandId, event.aggregateType(), event.aggregateId(),
+                    event.eventId(), event.eventType(), appliedAt);
         });
     }
 

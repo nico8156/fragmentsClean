@@ -51,8 +51,8 @@ class AccountDeletionContextHandlersTest {
     var tokens =
         new FakeTokens(
             List.of(
-                RefreshToken.createNew(USER_ID, "one", Instant.now().plusSeconds(60)),
-                RefreshToken.createNew(USER_ID, "two", Instant.now().plusSeconds(60))));
+                RefreshToken.createNew(USER_ID, "a".repeat(64), Instant.now().plusSeconds(60)),
+                RefreshToken.createNew(USER_ID, "b".repeat(64), Instant.now().plusSeconds(60))));
     var events = new FakeDomainEventPublisher();
 
     var clock = new DeterministicDateTimeProvider();
@@ -122,7 +122,29 @@ class AccountDeletionContextHandlersTest {
 
     @Override
     public Optional<RefreshToken> findByToken(String token) {
-      return tokens.stream().filter(x -> x.token().equals(token)).findFirst();
+      return tokens.stream().filter(x -> x.tokenHash().equals(token)).findFirst();
+    }
+
+    @Override
+    public Optional<UUID> findFamilyIdByToken(String token) {
+      return findByToken(token).map(RefreshToken::familyId);
+    }
+
+    @Override
+    public Optional<RefreshToken> findByTokenForUpdate(String token) {
+      return findByToken(token);
+    }
+
+    @Override
+    public void lockFamily(UUID familyId) {}
+
+    @Override
+    public List<RefreshToken> findFamilyByTokenForUpdate(String token) {
+      return findByToken(token)
+          .map(found -> tokens.stream()
+              .filter(candidate -> candidate.familyId().equals(found.familyId()))
+              .toList())
+          .orElseGet(List::of);
     }
 
     @Override

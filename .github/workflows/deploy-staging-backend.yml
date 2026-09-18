@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Set up Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
@@ -40,23 +40,13 @@ jobs:
       - name: Install release verification prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ripgrep
+          sudo apt-get install --yes --no-install-recommends jq ripgrep
 
-      - name: Verify full backend release on Java 21
-        run: |
-          bash scripts/test-release.sh
-
-      - name: Package backend
-        run: ./mvnw -q -DskipTests package
-
-      - name: Validate deployment scripts
-        run: |
-          bash -n infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh
-          bash -n infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh
-          bash -n infra/aws/compose/platform/staging/fragments/render-release-migration.sh
+      - name: Verify backend release candidate on Java 21
+        run: bash scripts/verify-backend-ci.sh
 
       - name: Configure AWS credentials through GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@4a1596c86fd706dc0521e32f0121ad1a6d1adb74 # v6
         with:
           role-to-assume: arn:aws:iam::851725375299:role/fragments-staging-github-ssm-deploy
           aws-region: ${{ env.AWS_REGION }}
@@ -90,15 +80,15 @@ jobs:
           echo "PLATFORM_INSTANCE_ID=${platform_instance_id}" >> "${GITHUB_ENV}"
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - name: Build and push staging backend image
+      - name: Build staging backend image
         env:
           IMAGE_TAG: sha-${{ github.sha }}
         run: |
@@ -108,7 +98,23 @@ jobs:
             --tag "${ECR_REPOSITORY}:staging-latest" \
             --file Dockerfile \
             . \
-            --push
+            --load
+
+      - name: Reject high or critical container vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: false
+
+      - name: Push verified staging backend image
+        env:
+          IMAGE_TAG: sha-${{ github.sha }}
+        run: |
+          docker push "${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker push "${ECR_REPOSITORY}:staging-latest"
 
       - name: Deploy on platform instance through SSM
         env:
@@ -165,7 +171,7 @@ jobs:
           EXPECTED_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
         run: |
           set -euo pipefail
-          verify_command="running_image=\$(docker inspect staging-fragments-backend-1 --format '{{.Config.Image}}') && test \"\${running_image}\" = '${EXPECTED_IMAGE}' && curl --fail --silent --show-error https://fragments-staging.anchor-event.fr/actuator/health"
+          verify_command="running_image=\$(docker inspect staging-fragments-backend-1 --format '{{.Config.Image}}') && test \"\${running_image}\" = '${EXPECTED_IMAGE}' && curl --fail --silent --show-error https://fragments-staging.anchor-event.fr/actuator/health/liveness"
           command_parameters="$(jq -nc --arg command "${verify_command}" '{commands:[$command]}')"
           command_id="$(aws ssm send-command \
             --region "${AWS_REGION}" \
@@ -185,3 +191,6 @@ jobs:
             --instance-id "${PLATFORM_INSTANCE_ID}" \
             --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
             --output json
+
+      - name: Require healthy release components
+        run: bash scripts/verify-release-health.sh https://fragments-staging.anchor-event.fr/actuator/health/release

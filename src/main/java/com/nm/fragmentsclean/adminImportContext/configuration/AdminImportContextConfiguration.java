@@ -45,6 +45,7 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SearchGoo
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StoreStudioArticleImage;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SaveStudioArticleDraft;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.SubmitStudioArticle;
+import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.ImportVersionedArticleSeeds;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.StartStudioArticleGeneration;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.EditStudioGeneratedArticle;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.usecases.GetStudioArticleGenerationReview;
@@ -139,6 +140,13 @@ public class AdminImportContextConfiguration {
 			UuidGenerator uuidGenerator,
 			DateTimeProvider dateTimeProvider) {
 		return new SubmitStudioArticle(articleAuthoringPort, uuidGenerator, dateTimeProvider);
+	}
+
+	@Bean
+	ImportVersionedArticleSeeds importVersionedArticleSeeds(
+			ArticleAuthoringPort articleAuthoringPort,
+			DateTimeProvider dateTimeProvider) {
+		return new ImportVersionedArticleSeeds(articleAuthoringPort, dateTimeProvider);
 	}
 
 	@Bean

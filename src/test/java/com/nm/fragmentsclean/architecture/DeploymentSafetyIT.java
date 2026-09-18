@@ -80,8 +80,11 @@ class DeploymentSafetyIT {
         assertThat(environment()).contains("BACKEND_IMAGE=" + IMAGE);
         var sql = SANDBOX.execInContainer("cat", "/tmp/received-migration.psql").getStdout();
         assertThat(sql).contains("release_schema_history", "Migration checksum mismatch", "article-curation-2026-09",
-                "messaging-safety-2026-09", "account-erasure-safety-2026-09", "lease_owner",
-                "account_erasure_barriers", "uq_articles_featured_rank").doesNotContain("\\ir ");
+                "messaging-safety-2026-09", "account-erasure-safety-2026-09",
+                "projection-sync-audience-2026-09", "refresh-token-hardening-2026-09",
+                "logout-revocation-2026-09", "outbox-delivery-2026-09", "lease_owner", "next_attempt_at",
+                "account_erasure_barriers", "recipient_id", "token_hash", "family_id",
+                "uq_articles_featured_rank").doesNotContain("\\ir ");
     }
 
     @Test void approval_and_matching_image_revision_are_required_before_external_calls() throws Exception {

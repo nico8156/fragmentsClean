@@ -26,10 +26,33 @@ db/data.sql
 ## Health
 
 ```bash
-curl -sS http://127.0.0.1:8080/actuator/health
+curl -sS http://127.0.0.1:8080/actuator/health/liveness
+curl -sS http://127.0.0.1:8080/actuator/health/release
 docker compose ps
 docker compose logs --tail=200 backend
 ```
+
+`liveness` answers whether the JVM should remain running. Recoverable business
+backlog must not restart the container. The `release` group is stricter and
+contains `db`, messaging, article authoring, ticket verification and editorial
+operations. A release is healthy only when the group and every required
+component are `UP`:
+
+```bash
+bash scripts/verify-release-health.sh \
+  https://fragments-staging.anchor-event.fr/actuator/health/release
+```
+
+`DEGRADED` participates in the global status aggregation but deliberately keeps
+HTTP 200. Deployment and promotion scripts must parse the release group rather
+than equating an HTTP response with operational readiness. Do not add business
+backlog to liveness.
+
+If the release gate fails, capture the component name and bounded identifiers,
+then use the relevant section below. Do not purge a failed saga, inbox row,
+outbox row or DLQ message merely to make the gate green. The cause must be
+classified, corrected or explicitly declared obsolete, and convergence must be
+proved before retry/deletion. The workflow stays failed until then.
 
 ## Backend Image Drift
 
@@ -62,7 +85,7 @@ Inspect pending or failed events without dumping payloads:
 
 ```bash
 docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-  -c "select id,event_id,event_type,aggregate_type,aggregate_id,status,retry_count,created_at from outbox_events where status <> 'SENT' order by id desc limit 50;"
+  -c "select id,event_id,event_type,aggregate_type,aggregate_id,status,retry_count,next_attempt_at,lease_until,left(last_error,180) as error,created_at from outbox_events where status <> 'SENT' order by id desc limit 50;"
 ```
 
 Failed outbox rows mean the backend could not publish to the configured
@@ -74,7 +97,34 @@ transport. Check:
 - backend logs around the outbox id.
 
 Replay must follow the normal dispatcher path. Do not write projections
-directly.
+directly. A `FAILED` row deliberately blocks later rows from the same
+`stream_key`: this preserves per-stream order instead of silently publishing a
+later fact first. After the transport/configuration or poison-payload cause has
+been fixed, redrive one reviewed event with:
+
+```bash
+docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -v event_id='REVIEWED_EVENT_ID' \
+  -c "update outbox_events set status='PENDING',retry_count=0,next_attempt_at=now(),lease_until=null,lease_owner=null,last_error=null where event_id=:'event_id' and status='FAILED';"
+```
+
+Confirm that exactly one row was updated, then watch `messagingRuntimeHealth`,
+the destination queue/DLQ and the consuming inbox. Delivery is at-least-once:
+a process crash after the external send but before `SENT` can cause a duplicate,
+which consumers must suppress through inbox/business idempotence.
+
+Dispatcher controls are configuration-driven:
+
+- `app.outbox.dispatcher.batch-size` (default `10`);
+- `app.outbox.dispatcher.lease-ms` (default `120000`);
+- `app.outbox.dispatcher.max-failures` (default `10`);
+- `app.outbox.dispatcher.base-delay-ms` (default `1000`);
+- `app.outbox.dispatcher.max-delay-ms` (default `300000`).
+
+The sender runs outside a database transaction. Claims and conditional
+completion/failure updates are separate short transactions. Expired leases are
+reported as `outboxExpiredLeases` and by the
+`fragments.outbox.expired.leases` meter.
 
 ## Inbox Diagnostics
 
@@ -156,6 +206,43 @@ to that address until the subscription is confirmed.
 
 ## Editorial operations
 
+`articleAuthoringHealth` is `DEGRADED` for both stale active sagas and terminal
+`FAILED` sagas. Inspect bounded metadata without article content:
+
+```bash
+docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c "select saga_id,article_id,state,generation_attempts,failure_category,lease_until,updated_at from article_authoring_sagas where state='FAILED' or (state in ('GENERATION_PENDING','GENERATING','VALIDATING','NOTIFICATION_PENDING','PUBLICATION_REQUESTED') and updated_at < now() - interval '15 minutes') order by updated_at limit 50;"
+```
+
+A terminal `FAILED` authoring saga is historical evidence, not retryable work.
+Do not edit its state. Classify the provider/configuration failure and start a
+new authoring request after correction. Before public promotion, any retained
+failed saga must have an owner and incident reference; the strict release gate
+otherwise remains red. A future bounded retention policy may move terminal
+operational history out of the active health window, but this lot does not
+silently redefine that policy.
+
+### Import explicite du catalogue historique
+
+Le serveur ne remplit plus `articles_projection` au démarrage. Une base fraîche
+reste vide tant qu'un opérateur n'a pas demandé l'import. Pour importer le
+catalogue versionné fourni avec le serveur, démarrer **une** instance avec :
+
+```bash
+ARTICLE_SEED_IMPORT_ENABLED=true \
+ARTICLE_SEED_IMPORT_VERSION=legacy-v1 \
+java -jar fragmentsClean.jar
+```
+
+L'import traverse le port Studio et les commandes du domaine Article
+(`save -> review -> publish`). Les identifiants d'article, révision et commandes
+sont déterministes pour une version donnée : une reprise après interruption est
+donc idempotente via `command_status`. Les projections ne sont jamais écrites
+par l'importeur ; elles suivent le flux outbox/SQS/inbox normal. Après succès,
+redémarrer le service sans `ARTICLE_SEED_IMPORT_ENABLED=true`. Changer la version
+crée de nouveaux identifiants de commandes et constitue une opération éditoriale
+distincte qui doit être revue avant exécution.
+
 Inspect the health summary without exposing article or source payloads:
 
 ```bash
@@ -213,7 +300,8 @@ docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
 Test stream locally from the server:
 
 ```bash
-curl -N -H "Authorization: Bearer $ADMIN_SECURITY_TOKEN" \
+# STUDIO_ACCESS_TOKEN is a short-lived OAuth/JWT token for an allowlisted admin.
+curl -N -H "Authorization: Bearer $STUDIO_ACCESS_TOKEN" \
   http://127.0.0.1:8080/api/admin/sync/events
 ```
 

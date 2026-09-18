@@ -132,6 +132,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-004 — Le SSE utilisateur diffuse des identifiants privés sans filtrage serveur
 
+> **Remédiation engagée le 2026-09-17 :** audience persistée `PUBLIC | USER |
+> ADMIN`, destinataire privé, filtrage serveur par principal et garde-fous
+> Redux, ainsi que route administrateur explicite par défaut dans Studio, sont documentés dans
+> `docs/audits/2026-09-17-p1-projection-sync-privacy.md`. Le diagnostic ci-dessous
+> reste la photographie initiale ; sa clôture dépend de la suite de vérification
+> et du déploiement de la migration/backend.
+
 - **Module / catégorie :** Backend + mobile · synchronisation — Autorisation / confidentialité / amplification.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/primary/springboot/projectionSync/ProjectionSyncController.java:19-21 ; ProjectionSyncDispatcher.java:35,87-92 ; src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/secondary/gateways/repositories/jdbc/JdbcProjectionSyncRepository.java:53-75 ; /Users/nicolasmaldiney/fragmentsCleanFront/app/core-logic/contextWL/projectionSyncWl/usecases/projectionSyncListenerFactory.ts:198-225.
@@ -142,6 +149,12 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Deux utilisateurs + un administrateur : chacun ne reçoit que ses métadonnées privées ; cafés/articles publics restent synchronisés ; pas de GET privé pour un autre compte.
 
 ### FR-005 — Jetons HMAC valides rejetés à cause de la précision temporelle
+
+> **Remédiation engagée le 2026-09-17 :** émission canonique à la seconde,
+> compatibilité bornée des enregistrements historiques, expiration sans grâce,
+> consommation unique et rollback PostgreSQL sont documentés dans
+> `docs/audits/2026-09-17-p1-editorial-approval-timestamps.md`. Le constat ne
+> sera fermé qu'après fusion et déploiement du backend.
 
 - **Module / catégorie :** Backend · approbation éditoriale — Bug reproduit.
 - **Sévérité / priorité :** HIGH / P1.
@@ -154,6 +167,11 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-006 — Rotation refresh non atomique et non protégée contre la concurrence
 
+> **Remédiation engagée le 2026-09-17 :** verrou pessimiste, transaction unique,
+> réponse 401 uniforme et single-flight mobile sont documentés dans
+> `docs/audits/2026-09-17-p1-refresh-token-hardening.md`. Le diagnostic initial
+> reste conservé jusqu'à la validation complète et au déploiement.
+
 - **Module / catégorie :** Backend · authentification — Sécurité / disponibilité session.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/authenticationContext/write/businesslogic/usecases/RefreshTokenCommandHandler.java:39-65 ; src/main/java/com/nm/fragmentsclean/authenticationContext/write/adapters/secondary/gateways/repositories/jpa/SpringRefreshTokenRepository.java:10-13 ; src/main/java/com/nm/fragmentsclean/authenticationContext/write/adapters/primary/springboot/controllers/AuthWriteController.java:115-123 ; src/main/java/com/nm/fragmentsclean/sharedKernel/adapters/primary/springboot/CommandBus.java:69-76.
@@ -164,6 +182,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Test concurrent réel PostgreSQL : un résultat autorisé ; panne entre révocation et émission rollback ; réponse perdue et retry conformes à la politique.
 
 ### FR-007 — Déconnexion mobile sans Authorization ; Studio ne révoque pas côté serveur
+
+> **Remédiation engagée le 2026-09-17 :** endpoint public-client idempotent,
+> familles de refresh tokens sérialisées, révocation verticale mobile/Studio et
+> vérification PostgreSQL des courses sont documentés dans
+> `docs/audits/2026-09-17-p1-logout-revocation.md`. Le diagnostic initial reste
+> conservé jusqu'au déploiement de la migration et du backend, puis à la recette
+> des deux clients.
 
 - **Module / catégorie :** Mobile + Studio + backend · session — Bug de sécurité fonctionnelle.
 - **Sévérité / priorité :** HIGH / P1.
@@ -209,6 +234,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-011 — Bootstrap articles directement dans la projection, actif sans garde de profil
 
+> **Remédiation implémentée le 2026-09-18 :** suppression du runner read-side et de `insertSeed`; import `legacy-v1` explicitement activé, déterministe et routé par le port Studio vers les commandes Article. Tests unitaires et vertical PostgreSQL/Testcontainers verts ; l'ACL traduit explicitement les anciens tags vers la taxonomie actuelle.
+
 - **Module / catégorie :** Backend · articles — Dette architecturale avec effet produit.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/articleContext/read/adapters/secondary/bootstrap/ArticleReadSeedRunner.java:21,35-48,98 ; src/main/java/com/nm/fragmentsclean/articleContext/write/adapters/secondary/gateways/repositories/JdbcArticleRevisionMaterializer.java:15-18.
@@ -220,6 +247,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-012 — RSS opérateur : destination réseau peu contrainte, corps et durée non bornés
 
+> **Remédiation implémentée le 2026-09-18 :** politique HTTP commune RSS/YouTube, refus des adresses non publiques, absence de redirection, double validation DNS/URI, délai global et limites octets/items. Les tests de serveur lent, réponse excessive, redirection, rebinding simulé et XML hostile sont verts.
+
 - **Module / catégorie :** Backend · editorialIntelligenceContext — SSRF conditionnelle / déni de service.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/editorialIntelligenceContext/write/adapters/secondary/gateways/rss/RssEditorialSourceDiscoveryAdapter.java:46-63,75-96 ; src/main/java/com/nm/fragmentsclean/editorialIntelligenceContext/configuration/EditorialIntelligenceConfiguration.java:26-28.
@@ -230,6 +259,8 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Serveur local de test : slow body, body excessif, redirect vers privé, DNS rebinding simulé, XML hostile ; libération des ressources et échec retraçable.
 
 ### FR-013 — La limite de temps du processus ticket ne couvre pas son écriture d’entrée
+
+> **Remédiation implémentée le 2026-09-18 :** deadline monotone unique englobant stdin/stdout/stderr/wait, limites d'entrée/sortie, lecteurs concurrents, annulation et terminaison systématique. Les faux binaires qui ne lisent pas stdin ou produisent une sortie infinie sont couverts et verts.
 
 - **Module / catégorie :** Backend + moteur C++ — Résilience / ressources.
 - **Sévérité / priorité :** HIGH / P1.
@@ -253,6 +284,14 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-015 — Santé globale UP alors que deux sous-systèmes restent dégradés
 
+> **Remédiation locale engagée le 2026-09-18 :** `DEGRADED` participe désormais
+> à l'agrégation Actuator, un groupe `release` sépare le gate de promotion de la
+> liveness, et le workflow vérifie la présence et l'état `UP` de chaque composant
+> requis. Les sagas Article `FAILED` dégradent maintenant réellement leur
+> indicateur. Le triage des données staging/DLQ et une transaction synthétique
+> authentifiée restent des preuves opérationnelles ouvertes : FR-015 n'est donc
+> pas encore déclaré clos.
+
 - **Module / catégorie :** Backend · AWS · release — Observabilité / exploitation.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/platform/observability/MessagingRuntimeHealthIndicator.java:39-52 ; src/main/java/com/nm/fragmentsclean/articleContext/write/adapters/secondary/observability/ArticleAuthoringHealthIndicator.java:32-47 ; .github/workflows/deploy-staging-backend.yml:163-187 ; endpoint staging /actuator/health lu le 17/09.
@@ -263,6 +302,15 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Panne simulée : alarme au bon owner, commande reliée à saga/outbox/inbox, recette read-after-write ; aucun faux succès de release.
 
 ### FR-016 — Pas de quality gate PR backend/mobile équivalent au gate de déploiement
+
+> **Remédiation locale engagée le 2026-09-18 :** le backend possède désormais un
+> workflow PR/`main` Java 21 appelant le même gate que le déploiement staging ; le
+> mobile possède un gate unique lint/typecheck/tests/Redux/configuration native ;
+> Studio vérifie aussi `main`, produit un artefact immuable et le déploiement
+> promeut exactement cet artefact après un `push` interne réussi. Les protections
+> de branche distantes et les premières exécutions GitHub restent à prouver. Le
+> gate SCA Studio est correctement rouge sur deux vulnérabilités `high` transitives
+> suivies par FR-018 : FR-016 n'autorise aucune exception implicite.
 
 - **Module / catégorie :** CI/CD · backend/mobile/Studio — Dette de test / release.
 - **Sévérité / priorité :** HIGH / P1.
@@ -285,6 +333,14 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** CI base neuve + fixture ancienne + réapplication + checksum divergent + rollback DDL sur erreur ; parité contraintes/index.
 
 ### FR-018 — Supply chain : alertes npm et mises à jour Java non qualifiées complètement
+
+> **Remédiation locale du 2026-09-18 :** les alertes HIGH/CRITICAL sont ramenées
+> à zéro sur le SBOM Java, l'image backend, le Studio et le mobile. Les CI
+> bloquent leur réintroduction ; les actions et images sont épinglées. Le mobile
+> conserve 20 MODERATE de toolchain Expo, sans `audit fix --force`. Preuves,
+> échecs intermédiaires et limites :
+> `docs/audits/2026-09-18-p1-fr018-supply-chain.md`. La fermeture distante reste
+> conditionnée au push, aux CI GitHub vertes et au build EAS signé.
 
 - **Module / catégorie :** Mobile/Studio/backend/engine — Risque supply chain, pas exploit démontré.
 - **Sévérité / priorité :** HIGH / P1.
@@ -341,6 +397,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-023 — Recette App Store et crash reporting natif non attestés par cette passe
 
+> **Remédiation technique engagée le 2026-09-18 :** le mobile intègre Sentry
+> avec upload des sources/symboles, minimisation des événements et configuration
+> production fermée par défaut. Un inspecteur reproductible a validé l'IPA
+> TestFlight `1.0.0 (7)`. La fermeture reste conditionnée à une nouvelle IPA du
+> commit candidat, à la symbolication Sentry et à la matrice appareil signée ;
+> voir `docs/audits/2026-09-18-p1-fr023-fr024-release-certification.md`.
+
 - **Module / catégorie :** Mobile · distribution/exploitation — Dette de validation.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** /Users/nicolasmaldiney/fragmentsCleanFront/docs/deployment/app-store-staging-runbook.md ; docs/deployment/testflight-app-store-release.md:120,151,226 ; /Users/nicolasmaldiney/fragmentsCleanFront/eas.json ; /Users/nicolasmaldiney/fragmentsCleanFront/app.config.js:37-40,96-127.
@@ -351,6 +414,18 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Matrice signée de recette réelle, compte/démo revue sans 2FA bloquante, suppression effective et suivi modération ; preuve de symbolication.
 
 ### FR-024 — Secrets : contrôles utiles mais historique non certifié ; refresh en clair dans la base
+
+> **Remédiation partielle engagée le 2026-09-17 :** le stockage des refresh en
+> clair est remplacé par SHA-256 avec invalidation explicite des anciennes
+> sessions. La certification de l'historique, des artefacts, logs et backups
+> reste ouverte ; voir `docs/audits/2026-09-17-p1-refresh-token-hardening.md`.
+>
+> **Complément du 2026-09-18 :** Gitleaks `8.28.0` a scanné l'historique complet
+> des trois dépôts. Les huit occurrences ont été classifiées sans afficher leur
+> valeur ; le secret Google historique diffère du SecureString staging actuel et
+> l'ancien bearer Studio n'est plus provisionné. Les CI bloquent désormais toute
+> nouvelle occurrence. La vérification exhaustive des anciens artefacts EAS,
+> logs CloudWatch/SSM et backups demeure une limite opérationnelle distincte.
 
 - **Module / catégorie :** Authentification · CI · données — Sécurité / dette d’audit.
 - **Sévérité / priorité :** HIGH / P1.

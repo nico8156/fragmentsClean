@@ -33,7 +33,7 @@ public class CommentUpdatedEventHandler implements EventHandler<CommentUpdatedEv
     public void handle(CommentUpdatedEvent event) {
         log.info("[social-read] apply CommentUpdatedEvent commentId={} v={}", event.commentId(), event.version());
         projectionRepository.apply(event);
-        projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+        projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
                 "comments",
                 "target",
                 event.targetId().toString(),

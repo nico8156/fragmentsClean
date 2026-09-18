@@ -68,6 +68,8 @@ public class AuthSecurityConfiguration {
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/auth/refresh")
                     .permitAll()
+                    .requestMatchers(HttpMethod.POST, "/auth/logout")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/health/**")
                     .permitAll()
                     .requestMatchers("/error")

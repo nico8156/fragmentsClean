@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.editorialIntelligenceContextTest.integration;
 
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.rss.RssEditorialSourceDiscoveryAdapter;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.http.BoundedEditorialHttpFetcher;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.http.PublicEditorialEndpointPolicy;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.EditorialSourceDiscoveryException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -13,6 +15,8 @@ import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,8 +83,90 @@ class RssEditorialSourceDiscoveryAdapterIT {
                 .isEqualTo(EditorialSourceDiscoveryException.Category.MALFORMED_PAYLOAD);
     }
 
+    @Test
+    void rejects_a_feed_larger_than_the_configured_http_body_limit() {
+        response.set(Response.ok(null, null, validFeed()));
+
+        assertThatThrownBy(() -> adapter(64, 10).discover(endpoint(), null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.REMOTE_FAILURE);
+    }
+
+    @Test
+    void rejects_more_items_than_the_configured_feed_limit() {
+        response.set(Response.ok(null, null, validFeed().replace("</channel>", validFeed().substring(validFeed().indexOf("<item>"), validFeed().indexOf("</item>") + 7) + "</channel>")));
+
+        assertThatThrownBy(() -> adapter(16_384, 1).discover(endpoint(), null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.MALFORMED_PAYLOAD);
+    }
+
+    @Test
+    void refuses_loopback_destinations_without_an_explicit_test_allowlist() {
+        var fetcher = new BoundedEditorialHttpFetcher(
+                HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build(),
+                new PublicEditorialEndpointPolicy(Set.of()), Duration.ofSeconds(1), 16_384);
+        var adapter = new RssEditorialSourceDiscoveryAdapter(fetcher, 10);
+
+        assertThatThrownBy(() -> adapter.discover(endpoint(), null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.MALFORMED_ENDPOINT);
+    }
+
+    @Test
+    void refuses_redirects_instead_of_following_them_to_an_unchecked_destination() {
+        server.createContext("/redirect", exchange -> {
+            exchange.getResponseHeaders().set("Location", endpoint());
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+
+        assertThatThrownBy(() -> adapter().discover(
+                        "http://localhost:" + server.getAddress().getPort() + "/redirect", null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.REMOTE_FAILURE);
+    }
+
+    @Test
+    void enforces_a_deadline_while_waiting_for_the_remote_response() {
+        server.createContext("/slow", exchange -> {
+            try {
+                byte[] body = validFeed().getBytes(StandardCharsets.UTF_8);
+                exchange.sendResponseHeaders(200, body.length);
+                exchange.getResponseBody().flush();
+                Thread.sleep(250);
+                exchange.getResponseBody().write(body);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
+
+        assertThatThrownBy(() -> adapter(16_384, 10, Duration.ofMillis(50)).discover(
+                        "http://localhost:" + server.getAddress().getPort() + "/slow", null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.REMOTE_FAILURE);
+    }
+
     private RssEditorialSourceDiscoveryAdapter adapter() {
-        return new RssEditorialSourceDiscoveryAdapter(HttpClient.newHttpClient());
+        return adapter(16_384, 10);
+    }
+
+    private RssEditorialSourceDiscoveryAdapter adapter(int maxBodyBytes, int maxItems) {
+        return adapter(maxBodyBytes, maxItems, Duration.ofSeconds(1));
+    }
+
+    private RssEditorialSourceDiscoveryAdapter adapter(int maxBodyBytes, int maxItems, Duration timeout) {
+        var fetcher = new BoundedEditorialHttpFetcher(
+                HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build(),
+                new PublicEditorialEndpointPolicy(Set.of("localhost")), timeout, maxBodyBytes);
+        return new RssEditorialSourceDiscoveryAdapter(fetcher, maxItems);
     }
 
     private String endpoint() {

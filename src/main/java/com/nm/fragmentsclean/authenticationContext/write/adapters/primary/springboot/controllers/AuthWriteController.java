@@ -12,6 +12,7 @@ import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginCommand;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.GoogleLoginResult;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.LogoutCommand;
+import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.InvalidRefreshTokenException;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenCommand;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.usecases.RefreshTokenResult;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.CommandBus;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -125,9 +127,15 @@ public class AuthWriteController {
 
   @PostMapping("/logout")
   public ResponseEntity<Void> logout(@RequestBody LogoutRequestDto body) {
+    requirePresent(body.refreshToken(), "refreshToken");
     var command = new LogoutCommand(body.refreshToken());
     commandBus.dispatch(command);
     return ResponseEntity.noContent().build();
+  }
+
+  @ExceptionHandler(InvalidRefreshTokenException.class)
+  public ResponseEntity<Void> invalidRefreshToken() {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 
   private static void requirePresent(String value, String field) {

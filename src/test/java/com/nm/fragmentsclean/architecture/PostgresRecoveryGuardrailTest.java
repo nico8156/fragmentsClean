@@ -13,13 +13,16 @@ class PostgresRecoveryGuardrailTest {
             Path.of("infra/aws/compose/platform/staging/fragments");
 
     @Test
-    void release_runner_installs_ripgrep_before_the_full_test_gate() throws IOException {
+    void release_runner_installs_json_and_search_tools_before_the_shared_ci_gate() throws IOException {
         String workflow = Files.readString(Path.of(".github/workflows/deploy-staging-backend.yml"));
-        assertThat(workflow).contains("sudo apt-get install --yes --no-install-recommends ripgrep");
-        assertThat(workflow.indexOf("sudo apt-get install --yes --no-install-recommends ripgrep"))
-                .isLessThan(workflow.indexOf("bash scripts/test-release.sh"));
+        String prerequisites = "sudo apt-get install --yes --no-install-recommends jq ripgrep";
+        assertThat(workflow).contains(prerequisites, "bash scripts/verify-backend-ci.sh");
+        assertThat(workflow.indexOf(prerequisites))
+                .isLessThan(workflow.indexOf("bash scripts/verify-backend-ci.sh"));
         assertThat(Files.readString(Path.of("scripts/test-release.sh")))
-                .contains("ripgrep (rg) is required for release verification.");
+                .contains(
+                        "ripgrep (rg) is required for release verification.",
+                        "jq is required for release verification.");
     }
 
     @Test

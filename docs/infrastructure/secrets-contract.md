@@ -24,7 +24,6 @@ Production uses the same structure with the `production` environment segment.
 | --- | --- | --- |
 | `/fragments/{env}/POSTGRES_PASSWORD` | PostgreSQL runtime password | Coordinated DB and application restart |
 | `/fragments/{env}/AUTH_JWT_SECRET` | Access/refresh token signing | Invalidates existing tokens if replaced |
-| `/fragments/{env}/ADMIN_SECURITY_TOKEN` | Legacy/admin transition token | Rotate after OAuth admin flow is confirmed |
 | `/fragments/{env}/GOOGLE_PLACES_API_KEY` | Google Places provider | Provider key rotation |
 | `/fragments/{env}/OPENAI_API_KEY` | Required when editorial generation is enabled | Provider key rotation |
 | `/fragments/{env}/OPENAI_PROJECT_ID` | Optional provider project | Configuration change |
@@ -35,6 +34,11 @@ Production uses the same structure with the `production` environment segment.
 
 Public OAuth client IDs and URLs are not secrets and remain build/runtime
 configuration rather than entering the secret store.
+
+The former `ADMIN_SECURITY_TOKEN` bearer is retired. Studio authenticates with
+a normal short-lived OAuth/JWT access token and backend authorization is based
+on the `admin_user_access` allowlist (plus the explicitly configured bootstrap
+identity). Do not recreate a static shared admin bearer in SSM.
 
 `APPLE_PRIVATE_KEY` may contain real PEM line breaks: the staging bootstrap
 preserves them using Compose single-quoted values. The application also accepts

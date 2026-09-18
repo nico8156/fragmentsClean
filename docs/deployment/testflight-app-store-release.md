@@ -1,5 +1,14 @@
 # Fragments — dossier de recette TestFlight / App Store
 
+## Décision courante — 13 septembre 2026
+
+L'opérateur demande de préparer le prochain TestFlight et reporte la résolution
+complète conservation/restauration après ces essais. Pas de validation App Store
+publique ni de clôture de ces réserves. Le NO GO ci-dessous appartient au cadrage
+initial ; distinguer préparation du build, recette interne et publication finale.
+État, versions, pages et configuration :
+[candidate TestFlight du 13 septembre](testflight-2026-09-13.md).
+
 Préparation du 12 septembre 2026, fin du lot 09 et lot 10 avec Astra High,
 à la demande du produit. Ce document ne vaut ni déploiement, ni soumission,
 ni validation sur appareil. **Décision actuelle : NO GO pour soumettre.**
@@ -191,6 +200,13 @@ Ce tableau est un inventaire technique, pas une déclaration réglementaire déj
 validée. Finaliser durées de conservation, sous-traitants, régions d'hébergement
 et traitement des sauvegardes ; ne pas déclarer « aucune collecte ».
 
+Depuis le lot FR-023 du 18 septembre, Sentry reçoit les crashs et traces
+techniques de la candidate mobile. L'intégration désactive PII, tracing et
+replay, et retire identité, requête, breadcrumbs et contexte extra avant envoi.
+La politique publiée et les réponses App Privacy doivent néanmoins déclarer ce
+sous-traitant, la finalité diagnostic, la région et la rétention réellement
+choisies dans le compte Sentry avant activation sur TestFlight/App Store.
+
 | Données/usage observables | Vérification avant déclaration |
 | --- | --- |
 | Identité OAuth, email, nom public, identifiant utilisateur | Données liées au compte pour authentification/profil ; révocation et effacement |
@@ -199,6 +215,7 @@ et traitement des sauvegardes ; ne pas déclarer « aucune collecte ».
 | Coordonnées de découverte | Examiner requêtes et logs réellement conservés, SDK carte et navigation ; permission locale ≠ collecte déclarable à elle seule |
 | Favoris, interactions, cache | Distinguer données locales, données serveur et éventuelle télémétrie |
 | Journaux, IP, diagnostics et fournisseurs | Vérifier runtime déployé et SDK natifs ; ne pas conclure sur le tracking depuis package.json seulement |
+| Crashs Sentry, stack traces, version et appareil | Diagnostic uniquement ; aucune identité/request/breadcrumb ; vérifier région, rétention et suppression côté Sentry |
 
 Le moteur ticket actif observé reçoit le texte via un processus local ; cela ne
 prouve pas les pratiques internes de ce binaire ou de tous les fournisseurs.

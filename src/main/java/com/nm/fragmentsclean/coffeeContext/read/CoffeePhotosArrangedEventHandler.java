@@ -21,7 +21,7 @@ public class CoffeePhotosArrangedEventHandler {
         photos.replaceForCoffee(event.coffeeId(), event.photos().stream().map(photo -> new CoffeePhotoView(
                 photo.photoId(), event.coffeeId(), photo.photoUri(), photo.cover(), photo.sortOrder())).toList());
         if (!publicPolicy.isPubliclyVisible(event.coffeeId())) return;
-        sync.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity", event.coffeeId().toString(),
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("coffees", "entity", event.coffeeId().toString(),
                 (long) event.version(), event.occurredAt(), List.of("photos")));
     }
 }

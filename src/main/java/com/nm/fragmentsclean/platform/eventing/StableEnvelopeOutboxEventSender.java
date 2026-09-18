@@ -1,7 +1,7 @@
 package com.nm.fragmentsclean.platform.eventing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.EventBusOutboxEventSender;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationMessagePublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
@@ -35,7 +35,7 @@ public class StableEnvelopeOutboxEventSender implements OutboxEventSender {
     }
 
     @Override
-    public void send(OutboxEventJpaEntity event) throws Exception {
+    public void send(OutboxMessage event) throws Exception {
         // Ticket consumers have completed the migration to stable envelopes and
         // inbox idempotence; the in-process integration publisher handles them.
         if (localEventBusEnabled && !"Ticket".equals(event.getAggregateType())) {

@@ -73,10 +73,6 @@ class ArticleRevisionPublishedEventHandlerTest {
             return 0;
         }
 
-        @Override
-        public void insertSeed(ArticleProjectionRow row) {
-            throw new UnsupportedOperationException();
-        }
     }
 
     private static final class RecordingProjectionSyncPublisher implements ProjectionSyncPublisher {

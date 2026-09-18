@@ -1305,4 +1305,41 @@ Comparaison de deux versions de graphe pour une PR, export d’un diagramme comp
 
 FlowAtlas a contribué à **l’orientation**, surtout l’entrée ticket/comment/like/outbox et les frontières commande/SQS/processus. La lecture traditionnelle a établi les constats sécurité, HMAC, refresh, retention/restore, contention, erreurs de lease et politiques AWS. Il serait trompeur de les attribuer entièrement à FlowAtlas.
 
-Ce compte-rendu d’utilisation est achevé pour les22appels consignés ; **ce n’est pas un audit interne complet du logiciel FlowAtlas**. Pas de benchmark contrôlé, pas de preuve du SHA du processus MCP, pas de mesure globale des faux positifs/négatifs. Le dépôt FlowAtlas est resté inchangé. Ces exemples et arguments littéraux permettent maintenant une campagne de régression ciblée et mesurable.
+Ce compte-rendu d’utilisation initial était achevé pour les 22 appels consignés ;
+**ce n’est pas un audit interne complet du logiciel FlowAtlas**. Pas de benchmark
+contrôlé, pas de preuve du SHA du processus MCP, pas de mesure globale des faux
+positifs/négatifs. Le dépôt FlowAtlas est resté inchangé. Ces exemples et
+arguments littéraux permettent maintenant une campagne de régression ciblée et
+mesurable.
+
+## 10. Reprise P1 du 18 septembre 2026 — scanner Java mis à jour
+
+Trois appels MCP supplémentaires ont été effectués avec
+`fragments-java-external-request.json` : deux `find` identiques (le premier a été
+répété uniquement parce que l'enveloppe annonçait `structuredContent` sans
+l'imprimer), puis un `context` :
+
+```json
+{"query":"ProcessBuilder","projectPath":"/Users/nicolasmaldiney/fragmentsClean","adapter":"java","requestPath":"/Users/nicolasmaldiney/FlowAtlas/tests/fixtures/fragments-java-external-request.json","kind":"External","limit":5}
+```
+
+```json
+{"nodeId":"local-process:java.lang.ProcessBuilder","projectPath":"/Users/nicolasmaldiney/fragmentsClean","adapter":"java","requestPath":"/Users/nicolasmaldiney/FlowAtlas/tests/fixtures/fragments-java-external-request.json","direction":"both","maxDepth":4,"maxNodes":30,"maxEdges":50,"maxBytes":20000}
+```
+
+Résultat objectif : `find` pointe désormais la ligne 85 du provider modifié.
+`context` retourne `schemaVersion: 2`, `complete: true`,
+`frontierComplete: true`, aucune limite atteinte, 2 nœuds, 1 arête et 1879
+octets sérialisés. L'ajout de la complétude de frontière, des limites atteintes
+et du volume sérialisé répond directement à une faiblesse relevée dans le
+rapport initial.
+
+Le point restant ambigu est la contraction du chemin : l'arête relie le worker
+planifié directement à `ProcessBuilder`, alors que la source traverse
+`TicketVerificationProvider` puis
+`ProcessBuilderTicketVerificationProvider`. Cette projection est utile pour
+localiser rapidement le risque externe, mais insuffisante pour analyser la
+deadline, le bornage stdin/stdout/stderr et le nettoyage du processus. Ces
+preuves ont encore nécessité la lecture des sources et l'exécution de faux
+binaires hostiles. Le gain qualitatif Java est donc meilleur pour l'orientation
+et la complétude déclarée, sans permettre un gain de temps chiffré honnête.

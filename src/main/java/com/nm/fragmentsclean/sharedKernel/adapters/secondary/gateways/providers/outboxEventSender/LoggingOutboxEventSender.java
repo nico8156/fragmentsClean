@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ public class LoggingOutboxEventSender implements OutboxEventSender {
     private static final Logger log = LoggerFactory.getLogger(LoggingOutboxEventSender.class);
 
     @Override
-    public void send(OutboxEventJpaEntity event) throws Exception {
+    public void send(OutboxMessage event) throws Exception {
         log.info("Sending outbox event id={} type={} streamKey={} aggregateType={} aggregateId={} payloadLength={}",
                 event.getId(),
                 event.getEventType(),
@@ -22,7 +22,7 @@ public class LoggingOutboxEventSender implements OutboxEventSender {
                 payloadLength(event));
     }
 
-    private int payloadLength(OutboxEventJpaEntity event) {
+    private int payloadLength(OutboxMessage event) {
         return event.getPayloadJson() == null ? 0 : event.getPayloadJson().length();
     }
 }

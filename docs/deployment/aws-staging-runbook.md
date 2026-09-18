@@ -241,14 +241,16 @@ ECR and the target EC2 instance are resolved at runtime from the
 
 The workflow:
 
-1. runs backend tests;
+1. runs the same Java 21 backend gate used by pull requests and `main`;
 2. builds the backend Docker image for `linux/arm64`;
 3. pushes immutable `sha-<commit>` and `staging-latest` tags to ECR;
 4. resolves the active instance from the `platform-staging` stack;
 5. invokes an immutable revision of `deploy-via-ssm.sh` through SSM Run Command;
 6. rebuilds `/srv/fragments/staging/.env` from encrypted SSM parameters on the host;
 7. applies the idempotent schema and recreates only the Fragments backend;
-8. verifies the exact image and `GET /actuator/health` through SSM.
+8. verifies the exact image and liveness through SSM;
+9. fails promotion unless every component of
+   `GET /actuator/health/release` is `UP`.
 
 The workflow never receives database, JWT, Google or application secrets.
 

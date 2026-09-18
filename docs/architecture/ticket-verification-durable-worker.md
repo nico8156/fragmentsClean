@@ -60,10 +60,17 @@ autorise une nouvelle revendication. `PROCESSED` reste terminal.
 | `ticketverify.worker.lease-seconds` | 30 | Fenêtre de propriété d'une tentative |
 | `ticketverify.worker.retry-seconds` | 5 | Base du délai progressif |
 | `ticketverify.worker.max-attempts` | 5 | Tentatives avant échec technique final |
+| `ticketverify.timeout-ms` | 1500 | Échéance globale du processus (écriture, lecture et attente incluses) |
+| `ticketverify.max-input-bytes` | 1048576 | Taille UTF-8 maximale du texte OCR |
+| `ticketverify.max-output-bytes` | 262144 | Taille maximale de stdout et stderr, chacune |
 
 Ces valeurs sont opérationnelles et ne sont pas des invariants métier. Le lease
 doit rester supérieur à la durée normalement attendue du provider; une réponse
 qui arrive après reprise par un autre worker sera volontairement ignorée.
+Le provider démarre les lectures stdout/stderr et l'écriture stdin en parallèle.
+Une échéance unique couvre toutes ces opérations. À échéance, dépassement de
+taille, interruption ou sortie anormale, les flux sont fermés et le processus
+ainsi que ses descendants connus sont terminés avant restitution au worker.
 
 ## Déploiement et retour arrière
 

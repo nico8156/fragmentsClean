@@ -1,6 +1,8 @@
 package com.nm.fragmentsclean.editorialIntelligenceContextTest.integration;
 
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.youtube.YouTubeFeedEditorialSourceDiscoveryAdapter;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.http.BoundedEditorialHttpFetcher;
+import com.nm.fragmentsclean.editorialIntelligenceContext.write.adapters.secondary.gateways.http.PublicEditorialEndpointPolicy;
 import com.nm.fragmentsclean.editorialIntelligenceContext.write.businesslogic.gateways.EditorialSourceDiscoveryException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -13,6 +15,8 @@ import java.net.InetSocketAddress;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +74,23 @@ class YouTubeFeedEditorialSourceDiscoveryAdapterIT {
                 .isEqualTo(EditorialSourceDiscoveryException.Category.MALFORMED_PAYLOAD);
     }
 
-    private YouTubeFeedEditorialSourceDiscoveryAdapter adapter() { return new YouTubeFeedEditorialSourceDiscoveryAdapter(HttpClient.newHttpClient()); }
+    @Test
+    void applies_the_same_bounded_http_body_policy_as_rss() {
+        response.set(Response.ok(null, feed()));
+
+        assertThatThrownBy(() -> adapter(64, 10).discover(endpoint(), null, null))
+                .isInstanceOf(EditorialSourceDiscoveryException.class)
+                .extracting(failure -> ((EditorialSourceDiscoveryException) failure).category())
+                .isEqualTo(EditorialSourceDiscoveryException.Category.REMOTE_FAILURE);
+    }
+
+    private YouTubeFeedEditorialSourceDiscoveryAdapter adapter() { return adapter(16_384, 10); }
+    private YouTubeFeedEditorialSourceDiscoveryAdapter adapter(int maxBodyBytes, int maxItems) {
+        var fetcher = new BoundedEditorialHttpFetcher(
+                HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build(),
+                new PublicEditorialEndpointPolicy(Set.of("localhost")), Duration.ofSeconds(1), maxBodyBytes);
+        return new YouTubeFeedEditorialSourceDiscoveryAdapter(fetcher, maxItems);
+    }
     private String endpoint() { return "http://localhost:" + server.getAddress().getPort() + "/videos.xml"; }
     private void respond(HttpExchange exchange) throws IOException {
         ifNoneMatch.set(exchange.getRequestHeaders().getFirst("If-None-Match"));

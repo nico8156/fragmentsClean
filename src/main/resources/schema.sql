@@ -322,8 +322,17 @@ CREATE TABLE IF NOT EXISTS outbox_events (
                                created_at      TIMESTAMPTZ NOT NULL,           -- Instant
 
                                status          VARCHAR(32) NOT NULL,           -- OutboxStatus (enum string)
-                               retry_count     INTEGER     NOT NULL DEFAULT 0
+                               retry_count     INTEGER     NOT NULL DEFAULT 0,
+                               next_attempt_at TIMESTAMPTZ,
+                               lease_until     TIMESTAMPTZ,
+                               lease_owner     VARCHAR(128),
+                               last_error      VARCHAR(1000)
 );
+
+CREATE INDEX IF NOT EXISTS idx_outbox_events_due
+    ON outbox_events (status, COALESCE(next_attempt_at, created_at), id);
+CREATE INDEX IF NOT EXISTS idx_outbox_events_stream_order
+    ON outbox_events (stream_key, id, status);
 
 CREATE TABLE IF NOT EXISTS inbox_messages (
     id              BIGSERIAL PRIMARY KEY,
@@ -354,12 +363,18 @@ CREATE TABLE IF NOT EXISTS projection_sync_events (
     entity_id     VARCHAR(100),
     version       BIGINT,
     changed_at    TIMESTAMPTZ NOT NULL,
-    payload_json  JSONB NOT NULL
+    audience      VARCHAR(16) NOT NULL DEFAULT 'ADMIN',
+    recipient_id  VARCHAR(100),
+    payload_json  JSONB NOT NULL,
+    CONSTRAINT projection_sync_events_audience_check
+        CHECK (audience IN ('PUBLIC', 'USER', 'ADMIN')),
+    CONSTRAINT projection_sync_events_recipient_check
+        CHECK ((audience = 'USER' AND recipient_id IS NOT NULL AND recipient_id <> '')
+            OR (audience <> 'USER' AND recipient_id IS NULL))
 );
 
 CREATE INDEX IF NOT EXISTS idx_projection_sync_events_projection_id
     ON projection_sync_events (projection, id);
-
 CREATE TABLE IF NOT EXISTS command_status (
     command_id      UUID PRIMARY KEY,
     requester_id    UUID,
@@ -575,14 +590,6 @@ CREATE INDEX IF NOT EXISTS idx_articles_projection_featured
 
 
 
--- -- Index utiles pour le dispatcher (batch sur PENDING, dans l'ordre d'id)
--- CREATE INDEX idx_outbox_events_status_id
---     ON outbox_events (status, id);
---
--- -- Optionnel : routing / replays par stream
--- CREATE INDEX idx_outbox_events_stream_key_id
---     ON outbox_events (stream_key, id);
-
 CREATE TABLE IF NOT EXISTS auth_users (
                                           id               UUID PRIMARY KEY,
                                           provider         VARCHAR(32)      NOT NULL, -- "GOOGLE"
@@ -702,13 +709,16 @@ CREATE TABLE IF NOT EXISTS user_saved_coffee_cafes_projection (
 CREATE TABLE IF NOT EXISTS refresh_tokens (
                                               id         UUID PRIMARY KEY,
                                               user_id    UUID        NOT NULL,
-                                              token      VARCHAR(512) NOT NULL,
+                                              family_id  UUID        NOT NULL,
+                                              token_hash CHAR(64)    NOT NULL,
                                               expires_at TIMESTAMPTZ NOT NULL,
                                               revoked    BOOLEAN      NOT NULL
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token
-    ON refresh_tokens (token);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_refresh_tokens_token_hash
+    ON refresh_tokens (token_hash);
+CREATE INDEX IF NOT EXISTS ix_refresh_tokens_family_id
+    ON refresh_tokens (family_id);
 
 CREATE TABLE IF NOT EXISTS auth_provider_credentials (
     user_id UUID NOT NULL,

@@ -13,7 +13,7 @@ public final class ArticleArchivedEventHandler {
     }
     public void handle(ArticleArchivedIntegrationEvent event) {
         repository.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("articles", "collection",
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("articles", "collection",
                 event.articleId().toString(), event.version(), event.occurredAt(),
                 java.util.List.of("archived", "publicationStatus")));
     }

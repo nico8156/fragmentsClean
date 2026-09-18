@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.UUID;
 
@@ -33,13 +34,14 @@ public final class ArticleReviewApprovalTokenService implements ArticleReviewApp
 			throw new IllegalStateException("Editorial approval secret is not configured");
 		}
 		var existing = approvals.findBySagaAndRevision(sagaId, revisionId).orElse(null);
-		if (existing != null && existing.isActiveAt(now)) {
+		if (existing != null && isActiveForSignedDeadline(existing, now)) {
 			return tokenFor(existing.sagaId(), existing.articleId(), existing.revisionId(), existing.expiresAt());
 		}
-		Instant expiresAt = now.plus(properties.ttl());
+		Instant createdAt = canonical(now);
+		Instant expiresAt = canonical(createdAt.plus(properties.ttl()));
 		String token = tokenFor(sagaId, articleId, revisionId, expiresAt);
 		approvals.save(new ArticleReviewApproval(
-				UUID.randomUUID(), sagaId, articleId, revisionId, hash(token), now, expiresAt, null));
+				UUID.randomUUID(), sagaId, articleId, revisionId, hash(token), createdAt, expiresAt, null));
 		return token;
 	}
 
@@ -78,7 +80,7 @@ public final class ArticleReviewApprovalTokenService implements ArticleReviewApp
 					.filter(value -> value.sagaId().equals(sagaId))
 					.filter(value -> value.articleId().equals(articleId))
 					.filter(value -> value.revisionId().equals(revisionId))
-					.filter(value -> value.expiresAt().equals(expiresAt))
+					.filter(value -> canonical(value.expiresAt()).equals(expiresAt))
 					.orElseThrow(() -> new IllegalArgumentException("Approval token is invalid"));
 			if (!approval.isActiveAt(now)) {
 				throw new IllegalArgumentException("Approval token is no longer active");
@@ -94,6 +96,14 @@ public final class ArticleReviewApprovalTokenService implements ArticleReviewApp
 	@Override
 	public boolean consume(UUID approvalId, Instant consumedAt) {
 		return approvals.consume(approvalId, consumedAt);
+	}
+
+	private boolean isActiveForSignedDeadline(ArticleReviewApproval approval, Instant now) {
+		return approval.consumedAt() == null && canonical(approval.expiresAt()).isAfter(now);
+	}
+
+	private Instant canonical(Instant value) {
+		return value.truncatedTo(ChronoUnit.SECONDS);
 	}
 
 	private String tokenFor(UUID sagaId, UUID articleId, UUID revisionId, Instant expiresAt) {

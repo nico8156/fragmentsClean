@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim AS ticketverify-engine
+FROM debian:bookworm-slim@sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171 AS ticketverify-engine
 ARG TICKETVERIFY_ENGINE_REPO=https://github.com/nico8156/ticket_engine.git
 ARG TICKETVERIFY_ENGINE_REF=cdebb4e33cc419f5111a2a93b9a4f4f82e1b2bb5
 
@@ -15,7 +15,7 @@ RUN git init -b build . \
     && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
     && cmake --build build --target ticketverify --parallel
 
-FROM maven:3.9.11-eclipse-temurin-21 AS build
+FROM maven:3.9.11-eclipse-temurin-21@sha256:6fdc855a6ed81d288ca7ca37ac6ff5e9308b612485c0801d70b25a858c83d237 AS build
 WORKDIR /workspace
 
 COPY pom.xml ./
@@ -24,7 +24,7 @@ COPY --from=ticketverify-engine /ticketverify-engine/build/ticketverify ./bin/ti
 
 RUN mvn -q -DskipTests package
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jre@sha256:49e21e16e3c86eb7816a44a67549910ed090fbeb40c29c525d58bf5e02e91b0f
 WORKDIR /app
 
 COPY --from=build /workspace/target/*.jar /app/app.jar

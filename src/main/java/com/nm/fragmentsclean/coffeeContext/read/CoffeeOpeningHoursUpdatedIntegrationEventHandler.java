@@ -32,7 +32,7 @@ public class CoffeeOpeningHoursUpdatedIntegrationEventHandler {
     public void handle(CoffeeOpeningHoursUpdatedIntegrationEvent event) {
         projection.replaceForCoffee(event.coffeeId(), views(event));
         if (!publicChangePolicy.isPubliclyVisible(event.coffeeId())) return;
-        sync.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity", event.coffeeId().toString(),
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("coffees", "entity", event.coffeeId().toString(),
                 (long) event.version(), event.occurredAt(), List.of("openingHours")));
     }
 

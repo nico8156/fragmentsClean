@@ -31,7 +31,6 @@ class ArticleFeaturedRankChangedEventHandlerTest {
         public void apply(ArticleRevisionPublishedIntegrationEvent event) { throw new AssertionError(); }
         public void apply(ArticleCreatedEvent event) { throw new AssertionError(); }
         public long count() { return 0; }
-        public void insertSeed(ArticleProjectionRow row) { throw new AssertionError(); }
     }
     private static final class RecordingPublisher implements ProjectionSyncPublisher {
         private ProjectionSyncEvent event;

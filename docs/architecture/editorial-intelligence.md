@@ -133,6 +133,17 @@ before the explicit RSS-to-`DiscoveredSourceItem` mapping. Fingerprints are
 SHA-256 values over the normalized provider fields; Java object hashes are not
 durable fingerprints.
 
+RSS and YouTube now share a bounded HTTP boundary. Redirects are disabled,
+credentials and fragments are refused, and every DNS resolution must contain
+only public addresses. An exact host exception can be supplied only through
+`EDITORIAL_DISCOVERY_EXPLICIT_HOST_ALLOWLIST` for a controlled local endpoint;
+it must remain empty in staging and production. The complete response,
+including body consumption, is bounded by
+`EDITORIAL_DISCOVERY_REQUEST_TIMEOUT_MS`; body bytes and parsed entries are
+bounded by `EDITORIAL_DISCOVERY_MAX_BODY_BYTES` and
+`EDITORIAL_DISCOVERY_MAX_ITEMS`. Destination validation runs before the request
+and again on the response URI to detect redirect or DNS changes.
+
 ## Idempotence and recovery
 
 The primary persistence invariant is `UNIQUE(source_id, external_id)`. A

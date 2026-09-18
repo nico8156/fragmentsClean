@@ -13,8 +13,22 @@ public record ProjectionSyncEvent(
 		Long version,
 		Instant changedAt,
 		List<String> hints,
-		String reason
+		String reason,
+		ProjectionSyncAudience audience,
+		String recipientId
 ) {
+	public ProjectionSyncEvent {
+		if (audience == null) {
+			throw new IllegalArgumentException("Projection sync audience is required");
+		}
+		if (audience == ProjectionSyncAudience.USER && (recipientId == null || recipientId.isBlank())) {
+			throw new IllegalArgumentException("A user projection event requires a recipient id");
+		}
+		if (audience != ProjectionSyncAudience.USER && recipientId != null) {
+			throw new IllegalArgumentException("Only user projection events may have a recipient id");
+		}
+	}
+
 	public static ProjectionSyncEvent connected(Instant now) {
 		return new ProjectionSyncEvent(
 				null,
@@ -26,6 +40,8 @@ public record ProjectionSyncEvent(
 				null,
 				now,
 				List.of(),
+				null,
+				ProjectionSyncAudience.PUBLIC,
 				null);
 	}
 
@@ -40,10 +56,12 @@ public record ProjectionSyncEvent(
 				null,
 				now,
 				List.of(),
+				null,
+				ProjectionSyncAudience.PUBLIC,
 				null);
 	}
 
-	public static ProjectionSyncEvent projectionUpdated(
+	public static ProjectionSyncEvent publicProjectionUpdated(
 			String projection,
 			String scope,
 			String entityId,
@@ -60,6 +78,53 @@ public record ProjectionSyncEvent(
 				version,
 				changedAt,
 				hints == null ? List.of() : List.copyOf(hints),
+				null,
+				ProjectionSyncAudience.PUBLIC,
+				null);
+	}
+
+	public static ProjectionSyncEvent userProjectionUpdated(
+			String recipientId,
+			String projection,
+			String scope,
+			String entityId,
+			Long version,
+			Instant changedAt,
+			List<String> hints) {
+		return new ProjectionSyncEvent(
+				null,
+				"projection.updated",
+				1,
+				projection,
+				scope,
+				entityId,
+				version,
+				changedAt,
+				hints == null ? List.of() : List.copyOf(hints),
+				null,
+				ProjectionSyncAudience.USER,
+				recipientId);
+	}
+
+	public static ProjectionSyncEvent adminProjectionUpdated(
+			String projection,
+			String scope,
+			String entityId,
+			Long version,
+			Instant changedAt,
+			List<String> hints) {
+		return new ProjectionSyncEvent(
+				null,
+				"projection.updated",
+				1,
+				projection,
+				scope,
+				entityId,
+				version,
+				changedAt,
+				hints == null ? List.of() : List.copyOf(hints),
+				null,
+				ProjectionSyncAudience.ADMIN,
 				null);
 	}
 
@@ -74,6 +139,8 @@ public record ProjectionSyncEvent(
 				version,
 				changedAt,
 				hints,
-				reason);
+				reason,
+				audience,
+				recipientId);
 	}
 }

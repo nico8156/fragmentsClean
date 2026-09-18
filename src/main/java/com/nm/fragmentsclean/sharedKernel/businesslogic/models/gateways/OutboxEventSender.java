@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways;
 
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 
 
 /**
@@ -9,5 +9,5 @@ import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositori
  */
 
 public interface OutboxEventSender {
-    void send(OutboxEventJpaEntity event) throws Exception;
+    void send(OutboxMessage event) throws Exception;
 }

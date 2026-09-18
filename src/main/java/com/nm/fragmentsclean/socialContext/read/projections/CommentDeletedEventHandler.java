@@ -33,7 +33,7 @@ public class CommentDeletedEventHandler implements EventHandler<CommentDeletedEv
     public void handle(CommentDeletedEvent event) {
         log.info("[social-read] apply CommentDeletedEvent commentId={} v={}", event.commentId(), event.version());
         projectionRepository.apply(event);
-        projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+        projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
                 "comments",
                 "target",
                 event.targetId().toString(),

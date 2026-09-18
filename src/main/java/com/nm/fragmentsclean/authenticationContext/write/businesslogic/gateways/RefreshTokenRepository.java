@@ -9,6 +9,14 @@ public interface RefreshTokenRepository {
 
   Optional<RefreshToken> findByToken(String token);
 
+  Optional<UUID> findFamilyIdByToken(String token);
+
+  Optional<RefreshToken> findByTokenForUpdate(String token);
+
+  void lockFamily(UUID familyId);
+
+  List<RefreshToken> findFamilyByTokenForUpdate(String token);
+
   RefreshToken save(RefreshToken refreshToken);
 
   List<RefreshToken> findAllByUserId(UUID userId);

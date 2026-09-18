@@ -468,6 +468,15 @@ consumed atomically before dispatching `PublishArticleRevisionCommand` inside
 the same application transaction. A second request, an expired token, a
 tampered token, or a stale revision is rejected.
 
+Approval timestamps are canonicalized to whole UTC seconds before a `v1` token
+is signed and persisted because the signed payload deliberately carries epoch
+seconds. Validation accepts a pre-hardening database row only when truncating
+its stored expiry to seconds produces the exact signed expiry. This
+compatibility rule never adds a grace period: the signed epoch second remains
+the authoritative deadline. Consumption remains a conditional SQL update in
+the surrounding publication transaction, so publication rollback also rolls
+back token consumption.
+
 Opening the email link never publishes. It opens Studio with a confirmation
 screen, and only the explicit confirmation button calls the authenticated
 `POST` approval endpoint. Publication therefore keeps the existing command

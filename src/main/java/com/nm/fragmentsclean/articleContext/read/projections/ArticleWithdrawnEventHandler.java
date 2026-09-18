@@ -15,7 +15,7 @@ public class ArticleWithdrawnEventHandler {
     }
     @Transactional public void handle(ArticleWithdrawnIntegrationEvent event) {
         articles.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("articles", "collection",
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("articles", "collection",
                 event.articleId().toString(), event.version(), event.occurredAt(),
                 List.of("draft", "publicationStatus")));
     }

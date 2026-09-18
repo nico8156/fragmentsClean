@@ -8,21 +8,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "admin.security")
 public class AdminSecurityProperties {
-	private String token = "";
 	private String bootstrapUserIds = "";
 	private String bootstrapEmails = "";
-
-	public String getToken() {
-		return token;
-	}
-
-	public void setToken(String token) {
-		this.token = token;
-	}
-
-	public boolean hasToken() {
-		return token != null && !token.isBlank();
-	}
 
 	public void setBootstrapUserIds(String bootstrapUserIds) {
 		this.bootstrapUserIds = bootstrapUserIds;

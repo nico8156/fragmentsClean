@@ -67,7 +67,7 @@ Le sharedKernel vise un **juste milieu** :
 
 ### 3) Outbox pattern (fiabilité)
 
-* `OutboxEventRepository`
+* `OutboxDeliveryStore`
 * `OutboxEventSender`
 * `OutboxStatus`
 * `OutboxDomainEventPublisher`

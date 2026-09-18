@@ -1,6 +1,5 @@
 package com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories;
 
-import com.nm.fragmentsclean.articleContext.read.projections.ArticleProjectionRow;
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleCreatedEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleRevisionPublishedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.ArticleArchivedIntegrationEvent;
@@ -16,6 +15,4 @@ public interface ArticleProjectionRepository {
 	void apply(ArticleFeaturedRankChangedIntegrationEvent event);
 
 	long count();
-
-	void insertSeed(ArticleProjectionRow row);
 }

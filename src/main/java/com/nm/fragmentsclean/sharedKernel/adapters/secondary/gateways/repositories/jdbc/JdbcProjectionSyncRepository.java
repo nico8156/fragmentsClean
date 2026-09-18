@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncAudience;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncRepository;
 
 @Repository
@@ -34,8 +35,10 @@ public class JdbcProjectionSyncRepository implements ProjectionSyncRepository {
 				    entity_id,
 				    version,
 				    changed_at,
+				    audience,
+				    recipient_id,
 				    payload_json
-				) VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)
 				RETURNING id
 				""",
 				Long.class,
@@ -45,6 +48,8 @@ public class JdbcProjectionSyncRepository implements ProjectionSyncRepository {
 				event.entityId(),
 				event.version(),
 				Timestamp.from(event.changedAt() == null ? Instant.now() : event.changedAt()),
+				event.audience().name(),
+				event.recipientId(),
 				toJson(event));
 		return event.withId(String.valueOf(id));
 	}
@@ -59,6 +64,8 @@ public class JdbcProjectionSyncRepository implements ProjectionSyncRepository {
 				       entity_id,
 				       version,
 				       changed_at,
+				       audience,
+				       recipient_id,
 				       payload_json
 				FROM projection_sync_events
 				WHERE id > ?
@@ -87,7 +94,9 @@ public class JdbcProjectionSyncRepository implements ProjectionSyncRepository {
 				rs.getObject("version", Long.class),
 				rs.getTimestamp("changed_at").toInstant(),
 				readHints(rs.getString("payload_json")),
-				readReason(rs.getString("payload_json")));
+				readReason(rs.getString("payload_json")),
+				ProjectionSyncAudience.valueOf(rs.getString("audience")),
+				rs.getString("recipient_id"));
 	}
 
 	private int readSchemaVersion(String payloadJson) {

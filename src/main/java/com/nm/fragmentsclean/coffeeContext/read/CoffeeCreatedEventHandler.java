@@ -41,7 +41,7 @@ public class CoffeeCreatedEventHandler implements EventHandler<CoffeeCreatedEven
 			return;
 		}
 		if (!publicChangePolicy.isPubliclyVisible(event.coffeeId().value())) return;
-        projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+        projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
                 "coffees",
                 "entity",
                 event.coffeeId().value().toString(),

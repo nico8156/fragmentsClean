@@ -32,7 +32,7 @@ public final class ArticleAuthoringHealthIndicator implements HealthIndicator {
     public Health health() {
         var stale = countStale();
         var failed = countFailed();
-        var builder = stale > 0 ? Health.status("DEGRADED") : Health.up();
+        var builder = stale > 0 || failed > 0 ? Health.status("DEGRADED") : Health.up();
         return builder.withDetail("staleActiveSagas", stale)
                 .withDetail("failedSagas", failed)
                 .withDetail("staleAfterMinutes", staleAfterMinutes).build();

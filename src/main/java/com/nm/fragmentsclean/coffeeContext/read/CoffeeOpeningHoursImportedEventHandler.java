@@ -37,7 +37,7 @@ public class CoffeeOpeningHoursImportedEventHandler implements EventHandler<Coff
 		projectionRepository.replaceForCoffee(coffeeId, event.periods().isEmpty()
 				? toViews(coffeeId, event.weekdayDescriptions()) : structuredViews(coffeeId, event.periods()));
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

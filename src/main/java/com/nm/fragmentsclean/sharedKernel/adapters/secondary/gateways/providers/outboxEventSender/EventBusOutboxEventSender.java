@@ -2,7 +2,7 @@ package com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEvent;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.gateways.OutboxEventSender;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class EventBusOutboxEventSender implements OutboxEventSender {
     }
 
     @Override
-    public void send(OutboxEventJpaEntity entity) throws Exception {
+    public void send(OutboxMessage entity) throws Exception {
         String type = entity.getEventType();
         String payload = entity.getPayloadJson();
 

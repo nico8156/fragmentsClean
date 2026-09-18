@@ -32,7 +32,7 @@ public class CoffeeCreatedIntegrationEventHandler {
 		var mutation = projectionRepository.applyIfNewer(view);
 		if (!mutation.applied()) return;
 		if (!publicChangePolicy.isPubliclyVisible(view.id())) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees", "entity", view.id().toString(), mutation.version(), mutation.changedAt(), List.of("summary")));
 	}
 }

@@ -45,7 +45,7 @@ public class CoffeePhotosImportedEventHandler implements EventHandler<CoffeePhot
 			java.time.Instant occurredAt) {
 		projectionRepository.replaceForCoffee(coffeeId, photos);
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

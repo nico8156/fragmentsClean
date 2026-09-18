@@ -31,7 +31,7 @@ public class CoffeePhotoDeletedEventHandler implements EventHandler<CoffeePhotoD
 		var coffeeId = event.coffeeId().value();
 		projectionRepository.deletePhoto(coffeeId, event.photoId().value());
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

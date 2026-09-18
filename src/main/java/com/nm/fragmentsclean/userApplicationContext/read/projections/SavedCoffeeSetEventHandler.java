@@ -26,7 +26,8 @@ public class SavedCoffeeSetEventHandler implements EventHandler<SavedCoffeeSetEv
 	@Transactional
 	public void handle(SavedCoffeeSetEvent event) {
 		projectionRepository.apply(event);
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.userProjectionUpdated(
+				event.userId().toString(),
 				"savedCoffees",
 				"user",
 				event.userId().toString(),

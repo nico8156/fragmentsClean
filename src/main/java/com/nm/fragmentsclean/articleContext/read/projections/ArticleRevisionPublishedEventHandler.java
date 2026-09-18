@@ -22,7 +22,7 @@ public class ArticleRevisionPublishedEventHandler {
     @Transactional
     public void handle(ArticleRevisionPublishedIntegrationEvent event) {
         repository.apply(event);
-        syncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+        syncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
                 "articles", "entity", event.articleId().toString(), event.version(),
                 event.occurredAt(), List.of("content", "publicationStatus")));
     }

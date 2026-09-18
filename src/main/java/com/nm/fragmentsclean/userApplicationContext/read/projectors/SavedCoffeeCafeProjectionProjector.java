@@ -37,7 +37,8 @@ public class SavedCoffeeCafeProjectionProjector {
 
 	private void publishForUsers(UUID coffeeId, long version, java.time.Instant occurredAt, List<String> hints) {
 		for (UUID userId : projectionRepository.activeUserIdsForCoffee(coffeeId)) {
-			projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+			projectionSyncPublisher.publish(ProjectionSyncEvent.userProjectionUpdated(
+					userId.toString(),
 					"savedCoffees",
 					"user",
 					userId.toString(),

@@ -26,7 +26,7 @@ public class CoffeeUnpublishedEventHandler implements EventHandler<CoffeeUnpubli
         boolean wasPubliclyVisible = publicChangePolicy.isPubliclyVisible(coffeeId);
         var mutation = repository.markDraftIfNewer(coffeeId, event.version(), event.occurredAt());
         if (!mutation.applied() || !wasPubliclyVisible) return;
-        syncPublisher.publish(ProjectionSyncEvent.projectionUpdated("coffees", "entity",
+        syncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated("coffees", "entity",
                 coffeeId.toString(), mutation.version(), mutation.changedAt(), List.of("summary", "publicationStatus")));
     }
 }

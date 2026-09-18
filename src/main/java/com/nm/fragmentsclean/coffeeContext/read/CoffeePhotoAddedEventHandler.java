@@ -44,7 +44,7 @@ public class CoffeePhotoAddedEventHandler implements EventHandler<CoffeePhotoAdd
 				coffeeId,
 				photoUri, cover, sortOrder));
 		if (!publicChangePolicy.isPubliclyVisible(coffeeId)) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

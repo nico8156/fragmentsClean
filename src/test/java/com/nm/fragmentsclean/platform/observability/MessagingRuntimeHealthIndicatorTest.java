@@ -34,6 +34,7 @@ class MessagingRuntimeHealthIndicatorTest {
         jdbc.outboxPending = 4;
         jdbc.outboxFailed = 1;
         jdbc.outboxStale = 2;
+        jdbc.outboxExpiredLeases = 1;
         jdbc.inboxFailed = 3;
         jdbc.inboxStale = 1;
         jdbc.latestProjection = Instant.parse("2026-09-05T08:58:00Z");
@@ -49,9 +50,11 @@ class MessagingRuntimeHealthIndicatorTest {
         assertThat(health.getDetails())
                 .containsEntry("outboxFailed", 1L)
                 .containsEntry("outboxStale", 2L)
+                .containsEntry("outboxExpiredLeases", 1L)
                 .containsEntry("inboxFailed", 3L)
                 .containsEntry("latestProjectionAgeSeconds", 120L);
         assertThat(meters.get("fragments.outbox.pending").gauge().value()).isEqualTo(4d);
+        assertThat(meters.get("fragments.outbox.expired.leases").gauge().value()).isEqualTo(1d);
         assertThat(meters.get("fragments.inbox.failed").gauge().value()).isEqualTo(3d);
     }
 
@@ -70,6 +73,7 @@ class MessagingRuntimeHealthIndicatorTest {
         long outboxPending;
         long outboxFailed;
         long outboxStale;
+        long outboxExpiredLeases;
         long inboxFailed;
         long inboxStale;
         Instant latestProjection;
@@ -94,6 +98,7 @@ class MessagingRuntimeHealthIndicatorTest {
         @Override
         @SuppressWarnings("unchecked")
         public <T> T queryForObject(String sql, Class<T> requiredType, Object... args) {
+            if (sql.contains("outbox_events") && sql.contains("lease_until")) return (T) Long.valueOf(outboxExpiredLeases);
             if (sql.contains("outbox_events")) return (T) Long.valueOf(outboxStale);
             if (sql.contains("inbox_messages")) return (T) Long.valueOf(inboxStale);
             throw new AssertionError("Unexpected SQL: " + sql);

@@ -39,6 +39,7 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
         Snapshot snapshot = snapshot();
         boolean degraded = snapshot.outboxFailed > 0
                 || snapshot.outboxStale > 0
+                || snapshot.outboxExpiredLeases > 0
                 || snapshot.inboxFailed > 0
                 || snapshot.inboxStale > 0;
         Health.Builder result = degraded ? Health.status("DEGRADED") : Health.up();
@@ -46,6 +47,7 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
                 .withDetail("outboxPending", snapshot.outboxPending)
                 .withDetail("outboxFailed", snapshot.outboxFailed)
                 .withDetail("outboxStale", snapshot.outboxStale)
+                .withDetail("outboxExpiredLeases", snapshot.outboxExpiredLeases)
                 .withDetail("inboxFailed", snapshot.inboxFailed)
                 .withDetail("inboxStale", snapshot.inboxStale)
                 .withDetail("latestProjectionAgeSeconds", snapshot.latestProjectionAgeSeconds)
@@ -58,6 +60,9 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
                 .description("Pending transactional outbox events").register(meters);
         Gauge.builder("fragments.outbox.failed", this, ignored -> count("SELECT COUNT(*) FROM outbox_events WHERE status = 'FAILED'"))
                 .description("Failed transactional outbox events").register(meters);
+        Gauge.builder("fragments.outbox.expired.leases", this,
+                        ignored -> countBefore("SELECT COUNT(*) FROM outbox_events WHERE status = 'PENDING' AND lease_until IS NOT NULL AND lease_until < ?", Timestamp.from(clock.instant())))
+                .description("Expired transactional outbox delivery leases").register(meters);
         Gauge.builder("fragments.inbox.failed", this, ignored -> count("SELECT COUNT(*) FROM inbox_messages WHERE status = 'FAILED'"))
                 .description("Failed inbox messages").register(meters);
         Gauge.builder("fragments.projection.latest.age", this, ignored -> latestProjectionAgeSeconds())
@@ -70,6 +75,7 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
                 count("SELECT COUNT(*) FROM outbox_events WHERE status = 'PENDING'"),
                 count("SELECT COUNT(*) FROM outbox_events WHERE status = 'FAILED'"),
                 countBefore("SELECT COUNT(*) FROM outbox_events WHERE status = 'PENDING' AND created_at < ?", staleBefore),
+                countBefore("SELECT COUNT(*) FROM outbox_events WHERE status = 'PENDING' AND lease_until IS NOT NULL AND lease_until < ?", Timestamp.from(clock.instant())),
                 count("SELECT COUNT(*) FROM inbox_messages WHERE status = 'FAILED'"),
                 countBefore("SELECT COUNT(*) FROM inbox_messages WHERE status = 'RECEIVED' AND received_at < ?", staleBefore),
                 latestProjectionAgeSeconds());
@@ -91,6 +97,6 @@ public class MessagingRuntimeHealthIndicator implements HealthIndicator {
         return Math.max(0, Duration.between(latest.toInstant(), Instant.now(clock)).toSeconds());
     }
 
-    private record Snapshot(long outboxPending, long outboxFailed, long outboxStale,
+    private record Snapshot(long outboxPending, long outboxFailed, long outboxStale, long outboxExpiredLeases,
                             long inboxFailed, long inboxStale, long latestProjectionAgeSeconds) {}
 }

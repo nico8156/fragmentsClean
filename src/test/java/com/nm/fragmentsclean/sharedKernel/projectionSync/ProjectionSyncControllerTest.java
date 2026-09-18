@@ -14,16 +14,19 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncController;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.projectionSync.ProjectionSyncDispatcher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncEvent;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.ProjectionSyncSubscriber;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class ProjectionSyncControllerTest {
+	private static final String USER_ID = "22222222-2222-2222-2222-222222222222";
+
 	@Test
-	void opens_sse_stream() throws Exception {
+	void opens_user_sse_stream_scoped_to_authenticated_subject() throws Exception {
 		var dispatcher = new FakeProjectionSyncDispatcher();
-		MvcResult result = mockMvc(dispatcher).perform(get("/api/sync/events"))
+		MvcResult result = mockMvc(dispatcher).perform(get("/api/sync/events").principal(() -> USER_ID))
 				.andExpect(status().isOk())
 				.andExpect(request().asyncStarted())
 				.andReturn();
@@ -31,6 +34,7 @@ class ProjectionSyncControllerTest {
 		MockHttpServletResponse response = result.getResponse();
 		assertThat(response.getContentType()).startsWith("text/event-stream");
 		assertThat(dispatcher.lastEventId).isNull();
+		assertThat(dispatcher.subscriber).isEqualTo(ProjectionSyncSubscriber.user(USER_ID));
 	}
 
 	@Test
@@ -42,12 +46,14 @@ class ProjectionSyncControllerTest {
 				.andReturn();
 
 		assertThat(result.getResponse().getContentType()).startsWith("text/event-stream");
+		assertThat(dispatcher.subscriber).isEqualTo(ProjectionSyncSubscriber.admin());
 	}
 
 	@Test
 	void forwards_last_event_id_to_dispatcher() throws Exception {
 		var dispatcher = new FakeProjectionSyncDispatcher();
 		mockMvc(dispatcher).perform(get("/api/sync/events")
+						.principal(() -> USER_ID)
 						.header("Last-Event-ID", "42"))
 				.andExpect(status().isOk())
 				.andExpect(request().asyncStarted());
@@ -61,14 +67,16 @@ class ProjectionSyncControllerTest {
 
 	private static class FakeProjectionSyncDispatcher extends ProjectionSyncDispatcher {
 		private String lastEventId;
+		private ProjectionSyncSubscriber subscriber;
 
 		FakeProjectionSyncDispatcher() {
 			super(null, null, null, null);
 		}
 
 		@Override
-		public SseEmitter openStream(String lastEventId) {
+		public SseEmitter openStream(String lastEventId, ProjectionSyncSubscriber subscriber) {
 			this.lastEventId = lastEventId;
+			this.subscriber = subscriber;
 			var emitter = new SseEmitter(1_000L);
 			try {
 				emitter.send(SseEmitter.event()

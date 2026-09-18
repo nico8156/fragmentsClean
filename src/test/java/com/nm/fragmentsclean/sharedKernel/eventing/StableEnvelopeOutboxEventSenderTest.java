@@ -4,10 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.EventBus;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.outboxEventSender.EventBusOutboxEventSender;
 import com.nm.fragmentsclean.platform.eventing.StableEnvelopeOutboxEventSender;
-import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.entities.OutboxEventJpaEntity;
+import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.OutboxMessage;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationMessagePublisher;
-import com.nm.fragmentsclean.sharedKernel.businesslogic.models.OutboxStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -32,7 +31,7 @@ class StableEnvelopeOutboxEventSenderTest {
                 objectMapper,
                 false);
 
-        sender.send(new OutboxEventJpaEntity(
+        sender.send(new OutboxMessage(1,
                 "evt-1",
                 "com.nm.fragmentsclean.socialContext.write.businesslogic.models.CommentCreatedEvent",
                 "Comment",
@@ -49,7 +48,6 @@ class StableEnvelopeOutboxEventSenderTest {
                 """,
                 Instant.now(),
                 Instant.now(),
-                OutboxStatus.PENDING,
                 0));
 
         assertThat(published).hasSize(1);

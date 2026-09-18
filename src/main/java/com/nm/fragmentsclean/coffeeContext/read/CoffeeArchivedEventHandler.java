@@ -38,7 +38,7 @@ public class CoffeeArchivedEventHandler implements EventHandler<CoffeeArchivedEv
 		boolean wasPubliclyVisible = publicChangePolicy.isPubliclyVisible(coffeeId);
 		var mutation = projectionRepository.markArchivedIfNewer(coffeeId, event.version(), event.occurredAt());
 		if (!mutation.applied() || !wasPubliclyVisible) return;
-		projectionSyncPublisher.publish(ProjectionSyncEvent.projectionUpdated(
+		projectionSyncPublisher.publish(ProjectionSyncEvent.publicProjectionUpdated(
 				"coffees",
 				"entity",
 				coffeeId.toString(),

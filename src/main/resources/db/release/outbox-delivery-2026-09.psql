@@ -1,0 +1,47 @@
+-- Separate additive release; prior manifests and checksums remain immutable.
+\set ON_ERROR_STOP on
+\if :{?release_checksum}
+\else
+  SELECT 1 / 0 AS missing_release_checksum;
+\endif
+\if :{?source_revision}
+\else
+  SELECT 1 / 0 AS missing_source_revision;
+\endif
+SELECT :'release_checksum' ~ '^[0-9a-f]{64}$' AND :'source_revision' ~ '^[0-9a-f]{40}$' AS valid_metadata \gset
+\if :valid_metadata
+\else
+  SELECT 1 / 0 AS invalid_migration_metadata;
+\endif
+BEGIN;
+SET LOCAL search_path TO public, pg_catalog;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '5min';
+SELECT pg_advisory_xact_lock(20260917, 8);
+SELECT EXISTS (SELECT 1 FROM release_schema_history WHERE version='logout-revocation-2026-09') AS valid_baseline \gset
+\if :valid_baseline
+\else
+  SELECT 1 / 0 AS missing_logout_revocation_baseline;
+\endif
+SELECT EXISTS (SELECT 1 FROM release_schema_history WHERE version='outbox-delivery-2026-09') AS already_applied,
+       NOT EXISTS (SELECT 1 FROM release_schema_history WHERE version='outbox-delivery-2026-09'
+                   AND checksum <> :'release_checksum') AS checksum_matches \gset
+\if :checksum_matches
+\else
+  SELECT 1 / 0 AS migration_checksum_mismatch;
+\endif
+\if :already_applied
+  \echo Outbox delivery migration already applied
+\else
+DO $preflight$
+BEGIN
+    IF to_regclass('public.outbox_events') IS NULL THEN
+        RAISE EXCEPTION 'Unsupported outbox delivery baseline';
+    END IF;
+END;
+$preflight$;
+\ir 2026-09-17-outbox-delivery.sql
+INSERT INTO release_schema_history(version,checksum,source_revision)
+VALUES ('outbox-delivery-2026-09', :'release_checksum', :'source_revision');
+\endif
+COMMIT;

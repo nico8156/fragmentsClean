@@ -15,7 +15,7 @@ public class ArticleFeaturedRankChangedEventHandler {
     }
     @Transactional public void handle(ArticleFeaturedRankChangedIntegrationEvent event) {
         articles.apply(event);
-        sync.publish(ProjectionSyncEvent.projectionUpdated("articles", "collection",
+        sync.publish(ProjectionSyncEvent.publicProjectionUpdated("articles", "collection",
                 event.articleId().toString(), event.version(), event.occurredAt(), List.of("featured")));
     }
 }
