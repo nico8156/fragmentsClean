@@ -1,0 +1,3 @@
+e0740462e904440b314e803899965c2cf8574947:src/test/java/com/nm/fragmentsclean/architecture/CommittedSecretGuardTest.java:private-key:20
+571fa51505239d8e70bb81e319e90fc250220b09:src/test/java/com/nm/fragmentsclean/architecture/DeploymentSafetyIT.java:private-key:100
+6d65f4598894e8b4e6e17aedde40cc9c1851cf0f:src/main/resources/application.properties:generic-api-key:25

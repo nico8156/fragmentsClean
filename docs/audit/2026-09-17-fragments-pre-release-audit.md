@@ -397,6 +397,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-023 — Recette App Store et crash reporting natif non attestés par cette passe
 
+> **Remédiation technique engagée le 2026-09-18 :** le mobile intègre Sentry
+> avec upload des sources/symboles, minimisation des événements et configuration
+> production fermée par défaut. Un inspecteur reproductible a validé l'IPA
+> TestFlight `1.0.0 (7)`. La fermeture reste conditionnée à une nouvelle IPA du
+> commit candidat, à la symbolication Sentry et à la matrice appareil signée ;
+> voir `docs/audits/2026-09-18-p1-fr023-fr024-release-certification.md`.
+
 - **Module / catégorie :** Mobile · distribution/exploitation — Dette de validation.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** /Users/nicolasmaldiney/fragmentsCleanFront/docs/deployment/app-store-staging-runbook.md ; docs/deployment/testflight-app-store-release.md:120,151,226 ; /Users/nicolasmaldiney/fragmentsCleanFront/eas.json ; /Users/nicolasmaldiney/fragmentsCleanFront/app.config.js:37-40,96-127.
@@ -412,6 +419,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 > clair est remplacé par SHA-256 avec invalidation explicite des anciennes
 > sessions. La certification de l'historique, des artefacts, logs et backups
 > reste ouverte ; voir `docs/audits/2026-09-17-p1-refresh-token-hardening.md`.
+>
+> **Complément du 2026-09-18 :** Gitleaks `8.28.0` a scanné l'historique complet
+> des trois dépôts. Les huit occurrences ont été classifiées sans afficher leur
+> valeur ; le secret Google historique diffère du SecureString staging actuel et
+> l'ancien bearer Studio n'est plus provisionné. Les CI bloquent désormais toute
+> nouvelle occurrence. La vérification exhaustive des anciens artefacts EAS,
+> logs CloudWatch/SSM et backups demeure une limite opérationnelle distincte.
 
 - **Module / catégorie :** Authentification · CI · données — Sécurité / dette d’audit.
 - **Sévérité / priorité :** HIGH / P1.

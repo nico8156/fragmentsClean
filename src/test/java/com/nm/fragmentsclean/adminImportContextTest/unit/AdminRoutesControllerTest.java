@@ -1,5 +1,6 @@
 package com.nm.fragmentsclean.adminImportContextTest.unit;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -16,10 +17,13 @@ import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminImportPlacesController;
 import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.AdminStudioArticlesController;
-import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminSecurityProperties;
-import com.nm.fragmentsclean.adminImportContext.adapters.primary.rest.security.AdminTokenAuthenticationFilter;
 import com.nm.fragmentsclean.coffeeContext.read.ListCoffeesQuery;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.admin.AdminCoffeeManagementExceptionHandler;
 import com.nm.fragmentsclean.coffeeContext.read.adapters.primary.springboot.admin.AdminCoffeesReadController;
@@ -62,7 +66,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class AdminTokenSecurityTest {
+/**
+ * Standalone controller and CORS contract tests. The lightweight bearer filter
+ * below belongs only to this test harness; production authorization is exercised
+ * by {@code AdminAccessSecurityIT} through the real OAuth/JWT security chain.
+ */
+class AdminRoutesControllerTest {
 	@Test
 	void admin_route_without_token_returns_401() throws Exception {
 		mockMvc("admin-secret").perform(get("/api/admin/import/places").param("query", "cafe"))
@@ -382,8 +391,6 @@ class AdminTokenSecurityTest {
 	private MockMvc mockMvc(String token,
 			CountingListCoffeesQueryHandler queryHandler,
 			RecordingCoffeeCommandHandlers handlers) {
-		var properties = new AdminSecurityProperties();
-		properties.setToken(token);
 		CorsConfigurationSource corsConfigurationSource = new FragmentsCorsConfiguration()
 				.corsConfigurationSource(corsProperties());
 
@@ -392,9 +399,38 @@ class AdminTokenSecurityTest {
 						adminStudioArticlesController(),
 						adminCoffeesController(queryHandler, handlers),
 						projectionSyncController())
-				.addFilters(new CorsFilter(corsConfigurationSource), new AdminTokenAuthenticationFilter(properties))
+				.addFilters(new CorsFilter(corsConfigurationSource), new TestBearerFilter(token))
 				.setControllerAdvice(new AdminCoffeeManagementExceptionHandler())
 				.build();
+	}
+
+	private static final class TestBearerFilter extends org.springframework.web.filter.OncePerRequestFilter {
+		private final String expectedToken;
+
+		private TestBearerFilter(String expectedToken) {
+			this.expectedToken = expectedToken;
+		}
+
+		@Override
+		protected boolean shouldNotFilter(HttpServletRequest request) {
+			return !request.getRequestURI().startsWith("/api/admin/");
+		}
+
+		@Override
+		protected void doFilterInternal(HttpServletRequest request,
+				HttpServletResponse response,
+				FilterChain filterChain) throws ServletException, IOException {
+			if (org.springframework.web.cors.CorsUtils.isPreFlightRequest(request)) {
+				filterChain.doFilter(request, response);
+				return;
+			}
+			var authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+			if (expectedToken.isBlank() || !("Bearer " + expectedToken).equals(authorization)) {
+				response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+				return;
+			}
+			filterChain.doFilter(request, response);
+		}
 	}
 
 	private FragmentsCorsProperties corsProperties() {

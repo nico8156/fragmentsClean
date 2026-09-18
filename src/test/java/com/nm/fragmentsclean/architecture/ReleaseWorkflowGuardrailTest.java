@@ -21,6 +21,13 @@ class ReleaseWorkflowGuardrailTest {
         .contains("pull_request:", "push:", "branches: [main]", "bash scripts/verify-backend-ci.sh")
         .contains(
             "java-version: '21'",
+            "fetch-depth: 0",
+            "zricethezav/gitleaks:v8.28.0@sha256:",
+            "--network none",
+            "--read-only",
+            "/repo:ro",
+            "--log-opts=--all",
+            "--redact=100",
             "scan-type: sbom",
             "scan-ref: target/bom.json",
             "severity: HIGH,CRITICAL",
@@ -34,6 +41,7 @@ class ReleaseWorkflowGuardrailTest {
             "--load",
             "docker push")
         .contains("bash scripts/verify-release-health.sh");
+    assertThat(ci).doesNotContain("zricethezav/gitleaks:v8.28.0\n");
     assertThat(ci).doesNotContain("@v");
     assertThat(deploy).doesNotContain("@v");
     assertImmutableActionReferences(ci);

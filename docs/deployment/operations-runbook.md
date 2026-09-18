@@ -300,7 +300,8 @@ docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
 Test stream locally from the server:
 
 ```bash
-curl -N -H "Authorization: Bearer $ADMIN_SECURITY_TOKEN" \
+# STUDIO_ACCESS_TOKEN is a short-lived OAuth/JWT token for an allowlisted admin.
+curl -N -H "Authorization: Bearer $STUDIO_ACCESS_TOKEN" \
   http://127.0.0.1:8080/api/admin/sync/events
 ```
 
