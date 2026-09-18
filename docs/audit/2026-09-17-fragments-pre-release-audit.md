@@ -284,6 +284,14 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 
 ### FR-015 — Santé globale UP alors que deux sous-systèmes restent dégradés
 
+> **Remédiation locale engagée le 2026-09-18 :** `DEGRADED` participe désormais
+> à l'agrégation Actuator, un groupe `release` sépare le gate de promotion de la
+> liveness, et le workflow vérifie la présence et l'état `UP` de chaque composant
+> requis. Les sagas Article `FAILED` dégradent maintenant réellement leur
+> indicateur. Le triage des données staging/DLQ et une transaction synthétique
+> authentifiée restent des preuves opérationnelles ouvertes : FR-015 n'est donc
+> pas encore déclaré clos.
+
 - **Module / catégorie :** Backend · AWS · release — Observabilité / exploitation.
 - **Sévérité / priorité :** HIGH / P1.
 - **Preuves :** src/main/java/com/nm/fragmentsclean/platform/observability/MessagingRuntimeHealthIndicator.java:39-52 ; src/main/java/com/nm/fragmentsclean/articleContext/write/adapters/secondary/observability/ArticleAuthoringHealthIndicator.java:32-47 ; .github/workflows/deploy-staging-backend.yml:163-187 ; endpoint staging /actuator/health lu le 17/09.
@@ -294,6 +302,13 @@ BLOCKER signifie que je déconseille explicitement la release tant que la condit
 - **Test de résolution :** Panne simulée : alarme au bon owner, commande reliée à saga/outbox/inbox, recette read-after-write ; aucun faux succès de release.
 
 ### FR-016 — Pas de quality gate PR backend/mobile équivalent au gate de déploiement
+
+> **Remédiation backend engagée le 2026-09-18 :** un workflow PR/`main` Java 21
+> appelle le même `scripts/verify-backend-ci.sh` que le déploiement staging ; ce
+> gate couvre secrets connus, scripts, suite release Testcontainers sans skip et
+> packaging. Les workflows mobile, Studio, les protections de branche distantes
+> et le triage SCA FR-018 restent à vérifier/appliquer dans leurs dépôts :
+> FR-016 demeure partiellement ouvert à l'échelle de la plateforme.
 
 - **Module / catégorie :** CI/CD · backend/mobile/Studio — Dette de test / release.
 - **Sévérité / priorité :** HIGH / P1.

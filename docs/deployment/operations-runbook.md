@@ -26,10 +26,33 @@ db/data.sql
 ## Health
 
 ```bash
-curl -sS http://127.0.0.1:8080/actuator/health
+curl -sS http://127.0.0.1:8080/actuator/health/liveness
+curl -sS http://127.0.0.1:8080/actuator/health/release
 docker compose ps
 docker compose logs --tail=200 backend
 ```
+
+`liveness` answers whether the JVM should remain running. Recoverable business
+backlog must not restart the container. The `release` group is stricter and
+contains `db`, messaging, article authoring, ticket verification and editorial
+operations. A release is healthy only when the group and every required
+component are `UP`:
+
+```bash
+bash scripts/verify-release-health.sh \
+  https://fragments-staging.anchor-event.fr/actuator/health/release
+```
+
+`DEGRADED` participates in the global status aggregation but deliberately keeps
+HTTP 200. Deployment and promotion scripts must parse the release group rather
+than equating an HTTP response with operational readiness. Do not add business
+backlog to liveness.
+
+If the release gate fails, capture the component name and bounded identifiers,
+then use the relevant section below. Do not purge a failed saga, inbox row,
+outbox row or DLQ message merely to make the gate green. The cause must be
+classified, corrected or explicitly declared obsolete, and convergence must be
+proved before retry/deletion. The workflow stays failed until then.
 
 ## Backend Image Drift
 
@@ -182,6 +205,22 @@ email subscription. AWS sends a confirmation message; alarms are not delivered
 to that address until the subscription is confirmed.
 
 ## Editorial operations
+
+`articleAuthoringHealth` is `DEGRADED` for both stale active sagas and terminal
+`FAILED` sagas. Inspect bounded metadata without article content:
+
+```bash
+docker compose exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  -c "select saga_id,article_id,state,generation_attempts,failure_category,lease_until,updated_at from article_authoring_sagas where state='FAILED' or (state in ('GENERATION_PENDING','GENERATING','VALIDATING','NOTIFICATION_PENDING','PUBLICATION_REQUESTED') and updated_at < now() - interval '15 minutes') order by updated_at limit 50;"
+```
+
+A terminal `FAILED` authoring saga is historical evidence, not retryable work.
+Do not edit its state. Classify the provider/configuration failure and start a
+new authoring request after correction. Before public promotion, any retained
+failed saga must have an owner and incident reference; the strict release gate
+otherwise remains red. A future bounded retention policy may move terminal
+operational history out of the active health window, but this lot does not
+silently redefine that policy.
 
 ### Import explicite du catalogue historique
 

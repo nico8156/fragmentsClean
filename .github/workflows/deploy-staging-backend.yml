@@ -40,20 +40,10 @@ jobs:
       - name: Install release verification prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ripgrep
+          sudo apt-get install --yes --no-install-recommends jq ripgrep
 
-      - name: Verify full backend release on Java 21
-        run: |
-          bash scripts/test-release.sh
-
-      - name: Package backend
-        run: ./mvnw -q -DskipTests package
-
-      - name: Validate deployment scripts
-        run: |
-          bash -n infra/aws/compose/platform/staging/fragments/bootstrap-runtime.sh
-          bash -n infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh
-          bash -n infra/aws/compose/platform/staging/fragments/render-release-migration.sh
+      - name: Verify backend release candidate on Java 21
+        run: bash scripts/verify-backend-ci.sh
 
       - name: Configure AWS credentials through GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -165,7 +155,7 @@ jobs:
           EXPECTED_IMAGE: ${{ env.ECR_REPOSITORY }}:sha-${{ github.sha }}
         run: |
           set -euo pipefail
-          verify_command="running_image=\$(docker inspect staging-fragments-backend-1 --format '{{.Config.Image}}') && test \"\${running_image}\" = '${EXPECTED_IMAGE}' && curl --fail --silent --show-error https://fragments-staging.anchor-event.fr/actuator/health"
+          verify_command="running_image=\$(docker inspect staging-fragments-backend-1 --format '{{.Config.Image}}') && test \"\${running_image}\" = '${EXPECTED_IMAGE}' && curl --fail --silent --show-error https://fragments-staging.anchor-event.fr/actuator/health/liveness"
           command_parameters="$(jq -nc --arg command "${verify_command}" '{commands:[$command]}')"
           command_id="$(aws ssm send-command \
             --region "${AWS_REGION}" \
@@ -185,3 +175,6 @@ jobs:
             --instance-id "${PLATFORM_INSTANCE_ID}" \
             --query '{Status:Status,Output:StandardOutputContent,Error:StandardErrorContent}' \
             --output json
+
+      - name: Require healthy release components
+        run: bash scripts/verify-release-health.sh https://fragments-staging.anchor-event.fr/actuator/health/release
