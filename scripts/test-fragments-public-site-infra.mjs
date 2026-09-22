@@ -36,7 +36,7 @@ test('real Caddy serves the pages, protects its root and preserves both API rout
     await delay(300);
   }
   assert.ok(ready, 'Caddy starts with the real candidate configuration');
-  for (const path of ['/', '/legal/', '/legal/confidentialite.html', '/legal/conditions.html']) {
+  for (const path of ['/', '/legal/', '/legal/tech.html', '/legal/confidentialite.html', '/legal/conditions.html', '/legal/mentions-legales.html']) {
     const response = await fetch(base + path);
     assert.equal(response.status, 200, path);
     assert.match(response.headers.get('content-type'), /text\/html/);

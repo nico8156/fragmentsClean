@@ -1,5 +1,52 @@
 # Présentation et pages légales Fragments — préparation du 12 septembre 2026
 
+## Proposition de vitrine publique — 22 septembre 2026
+
+La branche `feat/fragments-public-site` prépare une page d’accueil courte pour le
+grand public et une page `/legal/tech.html` distincte. Elle conserve les
+informations de confidentialité et les conditions existantes, ajoute
+`/legal/mentions-legales.html`, et partage une navigation et un style communs
+entre les cinq pages. Aucun changement backend, mobile ou de routage n’est prévu
+dans cette branche.
+
+La direction graphique s’inspire de la référence The1 fournie par l’éditeur :
+fond béton, typographie très grande, aplats vert/rose/jaune/rouge, lignes fines
+et absence d’ombres. La police KH Teka n’a pas été fournie sous licence ni en
+fichier : le CSS utilise des polices condensées de substitution déjà présentes
+sur l’appareil. Ne pas distribuer KH Teka sans fichier et droits d’utilisation
+confirmés. Les pages juridiques gardent une taille et un interlignage lisibles.
+
+`https://fragments.anchor-event.fr/` est le domaine public choisi par
+l’éditeur, mais cette branche ne configure pas le DNS, le certificat, le vhost
+Caddy ni le montage du site sur la plateforme partagée. Les URL TestFlight
+`fragments-staging.anchor-event.fr` restent inchangées. Les pages préparées
+conservent le marqueur `beta` et `noindex,nofollow` : leur publication sur
+le domaine public et tout changement d’URL mobile/EAS doivent attendre la
+relecture des textes, la vérification du contenu réellement déployé et une
+fenêtre de déploiement Caddy dédiée avec retour arrière.
+
+La page de mentions légales reprend l’identité de l’éditeur et le contact déjà
+publiés, ainsi que l’hébergeur AWS. Elle doit être relue par l’éditeur avant
+publication. Les limites de conservation décrites dans la politique existante
+n’ont pas été réécrites ni déclarées résolues.
+
+Vérifications prévues depuis un checkout propre :
+
+```sh
+node --test scripts/test-fragments-public-site.mjs
+node --test scripts/test-fragments-public-site-infra.mjs
+```
+
+Le workflow GitHub Actions `Public site CI` a exécuté les tests statiques
+et le test d’intégration Caddy avec succès sur le commit `3f5c624`.
+Le workflow `Backend CI` est également vert sur ce commit. Le terminal local
+s’arrêtait toutefois avant toute commande et l’éditeur de fichiers local
+retournait `Broken pipe` ; aucun rendu visuel en navigateur ni aucune
+vérification du DNS et du Caddy réellement actifs n’ont été effectués depuis
+ce poste. Ces vérifications restent obligatoires avant publication sur le
+nouveau domaine.
+
+
 ## Mise à jour du 13 septembre — publication bêta
 
 Les trois pages et la feuille CSS sont publiées sur le staging. L'opérateur a
