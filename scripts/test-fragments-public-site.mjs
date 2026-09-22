@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve('infra/aws/compose/platform/staging/fragments/public-site');
-const pages = ['index.html', 'confidentialite.html', 'conditions.html'];
+const pages = ['index.html', 'tech.html', 'confidentialite.html', 'conditions.html', 'mentions-legales.html'];
 
 test('pages are French, responsive, accessible static documents with local assets', () => {
   for (const page of pages) {
@@ -83,4 +83,24 @@ test('Caddy routes public files only from the dedicated root and preserves API r
   assert.match(config, /flush_interval -1/);
   assert.equal((config.match(/reverse_proxy fragments-backend:8080/g) ?? []).length, 2);
   assert.match(config, /Content-Security-Policy/);
+});
+
+test('presentation is concise, with implementation details on a separate page', () => {
+  const home = readFileSync(resolve(root, 'index.html'), 'utf8');
+  const tech = readFileSync(resolve(root, 'tech.html'), 'utf8');
+  assert.match(home, /href="\/legal\/tech\.html"/);
+  assert.doesNotMatch(home, /Spring Boot|PostgreSQL|SQS|CQRS|outbox/i);
+  for (const term of [/Spring Boot/, /React Native/, /PostgreSQL/, /SQS/]) {
+    assert.match(tech, term);
+  }
+});
+
+test('all pages expose the legal notice and tech navigation', () => {
+  for (const page of pages) {
+    const html = readFileSync(resolve(root, page), 'utf8');
+    assert.match(html, /href="\/legal\/mentions-legales\.html"/);
+    assert.match(html, /href="\/legal\/tech\.html"/);
+  }
+  const notice = readFileSync(resolve(root, 'mentions-legales.html'), 'utf8');
+  assert.match(notice, /Amazon Web Services EMEA SARL/);
 });
