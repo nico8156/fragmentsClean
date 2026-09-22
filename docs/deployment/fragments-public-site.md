@@ -37,12 +37,14 @@ node --test scripts/test-fragments-public-site.mjs
 node --test scripts/test-fragments-public-site-infra.mjs
 ```
 
-La préparation distante n’a pas permis d’exécuter ces commandes ni de
-prévisualiser la page dans un navigateur : le terminal local s’arrêtait avant
-toute commande et l’éditeur de fichiers local retournait `Broken pipe`.
-Seules les vérifications statiques des liens internes et des titres ont été
-réalisées avant le commit de préparation. Ce point reste à lever avant merge et
-publication.
+Le workflow GitHub Actions `Public site CI` a exécuté les tests statiques
+et le test d’intégration Caddy avec succès sur le commit `3f5c624`.
+Le workflow `Backend CI` est également vert sur ce commit. Le terminal local
+s’arrêtait toutefois avant toute commande et l’éditeur de fichiers local
+retournait `Broken pipe` ; aucun rendu visuel en navigateur ni aucune
+vérification du DNS et du Caddy réellement actifs n’ont été effectués depuis
+ce poste. Ces vérifications restent obligatoires avant publication sur le
+nouveau domaine.
 
 
 ## Mise à jour du 13 septembre — publication bêta
