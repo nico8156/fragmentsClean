@@ -188,6 +188,13 @@ Resources:
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/articles/*
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/private-media/*
                   - !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/backups/postgres/*
+              # Dogs Out shares the host and bucket, but its backup objects have
+              # a separate prefix and do not grant runtime deletion rights.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/dogsout/staging/backups/postgres/*
               - Effect: Allow
                 Action: s3:DeleteObjectVersion
                 Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}/fragments/staging/private-media/*
@@ -204,6 +211,7 @@ Resources:
                     s3:prefix:
                       - fragments/staging/coffees/*
                       - fragments/staging/private-media/*
+                      - dogsout/staging/backups/postgres/*
               - Effect: Allow
                 Action: s3:ListBucketVersions
                 Resource: !Sub arn:${AWS::Partition}:s3:::${AssetBucketName}

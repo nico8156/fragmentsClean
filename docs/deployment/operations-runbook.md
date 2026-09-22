@@ -433,6 +433,14 @@ Backups are custom-format `pg_dump` artifacts with a SHA-256 sidecar under:
 s3://anchor-assets-prod-851725375299/fragments/staging/backups/postgres/
 ```
 
+The shared EC2 role also grants `GetObject`/`PutObject` (not `DeleteObject`)
+under `dogsout/staging/backups/postgres/` for the separate Dogs Out backup
+timer. The shared asset bucket has a second lifecycle rule for this prefix at
+seven days; the Fragments PostgreSQL rule remains scoped to the path above at
+thirty days. Changes to either rule must preserve the other product's prefix
+and retention. Dogs Out recovery and account-deletion barriers are documented
+in its own repository; never use a Fragments restore command for Dogs Out.
+
 S3 server-side encryption is explicitly requested. Never download an artifact
 to an operator workstation unless an incident requires it.
 
