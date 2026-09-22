@@ -83,6 +83,11 @@ test('Caddy routes public files only from the dedicated root and preserves API r
   assert.match(config, /flush_interval -1/);
   assert.equal((config.match(/reverse_proxy fragments-backend:8080/g) ?? []).length, 2);
   assert.match(config, /Content-Security-Policy/);
+  assert.match(config, /fragments\.anchor-event\.fr \{/);
+  assert.match(config, /root \* \/data\/fragments-site\/current/);
+  assert.match(config, /@publicLegal path \/legal\/site\.css \/legal\/tech\.html \/legal\/confidentialite\.html \/legal\/conditions\.html \/legal\/mentions-legales\.html/);
+  assert.match(config, /uri strip_prefix \/legal/);
+  assert.match(config, /respond 404/);
 });
 
 test('presentation is concise, with implementation details on a separate page', () => {
