@@ -48,7 +48,6 @@ a:focus-visible { outline: 3px solid var(--iron); outline-offset: 4px; }
 .site-footer a:hover { text-decoration: underline; }
 .tech-page { padding-top: 54px; padding-bottom: 80px; }
 .tech-page h1 { margin-bottom: 26px; }
-.period { color: var(--red); }
 .tech-lead { max-width: 42ch; margin: 0 0 80px; font: 400 clamp(26px, 3vw, 42px)/1.08 var(--display); letter-spacing: -.035em; }
 .tech-row h2 { font-size: clamp(30px, 3vw, 45px); }
 .tech-row p { max-width: 65ch; margin: 0; font-size: 17px; }
@@ -70,7 +69,7 @@ a:focus-visible { outline: 3px solid var(--iron); outline-offset: 4px; }
   .site-header-inner { align-items: start; flex-direction: column; padding-block: 18px; }
   .site-header nav { gap: 9px 16px; }
   .hero { padding-top: 42px; }
-  .hero h1 { font-size: clamp(56px, 14.5vw, 100px); letter-spacing: -.07em; }
+  .hero h1 { font-size: clamp(42px, 13vw, 100px); letter-spacing: -.07em; }
   .hero-bottom { align-items: start; flex-direction: column; gap: 22px; }
   .intro, .closing, .tech-row { grid-template-columns: 1fr; gap: 22px; }
   .section-heading { display: block; }
