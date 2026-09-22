@@ -32,3 +32,29 @@
 		reverse_proxy fragments-backend:8080
 	}
 }
+
+# Public presentation only. The API and TestFlight legal URLs remain on staging.
+fragments.anchor-event.fr {
+	header {
+		Content-Security-Policy "default-src 'none'; style-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+
+	@publicHome path /
+	handle @publicHome {
+		root * /data/fragments-site/current
+		file_server
+	}
+
+	@publicLegal path /legal/site.css /legal/tech.html /legal/confidentialite.html /legal/conditions.html /legal/mentions-legales.html
+	handle @publicLegal {
+		uri strip_prefix /legal
+		root * /data/fragments-site/current
+		file_server
+	}
+
+	handle {
+		respond 404
+	}
+}

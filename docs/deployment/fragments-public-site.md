@@ -1,5 +1,19 @@
 # Présentation et pages légales Fragments — préparation du 12 septembre 2026
 
+## Mise en ligne du 22 septembre 2026
+
+La vitrine publique est accessible sur
+`https://fragments.anchor-event.fr/`. La page Tech et les documents juridiques
+utilisent les chemins `/legal/tech.html`, `/legal/confidentialite.html`,
+`/legal/conditions.html` et `/legal/mentions-legales.html`. Les URL du
+staging utilisées par TestFlight ne sont pas modifiées.
+
+Le déploiement, les vérifications HTTPS, la configuration Caddy active et le
+retour arrière sont détaillés dans
+[le reçu de publication](fragments-public-site-live-2026-09-22.md).
+Les paragraphes de préparation ci-dessous restent comme historique ; leurs
+mentions « non publié » ne décrivent plus l'état actuel.
+
 ## Proposition de vitrine publique — 22 septembre 2026
 
 La branche `feat/fragments-public-site` prépare une page d’accueil courte pour le
