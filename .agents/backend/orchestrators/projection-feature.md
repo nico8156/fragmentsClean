@@ -11,11 +11,20 @@ Use this when creating or updating a read model from an event.
 
 ## Steps
 
+Read [the iteration workflow](../../iteration-workflow.md) first. These are
+boundary responsibilities, not a precomputed implementation sequence. For
+`BEHAVIOUR`, express one observable example, inspect its RED and implement only
+its minimum GREEN before the next example. Reuse existing contracts; introduce
+new structures only when an example or invariant requires them. Continue on
+`PASS`/`REVIEW`, escalate material ambiguity, then apply the targeted mutation
+checkpoint to the green slice and pin missing protection. `REFACTORING` starts
+green; `CHORE` uses proportionate checks.
+
 1. Identify source event and producer BC.
 2. Identify consuming BC and local projection table.
-3. Write projection test for first application.
-4. Write duplicate/replay test.
-5. Implement projection handler.
+3. Write and inspect the RED for first application, then implement minimum GREEN.
+4. Introduce a duplicate example and its minimum GREEN.
+5. Introduce replay/enrichment examples one at a time, refactoring from green.
 6. Persist inbox before or around business effect according to the local pattern.
 7. Use JDBC upsert where possible.
 8. Verify query endpoint reads this projection.

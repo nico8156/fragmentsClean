@@ -2,6 +2,11 @@
 
 Before implementing, classify the backend task.
 
+Read [the iteration workflow](../iteration-workflow.md) first. Its iteration
+type is independent of the architecture routes below. For `BEHAVIOUR`, evolve
+the design one example at a time and apply targeted mutation testing on the
+green slice; use `PIN` for surviving faults in agreed behavior.
+
 ## Command Feature
 
 Use `orchestrators/command-feature.md` when a request changes state inside one bounded context.

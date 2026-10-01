@@ -1,5 +1,17 @@
 # Test Policy
 
+## Construction and mutation feedback
+
+Follow [the iteration workflow](../../.agents/iteration-workflow.md).
+Classify `BEHAVIOUR / PIN / REFACTORING / CHORE` independently of architecture.
+Start behavior changes with a concrete example around the fast hexagon, inspect
+RED, implement minimum GREEN, then refactor and revise the next example.
+After a meaningful green slice, run bounded mutations on its decisions.
+Inspect survivors before adding a `PIN`: the test passes on the original and
+fails on the mutant. Equivalence and contract ambiguity require analysis.
+Record execution and restoration evidence; coverage or proposed mutations do
+not prove a kill. Infrastructure proof below remains required where relevant.
+
 ## Backend
 
 Use fake-first tests for business behavior:
