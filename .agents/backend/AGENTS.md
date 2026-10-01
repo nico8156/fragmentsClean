@@ -10,6 +10,11 @@ The backend is a Spring Boot modular monolith with pragmatic DDD, CQRS, ports/ad
 
 Before coding, classify the task:
 
+First read [the iteration workflow](../iteration-workflow.md) and classify
+`BEHAVIOUR`, `PIN`, `REFACTORING` or `CHORE`. Then choose the architecture
+route below. Orchestrator steps are responsibilities to cover through examples,
+not permission to prebuild the full solution.
+
 1. Command feature: changes state inside one bounded context.
 2. Query feature: exposes read-side data.
 3. Projection feature: creates or updates a read model.
@@ -116,6 +121,10 @@ Testcontainers require Docker.
 ## Architecture Review Before Done
 
 Before declaring a backend task complete, verify:
+- examples drove the design and relevant integration evidence is recorded
+- the mutation checkpoint reports actual scope, commands and survivor dispositions
+- missing protection was pinned, temporary mutants removed and final tests green
+- non-applicability or unavailable execution is explicit, never reported as a kill
 - no controller repository access
 - no cross-BC domain imports
 - no direct table access to another BC without documented exception

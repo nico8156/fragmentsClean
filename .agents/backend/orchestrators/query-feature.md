@@ -11,6 +11,15 @@ Use this when exposing read-side data through HTTP.
 
 ## Steps
 
+Read [the iteration workflow](../../iteration-workflow.md) first. These are
+boundary responsibilities, not a precomputed implementation sequence. For
+`BEHAVIOUR`, express one observable example, inspect its RED and implement only
+its minimum GREEN before the next example. Reuse existing contracts; introduce
+new structures only when an example or invariant requires them. Continue on
+`PASS`/`REVIEW`, escalate material ambiguity, then apply the targeted mutation
+checkpoint to the green slice and pin missing protection. `REFACTORING` starts
+green; `CHORE` uses proportionate checks.
+
 1. Identify the owning read model.
 2. Define query parameters and response DTO.
 3. Write query handler or web contract test.
@@ -31,4 +40,3 @@ Use this when exposing read-side data through HTTP.
 - no write-side repository is used
 - pagination/cursor behavior is explicit when lists can grow
 - mobile can tolerate empty and stale read states
-

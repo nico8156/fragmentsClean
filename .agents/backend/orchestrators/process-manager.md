@@ -18,6 +18,15 @@ authoring saga.
 
 ## Required design
 
+Read [the iteration workflow](../../iteration-workflow.md) first. These are
+boundary responsibilities, not a precomputed implementation sequence. For
+`BEHAVIOUR`, express one observable example, inspect its RED and implement only
+its minimum GREEN before the next example. Reuse existing contracts; introduce
+new structures only when an example or invariant requires them. Continue on
+`PASS`/`REVIEW`, escalate material ambiguity, then apply the targeted mutation
+checkpoint to the green slice and pin missing protection. `REFACTORING` starts
+green; `CHORE` uses proportionate checks.
+
 1. Identify the owning bounded context and aggregate.
 2. Prove that durable coordination is necessary; do not introduce a saga for a
    single transaction.

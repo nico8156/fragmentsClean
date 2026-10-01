@@ -13,6 +13,15 @@ Use this when a backend feature changes state inside one bounded context.
 
 ## Steps
 
+Read [the iteration workflow](../../iteration-workflow.md) first. These are
+boundary responsibilities, not a precomputed implementation sequence. For
+`BEHAVIOUR`, express one observable example, inspect its RED and implement only
+its minimum GREEN before the next example. Reuse existing contracts; introduce
+new structures only when an example or invariant requires them. Continue on
+`PASS`/`REVIEW`, escalate material ambiguity, then apply the targeted mutation
+checkpoint to the green slice and pin missing protection. `REFACTORING` starts
+green; `CHORE` uses proportionate checks.
+
 1. Identify the owning bounded context.
 2. Identify the aggregate/entity that owns the decision.
 3. Write or update a command handler/domain test first.

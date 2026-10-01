@@ -12,15 +12,24 @@ Use this when adding or migrating an asynchronous event consumer to SQS.
 
 ## Steps
 
+Read [the iteration workflow](../../iteration-workflow.md) first. These are
+boundary responsibilities, not a precomputed implementation sequence. For
+`BEHAVIOUR`, express one observable example, inspect its RED and implement only
+its minimum GREEN before the next example. Reuse existing contracts; introduce
+new structures only when an example or invariant requires them. Continue on
+`PASS`/`REVIEW`, escalate material ambiguity, then apply the targeted mutation
+checkpoint to the green slice and pin missing protection. `REFACTORING` starts
+green; `CHORE` uses proportionate checks.
+
 1. Identify queue, DLQ, producer event type, and consuming BC.
 2. Define or reuse a stable event contract and version.
-3. Add destination routing in the outbox sender configuration.
-4. Implement a thin SQS wrapper that delegates to a BC-local handler.
-5. Add inbox duplicate suppression.
-6. Ensure no equivalent legacy transport route exists for the same message.
-7. Test successful handling.
-8. Test duplicate delivery.
-9. Test handler failure does not delete message.
+3. Drive successful local handling through one RED/minimum GREEN example.
+4. Drive duplicate suppression through the next RED/minimum GREEN example.
+5. Drive failure-without-delete through another RED/minimum GREEN example.
+6. Prove destination routing and the thin SQS wrapper with boundary tests first.
+7. Keep the SQS wrapper delegating to the BC-local handler.
+8. Verify inbox-backed effects with integration tests.
+9. Ensure no equivalent legacy transport route exists for the same message.
 10. Document queue name and DLQ expectation.
 
 ## Pitfalls

@@ -326,13 +326,20 @@ Architecture tests are encouraged for:
 ## Delivery Rule
 
 Use iterative delivery:
-1. classify the feature
-2. choose the matching orchestrator under `.agents`
-3. write or update tests first when behavior changes
-4. implement the minimum compliant change
-5. run targeted verification
-6. review architecture boundaries
-7. update docs when conventions change
+1. classify the iteration: `BEHAVIOUR`, `PIN`, `REFACTORING`, or `CHORE`
+2. choose the architecture route and matching orchestrator under `.agents`
+3. expose concrete examples and uncertainties, keeping the target design provisional
+4. discover behavior through inspected RED / minimum GREEN / REFACTOR cycles
+5. challenge the green slice with targeted mutations and resolve protection gaps through `PIN`
+6. run boundary/integration verification and review architecture
+7. record evidence and update docs when conventions change
+
+Read [.agents/iteration-workflow.md](.agents/iteration-workflow.md) before work.
+Tests shape the model; anticipated abstractions require an example or existing
+invariant before implementation. Continue mechanical cycles on `PASS` or
+`REVIEW`; escalate unresolved product/design choices. Pure refactoring starts
+green and chores use proportionate verification. Mutation-driven `PIN` passes
+on the original and fails on the mutant; restore all mutations before delivery.
 
 If a requested feature cannot be implemented without violating this doctrine:
 - do not approximate
