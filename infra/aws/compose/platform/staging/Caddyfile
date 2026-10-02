@@ -47,7 +47,7 @@ fragments.anchor-event.fr {
 		file_server
 	}
 
-	@publicLegal path /legal/site.css /legal/tech.html /legal/confidentialite.html /legal/conditions.html /legal/mentions-legales.html
+	@publicLegal path /legal/site.css /legal/tech.html /legal/confidentialite.html /legal/conditions.html /legal/mentions-legales.html /legal/app-icon.png
 	handle @publicLegal {
 		uri strip_prefix /legal
 		root * /data/fragments-site/current
