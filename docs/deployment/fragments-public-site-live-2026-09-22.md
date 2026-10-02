@@ -96,3 +96,41 @@ domaine ne servira plus le site tant que le vhost est retiré.
 
 Le répertoire de release statique est conservé pour permettre une remise en
 ligne sans retransfert. Ne pas le supprimer lors d'un retour arrière proxy.
+
+## Ajout du favicon — 2 octobre 2026
+
+Itération `CHORE`, route infrastructure/site statique (aucun orchestrateur
+métier applicable). Exemple accepté : l’icône de l’application apparaît dans
+l’onglet du navigateur sur les cinq pages ; aucun ajout dans l’en-tête.
+Copie exacte de `fragmentsCleanFront/assets/images/icon.png`, exposée à
+`/legal/app-icon.png`, avec un lien `rel="icon"` dans chaque document.
+SHA-256 : `d3ec39489be92465bf7f7b694654a08076756cc3d3972f3f3336093932e3fbe4`.
+
+Publication autorisée par la demande utilisateur, via SSM
+`06561e3a-7bde-40ba-be98-0c1665aea981` (`Success`). Release :
+`/srv/platform/data/fragments-site/releases/favicon-20261002`, lien `current`
+basculé depuis `releases/8d2160f` après vérification des empreintes des anciens
+fichiers. Archive de transfert temporaire supprimée de S3 après vérification.
+Le Caddyfile actif a été préservé, y compris les imports Dogs Out, FlowAtlas
+et le vhost Anchor ; seule l’URL PNG a été ajoutée à la liste publique.
+Configuration validée par Caddy sur le serveur avant rechargement.
+
+- Tests statiques : 7/7 ; `git diff --check` réussi.
+- Test Docker local indisponible : daemon inaccessible ; validation Caddy
+  réelle sur le serveur réussie.
+- Vérification HTTPS : sept fichiers HTTP 200 et octets identiques aux sources,
+  PNG servi en `image/png` ; API et chemins inconnus toujours HTTP 404.
+- Liveness Fragments staging, accueil Anchor et Dogs Out : HTTP 200.
+- Mutations : NOT APPLICABLE, ajout visuel et configuration statique uniquement.
+- Aucune décision produit en suspens ; l’icône d’en-tête initialement envisagée
+  a été retirée après clarification utilisateur, avant déploiement.
+
+Sauvegarde proxy : `/srv/platform/Caddyfile.before-fragments-favicon-20261002`.
+SHA-256 proxy publié :
+`4e566d7b4b382f64b6c7a8ad87962809667c0ab967f9ba6021dc5abe789ebb11`.
+Candidat chargé : `/srv/platform/config/Caddyfile.fragments-favicon-20261002`
+(`/config/Caddyfile.fragments-favicon-20261002` dans Caddy), à conserver.
+Pour revenir en arrière, vérifier l’empreinte et le lien courant, restaurer
+la sauvegarde proxy via un candidat validé et rechargé explicitement, puis
+rebasculer atomiquement `current` sur `releases/8d2160f`. Préserver toute
+modification proxy ultérieure et les autres services.
