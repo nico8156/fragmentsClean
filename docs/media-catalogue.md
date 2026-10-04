@@ -627,3 +627,26 @@ Final restored verification: 42 tests/8 classes, 0 failures/0 errors, Maven exit
 0 (/tmp/article-retention-guards-final.log); git diff --check clean. Source
 mutations exactly restored from the pre-mutation copies. No UI changes in this
 slice, frontend suite not rerun. No production cleanup or deployment performed.
+
+## Generated Article file replay protection (3e.4b)
+
+ArticleGeneratedMediaService keeps its stable saga/slot imageId at the provider
+boundary but allocates a new UUID for each physical storage attempt. Replaying
+generation must never rewrite or recreate an earlier managed resource, even if
+that resource was retired/purged meanwhile. Each stored reference is tracked
+with the existing recorder/publisher. No new provider/storage protocol or BC.
+Retries can leave more tracked unused uploads; store-before-record failure can
+still leave unregistered files (existing debt, not solved by bucket listing).
+
+Valid RED: /tmp/article-generation-replay-red-valid.log, 2 tests/1 assertion
+failure/0 errors on repeated physical reference. GREEN and final restored broad
+verification: /tmp/article-purge-backend-restored.log, 79 tests/15 classes, exit 0.
+Manual mutation reverting physical UUID to the logical stable ID killed the
+replay test (1 assertion/0 errors), exact restoration verified;
+/tmp/article-purge-mutation-replay.log. Initial compilation/invalid draft
+fixture errors were corrected and do not count as RED or mutation kills.
+
+The replay guard and explicit purge are independently reviewable outcomes, so
+this backend delivery uses two focused commits: file replay first, purge second.
+Deploy the updated generation workers before enabling any Article purge worker;
+old workers must no longer be writing stable physical keys. No production work.

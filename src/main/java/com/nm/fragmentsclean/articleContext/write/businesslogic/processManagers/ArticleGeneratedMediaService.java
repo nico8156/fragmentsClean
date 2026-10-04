@@ -21,7 +21,8 @@ public final class ArticleGeneratedMediaService {
     private ArticleImageRef generateOne(UUID sagaId,UUID articleId,String slot,ArticleImageGenerationProvider.Role role,com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleVisualBrief brief,String consistency,String alt){
         UUID imageId=UUID.nameUUIDFromBytes((sagaId+":"+slot).getBytes(StandardCharsets.UTF_8));
         var image=generator.generate(new ArticleImageGenerationProvider.Request(sagaId,imageId,role,brief,consistency));
-        var stored=storage.store(articleId,imageId,image.mediaType(),image.bytes());
+        // Stable provider identity; a replay owns a new physical resource.
+        var stored=storage.store(articleId,UUID.randomUUID(),image.mediaType(),image.bytes());
         uploads.record(articleId,stored.storageReference(),null,image.mediaType(),image.bytes(),image.width(),image.height(),null,"GENERATION");
         return ArticleImageRef.from(stored.storageReference(),image.width(),image.height(),alt);
     }
