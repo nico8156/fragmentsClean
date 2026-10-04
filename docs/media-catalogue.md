@@ -764,3 +764,47 @@ No production S3/delete/deployment operation.
 
 3e.5a restored verification: 18 storage/architecture tests, 0 failures/
 0 errors, Maven exit 0 (/tmp/coffee-targeted-deletion-restored.log).
+
+## Coffee explicit purge after retention (3e.5)
+
+Coffee owns the retired photo, original storage reference, decision and purge
+state. The existing admin lifecycle command now accepts PURGE_REQUESTED, with
+an authenticated operator, a required reason, source-parent lock, managed-reference
+validation, 30 full days after retirement, and no active or retained shared
+reference. Local relative/public URL aliases are checked together. Other retained
+photos remain references until their own physical purge; the catalogue is never
+used as the source permission check.
+
+The request records COFFEE_MEDIA_PURGE_REQUESTED and advances the Coffee version.
+It never deletes storage in HTTP or the database transaction. CleanCoffeeMediaObjects
+selects at most 100 explicitly pending IDs, verifies them in a parent-first source
+transaction, deletes one configured S3 object or one local file, and commits source
+completion and the outbox inventory in a separate transaction. A storage or
+completion failure keeps DELETION_PENDING; deletion of an absent file/object is
+retryable. Coffee retirement tombstones are retained, preventing old Google imports
+and manual upload commands from rewriting purged identities. A new upload command
+still creates a new resource. Parent hard deletion remains blocked while source
+retirement evidence exists; operators can archive the Coffee.
+
+coffee.media_catalog_snapshot v3 has a separate DTO and carries retained lifecycle
+states, never retained storage references. Readers still accept immutable v1/v2
+contracts. The catalogue records a permanent physical-deletion fact; same-version
+source tombstones can enrich old deletion records, and older/higher-version legacy
+active inventories cannot revive them. The replay scan includes these tombstones.
+
+Release uses coffee-media-purge-2026-10.psql after coffee-media-lifecycle-2026-10.
+Migrate first, deploy compatible v3 consumers/producers together, retire old workers,
+and only then consider enabling COFFEE_MEDIA_PURGE_ENABLED (default false).
+Age alone schedules nothing. No deployment or production deletion was performed.
+Targeted storage preparation f092777 and lifecycle purge are separate reviewable
+commits because storage capability can be reviewed independently from activation.
+
+Validation: 73 backend tests across 11 classes, including actual local deletion,
+shared/foreign/unmanaged references, retention, rights, audit, rollback after
+physical deletion, upload replay, v1/v2 compatibility, v3 tombstones and additive
+migration replay. Three isolated mutations detected and exactly restored: retention,
+physical deletion and projection tombstone guard; storage owner-scope mutation was
+already detected during preparation. A JVM JIT crash was excluded as evidence and
+retried with MAVEN_OPTS=-XX:TieredStopAtLevel=1. Final green log:
+/tmp/coffee-purge-backend-restored.log. FlowAtlas HTTP/command context: 4 nodes,
+3 edges, complete bounded graph; runtime storage/SQL are verified by tests.

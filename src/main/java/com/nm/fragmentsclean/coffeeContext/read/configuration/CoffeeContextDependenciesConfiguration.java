@@ -123,12 +123,12 @@ public class CoffeeContextDependenciesConfiguration {
 	AddCoffeePhotoCommandHandler addCoffeePhotoCommandHandler(CoffeeRepository coffeeRepository,
 			CoffeePhotoStorage coffeePhotoStorage,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
+			DateTimeProvider dateTimeProvider, com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		return new AddCoffeePhotoCommandHandler(
 				coffeeRepository,
 				coffeePhotoStorage,
 				domainEventPublisher,
-				dateTimeProvider);
+				dateTimeProvider,retirements);
 	}
 
 	@Bean ArrangeCoffeePhotosCommandHandler arrangeCoffeePhotosCommandHandler(CoffeeRepository coffeeRepository,

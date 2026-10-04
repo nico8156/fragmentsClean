@@ -57,13 +57,20 @@ class CoffeePhotoCommandHandlerTest {
 						Instant.parse("2026-07-05T09:59:00Z")));
 	}
 
+	@Test void retired_upload_replay_is_rejected_before_any_storage_write(){
+        var memory=new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository();var photoId=CoffeePhotoStorage.photoId(new CoffeeId(COFFEE_ID),"admin-upload/"+COMMAND_ID+"/ideal.jpg");
+        memory.save(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoRetirement(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId(photoId),new CoffeeId(COFFEE_ID),"s3://bucket/evidence.jpg",false,0),dateTimeProvider.now()));
+        var handler=new AddCoffeePhotoCommandHandler(coffeeRepository,photoStorage,eventPublisher,dateTimeProvider,memory);
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->handler.execute(new AddCoffeePhotoCommand(COMMAND_ID,COFFEE_ID,"ideal.jpg","image/jpeg",new byte[]{1},dateTimeProvider.now()))).hasMessageContaining("Retired upload");assertThat(photoStorage.calls).isEmpty();assertThat(eventPublisher.published).isEmpty();
+        handler.execute(new AddCoffeePhotoCommand(UUID.randomUUID(),COFFEE_ID,"ideal.jpg","image/jpeg",new byte[]{1},dateTimeProvider.now()));assertThat(photoStorage.calls).hasSize(1);
+    }
 	@Test
 	void add_photo_stores_binary_photo_and_publishes_photo_added_event() {
 		var handler = new AddCoffeePhotoCommandHandler(
 				coffeeRepository,
 				photoStorage,
 				eventPublisher,
-				dateTimeProvider);
+				dateTimeProvider,new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository());
 
 		handler.execute(new AddCoffeePhotoCommand(
 				COMMAND_ID,
@@ -90,7 +97,7 @@ class CoffeePhotoCommandHandlerTest {
 
 	@Test
 	void delete_photo_publishes_photo_deleted_event() {
-		new AddCoffeePhotoCommandHandler(coffeeRepository, photoStorage, new FakeDomainEventPublisher(), dateTimeProvider)
+		new AddCoffeePhotoCommandHandler(coffeeRepository, photoStorage, new FakeDomainEventPublisher(), dateTimeProvider,new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository())
 				.execute(new AddCoffeePhotoCommand(UUID.randomUUID(), COFFEE_ID, "photo.jpg", "image/jpeg",
 						"bytes".getBytes(), dateTimeProvider.now()));
 		var handler = new DeleteCoffeePhotoCommandHandler(

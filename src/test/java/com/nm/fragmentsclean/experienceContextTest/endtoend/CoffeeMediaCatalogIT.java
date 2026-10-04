@@ -96,7 +96,7 @@ class CoffeeMediaCatalogIT extends AbstractExperienceE2E {
         var factory=new com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory();
         var snapshot=outbox.findAll().stream().filter(e->e.getEventType().endsWith("CoffeeMediaCatalogSnapshotEvent") && e.getPayloadJson().contains(coffee.toString())).findFirst().orElseThrow();
         var envelope=factory.from(snapshot,"media-catalog-events");
-        assertThat(envelope.eventVersion()).isEqualTo(2);
+        assertThat(envelope.eventVersion()).isEqualTo(3);
         assertThat(envelope.payloadJson()).doesNotContain("private-coffee");
         router.route(envelope);
         mvc.perform(get("/api/admin/media/COFFEE:"+retired).with(jwt().jwt(j->j.subject(admin))))
@@ -146,6 +146,16 @@ class CoffeeMediaCatalogIT extends AbstractExperienceE2E {
                 try(var rows=statement.executeQuery("SELECT count(*) FROM coffee_media_catalog_scan")){assertThat(rows.next()).isTrue();assertThat(rows.getInt(1)).isEqualTo(1);}
             } finally {statement.execute("SET search_path TO public");statement.execute("DROP SCHEMA "+schema+" CASCADE");}
         }
+    }
+    @Test void physical_tombstone_blocks_equal_version_retained_inventory_and_newer_legacy_additions()throws Exception{
+        UUID coffee=UUID.randomUUID(),photo=UUID.randomUUID();
+        route("coffee.photo_deleted",new CoffeePhotoDeletedIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,photo,7,at,null));
+        var purged=new CoffeeMediaCatalogSnapshotV3IntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),List.of(new CoffeeMediaCatalogSnapshotV3IntegrationEvent.RetiredPhoto(photo,at,"DELETED")),7,at,null);
+        router.route(new IntegrationEventEnvelope(purged.eventId().toString(),"coffee.media_catalog_snapshot",3,purged.getClass().getName(),"Coffee",coffee.toString(),"coffee-purge-test","media-catalog-events",json.writeValueAsString(purged),at));
+        var old=new CoffeeMediaCatalogSnapshotIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),List.of(new CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto(photo,at)),7,at,null);
+        router.route(new IntegrationEventEnvelope(old.eventId().toString(),"coffee.media_catalog_snapshot",2,old.getClass().getName(),"Coffee",coffee.toString(),"coffee-purge-test","media-catalog-events",json.writeValueAsString(old),at));
+        assertThat(photoStatus(photo)).isEqualTo("DELETED");added(coffee,photo,8);assertThat(photoStatus(photo)).isEqualTo("DELETED");arranged(coffee,List.of(photo),9);assertThat(photoStatus(photo)).isEqualTo("DELETED");
+        mvc.perform(get("/api/admin/media/COFFEE:"+photo).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.previewUrl").isEmpty()).andExpect(jsonPath("$.usageStatus").value("UNUSED"));
     }
     private String photoStatus(UUID id){return jdbc.query("SELECT status FROM media_catalog_entries WHERE origin='COFFEE' AND media_id=?",(r,n)->r.getString(1),id).stream().findFirst().orElse(null);}
     private void added(UUID coffee,UUID photo,int version)throws Exception{route("coffee.photo_added",new CoffeePhotoAddedIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,photo,"https://images.test/"+coffee+"/"+photo,version,at,null));}

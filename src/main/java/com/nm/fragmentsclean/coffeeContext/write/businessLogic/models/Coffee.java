@@ -319,6 +319,9 @@ public final class Coffee extends AggregateRoot {
 		publicationStatus = CoffeePublicationStatus.DRAFT;
 	}
 
+	/** Records a retained-photo lifecycle fact without changing the public gallery. */
+	public void recordMediaLifecycleChange(Instant now) { touch(now); }
+
 	private void touch(Instant now) {
 		this.version += 1;
 		this.updatedAt = now != null ? now : Instant.now();

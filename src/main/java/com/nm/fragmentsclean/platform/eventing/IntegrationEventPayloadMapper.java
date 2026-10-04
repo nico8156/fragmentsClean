@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.platform.eventing;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeMediaCatalogSnapshotIntegrationEvent;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeMediaCatalogSnapshotV3IntegrationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.platform.eventing.contracts.AccountDataErasedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrationEvent;
@@ -539,12 +540,12 @@ public class IntegrationEventPayloadMapper {
         instantOrFallback(node, "clientAt", event.getOccurredAt()));
   }
 
-  private CoffeeMediaCatalogSnapshotIntegrationEvent coffeeMediaCatalogSnapshot(JsonNode node,OutboxEventData event) {
+  private CoffeeMediaCatalogSnapshotV3IntegrationEvent coffeeMediaCatalogSnapshot(JsonNode node,OutboxEventData event) {
     var active=coffeePhotosArranged(node,event);
-    List<CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto> retired=new java.util.ArrayList<>();
+    List<CoffeeMediaCatalogSnapshotV3IntegrationEvent.RetiredPhoto> retired=new java.util.ArrayList<>();
     var values=node.get("retiredPhotos");
-    if(values!=null && values.isArray())for(var photo:values)retired.add(new CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto(uuid(photo,"photoId"),nullableInstant(photo,"retiredAt")));
-    return new CoffeeMediaCatalogSnapshotIntegrationEvent(active.eventId(),active.commandId(),active.coffeeId(),active.photos(),retired,active.version(),active.occurredAt(),active.clientAt());
+    if(values!=null && values.isArray())for(var photo:values)retired.add(new CoffeeMediaCatalogSnapshotV3IntegrationEvent.RetiredPhoto(uuid(photo,"photoId"),nullableInstant(photo,"retiredAt"),photo.path("status").asText("RETIRED")));
+    return new CoffeeMediaCatalogSnapshotV3IntegrationEvent(active.eventId(),active.commandId(),active.coffeeId(),active.photos(),retired,active.version(),active.occurredAt(),active.clientAt());
   }
 
   private CoffeePhotosArrangedIntegrationEvent coffeePhotosArranged(

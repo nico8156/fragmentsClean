@@ -13,7 +13,7 @@ class CoffeeMediaLifecycleHandlerTest {
   var coffees=new FakeCoffeeRepository();var memory=new FakeCoffeePhotoRetirementRepository();var events=new FakeDomainEventPublisher();Instant at=Instant.parse("2026-10-04T10:00:00Z");UUID id=UUID.randomUUID(),photoId=UUID.randomUUID(),actor=UUID.randomUUID();
   new CreateCoffeeCommandHandler(coffees,new FakeDomainEventPublisher(),()->at).execute(new CreateCoffeeCommand(UUID.randomUUID(),id,null,"Lifecycle","Street","Paris","75000","FR",0,0,null,null,List.of(),at));
   var coffee=coffees.findById(new CoffeeId(id)).orElseThrow();coffee.addPhoto(new Photo(new PhotoId(photoId),new CoffeeId(id),"s3://bucket/coffee.jpg",true,0),at);coffees.save(coffee);
-  var audit=new RecordingAudit();var handler=new ChangeCoffeeMediaLifecycleCommandHandler(coffees,memory,events,audit,()->at);
+  var audit=new RecordingAudit();var handler=new ChangeCoffeeMediaLifecycleCommandHandler(coffees,memory,events,audit,()->at,new com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoStorage(){public ImportedCoffeePhoto store(CoffeeId c,GooglePlaceId g,GooglePlacePhoto p){throw new UnsupportedOperationException();}});
   handler.execute(new ChangeCoffeeMediaLifecycleCommand(UUID.randomUUID(),id,photoId,actor,"RETIRED","Obsolete"));
   assertThat(coffees.findById(new CoffeeId(id)).orElseThrow().photos()).isEmpty();
   assertThat(memory.byId(photoId).orElseThrow().photo().uri()).isEqualTo("s3://bucket/coffee.jpg");

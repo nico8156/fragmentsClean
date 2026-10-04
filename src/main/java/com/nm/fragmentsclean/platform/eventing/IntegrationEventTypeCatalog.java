@@ -81,6 +81,6 @@ public final class IntegrationEventTypeCatalog {
   }
 
   public static int currentVersion(String stableEventType) {
-    return "experience.moderated".equals(stableEventType) || "coffee.media_catalog_snapshot".equals(stableEventType) ? 2 : 1;
+    return "coffee.media_catalog_snapshot".equals(stableEventType)?3:"experience.moderated".equals(stableEventType)?2:1;
   }
 }

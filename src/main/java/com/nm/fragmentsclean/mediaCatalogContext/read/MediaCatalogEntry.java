@@ -4,4 +4,6 @@ import java.util.UUID;
 /** Internal projection input. Storage references never form part of the HTTP contract. */
 public record MediaCatalogEntry(String origin, UUID mediaId, UUID resourceId, UUID ownerId,
     String status, String objectKey, String contentType, long size, Integer width, Integer height,
-    Instant createdAt, Instant updatedAt, long version) { }
+    Instant createdAt, Instant updatedAt, long version,boolean physicallyDeleted) {
+ public MediaCatalogEntry(String origin,UUID mediaId,UUID resourceId,UUID ownerId,String status,String objectKey,String contentType,long size,Integer width,Integer height,Instant createdAt,Instant updatedAt,long version){this(origin,mediaId,resourceId,ownerId,status,objectKey,contentType,size,width,height,createdAt,updatedAt,version,false);}
+}

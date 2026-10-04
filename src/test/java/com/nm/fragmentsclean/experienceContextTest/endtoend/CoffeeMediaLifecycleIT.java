@@ -140,4 +140,52 @@ class CoffeeMediaLifecycleIT extends AbstractExperienceE2E {
   }
  }
 
+ @Test void purge_rejects_early_shared_foreign_and_unmanaged_resources()throws Exception{
+  jdbc.update("INSERT INTO auth_users(id,provider,provider_user_id,email_verified,last_login_at) VALUES(?,'GOOGLE',?,true,now()) ON CONFLICT DO NOTHING",UUID.fromString(admin),admin);
+  var ids=seed();String ref="/api/coffees/photo-assets/"+ids[1]+".png";jdbc.update("UPDATE coffee_photos SET photo_uri=? WHERE photo_id=?",ref,ids[1]);String route="/api/admin/studio/coffee-media/"+ids[1]+"/lifecycle";
+  var retire="{\"commandId\":\"%s\",\"coffeeId\":\"%s\",\"status\":\"RETIRED\",\"reason\":\"Review\"}";
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(retire.formatted(UUID.randomUUID(),ids[0]))).andExpect(status().isAccepted());
+  var purge=retire.replace("RETIRED","PURGE_REQUESTED");
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(purge.formatted(UUID.randomUUID(),ids[0]))).andExpect(status().isUnprocessableEntity());
+  jdbc.update("UPDATE coffee_photo_retirements SET retired_at='2023-08-01' WHERE photo_id=?",ids[1]);var other=seed();jdbc.update("UPDATE coffee_photos SET photo_uri=? WHERE photo_id=?",ref,other[1]);
+  mvc.perform(get("/api/admin/studio/coffee-media/"+ids[1]).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.canPurge").value(false));
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(purge.formatted(UUID.randomUUID(),ids[0]))).andExpect(status().isUnprocessableEntity());
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(purge.formatted(UUID.randomUUID(),other[0]))).andExpect(status().isUnprocessableEntity());
+  jdbc.update("DELETE FROM coffee_photos WHERE coffee_id=?",other[0]);jdbc.update("UPDATE coffee_photo_retirements SET photo_uri='https://external.test/photo.png' WHERE photo_id=?",ids[1]);
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(purge.formatted(UUID.randomUUID(),ids[0]))).andExpect(status().isUnprocessableEntity());
+  assertThat(jdbc.queryForObject("SELECT lifecycle_status FROM coffee_photo_retirements WHERE photo_id=?",String.class,ids[1])).isEqualTo("RETIRED");
+ }
+ @Test void purge_upgrade_preserves_existing_retirement_and_is_replayable()throws Exception{
+  String schema="coffee_purge_"+UUID.randomUUID().toString().replace("-","");
+  try(var connection=jdbc.getDataSource().getConnection();var statement=connection.createStatement()){
+   statement.execute("CREATE SCHEMA "+schema);try{statement.execute("SET search_path TO "+schema);statement.execute("CREATE TABLE coffee_photo_retirements(photo_id UUID PRIMARY KEY,retired_at TIMESTAMPTZ)");statement.execute("CREATE TABLE media_catalog_entries(id UUID PRIMARY KEY)");UUID id=UUID.randomUUID();statement.execute("INSERT INTO coffee_photo_retirements VALUES('"+id+"','2026-09-01T00:00:00Z')");String sql=java.nio.file.Files.readString(java.nio.file.Path.of("src/main/resources/db/release/2026-10-04-coffee-media-purge.sql"));statement.execute(sql);statement.execute(sql);try(var rows=statement.executeQuery("SELECT lifecycle_status,retired_at,purged_at FROM coffee_photo_retirements")){assertThat(rows.next()).isTrue();assertThat(rows.getString(1)).isEqualTo("RETIRED");assertThat(rows.getTimestamp(2).toInstant()).isEqualTo(java.time.Instant.parse("2026-09-01T00:00:00Z"));assertThat(rows.getTimestamp(3)).isNull();}}finally{statement.execute("SET search_path TO public");statement.execute("DROP SCHEMA "+schema+" CASCADE");}
+  }
+ }
+ @Test void persistence_failure_after_physical_delete_keeps_pending_and_retry_completes()throws Exception{
+  jdbc.update("INSERT INTO auth_users(id,provider,provider_user_id,email_verified,last_login_at) VALUES(?,'GOOGLE',?,true,now()) ON CONFLICT DO NOTHING",UUID.fromString(admin),admin);var ids=seed();var file=storageProperties.getDirectory().resolve(ids[1]+".png");java.nio.file.Files.createDirectories(file.getParent());java.nio.file.Files.writeString(file,"evidence");String constraint="test_coffee_purge_"+ids[1].toString().replace("-","");boolean installed=false;
+  try{
+   jdbc.update("UPDATE coffee_photos SET photo_uri=? WHERE photo_id=?","/api/coffees/photo-assets/"+ids[1]+".png",ids[1]);String route="/api/admin/studio/coffee-media/"+ids[1]+"/lifecycle";String body="{\"commandId\":\"%s\",\"coffeeId\":\"%s\",\"status\":\"%s\",\"reason\":\"Review\"}";
+   mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(body.formatted(UUID.randomUUID(),ids[0],"RETIRED"))).andExpect(status().isAccepted());jdbc.update("UPDATE coffee_photo_retirements SET retired_at='2023-08-01' WHERE photo_id=?",ids[1]);mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content(body.formatted(UUID.randomUUID(),ids[0],"PURGE_REQUESTED"))).andExpect(status().isAccepted());
+   jdbc.execute("ALTER TABLE coffee_photo_retirements ADD CONSTRAINT "+constraint+" CHECK (photo_id<>'"+ids[1]+"'::uuid OR lifecycle_status<>'DELETED') NOT VALID");installed=true;
+   org.assertj.core.api.Assertions.assertThatThrownBy(()->cleaner.run(100)).isInstanceOf(org.springframework.dao.DataAccessException.class);assertThat(java.nio.file.Files.exists(file)).isFalse();assertThat(jdbc.queryForObject("SELECT lifecycle_status FROM coffee_photo_retirements WHERE photo_id=?",String.class,ids[1])).isEqualTo("DELETION_PENDING");jdbc.execute("ALTER TABLE coffee_photo_retirements DROP CONSTRAINT "+constraint);installed=false;cleaner.run(100);assertThat(jdbc.queryForObject("SELECT lifecycle_status FROM coffee_photo_retirements WHERE photo_id=?",String.class,ids[1])).isEqualTo("DELETED");
+  }finally{if(installed)jdbc.execute("ALTER TABLE coffee_photo_retirements DROP CONSTRAINT "+constraint);java.nio.file.Files.deleteIfExists(file);}
+ }
+ @Autowired com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.CleanCoffeeMediaObjects cleaner;
+ @Autowired com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.storage.CoffeePhotoStorageProperties storageProperties;
+ @Test void explicit_purge_request_after_thirty_days_is_accepted_and_audited_before_targeted_cleanup()throws Exception{
+  jdbc.update("INSERT INTO auth_users(id,provider,provider_user_id,email_verified,last_login_at) VALUES(?,'GOOGLE',?,true,now()) ON CONFLICT DO NOTHING",UUID.fromString(admin),admin);
+  var ids=seed();String reference="/api/coffees/photo-assets/"+ids[1]+".png";jdbc.update("UPDATE coffee_photos SET photo_uri=? WHERE coffee_id=? AND photo_id=?",reference,ids[0],ids[1]);String route="/api/admin/studio/coffee-media/"+ids[1]+"/lifecycle";
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content("{\"commandId\":\""+UUID.randomUUID()+"\",\"coffeeId\":\""+ids[0]+"\",\"status\":\"RETIRED\",\"reason\":\"Obsolete\"}")).andExpect(status().isAccepted());
+  var file=storageProperties.getDirectory().resolve(ids[1]+".png");java.nio.file.Files.createDirectories(file.getParent());java.nio.file.Files.writeString(file,"evidence");
+  jdbc.update("UPDATE coffee_photo_retirements SET retired_at='2023-08-01' WHERE photo_id=?",ids[1]);UUID command=UUID.randomUUID();
+  mvc.perform(post(route).with(jwt().jwt(j->j.subject(admin))).contentType("application/json").content("{\"commandId\":\""+command+"\",\"coffeeId\":\""+ids[0]+"\",\"status\":\"PURGE_REQUESTED\",\"reason\":\"Storage cleanup\"}")).andExpect(status().isAccepted());
+  assertThat(jdbc.queryForObject("SELECT action FROM admin_audit_log WHERE command_id=?",String.class,command)).isEqualTo("COFFEE_MEDIA_PURGE_REQUESTED");
+  assertThat(java.nio.file.Files.exists(file)).isTrue();
+  mvc.perform(get("/api/admin/studio/coffee-media/"+ids[1]).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELETION_PENDING")).andExpect(jsonPath("$.canRestore").value(false)).andExpect(jsonPath("$.canPurge").value(false));
+  cleaner.run(100);assertThat(java.nio.file.Files.exists(file)).isFalse();assertThat(jdbc.queryForObject("SELECT lifecycle_status FROM coffee_photo_retirements WHERE photo_id=?",String.class,ids[1])).isEqualTo("DELETED");
+  mvc.perform(get("/api/admin/studio/coffee-media/"+ids[1]).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELETED")).andExpect(jsonPath("$.purgedAt").isNotEmpty());
+  project(ids[0],"CoffeeMediaCatalogSnapshotEvent");mvc.perform(get("/api/admin/media/COFFEE:"+ids[1]).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELETED"));
+  cleaner.run(100);
+
+ }
 }

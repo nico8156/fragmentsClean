@@ -2120,7 +2120,10 @@
           "retiredAt",
           "purgeEligibleAt",
           "canRetire",
-          "canRestore"
+          "canRestore",
+          "canPurge",
+          "purgeRequestedAt",
+          "purgedAt"
         ],
         "properties": {
           "mediaId": {
@@ -2135,7 +2138,9 @@
             "type": "string",
             "enum": [
               "AVAILABLE",
-              "RETIRED"
+              "RETIRED",
+              "DELETION_PENDING",
+              "DELETED"
             ]
           },
           "coffeeStatus": {
@@ -2161,6 +2166,19 @@
           },
           "canRestore": {
             "type": "boolean"
+          },
+          "canPurge": {
+            "type": "boolean"
+          },
+          "purgeRequestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "purgedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         }
       },
@@ -2185,7 +2203,8 @@
             "type": "string",
             "enum": [
               "AVAILABLE",
-              "RETIRED"
+              "RETIRED",
+              "PURGE_REQUESTED"
             ]
           },
           "reason": {

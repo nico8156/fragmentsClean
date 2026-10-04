@@ -12,7 +12,7 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
           WHEN EXISTS(SELECT 1 FROM media_catalog_article_references u WHERE u.media_id=m.media_id AND u.role<>'UPLOAD') THEN 'USED'
           WHEN EXISTS(SELECT 1 FROM media_catalog_article_references u WHERE u.media_id=m.media_id AND u.role='UPLOAD') THEN 'UNUSED'
           ELSE 'UNKNOWN' END
-        WHEN m.origin='COFFEE' AND m.status='DELETION_PENDING' THEN 'UNUSED'
+        WHEN m.origin='COFFEE' AND (m.status='DELETION_PENDING' OR m.physically_deleted) THEN 'UNUSED'
         WHEN m.resource_id IS NOT NULL THEN 'USED'
         WHEN m.origin='AVATAR' AND m.status<>'DELETED' THEN 'UNUSED' ELSE 'UNKNOWN' END
         """;
@@ -21,16 +21,17 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
     public boolean apply(MediaCatalogEntry e) {return apply(e,false);}
     private boolean apply(MediaCatalogEntry e,boolean retainedInventory) {
         return jdbc.update("""
-            INSERT INTO media_catalog_entries(origin,media_id,resource_id,owner_id,status,object_key,content_type,size_bytes,width,height,created_at,updated_at,source_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(origin,media_id) DO UPDATE SET
+            INSERT INTO media_catalog_entries(origin,media_id,resource_id,owner_id,status,object_key,content_type,size_bytes,width,height,created_at,updated_at,source_version,physically_deleted)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(origin,media_id) DO UPDATE SET
             resource_id=excluded.resource_id,owner_id=excluded.owner_id,status=excluded.status,
             object_key=excluded.object_key,content_type=excluded.content_type,size_bytes=excluded.size_bytes,
             width=excluded.width,height=excluded.height,created_at=coalesce(excluded.created_at,media_catalog_entries.created_at),
-            updated_at=excluded.updated_at,source_version=excluded.source_version
-            WHERE excluded.source_version > media_catalog_entries.source_version
+            updated_at=excluded.updated_at,source_version=excluded.source_version,physically_deleted=media_catalog_entries.physically_deleted OR excluded.physically_deleted
+            WHERE (NOT media_catalog_entries.physically_deleted OR excluded.physically_deleted) AND ( excluded.source_version > media_catalog_entries.source_version
                OR (excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.created_at IS NULL AND excluded.created_at IS NOT NULL)
-               OR (? AND excluded.origin='COFFEE' AND excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.status='DELETED' AND excluded.status='DELETION_PENDING')
-            """,e.origin(),e.mediaId(),e.resourceId(),e.ownerId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),time(e.createdAt()),time(e.updatedAt()),e.version(),retainedInventory)>0;
+               OR (excluded.source_version = media_catalog_entries.source_version AND excluded.physically_deleted AND NOT media_catalog_entries.physically_deleted)
+               OR (? AND excluded.origin='COFFEE' AND excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.status='DELETED' AND excluded.status='DELETION_PENDING'))
+            """,e.origin(),e.mediaId(),e.resourceId(),e.ownerId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),time(e.createdAt()),time(e.updatedAt()),e.version(),e.physicallyDeleted(),retainedInventory)>0;
     }
     @org.springframework.transaction.annotation.Transactional
     public void applyCoffee(UUID coffeeId,List<MediaCatalogEntry> entries,long version,Instant at,boolean complete,boolean deleted) {

@@ -10,5 +10,9 @@ public class CoffeePhotoRetirementJpaEntity {
     public boolean wasCover;
     public int sortOrder;
     public Instant retiredAt;
+    public String lifecycleStatus;
+    public Instant purgeRequestedAt;
+    public Instant purgedAt;
+    public UUID purgeCommandId;
     public CoffeePhotoRetirementJpaEntity(){}
 }

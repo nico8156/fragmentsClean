@@ -56,6 +56,7 @@ public class MediaCatalogEventsConfiguration {
         return route("coffee.media_catalog_snapshot",envelope->{
             if(envelope.eventVersion()==1)handler.handle(reader.read(envelope,CoffeePhotosArrangedIntegrationEvent.class));
             else if(envelope.eventVersion()==2)handler.handle(reader.read(envelope,CoffeeMediaCatalogSnapshotIntegrationEvent.class));
+            else if(envelope.eventVersion()==3)handler.handle(reader.read(envelope,CoffeeMediaCatalogSnapshotV3IntegrationEvent.class));
             else throw new IllegalArgumentException("Unsupported coffee media snapshot version");
             sync.publish(ProjectionSyncEvent.adminProjectionUpdated("media-catalog","media",envelope.aggregateId(),null,envelope.occurredAt(),List.of("media")));
         });

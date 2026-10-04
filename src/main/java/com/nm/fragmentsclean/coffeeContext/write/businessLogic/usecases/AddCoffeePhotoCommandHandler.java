@@ -15,6 +15,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHa
 
 @org.springframework.transaction.annotation.Transactional
 public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePhotoCommand> {
+	private final com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements;
 	private final CoffeeRepository coffeeRepository;
 	private final CoffeePhotoStorage photoStorage;
 	private final DomainEventPublisher eventPublisher;
@@ -24,11 +25,11 @@ public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePho
 			CoffeeRepository coffeeRepository,
 			CoffeePhotoStorage photoStorage,
 			DomainEventPublisher eventPublisher,
-			DateTimeProvider dateTimeProvider) {
+			DateTimeProvider dateTimeProvider, com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		this.coffeeRepository = coffeeRepository;
 		this.photoStorage = photoStorage;
 		this.eventPublisher = eventPublisher;
-		this.dateTimeProvider = dateTimeProvider;
+		this.dateTimeProvider = dateTimeProvider;this.retirements=retirements;
 	}
 
 	@Override
@@ -39,6 +40,7 @@ public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePho
 
 		var now = dateTimeProvider.now();
 		var sourceName = "admin-upload/" + command.commandId() + "/" + command.fileName();
+        if(retirements.byId(CoffeePhotoStorage.photoId(coffeeId,sourceName)).isPresent())throw new com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException("MEDIA_RETIRED","Retired upload cannot be replayed into storage");
 		var storedPhoto = photoStorage.store(
 				coffeeId,
 				coffee.googleId().orElse(null),
