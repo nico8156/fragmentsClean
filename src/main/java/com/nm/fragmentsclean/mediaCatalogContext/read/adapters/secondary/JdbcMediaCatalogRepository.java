@@ -6,7 +6,7 @@ import java.util.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 @Repository
-public class JdbcMediaCatalogRepository implements MediaCatalogProjection, MediaCatalogReadRepository {
+public class JdbcMediaCatalogRepository implements MediaCatalogProjection, MediaCatalogReadRepository, CoffeeMediaCatalogProjection {
     private final JdbcTemplate jdbc;
     public JdbcMediaCatalogRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}
     public boolean apply(MediaCatalogEntry e) {
@@ -21,6 +21,22 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
                OR (excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.created_at IS NULL AND excluded.created_at IS NOT NULL)
             """,e.origin(),e.mediaId(),e.resourceId(),e.ownerId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),time(e.createdAt()),time(e.updatedAt()),e.version())>0;
     }
+    @org.springframework.transaction.annotation.Transactional
+    public void applyCoffee(UUID coffeeId,List<MediaCatalogEntry> entries,long version,Instant at,boolean complete,boolean deleted) {
+        jdbc.update("INSERT INTO media_catalog_coffee_versions(coffee_id) VALUES(?) ON CONFLICT DO NOTHING",coffeeId);
+        var state=jdbc.queryForMap("SELECT snapshot_version,deleted FROM media_catalog_coffee_versions WHERE coffee_id=? FOR UPDATE",coffeeId);
+        long snapshot=((Number)state.get("snapshot_version")).longValue();
+        if(Boolean.TRUE.equals(state.get("deleted")) || (complete?version<snapshot:version<=snapshot))return;
+        if(complete) {
+            jdbc.update("UPDATE media_catalog_coffee_versions SET snapshot_version=greatest(snapshot_version,?),deleted=? WHERE coffee_id=?",version,deleted,coffeeId);
+            var sql=new StringBuilder("UPDATE media_catalog_entries SET status='DELETED',resource_id=NULL,owner_id=NULL,object_key=NULL,content_type=NULL,size_bytes=0,width=NULL,height=NULL,updated_at=?,source_version=greatest(source_version,?) WHERE origin='COFFEE' AND resource_id=?");
+            var args=new ArrayList<Object>(List.of(time(at),version,coffeeId));
+            if(!deleted){sql.append(" AND source_version<=?");args.add(version);}
+            if(!entries.isEmpty()){sql.append(" AND media_id NOT IN (").append(String.join(",",Collections.nCopies(entries.size(),"?"))).append(")");entries.forEach(e->args.add(e.mediaId()));}
+            jdbc.update(sql.toString(),args.toArray());
+        }
+        entries.forEach(this::apply);
+    }
     public void erase(UUID ownerId){jdbc.update("DELETE FROM media_catalog_entries WHERE owner_id=?",ownerId);}
     public MediaCatalogPage search(SearchMediaCatalogQuery q) {
         var sql=new StringBuilder("SELECT * FROM media_catalog_entries WHERE (?='' OR position(lower(?) in lower(media_id::text))>0 OR resource_id::text=? OR owner_id::text=?)");
@@ -32,7 +48,7 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
         sql.append(" ORDER BY origin,media_id LIMIT ?");args.add(q.limit()+1);
         var rows=jdbc.query(sql.toString(),this::view,args.toArray());
         boolean more=rows.size()>q.limit();var items=List.copyOf(rows.subList(0,Math.min(q.limit(),rows.size())));
-        return new MediaCatalogPage(items,more?items.getLast().id():null,List.of("EXPERIENCE"));
+        return new MediaCatalogPage(items,more?items.getLast().id():null,List.of("EXPERIENCE","COFFEE"));
     }
     public Optional<MediaCatalogView> byId(String id) {
         var parts=SearchMediaCatalogQuery.parseId(id);

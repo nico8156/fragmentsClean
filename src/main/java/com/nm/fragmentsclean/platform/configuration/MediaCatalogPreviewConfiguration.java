@@ -2,12 +2,17 @@ package com.nm.fragmentsclean.platform.configuration;
 import com.nm.fragmentsclean.mediaCatalogContext.read.MediaCatalogPreviewPort;
 import com.nm.fragmentsclean.experienceContext.read.AdminExperienceMediaPreviewsQuery;
 import com.nm.fragmentsclean.experienceContext.read.AdminExperienceMediaPreviewsQueryHandler;
+import com.nm.fragmentsclean.coffeeContext.read.*;
+import java.util.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 /** Composition root bridges primitive ACLs; neither context imports the other. */
 @Configuration
 public class MediaCatalogPreviewConfiguration {
-    @Bean MediaCatalogPreviewPort mediaCatalogPreviewPort(AdminExperienceMediaPreviewsQueryHandler query){
-        return ids->query.handle(new AdminExperienceMediaPreviewsQuery(ids));
+    @Bean MediaCatalogPreviewPort mediaCatalogPreviewPort(AdminExperienceMediaPreviewsQueryHandler query,AdminCoffeeMediaPreviewsQueryHandler coffee){
+        return new MediaCatalogPreviewPort(){
+            public Map<UUID,String> experiencePreviews(List<UUID> ids){return query.handle(new AdminExperienceMediaPreviewsQuery(ids));}
+            public Map<UUID,String> coffeePreviews(Map<UUID,UUID> refs){return coffee.handle(new AdminCoffeeMediaPreviewsQuery(refs));}
+        };
     }
 }

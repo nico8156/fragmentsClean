@@ -123,6 +123,9 @@ bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$g
 download src/main/resources/db/release/media-catalogue-2026-10.psql "$deployment_tmp/release/media-catalogue-2026-10.psql"
 download src/main/resources/db/release/2026-10-04-media-catalogue.sql "$deployment_tmp/release/2026-10-04-media-catalogue.sql"
 bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" media-catalogue-2026-10.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/coffee-media-catalogue-2026-10.psql "$deployment_tmp/release/coffee-media-catalogue-2026-10.psql"
+download src/main/resources/db/release/2026-10-04-coffee-media-catalogue.sql "$deployment_tmp/release/2026-10-04-coffee-media-catalogue.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" coffee-media-catalogue-2026-10.psql >> "$deployment_tmp/migration.psql"
 
 # Resolve every SSM prerequisite and validate Compose before changing the live config or stopping a writer.
 bash "$deployment_tmp/bootstrap-runtime.sh" "$backend_image" "$deployment_tmp"

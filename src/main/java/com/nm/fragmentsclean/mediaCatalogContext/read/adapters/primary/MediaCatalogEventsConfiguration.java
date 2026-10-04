@@ -1,6 +1,6 @@
 package com.nm.fragmentsclean.mediaCatalogContext.read.adapters.primary;
 import com.nm.fragmentsclean.mediaCatalogContext.read.*;
-import com.nm.fragmentsclean.platform.eventing.contracts.ExperienceIntegrationEvents;
+import com.nm.fragmentsclean.platform.eventing.contracts.*;
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserDeletionRequestedIntegrationEvent;
 import com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.eventing.IntegrationEventEnvelope;
@@ -25,6 +25,19 @@ public class MediaCatalogEventsConfiguration {
             };
             if("DELETED".equals(event.status())) apply.run();
             else if(event.userId()!=null) barrier.ifActive(AccountErasureBarrier.Scope.MEDIA_CATALOG,event.userId(),apply);
+        });
+    }
+    @Bean CoffeeMediaCatalogHandler coffeeMediaCatalogHandler(CoffeeMediaCatalogProjection projection){return new CoffeeMediaCatalogHandler(projection);}
+    @Bean SqsIntegrationEventHandler catalogCoffeePhotoAdded(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photo_added",CoffeePhotoAddedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeePhotoDeleted(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photo_deleted",CoffeePhotoDeletedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeePhotosImported(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photos_imported",CoffeePhotosImportedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeePhotosArranged(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photos_arranged",CoffeePhotosArrangedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeeSnapshot(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.media_catalog_snapshot",CoffeePhotosArrangedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeeDeleted(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.deleted",CoffeeLifecycleIntegrationEvent.class,reader,handler::deleted,sync);}
+    private <T> SqsIntegrationEventHandler coffeeRoute(String type,Class<T> contract,SqsIntegrationEventPayloadReader reader,Consumer<T> apply,ProjectionSyncPublisher sync){
+        return route(type,envelope->{
+            apply.accept(reader.read(envelope,contract));
+            sync.publish(ProjectionSyncEvent.adminProjectionUpdated("media-catalog","media",envelope.aggregateId(),null,envelope.occurredAt(),List.of("media")));
         });
     }
     @Bean SqsIntegrationEventHandler catalogAccountErasure(SqsIntegrationEventPayloadReader reader,

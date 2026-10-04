@@ -141,6 +141,11 @@ class ReleaseManifestTest {
         assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
     }
 
+    @Test void coffee_media_manifest_renders_after_the_catalogue_baseline() throws Exception {
+        copy();var result=render("a".repeat(40),"coffee-media-catalogue-2026-10.psql");
+        assertThat(result.exit).isZero();
+        assertThat(result.output).contains("media_catalog_coffee_versions","coffee_media_catalog_scan","version='media-catalogue-2026-10'").doesNotContain("\\ir ");
+    }
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));

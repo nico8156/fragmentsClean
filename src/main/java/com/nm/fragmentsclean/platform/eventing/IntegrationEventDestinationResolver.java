@@ -26,6 +26,12 @@ public class IntegrationEventDestinationResolver {
     }
 
     if ("Coffee".equals(aggregateType)) {
+      if (eventType.endsWith("CoffeeMediaCatalogSnapshotEvent")) return List.of(MEDIA_CATALOG_EVENTS);
+      if (eventType.endsWith("CoffeePhotoAddedEvent") || eventType.endsWith("CoffeePhotoDeletedEvent")
+          || eventType.endsWith("CoffeePhotosImportedEvent") || eventType.endsWith("CoffeePhotosArrangedEvent")) {
+        return List.of(COFFEES_EVENTS, MEDIA_CATALOG_EVENTS);
+      }
+      if (eventType.endsWith("CoffeeDeletedEvent")) return List.of(COFFEES_EVENTS, APP_USERS_EVENTS, EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
       if (eventType.endsWith("CoffeeCreatedEvent")
           || eventType.endsWith("CoffeeArchivedEvent")
           || eventType.endsWith("CoffeeDeletedEvent")) {

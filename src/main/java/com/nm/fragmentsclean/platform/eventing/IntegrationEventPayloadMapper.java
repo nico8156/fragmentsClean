@@ -131,7 +131,7 @@ public class IntegrationEventPayloadMapper {
                 coffeeLifecycle(node, event);
             case "coffee.photo_added" -> coffeePhotoAdded(node, event);
             case "coffee.photos_imported" -> coffeePhotosImported(node, event);
-            case "coffee.photos_arranged" -> coffeePhotosArranged(node, event);
+            case "coffee.photos_arranged", "coffee.media_catalog_snapshot" -> coffeePhotosArranged(node, event);
             case "coffee.opening_hours_imported" ->
                 new CoffeeOpeningHoursImportedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

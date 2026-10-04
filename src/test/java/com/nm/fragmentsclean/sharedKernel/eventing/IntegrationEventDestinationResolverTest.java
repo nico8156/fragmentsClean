@@ -66,6 +66,12 @@ class IntegrationEventDestinationResolverTest {
         assertThat(destinations("AppUser", "com.example.AppUserDeletionRequestedEvent")).contains("media-catalog-events");
         assertThat(destinations("MediaCatalogAccountDeletion", "com.example.MediaCatalogAccountDataErasedEvent")).containsExactly("app-users-events");
     }
+    @Test void routes_coffee_media_lifecycle_to_the_catalogue_and_isolates_reconciliation(){
+        for(String event:List.of("CoffeePhotoAddedEvent","CoffeePhotoDeletedEvent","CoffeePhotosImportedEvent","CoffeePhotosArrangedEvent"))
+            assertThat(destinations("Coffee","com.example."+event)).containsExactly("coffees-events","media-catalog-events");
+        assertThat(destinations("Coffee","com.example.CoffeeDeletedEvent")).containsExactly("coffees-events","app-users-events","experiences-events","media-catalog-events");
+        assertThat(destinations("Coffee","com.example.CoffeeMediaCatalogSnapshotEvent")).containsExactly("media-catalog-events");
+    }
     private List<String> destinations(String aggregateType, String eventType) {
         var event = new OutboxEventJpaEntity();
         event.setAggregateType(aggregateType);

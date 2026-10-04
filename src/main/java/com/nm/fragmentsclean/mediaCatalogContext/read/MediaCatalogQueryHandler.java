@@ -18,6 +18,9 @@ public final class MediaCatalogQueryHandler implements QueryHandler<SearchMediaC
     private List<MediaCatalogView> withCurrentPreviews(List<MediaCatalogView> items){
         var ids=items.stream().filter(v->"EXPERIENCE".equals(v.origin()) && "AVAILABLE".equals(v.status())).map(MediaCatalogView::mediaId).toList();
         var current=ids.isEmpty()?Map.<UUID,String>of():previews.experiencePreviews(ids);
-        return items.stream().map(v->new MediaCatalogView(v.id(),v.origin(),v.mediaId(),v.resourceId(),v.ownerId(),v.status(),"EXPERIENCE".equals(v.origin())?current.get(v.mediaId()):null,v.contentType(),v.size(),v.width(),v.height(),v.createdAt(),v.updatedAt())).toList();
+        var coffeeRefs=new HashMap<UUID,UUID>();
+        items.stream().filter(v->"COFFEE".equals(v.origin()) && "AVAILABLE".equals(v.status()) && v.resourceId()!=null).forEach(v->coffeeRefs.put(v.mediaId(),v.resourceId()));
+        var coffee=coffeeRefs.isEmpty()?Map.<UUID,String>of():previews.coffeePreviews(coffeeRefs);
+        return items.stream().map(v->new MediaCatalogView(v.id(),v.origin(),v.mediaId(),v.resourceId(),v.ownerId(),v.status(),"EXPERIENCE".equals(v.origin())?current.get(v.mediaId()):"COFFEE".equals(v.origin())?coffee.get(v.mediaId()):null,v.contentType(),v.size(),v.width(),v.height(),v.createdAt(),v.updatedAt())).toList();
     }
 }

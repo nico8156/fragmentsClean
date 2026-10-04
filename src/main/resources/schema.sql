@@ -1270,3 +1270,15 @@ INSERT INTO account_erasure_barriers(context_name,user_id,status,request_id,eras
 SELECT 'MEDIA_CATALOG',user_id,'ERASED',request_id,erased_at,created_at,updated_at
 FROM account_erasure_barriers WHERE context_name='EXPERIENCE' AND status='ERASED'
 ON CONFLICT(context_name,user_id) DO UPDATE SET status='ERASED',request_id=excluded.request_id,erased_at=excluded.erased_at,updated_at=excluded.updated_at;
+
+CREATE TABLE IF NOT EXISTS media_catalog_coffee_versions (
+    coffee_id UUID PRIMARY KEY,
+    snapshot_version BIGINT NOT NULL DEFAULT -1,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE TABLE IF NOT EXISTS coffee_media_catalog_scan (
+    id INTEGER PRIMARY KEY CHECK(id=1),cursor_id UUID,next_scan_at TIMESTAMPTZ NOT NULL DEFAULT now(),completed_at TIMESTAMPTZ
+);
+INSERT INTO coffee_media_catalog_scan(id) VALUES(1) ON CONFLICT DO NOTHING;
+
+CREATE INDEX IF NOT EXISTS ix_media_catalog_resource ON media_catalog_entries(origin,resource_id,source_version);

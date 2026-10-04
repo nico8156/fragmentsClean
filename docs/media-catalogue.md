@@ -77,3 +77,58 @@ The scoped suite exercises admin access, pagination/filtering, no arbitrary keys
 replay, source dates, erasure, migration replay, current-source preview checks,
 existing community flows and architectural boundaries. The complete backend
 suite, AWS deployment and load tests are not claimed.
+
+
+## Photos de cafés — tranche 2b
+
+Les lectures admin existantes `/api/admin/media` et `/api/admin/media/{id}`
+annoncent désormais EXPERIENCE et COFFEE. Les identifiants café utilisent
+`COFFEE:<photoId>`. Les métadonnées d’upload absentes du domaine restent nulles ;
+`updatedAt` est la date de l’état source café, pas une date physique du fichier.
+Un retrait de référence ne prouve pas une purge S3.
+
+Le catalogue consomme les contrats existants `coffee.photo_added`,
+`coffee.photo_deleted`, `coffee.photos_imported`, `coffee.photos_arranged`
+et `coffee.deleted`, via la destination média déjà introduite. L’import et
+l’arrangement transportent des inventaires complets. Un watermark par café
+bloque les anciennes références encore inconnues ; les versions par photo
+préservent les changements individuels plus récents. Le verrou de cette
+référence locale sérialise les effets concurrents. La suppression du café
+pose une barrière terminale et retire ses associations et références de stockage.
+Cette table est une projection de consultation, pas un second cycle de vie café.
+
+`ReplayCoffeeMediaCatalog` émet `CoffeeMediaCatalogSnapshotEvent`, enveloppé
+comme `coffee.media_catalog_snapshot`, **uniquement vers media-catalog-events**.
+Il ne rejoue pas un événement d’arrangement vers les consommateurs publics.
+Le producteur parcourt 100 cafés par lot avec un curseur durable verrouillé,
+une lecture SQL cohérente des parents et photos, puis outbox et checkpoint dans
+la même transaction. Un inventaire vide est pertinent pour retirer une ancienne
+galerie. La reprise est activée par le réglage existant
+`MEDIA_CATALOG_REPLAY_ENABLED=true` et recommence quotidiennement.
+
+Les aperçus sont vérifiés en lot par `AdminCoffeeMediaPreviewsQuery` sur les
+paires photo/café courantes dans `coffeeContext`. Une photo portant le même ID
+chez un autre café ne fournit pas d’aperçu pour l’association indexée. Le
+resolver source existant signe les références S3 ; aucune URI de stockage
+n’est renvoyée par le catalogue. Les chemins locaux sont limités au endpoint
+photo-assets connu, puis résolus par l’adaptateur HTTP Studio vers le backend.
+Le câblage platform étend l’ACL primitive existante. Une page mixte effectue
+au plus trois lectures bornées : catalogue, expériences et cafés ; aucun GET
+par ligne. Une erreur du domaine source fait échouer la lecture.
+
+Livraison : appliquer `coffee-media-catalogue-2026-10` après
+`media-catalogue-2026-10`, puis livrer le producteur/consommateur et le Studio.
+La file, sa DLQ et ses permissions existantes sont réutilisées. Les manifestes
+précédents restent immuables. Le backend précédent ne connaît pas les nouvelles
+routes de consommation ; un rollback backend doit coordonner les producteurs,
+la consommation et la reprise. Ne pas laisser un ancien consommateur acquitter
+ces nouveaux événements. Le seul rollback Studio est indépendant.
+
+Limites : le scan ne constitue pas un inventaire S3 et ne déduit pas qu’un
+objet est orphelin. Une suppression source manquée doit être traitée par le
+rejeu de son événement, la résolution de la DLQ ou une réconciliation explicite ;
+le scan des cafés encore présents seul ne reconstitue pas les suppressions
+physiques historiques. Les anciens flux de purge café restent une dette du
+jalon 3 ; aucun nouveau bouton destructif n’est ajouté dans le catalogue.
+Les contrôles de volumétrie, dont la taille des galeries et des messages,
+restent dans la consolidation du jalon 2. Aucun déploiement réalisé ici.

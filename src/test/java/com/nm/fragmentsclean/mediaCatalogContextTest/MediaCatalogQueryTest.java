@@ -12,7 +12,7 @@ class MediaCatalogQueryTest {
         var result=new MediaCatalogQueryHandler(repository,previews).handle(new SearchMediaCatalogQuery("",null,null,null,null,30));
         assertThat(previews.requests).containsExactly(List.of(id));
         assertThat(result.items().getFirst().previewUrl()).isEqualTo("https://preview.test/current");
-        assertThat(result.items().get(1).previewUrl()).isNull();
+        assertThat(result.items().get(1).previewUrl()).isEqualTo("https://coffee.test/current");
         assertThat(result.items().getFirst().id()).isNotEqualTo(result.items().get(1).id());
     }
     private static MediaCatalogView view(String origin,UUID id){return new MediaCatalogView(origin+":"+id,origin,id,UUID.randomUUID(),UUID.randomUUID(),"AVAILABLE",null,"image/jpeg",1024L,640,480,null,Instant.parse("2026-10-04T10:00:00Z"));}
@@ -23,6 +23,7 @@ class MediaCatalogQueryTest {
     private static final class FakeCurrentPreviews implements MediaCatalogPreviewPort {
         final UUID id;final List<List<UUID>> requests=new ArrayList<>();
         FakeCurrentPreviews(UUID id){this.id=id;}
+        public Map<UUID,String> coffeePreviews(Map<UUID,UUID> ids){return Map.of(id,"https://coffee.test/current");}
         public Map<UUID,String> experiencePreviews(List<UUID> ids){requests.add(ids);return Map.of(id,"https://preview.test/current");}
     }
 }
