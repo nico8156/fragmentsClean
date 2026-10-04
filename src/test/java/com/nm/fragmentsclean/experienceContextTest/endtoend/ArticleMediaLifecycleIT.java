@@ -79,4 +79,23 @@ class ArticleMediaLifecycleIT extends AbstractExperienceE2E {
   mvc.perform(get("/api/admin/studio/article-media/"+upload.media()+"/operations")).andExpect(status().isUnauthorized());
   mvc.perform(get("/api/admin/studio/article-media/"+UUID.randomUUID()+"/operations").with(jwt().jwt(j->j.subject(admin)))).andExpect(jsonPath("$.length()").value(0));
  }
+ @Test void upload_registration_replay_preserves_the_retirement_date_and_metadata()throws Exception{
+  var upload=upload();change(upload,UUID.randomUUID(),"RETIRED","Keep for retention").andExpect(status().isAccepted());
+  var retiredAt=java.time.Instant.parse("2026-01-01T00:00:00Z");
+  jdbc.update("UPDATE article_media_uploads SET updated_at=? WHERE media_id=?",java.sql.Timestamp.from(retiredAt),upload.media());
+  uploads.record(upload.article(),upload.ref(),"replacement.png","image/webp",new byte[]{1,2,3},800,600,UUID.fromString(admin),"STUDIO");
+  var row=jdbc.queryForMap("SELECT lifecycle_status,updated_at,content_type,size_bytes,width,height FROM article_media_uploads WHERE media_id=?",upload.media());
+  assertThat(row.get("lifecycle_status")).isEqualTo("RETIRED");
+  assertThat(((java.sql.Timestamp)row.get("updated_at")).toInstant()).isEqualTo(retiredAt);
+  assertThat(row.get("content_type")).isEqualTo("image/png");assertThat(((Number)row.get("size_bytes")).longValue()).isEqualTo(1);
+  assertThat(row.get("width")).isEqualTo(640);assertThat(row.get("height")).isEqualTo(480);
+ }
+ @Test void active_upload_registration_still_refreshes_measured_metadata_and_preserves_original_actor(){
+  var upload=upload();
+  uploads.record(upload.article(),upload.ref(),"retry.webp","image/webp",new byte[]{1,2,3},800,600,UUID.randomUUID(),"GENERATION");
+  var row=jdbc.queryForMap("SELECT lifecycle_status,content_type,size_bytes,width,height,uploaded_by,purpose FROM article_media_uploads WHERE media_id=?",upload.media());
+  assertThat(row.get("lifecycle_status")).isEqualTo("ACTIVE");assertThat(row.get("content_type")).isEqualTo("image/webp");
+  assertThat(((Number)row.get("size_bytes")).longValue()).isEqualTo(3);assertThat(row.get("width")).isEqualTo(800);assertThat(row.get("height")).isEqualTo(600);
+  assertThat(row.get("uploaded_by")).isEqualTo(UUID.fromString(admin));assertThat(row.get("purpose")).isEqualTo("STUDIO");
+ }
 }

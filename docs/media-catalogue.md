@@ -598,3 +598,32 @@ largeur document excédentaire. FlowAtlas Java commande 4/3 borné ; Redux canon
 6/5 borné complet, couverture application non évaluée. Tests portent la preuve
 runtime vers outbox/routeur/catalogue ; graphe statique non assimilé à l’exécution.
 Pas de suite backend globale ni de déploiement.
+
+## Article retirement guards before explicit purge (3e.4a)
+
+The owning Article lifecycle now accepts bindings only for ACTIVE uploads and
+allows retirement/restoration only from ACTIVE/RETIRED. Unknown, pending or
+terminal states fail closed without adding any such state to the schema.
+Registration replay retains non-active metadata and updated_at, preserving the
+retirement clock; active metadata refresh and original actor/purpose remain.
+Existing source locks, commands, audit, inventory publisher and security apply.
+
+Behaviour evidence: initial RED 10 tests/2 assertion failures/0 errors; initial
+GREEN 41 tests/8 classes. Three independent reversible manual mutations killed:
+allowing non-active binding, removing restoration source guard, overwriting
+retirement updated_at (each one expected assertion failure/0 errors). Logs:
+/tmp/article-retention-guards-red.log, /tmp/article-retention-guards-green.log,
+/tmp/article-retention-mutation-{binding,restore,timestamp}.log. Final restored
+verification additionally characterizes active metadata replay; results below.
+
+FlowAtlas lifecycle command bounded context remains complete (4 nodes/3 edges),
+application not assessed. Database/API tests cover actual source behavior. No
+new route, purge state, migration, cleaner, frontend action or production change.
+Article purge is not delivered here. Generated image service stores before
+tracking with stable saga/slot IDs; storage/replay/cleanup coordination must be
+covered before physical purge. Never infer byte safety from registry upsert.
+
+Final restored verification: 42 tests/8 classes, 0 failures/0 errors, Maven exit
+0 (/tmp/article-retention-guards-final.log); git diff --check clean. Source
+mutations exactly restored from the pre-mutation copies. No UI changes in this
+slice, frontend suite not rerun. No production cleanup or deployment performed.
