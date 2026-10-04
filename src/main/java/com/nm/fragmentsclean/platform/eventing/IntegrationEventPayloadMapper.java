@@ -336,7 +336,7 @@ public class IntegrationEventPayloadMapper {
                     text(node, "objectKey"), text(node, "contentType"), longValue(node, "size"),
                     nullableInt(node, "width"), nullableInt(node, "height"), text(node, "reason"),
                     longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
-                    nullableInstant(node, "clientAt"));
+                    nullableInstant(node, "clientAt"), nullableInstant(node, "createdAt"));
             case "coffee.published" ->
                 new CoffeePublishedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

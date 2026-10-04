@@ -497,8 +497,130 @@
         "parameters": [{ "name": "commandId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
         "responses": { "200": { "description": "Canonical command outcome", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandStatus" } } } } }
       }
+    },
+    "/api/admin/media": {
+      "get": {
+        "operationId": "searchAdminMedia",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/media/{id}": {
+      "get": {
+        "operationId": "getAdminMedia",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
     }
-  },
+},
   "components": {
     "securitySchemes": { "studioOAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
@@ -879,7 +1001,132 @@
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
       "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri", "cover", "sortOrder"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" }, "cover": { "type": "boolean" }, "sortOrder": { "type": "integer", "minimum": 0 } } },
       "CoffeeOpeningHours": { "type": "object", "additionalProperties": false, "required": ["id", "weekdayDescription"], "properties": { "id": { "type": "string", "format": "uuid" }, "weekdayDescription": { "type": "string" } } }
-      ,"CoffeeOperation": { "type": "object", "additionalProperties": false, "required": ["id", "actorUserId", "action", "outcome", "occurredAt"], "properties": { "id": { "type": "string", "format": "uuid" }, "actorUserId": { "type": "string", "format": "uuid" }, "action": { "type": "string" }, "commandId": { "type": ["string", "null"], "format": "uuid" }, "outcome": { "type": "string" }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } } }
-    }
+      ,"CoffeeOperation": { "type": "object", "additionalProperties": false, "required": ["id", "actorUserId", "action", "outcome", "occurredAt"], "properties": { "id": { "type": "string", "format": "uuid" }, "actorUserId": { "type": "string", "format": "uuid" }, "action": { "type": "string" }, "commandId": { "type": ["string", "null"], "format": "uuid" }, "outcome": { "type": "string" }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } } },
+      "MediaCatalogItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "mediaId",
+          "updatedAt",
+          "origin",
+          "status",
+          "resourceId",
+          "ownerId",
+          "previewUrl",
+          "contentType",
+          "createdAt",
+          "size",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mediaId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "EXPERIENCE",
+              "COFFEE",
+              "AVATAR",
+              "ARTICLE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "DELETION_PENDING",
+              "DELETED"
+            ]
+          },
+          "resourceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ownerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previewUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contentType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "MediaCatalogPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "coverage"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaCatalogItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+  }
   }
 }

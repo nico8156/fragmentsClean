@@ -12,7 +12,7 @@ public class IntegrationEventDestinationResolver {
     String eventType = event.getEventType();
 
     if (eventType.endsWith("AppUserDeletionRequestedEvent")) {
-      return List.of(APP_USERS_EVENTS, AUTH_USERS_EVENTS, DOMAIN_EVENTS, TICKET_EVENTS, EXPERIENCES_EVENTS);
+      return List.of(APP_USERS_EVENTS, AUTH_USERS_EVENTS, DOMAIN_EVENTS, TICKET_EVENTS, EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
     }
     if (eventType.endsWith("AccountDataErasedEvent")) {
       return List.of(APP_USERS_EVENTS);
@@ -42,7 +42,12 @@ public class IntegrationEventDestinationResolver {
       return List.of(EXPERIENCES_EVENTS);
     }
     if ("ExperienceReport".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
-    if ("ExperienceMedia".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
+    if ("ExperienceMedia".equals(aggregateType)) {
+      if (eventType.endsWith("ExperienceMediaChangedEvent")) {
+        return List.of(EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
+      }
+      return List.of(EXPERIENCES_EVENTS);
+    }
     if ("ExperienceAccountDeletion".equals(aggregateType)) return List.of(APP_USERS_EVENTS);
     if ("UserBlock".equals(aggregateType)) return List.of(DOMAIN_EVENTS, EXPERIENCES_EVENTS);
     if ("AppUser".equals(aggregateType)

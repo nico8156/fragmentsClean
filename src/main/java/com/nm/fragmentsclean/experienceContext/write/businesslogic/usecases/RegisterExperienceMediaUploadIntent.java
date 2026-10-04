@@ -16,10 +16,11 @@ public class RegisterExperienceMediaUploadIntent {
   private final PrivateMediaObjectKeys keys;
   private final DateTimeProvider clock;
   private final int maxMedia;
+  private final com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher events;
 
   public RegisterExperienceMediaUploadIntent(ExperienceRepository experiences,
-      ExperienceMediaRepository media, PrivateMediaObjectKeys keys, DateTimeProvider clock, int maxMedia) {
-    this.experiences = experiences; this.media = media; this.keys = keys; this.clock = clock; this.maxMedia = maxMedia;
+      ExperienceMediaRepository media, PrivateMediaObjectKeys keys, DateTimeProvider clock, int maxMedia, com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher events) {
+    this.experiences = experiences; this.media = media; this.keys = keys; this.clock = clock; this.maxMedia = maxMedia; this.events=events;
   }
 
   @Transactional
@@ -43,6 +44,8 @@ public class RegisterExperienceMediaUploadIntent {
     var pending = ExperienceMedia.pending(mediaId, experienceId, snapshot.coffeeId(), userId, contentType, size,
         keys.pendingExperience(experienceId, mediaId), clock.now());
     media.save(pending);
+    pending.registerChanged(UUID.randomUUID(), "UPLOAD_INTENT", null, pending.snapshot().updatedAt());
+    ExperienceEvents.publish(pending,events);
     return pending;
   }
 }

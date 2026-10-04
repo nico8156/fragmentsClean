@@ -61,6 +61,11 @@ class IntegrationEventDestinationResolverTest {
                 .containsExactly("domain-events", "experiences-events");
     }
 
+    @Test void routes_known_media_facts_and_account_erasure_to_the_catalogue() {
+        assertThat(destinations("ExperienceMedia", "com.example.ExperienceMediaChangedEvent")).containsExactly("experiences-events","media-catalog-events");
+        assertThat(destinations("AppUser", "com.example.AppUserDeletionRequestedEvent")).contains("media-catalog-events");
+        assertThat(destinations("MediaCatalogAccountDeletion", "com.example.MediaCatalogAccountDataErasedEvent")).containsExactly("app-users-events");
+    }
     private List<String> destinations(String aggregateType, String eventType) {
         var event = new OutboxEventJpaEntity();
         event.setAggregateType(aggregateType);

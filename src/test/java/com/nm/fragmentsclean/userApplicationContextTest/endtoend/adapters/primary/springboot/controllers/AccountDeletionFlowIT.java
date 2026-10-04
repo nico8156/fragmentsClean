@@ -68,6 +68,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
     jdbc.update("DELETE FROM experience_user_profiles");
     outbox.deleteAll();
     jdbc.update("DELETE FROM app_users");
+    jdbc.update("DELETE FROM admin_audit_log");
     jdbc.update("DELETE FROM auth_users");
     seedOwnedData();
   }
@@ -104,7 +105,8 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
             envelope(requested, IntegrationEventDestinations.AUTH_USERS_EVENTS),
             envelope(requested, IntegrationEventDestinations.DOMAIN_EVENTS),
             envelope(requested, IntegrationEventDestinations.TICKET_EVENTS),
-            envelope(requested, IntegrationEventDestinations.EXPERIENCES_EVENTS));
+            envelope(requested, IntegrationEventDestinations.EXPERIENCES_EVENTS),
+            envelope(requested, IntegrationEventDestinations.MEDIA_CATALOG_EVENTS));
     envelopes.forEach(router::route);
     envelopes.forEach(router::route);
 
@@ -112,7 +114,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
         outbox.findAll().stream()
             .filter(event -> event.getEventType().endsWith("AccountDataErasedEvent"))
             .toList();
-    assertThat(acknowledgements).hasSize(4);
+    assertThat(acknowledgements).hasSize(5);
     acknowledgements.stream()
         .map(event -> envelope(event, IntegrationEventDestinations.APP_USERS_EVENTS))
         .forEach(router::route);
@@ -148,7 +150,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
                 "SELECT COUNT(*) FROM inbox_messages WHERE event_id = ? AND status = 'PROCESSED'",
                 Integer.class,
                 requested.getEventId()))
-        .isEqualTo(5);
+        .isEqualTo(6);
 
     replayPersonalEventsAfterErasure();
     assertThat(count("saved_coffees", "user_id")).isZero();
@@ -161,7 +163,7 @@ class AccountDeletionFlowIT extends AbstractBaseE2E {
                 "SELECT COUNT(*) FROM account_erasure_barriers WHERE user_id=? AND status='ERASED'",
                 Integer.class,
                 USER_ID))
-        .isEqualTo(5);
+        .isEqualTo(6);
     assertThat(
             jdbc.queryForObject(
                 "SELECT COUNT(*) FROM outbox_events WHERE payload_json LIKE '%' || ? || '%'",

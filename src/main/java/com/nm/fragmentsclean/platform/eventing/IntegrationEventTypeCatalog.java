@@ -38,6 +38,7 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("SocialAccountDataErasedEvent", "account.data_erased"),
           Map.entry("TicketAccountDataErasedEvent", "account.data_erased"),
           Map.entry("ExperienceAccountDataErasedEvent", "account.data_erased"),
+          Map.entry("MediaCatalogAccountDataErasedEvent", "account.data_erased"),
           Map.entry("SavedCoffeeSetEvent", "user.saved_coffee.set"),
           Map.entry("LikeSetEvent", "social.like.set"),
           Map.entry("CommentCreatedEvent", "social.comment.created"),

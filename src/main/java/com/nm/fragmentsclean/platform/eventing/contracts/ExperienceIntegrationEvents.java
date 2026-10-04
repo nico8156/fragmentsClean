@@ -39,5 +39,11 @@ public final class ExperienceIntegrationEvents {
     public record MediaChanged(
             UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID userId,
             UUID coffeeId, String status, String objectKey, String contentType, long size, Integer width,
-            Integer height, String reason, long version, Instant occurredAt, Instant clientAt) { }
+            Integer height, String reason, long version, Instant occurredAt, Instant clientAt, Instant createdAt) {
+        public MediaChanged(UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID userId, UUID coffeeId,
+            String status, String objectKey, String contentType, long size, Integer width, Integer height,
+            String reason, long version, Instant occurredAt, Instant clientAt) {
+            this(eventId,commandId,mediaId,experienceId,userId,coffeeId,status,objectKey,contentType,size,width,height,reason,version,occurredAt,clientAt,null);
+        }
+    }
 }

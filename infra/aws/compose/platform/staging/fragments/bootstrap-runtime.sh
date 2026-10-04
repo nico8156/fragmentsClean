@@ -91,6 +91,8 @@ write_env SQS_APP_USERS_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375
 write_env SQS_COFFEES_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-coffees-events
 write_env SQS_DOMAIN_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-domain-events
 write_env SQS_EXPERIENCES_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-experiences-events
+write_env SQS_MEDIA_CATALOG_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-media-catalog-events
+write_env MEDIA_CATALOG_REPLAY_ENABLED true
 write_env SQS_TICKET_EVENTS_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-ticket-events
 write_env SQS_TICKET_VERIFICATION_REQUESTED_URL https://sqs.eu-west-3.amazonaws.com/851725375299/fragments-staging-ticket-verification-requested
 write_env COFFEE_PHOTOS_STORAGE_BACKEND s3

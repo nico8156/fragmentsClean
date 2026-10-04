@@ -20,6 +20,7 @@ class BoundedContextArchitectureTest {
             "coffeeContext",
 			"editorialIntelligenceContext",
             "experienceContext",
+            "mediaCatalogContext",
             "socialContext",
             "ticketContext",
             "userApplicationContext"
