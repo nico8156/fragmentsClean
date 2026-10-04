@@ -12,6 +12,20 @@ class StudioOpenApiContractTest {
     private static final Path CONTRACT = Path.of("contracts/studio-api/v1/openapi.json");
 
     @Test
+    void experience_moderation_uses_its_domain_status_in_requests_and_audit() throws Exception {
+        JsonNode schemas = new ObjectMapper().readTree(Files.readString(CONTRACT)).path("components").path("schemas");
+        var expected = java.util.Arrays.stream(com.nm.fragmentsclean.experienceContext.write.businesslogic.models.ExperienceModerationStatus.values())
+                .map(Enum::name).toList();
+        for (String schema : java.util.List.of("ModerateExperience", "ExperienceModerationAction")) {
+            var values = new java.util.ArrayList<String>();
+            schemas.path(schema).path("properties").path("decision").path("enum").forEach(value -> values.add(value.asText()));
+            assertThat(values).containsExactlyInAnyOrderElementsOf(expected);
+        }
+        assertThat(schemas.path("ExperienceModerationReport").path("properties").path("actions").path("items").path("$ref").asText())
+                .isEqualTo("#/components/schemas/ExperienceModerationAction");
+    }
+
+    @Test
     void coffee_admin_contract_keeps_lifecycle_and_command_fields_explicit() throws Exception {
         JsonNode root = new ObjectMapper().readTree(Files.readString(CONTRACT));
         assertThat(root.path("openapi").asText()).isEqualTo("3.1.0");

@@ -141,6 +141,11 @@
         "required": ["actionId", "operatorId", "decision", "occurredAt"],
         "properties": { "actionId": { "type": "string", "format": "uuid" }, "operatorId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } }
       },
+      "ExperienceModerationAction": {
+        "type": "object", "additionalProperties": false,
+        "required": ["actionId", "operatorId", "decision", "occurredAt"],
+        "properties": { "actionId": { "type": "string", "format": "uuid" }, "operatorId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "VISIBLE"] }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } }
+      },
       "ModerationReport": {
         "type": "object", "additionalProperties": false,
         "required": ["reportId", "commentId", "targetId", "authorId", "reporterId", "reason", "status", "reportCount", "createdAt", "actions"],
@@ -159,12 +164,12 @@
       "ExperienceModerationReport": {
         "type": "object", "additionalProperties": false,
         "required": ["reportId", "experienceId", "coffeeId", "authorId", "reporterId", "reason", "status", "reportCount", "createdAt", "media", "actions"],
-        "properties": { "reportId": { "type": "string", "format": "uuid" }, "experienceId": { "type": "string", "format": "uuid" }, "coffeeId": { "type": "string", "format": "uuid" }, "authorId": { "type": "string", "format": "uuid" }, "authorName": { "type": ["string", "null"] }, "reporterId": { "type": "string", "format": "uuid" }, "reason": { "type": "string" }, "details": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] }, "content": { "type": ["string", "null"] }, "reportCount": { "type": "integer", "format": "int64" }, "createdAt": { "type": "string", "format": "date-time" }, "media": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceMedia" } }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ModerationAction" } } }
+        "properties": { "reportId": { "type": "string", "format": "uuid" }, "experienceId": { "type": "string", "format": "uuid" }, "coffeeId": { "type": "string", "format": "uuid" }, "authorId": { "type": "string", "format": "uuid" }, "authorName": { "type": ["string", "null"] }, "reporterId": { "type": "string", "format": "uuid" }, "reason": { "type": "string" }, "details": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] }, "content": { "type": ["string", "null"] }, "reportCount": { "type": "integer", "format": "int64" }, "createdAt": { "type": "string", "format": "date-time" }, "media": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceMedia" } }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceModerationAction" } } }
       },
       "ModerateExperience": {
         "type": "object", "additionalProperties": false,
         "required": ["commandId", "actionId", "decision", "at"],
-        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
+        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "VISIBLE"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
       },
       "TopicCandidate": {
         "type": "object", "additionalProperties": false, "required": ["id", "subject", "suggestedAngle", "signalIds", "status"],
