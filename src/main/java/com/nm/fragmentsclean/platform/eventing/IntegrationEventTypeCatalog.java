@@ -6,6 +6,7 @@ public final class IntegrationEventTypeCatalog {
 
   private static final Map<String, String> STABLE_TYPES =
       Map.ofEntries(
+          Map.entry("ArticleMediaCatalogSnapshotEvent", "article.media_catalog_snapshot"),
           Map.entry("ArticleCreatedEvent", "article.created"),
           Map.entry("ArticleDraftCreatedEvent", "article.draft.created"),
           Map.entry("ArticleDraftEditedEvent", "article.draft.edited"),

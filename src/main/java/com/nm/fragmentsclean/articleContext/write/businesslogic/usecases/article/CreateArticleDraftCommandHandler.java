@@ -15,6 +15,7 @@ import java.util.Objects;
 @Transactional
 @Component
 public class CreateArticleDraftCommandHandler implements CommandHandler<CreateArticleDraftCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
 
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher eventPublisher;
@@ -24,7 +25,8 @@ public class CreateArticleDraftCommandHandler implements CommandHandler<CreateAr
     public CreateArticleDraftCommandHandler(ArticleAggregateRepository repository,
                                             DomainEventPublisher eventPublisher,
                                             DateTimeProvider clock,
-                                            CommandStatusRecorder commandStatus) {
+                                            CommandStatusRecorder commandStatus, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -55,6 +57,7 @@ public class CreateArticleDraftCommandHandler implements CommandHandler<CreateAr
                                 java.time.Instant now, String eventType) {
         article.domainEvents().forEach(eventPublisher::publish);
         article.clearDomainEvents();
+        mediaCatalog.publish(article.id());
         commandStatus.markApplied(commandId, "Article", article.id().toString(), eventType, now);
     }
 }

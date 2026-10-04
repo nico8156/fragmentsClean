@@ -50,6 +50,7 @@ public class IntegrationEventPayloadMapper {
       JsonNode node = readPayloadTree(event.getPayloadJson());
       Object publicPayload =
           switch (stableEventType) {
+            case "article.media_catalog_snapshot" -> objectMapper.treeToValue(node, com.nm.fragmentsclean.platform.eventing.contracts.ArticleMediaCatalogSnapshotIntegrationEvent.class);
             case "article.created" ->
                 new ArticleCreatedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),

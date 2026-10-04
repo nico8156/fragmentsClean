@@ -154,6 +154,14 @@ class ReleaseManifestTest {
         Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");
         assertThat(render("a".repeat(40),"avatar-media-catalogue-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
     }
+    @Test void article_media_manifest_tracks_uploads_and_hashes_its_additive_fragment() throws Exception {
+        copy();var first=render("a".repeat(40),"article-media-catalogue-2026-10.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("article_media_uploads","media_catalog_article_parts","version='avatar-media-catalogue-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-article-media-catalogue.sql");
+        Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");
+        assertThat(render("a".repeat(40),"article-media-catalogue-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));

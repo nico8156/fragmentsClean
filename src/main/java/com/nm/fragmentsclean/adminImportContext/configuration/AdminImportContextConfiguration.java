@@ -173,8 +173,8 @@ public class AdminImportContextConfiguration {
 	}
 
 	@Bean
-	StoreStudioArticleImage storeStudioArticleImage(ArticleImageStorage articleImageStorage) {
-		return new StoreStudioArticleImage(articleImageStorage);
+	StoreStudioArticleImage storeStudioArticleImage(ArticleImageStorage articleImageStorage, com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleMediaUploadTracking tracking) {
+		return new StoreStudioArticleImage(articleImageStorage,tracking);
 	}
 
 	@Bean

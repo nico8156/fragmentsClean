@@ -73,7 +73,7 @@ class ArticleLocaleReadCompatibilityIT extends AbstractJpaIntegrationTest {
         assertThat(studio.byId(article.id()).orElseThrow().locale()).isEqualTo("fr-FR");
         var handler = new com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.UpsertArticleDraftCommandHandler(
                 repository, event -> {}, () -> now,
-                (commandId, type, aggregateId, eventType, at) -> {});
+                (commandId, type, aggregateId, eventType, at) -> {}, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
         for (String alias : java.util.List.of("fr", "fr-FR")) {
             handler.execute(new com.nm.fragmentsclean.articleContext.write.businesslogic.usecases.article.UpsertArticleDraftCommand(
                     UUID.randomUUID(), now, article.id(), article.workingRevisionId(), article.slug(), alias,

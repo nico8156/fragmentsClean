@@ -34,7 +34,7 @@ class ArticleGenerationCompletionHandlerTest {
                 (runId, sagaId, articleId, revisionId, schemaVersion, draft) -> { },
                 (articleId, revisionId, draft, completedAt) -> { },
                 publishedEvents::add,
-                ArticleAuthoringObservability.noop());
+                ArticleAuthoringObservability.noop(), new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
 
         handler.complete(
                 new ArticleGenerationLeaseClaimer.Work(saga.snapshot(), run.snapshot()),

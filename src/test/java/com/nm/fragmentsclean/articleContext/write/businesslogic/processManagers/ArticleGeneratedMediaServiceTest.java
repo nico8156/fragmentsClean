@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ArticleGeneratedMediaServiceTest {
     @Test void generatesOneCoverAndOneStableImagePerSection(){
-        var generator=new FakeGenerator(); var storage=new FakeStorage(); var service=new ArticleGeneratedMediaService(generator,storage);
+        var generator=new FakeGenerator(); var storage=new FakeStorage(); var service=new ArticleGeneratedMediaService(generator,storage, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaUploadRecorder());
         var draft=GeneratedArticleDraft.from("Titre","Introduction","Conclusion","Couverture",List.of(section("A"),section("B"),section("C")),List.of(ArticleEditorialTag.DECOUVERTE));
         var result=service.generate(UUID.fromString("00000000-0000-0000-0000-000000000001"),UUID.randomUUID(),draft);
         assertNotNull(result.coverImage()); assertEquals(4,generator.calls); assertEquals(4,storage.ids.size());

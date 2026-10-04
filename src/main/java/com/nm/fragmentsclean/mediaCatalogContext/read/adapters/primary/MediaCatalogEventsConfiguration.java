@@ -14,6 +14,14 @@ import org.springframework.context.annotation.*;
 import static com.nm.fragmentsclean.platform.eventing.IntegrationEventDestinations.MEDIA_CATALOG_EVENTS;
 @Configuration
 public class MediaCatalogEventsConfiguration {
+    @Bean ArticleMediaCatalogHandler articleMediaCatalogHandler(ArticleMediaCatalogProjection projection){return new ArticleMediaCatalogHandler(projection);}
+    @Bean SqsIntegrationEventHandler catalogArticleMedia(SqsIntegrationEventPayloadReader reader,ArticleMediaCatalogHandler handler,ProjectionSyncPublisher sync){
+        return route("article.media_catalog_snapshot",envelope->{
+            if(envelope.eventVersion()!=1)throw new IllegalArgumentException("Unsupported article media snapshot version");
+            var event=reader.read(envelope,ArticleMediaCatalogSnapshotIntegrationEvent.class);
+            if(handler.handle(event))sync.publish(ProjectionSyncEvent.adminProjectionUpdated("media-catalog","article",event.articleId().toString(),event.version(),event.occurredAt(),List.of("media")));
+        });
+    }
     @Bean MediaCatalogProjectionHandler mediaCatalogProjectionHandler(MediaCatalogProjection projection){return new MediaCatalogProjectionHandler(projection);}
     @Bean SqsIntegrationEventHandler catalogExperienceMedia(SqsIntegrationEventPayloadReader reader,
         MediaCatalogProjectionHandler handler, AccountErasureBarrier barrier, ProjectionSyncPublisher sync) {

@@ -43,6 +43,8 @@ public class IntegrationEventDestinationResolver {
       return List.of(COFFEES_EVENTS);
     }
 
+    if ("ArticleMediaCatalog".equals(aggregateType)) return List.of(MEDIA_CATALOG_EVENTS);
+
     if ("AvatarMedia".equals(aggregateType)) return List.of(MEDIA_CATALOG_EVENTS);
 
     if ("Experience".equals(aggregateType)) {

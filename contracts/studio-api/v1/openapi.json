@@ -606,6 +606,18 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USED",
+                "UNUSED",
+                "UNKNOWN"
+              ]
+            }
           }
         ],
         "responses": {
@@ -677,8 +689,68 @@
           }
         }
       }
+    },
+    "/api/admin/media/{id}/usages": {
+      "get": {
+        "operationId": "listMediaCatalogArticleUsages",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogArticleUsagePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
     }
-},
+  },
   "components": {
     "securitySchemes": { "studioOAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
@@ -1265,6 +1337,40 @@
               "integer",
               "null"
             ]
+          },
+          "originalName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uploadedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "usageStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "articleUsages": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MediaCatalogArticleUsagePage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -1296,7 +1402,95 @@
             }
           }
         }
+      },
+    "MediaCatalogArticleUsage": {
+      "type": "object",
+      "required": [
+        "articleId",
+        "revisionId",
+        "revisionNumber",
+        "title",
+        "revisionStatus",
+        "role",
+        "sectionPosition",
+        "imagePosition",
+        "width",
+        "height",
+        "working",
+        "published"
+      ],
+      "properties": {
+        "articleId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "revisionStatus": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "revisionNumber": {
+          "type": "integer"
+        },
+        "sectionPosition": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "imagePosition": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "width": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "height": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "working": {
+          "type": "boolean"
+        },
+        "published": {
+          "type": "boolean"
+        }
       }
+    },
+    "MediaCatalogArticleUsagePage": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/MediaCatalogArticleUsage"
+          }
+        },
+        "nextCursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
   }
   }
 }

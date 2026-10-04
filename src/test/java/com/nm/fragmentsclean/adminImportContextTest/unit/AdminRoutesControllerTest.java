@@ -304,6 +304,7 @@ class AdminRoutesControllerTest {
 								"text/plain",
 								"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb".getBytes()))
 						.file("image", "jpeg-bytes".getBytes())
+                        .principal(new org.springframework.security.authentication.TestingAuthenticationToken("99999999-9999-9999-9999-999999999999",null,"ROLE_ADMIN"))
 						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.assetId").value("dddddddd-dddd-dddd-dddd-dddddddddddd"))
@@ -508,7 +509,7 @@ class AdminRoutesControllerTest {
 								"/api/articles/image-assets/test.jpg",
 								null,
 								null,
-								alt)),
+								alt), new com.nm.fragmentsclean.adminImportContextTest.unit.FakeArticleMediaUploadTracking()),
 				new com.nm.fragmentsclean.adminImportContext.businessLogic.ports.StudioArticleDraftCatalog() {
 					public List<com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDraftDocument> list() { return List.of(); }
 					public Optional<com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleDraftDocument> byId(UUID id) { return Optional.empty(); }

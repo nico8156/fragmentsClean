@@ -256,3 +256,71 @@ usage projection, replay and global Article ↔ Media navigation. Unreferenced
 uploads still need owner-owned durable tracking. This source read is not a
 cross-domain SQL fallback for MediaCatalogContext. Lifecycle admin and User 360
 remain the authorized milestones 3 and 4 after catalogue consolidation.
+
+## Article catalogue and tracked uploads — 2026-10-04
+
+Article remains the source owner. `article_media_uploads` records newly stored
+Studio/generated files, including uploads made before saving the article. The
+source inventory contains all retained revision usages and tracked uploads.
+A dedicated sequence orders observations even when an editorial transition does
+not change the aggregate version. Producer replay uses a durable source-owned
+checkpoint; default scheduler activation remains the existing opt-in setting.
+
+`ArticleMediaCatalogSnapshotEvent` maps to the stable
+`article.media_catalog_snapshot` v1 contract and the existing media catalogue
+queue only. Each observation is split into bounded parts (max 100 references,
+conservative 180000-byte budget). Consumer parts are staged locally and only
+replaced after a complete observation, in the inbox transaction. Older completed
+versions cannot resurrect retired usages. Shared references are aggregated over
+all local Article usages and media locks are acquired in UUID textual order.
+
+New use cases: `PublishArticleMediaCatalogSnapshot`, `ReplayArticleMediaCatalog`,
+`RecordArticleMediaUpload`. Existing authoring/editorial handlers publish through
+a mandatory port after persistence. Generation records stored files individually
+and republishes the final inventory on completion; already stored files remain
+tracked when a later generation step fails.
+
+The admin catalogue supports optional metadata (original name, operator UUID,
+provenance), server `usage` filters, filename/article/title search, and separate
+keyset pagination of Article usages. `GET /api/admin/media/{id}/usages` exposes
+only local DTOs. `GET /api/admin/studio/articles/{articleId}` opens the existing
+source document without requiring a previously loaded Studio list.
+
+Preview ACL reads current Article revision/upload references in one bounded
+batch and verifies each reference identity before invoking the existing secure
+resolver. A stale catalogue cannot authorize a retired source reference. No
+client-supplied arbitrary S3 key, raw storage reference in admin response, direct
+bucket access, source-domain table joins in the catalogue, or new purge action.
+
+Metadata semantics: stored byte count is measured; dimensions use supported image
+headers, falling back to existing declared dimensions when unavailable. The first
+registration date/operator is preserved by the source UPSERT. Operator identity
+is not mapped to AppUser ownership. Historical unknown values remain unknown.
+`UNUSED` denotes no retained revision association for a tracked upload. It does
+not authorize removal. Article `DELETED` means its untracked reference was retired,
+not proof of S3 deletion. Long references retain identity/usages but references
+over 8192 characters are omitted from preview transport; display facts are bounded.
+
+Additive release `article-media-catalogue-2026-10.psql` follows the avatar baseline
+and is wired into the renderer/SSM flow. Previous manifests remain immutable.
+The SQL fragment is verified against PostgreSQL and can be reapplied. No deployment
+or remote replay activation was performed. Reconciliation of already orphaned
+historical files, and files left after a DB failure following object storage,
+requires a later explicit lifecycle operation; storage and DB are not one
+transaction. No unsafe compensating purge was introduced.
+
+FlowAtlas TypeScript confirms new open-article and paginated-usage intent flows.
+Java semantic analysis could not resolve the integration destination for the new
+producer with the existing request fixture. The limitation is recorded rather
+than represented as a complete Java graph. PostgreSQL/outbox tests verify the
+actual stable envelope, sole queue destination, routed projection and replay.
+
+Validation for this pass: 101 selected backend tests in 16 classes, zero failures
+and errors (four origins, source/outbox/router, replay, uploads, shared usages,
+metadata, editor/generation, pagination, authorization, stale preview revocation,
+contract versions, repeatable PostgreSQL fragment, release checksums and context
+architecture). This is the relevant selection, not a claim about the full backend
+suite. Removing the committed-version guard causes two behavioral assertions to
+fail; source restored automatically, selected suite rerun green. Studio: 255 tests,
+production build, generated contract, bundle and delivery checks; real components
+inspected at 1440/390 widths. No deployment, bucket access or physical purge.

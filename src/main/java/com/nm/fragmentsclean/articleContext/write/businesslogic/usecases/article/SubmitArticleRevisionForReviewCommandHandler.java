@@ -15,6 +15,7 @@ import java.util.Objects;
 @Transactional
 public class SubmitArticleRevisionForReviewCommandHandler
         implements CommandHandler<SubmitArticleRevisionForReviewCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
 
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher eventPublisher;
@@ -24,7 +25,8 @@ public class SubmitArticleRevisionForReviewCommandHandler
     public SubmitArticleRevisionForReviewCommandHandler(ArticleAggregateRepository repository,
                                                         DomainEventPublisher eventPublisher,
                                                         DateTimeProvider clock,
-                                                        CommandStatusRecorder commandStatus) {
+                                                        CommandStatusRecorder commandStatus, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -45,6 +47,7 @@ public class SubmitArticleRevisionForReviewCommandHandler
         repository.save(article);
         article.domainEvents().forEach(eventPublisher::publish);
         article.clearDomainEvents();
+        mediaCatalog.publish(article.id());
         commandStatus.markApplied(command.commandId(), "Article", article.id().toString(),
                 "article.revision.submitted", now);
     }

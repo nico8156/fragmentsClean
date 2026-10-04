@@ -11,13 +11,15 @@ import org.springframework.stereotype.Component;
 @Component
 @Transactional
 public class WithdrawArticleCommandHandler implements CommandHandler<WithdrawArticleCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
     private final ArticleAggregateRepository articles;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;
     private final CommandStatusRecorder statuses;
 
     public WithdrawArticleCommandHandler(ArticleAggregateRepository articles, DomainEventPublisher events,
-                                         DateTimeProvider clock, CommandStatusRecorder statuses) {
+                                         DateTimeProvider clock, CommandStatusRecorder statuses, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
         this.articles = articles; this.events = events; this.clock = clock; this.statuses = statuses;
     }
 
@@ -31,6 +33,7 @@ public class WithdrawArticleCommandHandler implements CommandHandler<WithdrawArt
         articles.save(article);
         article.domainEvents().forEach(events::publish);
         article.clearDomainEvents();
+        mediaCatalog.publish(article.id());
         statuses.markApplied(command.commandId(), "Article", article.id().toString(), "article.withdrawn", now);
     }
 }
