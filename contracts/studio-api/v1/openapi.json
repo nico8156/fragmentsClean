@@ -4,6 +4,71 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+    "/api/admin/studio/coffee-media/{mediaId}/replacement": {
+  "post": {
+    "operationId": "replaceCoffeeMedia",
+    "parameters": [
+      {
+        "name": "mediaId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "multipart/form-data": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "commandId",
+              "coffeeId",
+              "reason",
+              "photo"
+            ],
+            "properties": {
+              "commandId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "coffeeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "photo": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "202": {
+        "description": "Command accepted; query canonical command status"
+      },
+      "401": {
+        "description": "Authentication required"
+      },
+      "403": {
+        "description": "Admin access required"
+      },
+      "422": {
+        "description": "Source command rejected"
+      }
+    }
+  }
+},
   "/api/admin/studio/articles/{articleId}/media": {
     "get": {
       "operationId": "listAdminArticleMedia",
@@ -2111,78 +2176,82 @@
       }
     },
       "CoffeeMediaLifecycle": {
-        "type": "object",
-        "required": [
-          "mediaId",
-          "coffeeId",
-          "status",
-          "coffeeStatus",
-          "retiredAt",
-          "purgeEligibleAt",
-          "canRetire",
-          "canRestore",
-          "canPurge",
-          "purgeRequestedAt",
-          "purgedAt"
-        ],
-        "properties": {
-          "mediaId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "coffeeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "AVAILABLE",
-              "RETIRED",
-              "DELETION_PENDING",
-              "DELETED"
-            ]
-          },
-          "coffeeStatus": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "PUBLISHED",
-              "ARCHIVED"
-            ]
-          },
-          "retiredAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "purgeEligibleAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "canRetire": {
-            "type": "boolean"
-          },
-          "canRestore": {
-            "type": "boolean"
-          },
-          "canPurge": {
-            "type": "boolean"
-          },
-          "purgeRequestedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "purgedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        }
-      },
-      "CoffeeMediaLifecycleRequest": {
+  "type": "object",
+  "required": [
+    "mediaId",
+    "coffeeId",
+    "status",
+    "coffeeStatus",
+    "retiredAt",
+    "purgeEligibleAt",
+    "canRetire",
+    "canRestore",
+    "canPurge",
+    "purgeRequestedAt",
+    "purgedAt",
+    "canReplace"
+  ],
+  "properties": {
+    "mediaId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "coffeeId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "AVAILABLE",
+        "RETIRED",
+        "DELETION_PENDING",
+        "DELETED"
+      ]
+    },
+    "coffeeStatus": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "PUBLISHED",
+        "ARCHIVED"
+      ]
+    },
+    "retiredAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "purgeEligibleAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "canRetire": {
+      "type": "boolean"
+    },
+    "canRestore": {
+      "type": "boolean"
+    },
+    "canPurge": {
+      "type": "boolean"
+    },
+    "purgeRequestedAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "purgedAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "canReplace": {
+      "type": "boolean"
+    }
+  }
+},
+    "CoffeeMediaLifecycleRequest": {
         "type": "object",
         "required": [
           "commandId",

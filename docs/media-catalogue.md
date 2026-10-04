@@ -808,3 +808,39 @@ already detected during preparation. A JVM JIT crash was excluded as evidence an
 retried with MAVEN_OPTS=-XX:TieredStopAtLevel=1. Final green log:
 /tmp/coffee-purge-backend-restored.log. FlowAtlas HTTP/command context: 4 nodes,
 3 edges, complete bounded graph; runtime storage/SQL are verified by tests.
+
+## Coffee source replacement (3e.6)
+
+ReplaceCoffeeMediaCommand reuses authenticated receipts, the existing photo
+storage port, Coffee parent lock, retirement repository, outbox and admin audit.
+POST /api/admin/studio/coffee-media/{mediaId}/replacement accepts a file,
+coffeeId, stable commandId and reason; there is no storage-key input. The source
+rejects archived/missing/retired/ambiguous identities and a replacement identity
+already used or retained before storage. Only the configured image formats are
+accepted. A new command-owned photo identity is stored; the aggregate replaces
+exactly one gallery position and preserves the cover. The original Photo and
+retirement date are retained. Two audit targets share the command: old photo
+COFFEE_MEDIA_REPLACED and new photo COFFEE_MEDIA_REPLACEMENT_ADDED.
+
+The existing arranged-photo event updates public visibility; the complete v3
+admin inventory retains the old resource and indexes the new one. A repeated
+command is handled by the canonical receipt and produces no duplicate photo or
+audit. Source write failure rolls back gallery, retirement, events and success
+audit. Storage failure leaves the original gallery untouched. The original
+file is never deleted by replacement; its later purge follows explicit retention.
+
+As in the existing Coffee upload flow, file storage precedes the source SQL
+commit: a failed SQL commit can leave the new file unreferenced. A source upload
+registry/reconciliation is a follow-up if physical upload-orphan accounting is
+required; do not add browser bucket enumeration or automatic age-only cleanup.
+No schema migration or second back-office aggregate is introduced here.
+
+Validation: API RED 202/404 and Studio missing-action RED before implementation;
+107 backend tests/13 classes green after exact restoration of three mutations
+(retention, cover, old-target audit). Includes duplicate request, real foreign
+owner, legacy identity collision, invalid input, storage failure, SQL rollback,
+public/admin projections and Article/Avatar catalogue regressions. Logs:
+/tmp/coffee-replacement-backend-restored.log and
+/tmp/coffee-replacement-mutation-{retained,cover,audit}.log.
+FlowAtlas source replacement command: 4 nodes/3 edges complete bounded context;
+SQL/storage guarantees are established by tests, not inferred from static edges.
