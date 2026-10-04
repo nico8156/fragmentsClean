@@ -44,6 +44,16 @@ class S3CoffeePhotoStorageTest {
 		assertThat(s3Client.request.contentType()).isEqualTo("image/jpeg");
 	}
 
+    @Test void deletes_exactly_the_managed_object_without_listing_the_coffee_prefix(){
+        var properties=new CoffeePhotoStorageProperties();properties.setS3Bucket("coffee-media");properties.setS3Prefix("/managed/coffees/");var client=org.mockito.Mockito.mock(S3Client.class);var storage=new S3CoffeePhotoStorage(properties,client);var coffee=new CoffeeId(UUID.randomUUID());var photo=UUID.randomUUID();String key="managed/coffees/"+coffee.value()+"/photos/"+photo+".png";String reference="s3://coffee-media/"+key;
+        assertThat(storage.canDeletePhoto(coffee,photo,reference)).isTrue();storage.deletePhoto(coffee,photo,reference);
+        org.mockito.Mockito.verify(client).deleteObject(software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder().bucket("coffee-media").key(key).build());org.mockito.Mockito.verifyNoMoreInteractions(client);
+    }
+    @Test void targeted_s3_delete_rejects_foreign_bucket_prefix_owner_id_and_key_suffix(){
+        var props=new CoffeePhotoStorageProperties();props.setS3Bucket("coffee-media");props.setS3Prefix("managed/coffees");var client=org.mockito.Mockito.mock(S3Client.class);var storage=new S3CoffeePhotoStorage(props,client);var coffee=new CoffeeId(UUID.randomUUID());var id=UUID.randomUUID();String valid="s3://coffee-media/managed/coffees/"+coffee.value()+"/photos/"+id+".png";
+        for(String bad:java.util.List.of(valid.replace("coffee-media","foreign"),valid.replace("managed/coffees","managed/coffees-foreign"),valid.replace(coffee.value().toString(),UUID.randomUUID().toString()),valid.replace(id.toString(),UUID.randomUUID().toString()),valid+"?key=other",valid+"/../other",valid.replace(".png",".exe"))){assertThat(storage.canDeletePhoto(coffee,id,bad)).isFalse();org.assertj.core.api.Assertions.assertThatThrownBy(()->storage.deletePhoto(coffee,id,bad)).isInstanceOf(com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.storage.CoffeePhotoStorageException.class);}
+        org.mockito.Mockito.verifyNoInteractions(client);
+    }
 	private static class RecordingS3Client implements S3Client {
 		private PutObjectRequest request;
 

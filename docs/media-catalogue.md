@@ -729,3 +729,38 @@ Studio source query -> dates/canPurge -> confirmation -> intent/listener/gateway
 
 Milestone 3 remains open: Coffee targeted purge, compatible replacements and
 final integration review precede the already authorized expanded User 360.
+
+## Targeted Coffee storage deletion (3e.5a)
+
+CoffeePhotoStorage now declares canDeletePhoto/deletePhoto with a fail-closed
+default for unsupported implementations. Existing local/S3 adapters resolve
+only the recorded reference matching the expected photo UUID. S3 additionally
+requires the configured bucket, exact normalized prefix and coffee UUID; one
+DeleteObject, no list/prefix deletion. Local accepts only the emitted relative
+or configured public URI and the exact UUID.extension basename, deletes one
+file and tolerates absence on retry. Foreign IDs, owners, prefixes, buckets,
+URLs, query suffixes and traversal fail before any storage call.
+
+Existing deleteForCoffee behavior is untouched and must never be used for
+admin photo purge. No route/UI/worker calls deletePhoto in this preparatory
+slice. Existing source locks, audit, 30-day policy and retirement memory are
+the architectural reference for the next lifecycle implementation. Source
+references are server-owned; the future request will carry IDs, not a key.
+
+RED: /tmp/coffee-targeted-deletion-red.log, local and S3 capability assertions
+failed with 0 errors. Initial green storage/architecture suite then extended
+with negative-reference examples. Manual scope mutation accepting a foreign
+owner instead of exact S3 prefix/owner killed by a behavioral assertion,
+0 errors (/tmp/coffee-targeted-mutation-scope.log), code exactly restored.
+Final restored verification recorded with the next delivery checkpoint.
+FlowAtlas Coffee lifecycle HTTP->command->handler complete bounded 4/3; this
+existing graph does not prove a cleaner or a physical purge.
+
+Delivery split: targeted storage is independently reviewable, followed by
+source lifecycle/catalogue/Studio purge integration. Coffee tombstones and
+replay protection must be in place before any cleaner activation. Afterwards
+the user explicitly requested continuing with compatible source replacements.
+No production S3/delete/deployment operation.
+
+3e.5a restored verification: 18 storage/architecture tests, 0 failures/
+0 errors, Maven exit 0 (/tmp/coffee-targeted-deletion-restored.log).

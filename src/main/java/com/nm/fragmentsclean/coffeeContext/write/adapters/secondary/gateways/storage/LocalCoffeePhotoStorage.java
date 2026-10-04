@@ -43,6 +43,13 @@ public class LocalCoffeePhotoStorage implements CoffeePhotoStorage {
 		return new ImportedCoffeePhoto(photoId, publicUri(fileName));
 	}
 
+    @Override public boolean canDeletePhoto(CoffeeId coffee,UUID photo,String reference){return CoffeeManagedPhotoReference.localFile(properties,coffee,photo,reference).isPresent();}
+    @Override public void deletePhoto(CoffeeId coffee,UUID photo,String reference){
+        String file=CoffeeManagedPhotoReference.localFile(properties,coffee,photo,reference).orElseThrow(()->new CoffeePhotoStorageException("Unmanaged coffee photo reference"));
+        var root=properties.getDirectory().toAbsolutePath().normalize();var target=root.resolve(file).normalize();if(!target.getParent().equals(root))throw new CoffeePhotoStorageException("Invalid coffee photo storage path");
+        try{Files.deleteIfExists(target);}catch(IOException failure){throw new CoffeePhotoStorageException("Failed to delete coffee photo",failure);}
+    }
+
 	private String publicUri(String fileName) {
 		var baseUrl = properties.getPublicBaseUrl();
 		if (baseUrl == null || baseUrl.isBlank()) {

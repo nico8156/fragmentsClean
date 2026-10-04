@@ -7,5 +7,7 @@ import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.GoogleP
 
 public interface CoffeePhotoStorage {
 	ImportedCoffeePhoto store(CoffeeId coffeeId, GooglePlaceId googlePlaceId, GooglePlacePhoto photo);
+	default boolean canDeletePhoto(CoffeeId coffeeId, java.util.UUID photoId, String storedReference) { return false; }
+	default void deletePhoto(CoffeeId coffeeId, java.util.UUID photoId, String storedReference) { throw new UnsupportedOperationException("Targeted coffee photo deletion is unsupported"); }
 	default void deleteForCoffee(CoffeeId coffeeId) { }
 }
