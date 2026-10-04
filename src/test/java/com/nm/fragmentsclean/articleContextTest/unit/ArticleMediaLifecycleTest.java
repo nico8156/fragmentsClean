@@ -10,4 +10,17 @@ class ArticleMediaLifecycleTest {
    assertThatThrownBy(()->media.transition("ACTIVE")).isInstanceOf(com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException.class);
   }
  }
+ @Test void purge_requires_thirty_full_days_unused_retired_source_and_is_idempotent(){
+  var retired=java.time.Instant.parse("2026-09-01T00:00:00Z");var eligible=retired.plus(java.time.Duration.ofDays(30));
+  var media=new ArticleMediaLifecycle(UUID.randomUUID(),UUID.randomUUID(),"ref","RETIRED",0,retired);
+  assertThatThrownBy(()->media.transition("PURGE_REQUESTED",eligible.minusMillis(1))).hasMessageContaining("30 full days");
+  assertThat(media.transition("PURGE_REQUESTED",eligible)).isEqualTo("DELETION_PENDING");
+  var used=new ArticleMediaLifecycle(media.mediaId(),media.articleId(),"ref","RETIRED",1,retired);
+  assertThatThrownBy(()->used.transition("PURGE_REQUESTED",eligible)).hasMessageContaining("referenced");
+  var pending=new ArticleMediaLifecycle(media.mediaId(),media.articleId(),"ref","DELETION_PENDING",0,eligible);
+  assertThat(pending.transition("PURGE_REQUESTED",eligible)).isEqualTo("DELETION_PENDING");
+  assertThatThrownBy(()->pending.transition("ACTIVE")).hasMessageContaining("Only active or retired");
+  var active=new ArticleMediaLifecycle(media.mediaId(),media.articleId(),"ref","ACTIVE",0,retired);
+  assertThatThrownBy(()->active.transition("PURGE_REQUESTED",eligible)).hasMessageContaining("Only retired");
+ }
 }

@@ -1326,3 +1326,8 @@ CREATE TABLE IF NOT EXISTS coffee_photo_retirements (
     retired_at TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX IF NOT EXISTS ix_coffee_photo_retirements_coffee ON coffee_photo_retirements(coffee_id);
+
+-- Explicit Article purge; no age-based cleanup.
+ALTER TABLE article_media_uploads DROP CONSTRAINT IF EXISTS article_media_uploads_lifecycle_status_check;
+ALTER TABLE article_media_uploads ADD CONSTRAINT article_media_uploads_lifecycle_status_check CHECK(lifecycle_status IN ('ACTIVE','RETIRED','DELETION_PENDING','DELETED'));
+CREATE INDEX IF NOT EXISTS ix_article_media_purge_pending ON article_media_uploads(updated_at,media_id) WHERE lifecycle_status='DELETION_PENDING';

@@ -12,6 +12,9 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void article_purge_manifest_requires_lifecycle_and_renders_a_separate_additive_upgrade()throws Exception{
+        copy();var first=render("a".repeat(40),"article-media-purge-2026-10.psql");assertThat(first.exit).isZero();assertThat(first.output).contains("version='article-media-lifecycle-2026-10'","article-media-purge-2026-10","DELETION_PENDING","ix_article_media_purge_pending").doesNotContain("\\ir ");
+    }
     @Test void studio_community_manifest_renders_the_additive_audit_upgrade() throws Exception {
         copy();
         var result=render("a".repeat(40),"studio-community-2026-10.psql");

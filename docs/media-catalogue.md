@@ -650,3 +650,82 @@ The replay guard and explicit purge are independently reviewable outcomes, so
 this backend delivery uses two focused commits: file replay first, purge second.
 Deploy the updated generation workers before enabling any Article purge worker;
 old workers must no longer be writing stable physical keys. No production work.
+
+## Explicit Article purge after 30 full days (3e.4c)
+
+Article owns lifecycle, commands/receipts, revision usage invariants, audit and
+source inventory. Media Catalog only consumes stable snapshots. Reused routes:
+GET /api/admin/studio/article-media/{mediaId}, POST same /lifecycle, GET same
+/operations and existing canonical admin command status. Admin JWT/security
+remain mandatory. No controller SQL, browser S3, arbitrary key input or new BC.
+
+PURGE_REQUESTED is an admin intent; RETIRED -> DELETION_PENDING requires 30 full
+days since retirement updated_at (preserved by tracking replay), no retained
+cover/section reference across any article, supported source storage reference
+and a reason of 1–240 characters. Existing row locks and binding FOR SHARE
+make pending/deleted unavailable to new revisions. Restoration is unavailable
+after requesting purge. Request/audit/inventory are one source transaction;
+audit action ARTICLE_MEDIA_PURGE_REQUESTED retains actor/reason/command/date.
+No physical operation takes place in that transaction or in the HTTP adapter.
+
+CleanArticleMediaObjects selects at most 100 explicit pending records, rechecks
+source usage/status, deletes the one known physical reference outside a
+transaction, then ArticleMediaPurgeCompletion transactionally marks DELETED and
+publishes an inventory. Storage failure leaves pending; persistence/outbox
+failure after file removal rolls back the marker, and retry safely removes an
+already absent file before completing. Repeat completion is a no-op. Age alone
+never selects RETIRED. Source rows/audit remain as evidence/tombstones.
+
+Local/S3 deletion adapters reuse ArticleImageStorageProperties and the qualified
+Article S3 client. ArticleManagedStorageReferences restricts deletion to the
+configured bucket, exact prefix/articleId and images|generated/UUID.extension,
+or local UUID.extension basename under the configured directory. Unsupported
+legacy/external references fail closed. One DeleteObject, no ListObjects or
+prefix deletion; no Avatar storage adapter/foreign BC repository reuse.
+
+The source query adds canPurge/retiredAt/purgeEligibleAt; source preview query
+rejects all non-active states independently of projection freshness. Catalogue
+projection maps pending/deleted correctly and removes deleted object_key.
+OpenAPI is updated surgically and Studio types regenerated. The existing
+Studio panel asks confirmation/reason, displays source dates/capabilities,
+reconciles canonical PENDING/APPLIED/REJECTED and serializes retries from only
+commandId/mediaId/status/reason. APPLIED acknowledges the request, not deletion.
+
+Separate additive article-media-purge-2026-10 manifest/fragment depends on
+article-media-lifecycle; old manifests/checksums untouched. Renderer/SSM download
+flow updated. Isolated old schema upgrade twice preserves retired date and
+accepts pending/deleted. Worker default off, enabled separately through
+ARTICLE_MEDIA_PURGE_ENABLED (fragments.article.media-purge.enabled); interval
+ARTICLE_MEDIA_PURGE_DELAY_MS defaults to 600000. Coordinate schema/backend/
+Studio deployment and stop older generation workers before activation. No
+production activation, real S3 delete, push or deployment in this delivery.
+
+Evidence: 79 backend tests/15 classes, 0 failures/0 errors, final restored Maven
+exit 0 (/tmp/article-purge-backend-restored.log). Includes fake-first/domain,
+local file deletion, exact S3 request/boundary mocks, PostgreSQL/API/receipts,
+audit, shared historical usage, forbidden access, persistence failure after
+physical deletion, outbox/envelope/catalogue and release/architecture tests.
+Valid API RED /tmp/article-purge-backend-red.log: 202 expected, 422 actual.
+Manual mutations retention->ZERO and omitting physical deletion each killed
+by one expected assertion (0 errors); replay mutation documented above. All
+three exactly restored by /tmp/article-purge-mutations.py. Frontend canonical
+APPLIED mutation killed by two assertions, restored; 341 tests/53 files, build
+OAuth/HTTPS, contract:check, verify:dist and three delivery checks green. Chrome
+390/1440 has no horizontal overflow; confirmation/reason/journal inspected.
+
+FlowAtlas: Java HTTP lifecycle -> controller -> command -> handler 4 nodes/3
+edges, Redux canonical reconciliation/source/catalogue refresh 12/14, complete
+bounded projections, application not assessed. No anomaly in those bounds;
+worker/DeleteObject/transaction/outbox execution is established by tests, not
+inferred from static edges. Representative runtime paths:
+
+Admin purge -> existing command receipt -> handler -> source usage/retention/
+managed-reference checks -> DELETION_PENDING + admin audit + inventory outbox.
+Worker -> source pending/usage check -> exact local/S3 deletion -> source
+transaction -> DELETED + inventory outbox -> stable envelope/router -> catalogue
+DELETED with no preview. Failed completion -> marker rollback -> safe retry.
+Studio source query -> dates/canPurge -> confirmation -> intent/listener/gateway
+-> canonical status -> fresh source/history/catalogue GETs.
+
+Milestone 3 remains open: Coffee targeted purge, compatible replacements and
+final integration review precede the already authorized expanded User 360.

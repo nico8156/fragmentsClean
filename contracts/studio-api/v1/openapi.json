@@ -1987,7 +1987,10 @@
         "usages",
         "canRetire",
         "canRestore",
-        "retention"
+        "retention",
+        "canPurge",
+        "retiredAt",
+        "purgeEligibleAt"
       ],
       "properties": {
         "mediaId": {
@@ -2002,7 +2005,9 @@
           "type": "string",
           "enum": [
             "ACTIVE",
-            "RETIRED"
+            "RETIRED",
+            "DELETION_PENDING",
+            "DELETED"
           ]
         },
         "usages": {
@@ -2020,6 +2025,19 @@
           "enum": [
             "INDEFINITE_NO_AUTOMATIC_PURGE"
           ]
+        },
+        "canPurge": {
+          "type": "boolean"
+        },
+        "retiredAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        },
+        "purgeEligibleAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
         }
       }
     },
@@ -2039,7 +2057,8 @@
           "type": "string",
           "enum": [
             "ACTIVE",
-            "RETIRED"
+            "RETIRED",
+            "PURGE_REQUESTED"
           ]
         },
         "reason": {
