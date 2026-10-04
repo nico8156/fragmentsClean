@@ -25,13 +25,13 @@ import java.util.UUID;
         if(saved.isPresent() && !saved.get().photo().coffeeId().equals(coffee.coffeeId()))throw reject("MEDIA_OWNERSHIP_MISMATCH");
         if(retirements.currentPhotoCount(command.mediaId())>1)throw reject("MEDIA_IDENTITY_AMBIGUOUS");
         var current=coffee.photos().stream().filter(p->p.id().value().equals(command.mediaId())).findFirst();
-        var now=clock.now();boolean retiring="RETIRED".equals(command.status());
+        var now=clock.now();boolean changed=false;boolean retiring="RETIRED".equals(command.status());
         if(retiring){
             if(current.isPresent()){
                 if(saved.isPresent())throw reject("MEDIA_SOURCE_CONFLICT");
                 retirements.save(new CoffeePhotoRetirement(current.get(),now));
                 coffee.removePhoto(current.get().id(),now);coffees.save(coffee);
-                events.publish(new CoffeePhotoDeletedEvent(UUID.randomUUID(),command.commandId(),coffee.coffeeId(),current.get().id(),coffee.version(),now,null));
+                events.publish(new CoffeePhotoDeletedEvent(UUID.randomUUID(),command.commandId(),coffee.coffeeId(),current.get().id(),coffee.version(),now,null));changed=true;
             }else if(saved.isEmpty())throw reject("MEDIA_NOT_TRACKED");
         }else{
             if(current.isEmpty()){
@@ -39,8 +39,13 @@ import java.util.UUID;
                 var retired=saved.orElseThrow(()->reject("MEDIA_NOT_TRACKED"));
                 coffee.addPhoto(retired.photo(),now);coffees.save(coffee);retirements.remove(command.mediaId());
                 var photo=coffee.photos().stream().filter(p->p.id().value().equals(command.mediaId())).findFirst().orElseThrow();
-                events.publish(new CoffeePhotoAddedEvent(UUID.randomUUID(),command.commandId(),coffee.coffeeId(),new ImportedCoffeePhoto(photo.id().value(),photo.uri()),photo.isCover(),photo.sortOrder(),coffee.version(),now,null));
+                events.publish(new CoffeePhotoAddedEvent(UUID.randomUUID(),command.commandId(),coffee.coffeeId(),new ImportedCoffeePhoto(photo.id().value(),photo.uri()),photo.isCover(),photo.sortOrder(),coffee.version(),now,null));changed=true;
             }else if(saved.isPresent())throw reject("MEDIA_SOURCE_CONFLICT");
+        }
+        if(changed){
+            var photos=coffee.photos().stream().map(p->new CoffeePhotosArrangedEvent.ArrangedPhoto(p.id().value(),p.uri(),p.isCover(),p.sortOrder())).toList();
+            var retired=retirements.byCoffee(command.coffeeId()).stream().map(p->new CoffeeMediaCatalogSnapshotEvent.RetiredPhoto(p.photo().id().value(),p.retiredAt())).toList();
+            events.publish(new CoffeeMediaCatalogSnapshotEvent(UUID.randomUUID(),command.commandId(),coffee.coffeeId(),photos,retired,coffee.version(),now,null));
         }
         audit.recordDecision(command.operatorId(),retiring?"COFFEE_MEDIA_RETIRED":"COFFEE_MEDIA_RESTORED","COFFEE_MEDIA",command.mediaId(),command.commandId(),"APPLIED",command.reason().strip(),now);
     }

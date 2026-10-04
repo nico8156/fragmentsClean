@@ -18,7 +18,18 @@ class CoffeeMediaLifecycleHandlerTest {
   assertThat(coffees.findById(new CoffeeId(id)).orElseThrow().photos()).isEmpty();
   assertThat(memory.byId(photoId).orElseThrow().photo().uri()).isEqualTo("s3://bucket/coffee.jpg");
   assertThat(events.published.getFirst()).isInstanceOf(CoffeePhotoDeletedEvent.class);
+  assertThat(events.published).hasSize(2);
+  var inventory=(CoffeeMediaCatalogSnapshotEvent)events.published.get(1);
+  assertThat(inventory.retiredPhotos()).containsExactly(new CoffeeMediaCatalogSnapshotEvent.RetiredPhoto(photoId,at));
+  assertThat(inventory.photos()).isEmpty();assertThat(inventory.version()).isEqualTo(coffees.findById(new CoffeeId(id)).orElseThrow().version());
   assertThat(audit.decisions).containsExactly("COFFEE_MEDIA_RETIRED:Obsolete:"+actor);
+  handler.execute(new ChangeCoffeeMediaLifecycleCommand(UUID.randomUUID(),id,photoId,actor,"AVAILABLE","Restore"));
+  assertThat(events.published).hasSize(4);
+  var restored=(CoffeeMediaCatalogSnapshotEvent)events.published.get(3);
+  assertThat(restored.retiredPhotos()).isEmpty();assertThat(restored.photos()).extracting(CoffeePhotosArrangedEvent.ArrangedPhoto::photoId).containsExactly(photoId);
+  handler.execute(new ChangeCoffeeMediaLifecycleCommand(UUID.randomUUID(),id,photoId,actor,"AVAILABLE","Already restored"));
+  assertThat(events.published).hasSize(4);
+
  }
  static class RecordingAudit implements com.nm.fragmentsclean.sharedKernel.businesslogic.models.AdminAuditRecorder {
   final List<String> decisions=new ArrayList<>();

@@ -86,6 +86,54 @@ class CoffeeMediaCatalogIT extends AbstractExperienceE2E {
         arranged(coffee,List.of(photo),7);
         assertThat(photoStatus(photo)).isEqualTo("DELETED");
     }
+    @Test void a_cold_replay_recovers_retired_photos_and_their_coffee_without_public_previews() throws Exception {
+        UUID coffee=UUID.fromString("ffffffff-ffff-ffff-ffff-000000000202"), current=UUID.randomUUID(), retired=UUID.randomUUID();
+        jdbc.update("INSERT INTO coffees(id,name,lat,lon,version,updated_at) VALUES(?,'Retained inventory',0,0,7,?)",coffee,java.sql.Timestamp.from(at));
+        jdbc.update("INSERT INTO coffee_photos(coffee_id,photo_id,photo_uri,sort_order) VALUES(?,?,?,0)",coffee,current,"https://images.test/current.jpg");
+        jdbc.update("INSERT INTO coffee_photo_retirements(photo_id,coffee_id,photo_uri,was_cover,sort_order,retired_at) VALUES(?,?,?,false,1,?)",retired,coffee,"s3://private-coffee/retained.jpg",java.sql.Timestamp.from(at));
+        jdbc.update("UPDATE coffee_media_catalog_scan SET cursor_id=?,next_scan_at=now() WHERE id=1",UUID.fromString("ffffffff-ffff-ffff-ffff-000000000201"));
+        assertThat(replay.nextBatch()).isEqualTo(1);
+        var factory=new com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory();
+        var snapshot=outbox.findAll().stream().filter(e->e.getEventType().endsWith("CoffeeMediaCatalogSnapshotEvent") && e.getPayloadJson().contains(coffee.toString())).findFirst().orElseThrow();
+        var envelope=factory.from(snapshot,"media-catalog-events");
+        assertThat(envelope.eventVersion()).isEqualTo(2);
+        assertThat(envelope.payloadJson()).doesNotContain("private-coffee");
+        router.route(envelope);
+        mvc.perform(get("/api/admin/media/COFFEE:"+retired).with(jwt().jwt(j->j.subject(admin))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("DELETION_PENDING"))
+            .andExpect(jsonPath("$.resourceId").value(coffee.toString())).andExpect(jsonPath("$.usageStatus").value("UNUSED"))
+            .andExpect(jsonPath("$.previewUrl").isEmpty()).andExpect(jsonPath("$.createdAt").isEmpty()).andExpect(jsonPath("$.objectKey").doesNotExist());
+        mvc.perform(get("/api/admin/media").param("q",coffee.toString()).with(jwt().jwt(j->j.subject(admin))))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(2));
+        assertThat(photoStatus(current)).isEqualTo("AVAILABLE");
+        jdbc.update("DELETE FROM coffees WHERE id=?",coffee);
+    }
+    @Test void retained_inventory_enriches_a_same_version_deletion_and_survives_legacy_inventory() throws Exception {
+        UUID coffee=UUID.randomUUID(),photo=UUID.randomUUID();
+        route("coffee.photo_deleted",new CoffeePhotoDeletedIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,photo,7,at,null));
+        var snapshot=new CoffeeMediaCatalogSnapshotIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),List.of(new CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto(photo,at)),7,at,null);
+        router.route(new IntegrationEventEnvelope(snapshot.eventId().toString(),"coffee.media_catalog_snapshot",2,snapshot.getClass().getName(),"Coffee",coffee.toString(),"coffee-retained-test","media-catalog-events",json.writeValueAsString(snapshot),at));
+        assertThat(photoStatus(photo)).isEqualTo("DELETION_PENDING");
+        arranged(coffee,List.of(),7);
+        assertThat(photoStatus(photo)).isEqualTo("DELETION_PENDING");
+        added(coffee,photo,6);assertThat(photoStatus(photo)).isEqualTo("DELETION_PENDING");
+        route("coffee.deleted",new CoffeeLifecycleIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,8,at));
+        assertThat(photoStatus(photo)).isEqualTo("DELETED");
+        var retry=new CoffeeMediaCatalogSnapshotIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),snapshot.retiredPhotos(),7,at,null);
+        router.route(new IntegrationEventEnvelope(retry.eventId().toString(),"coffee.media_catalog_snapshot",2,retry.getClass().getName(),"Coffee",coffee.toString(),"coffee-retained-test","media-catalog-events",json.writeValueAsString(retry),at));
+        assertThat(photoStatus(photo)).isEqualTo("DELETED");
+    }
+    @Test void legacy_snapshot_v1_remains_readable_and_can_no_longer_erase_a_retired_reference() throws Exception {
+        UUID coffee=UUID.randomUUID(),active=UUID.randomUUID(),retired=UUID.randomUUID();
+        var inventory=new CoffeeMediaCatalogSnapshotIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),List.of(new CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto(retired,at)),7,at,null);
+        router.route(new IntegrationEventEnvelope(inventory.eventId().toString(),"coffee.media_catalog_snapshot",2,inventory.getClass().getName(),"Coffee",coffee.toString(),"coffee-retained-test","media-catalog-events",json.writeValueAsString(inventory),at));
+        route("coffee.media_catalog_snapshot",new CoffeePhotosArrangedIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(new CoffeePhotosArrangedIntegrationEvent.Photo(active,"https://images.test/legacy.jpg",true,0)),8,at,null));
+        assertThat(photoStatus(retired)).isEqualTo("DELETION_PENDING");assertThat(photoStatus(active)).isEqualTo("AVAILABLE");
+        added(coffee,retired,9);assertThat(photoStatus(retired)).isEqualTo("AVAILABLE");
+        var stale=new CoffeeMediaCatalogSnapshotIntegrationEvent(UUID.randomUUID(),UUID.randomUUID(),coffee,List.of(),inventory.retiredPhotos(),7,at,null);
+        router.route(new IntegrationEventEnvelope(stale.eventId().toString(),"coffee.media_catalog_snapshot",2,stale.getClass().getName(),"Coffee",coffee.toString(),"coffee-retained-test","media-catalog-events",json.writeValueAsString(stale),at));
+        assertThat(photoStatus(retired)).isEqualTo("AVAILABLE");
+    }
     @Test void additive_coffee_migration_is_replayable() throws Exception {
         String schema="coffee_catalog_migration_"+UUID.randomUUID().toString().replace("-","");
         try(var connection=jdbc.getDataSource().getConnection();var statement=connection.createStatement()){

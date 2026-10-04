@@ -522,3 +522,38 @@ Redux final ancien intent→listener→mediaCatalogOpened : 4 nœuds/3 liens com
 sur ce périmètre, sans appel gateway. Le handler interne legacy est conservé,
 sans exposition par cette route admin. Replay des photos retirées et purge
 explicitement demandée après 30 jours restent les prochaines tranches.
+
+### Consolidation 3e.2 : réconciliation des photos Coffee conservées
+
+Replay source : inventaire actif et coffee_photo_retirements dans une seule
+instruction SQL/MVCC, batch de 100 cafés et checkpoint existants. Chaque réel
+retrait/restauration émet aussi CoffeeMediaCatalogSnapshotEvent, vers l’index
+admin uniquement. Aucun événement supplémentaire pour une décision idempotente.
+Le contrat coffee.media_catalog_snapshot v2 distingue photos actives et références
+retirées (photoId/retiredAt, aucune clé/URI de retrait). Le consommateur garde v1.
+
+Catalogue local : DELETION_PENDING, resourceId café source, usageStatus UNUSED,
+aucun aperçu ni fausse date d’upload. Retrouvable par café après reconstruction.
+Les anciens inventaires de galerie ne retirent plus ces références. Seul un
+inventaire complet peut enrichir un tombstone Coffee DELETED en DELETION_PENDING
+à version égale, sous la barrière Coffee existante. Les versions des autres
+origines restent strictes ; suppression parent et faits anciens restent protégés.
+La durée de rétention et la décision de purge restent dans Coffee, jamais dans
+ce read model. Aucun nouveau modèle média global ni migration.
+
+Déploiement coordonné requis : driver coffee-media-lifecycle 3d déjà appliqué,
+consommateurs v2 prêts avant émission v2 ; ne pas faire cohabiter un consommateur
+ancien et ce producteur sur la queue catalogue pendant un rolling upgrade.
+Cette passe ne déploie pas et ne touche aucun objet S3.
+
+BEHAVIOUR projection/command : RED froid 404 au lieu de 200, inventaire manquant
+après commande (un événement au lieu de deux), enrichissement DELETED au lieu
+de DELETION_PENDING. Mutations manuelles EXECUTED/KILLED : omission d’inventaire
+(test fake handler) et blocage d’enrichissement (outbox/routeur/JDBC réel).
+Restauration exacte puis 73 tests/11 classes backend verts, incluant toutes les
+origines du repository partagé ; 332 tests/53 fichiers Studio verts, build
+OAuth/HTTPS, contrat/bundle/livraison vérifiés. FlowAtlas commande HTTP→command→
+handler bornée 4/3 ; service ReplayCoffeeMediaCatalog non reconnu en Handler,
+limite statique explicite. Tests runtime prouvent le parcours source→outbox→
+enveloppe v2→inbox/routeur→projection→GET ainsi que v1, restauration, tombstones,
+événements anciens et absence de preview privée. Pas de suite globale backend.

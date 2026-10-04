@@ -11,7 +11,7 @@ public class ReplayCoffeeMediaCatalog {
     public ReplayCoffeeMediaCatalog(CoffeeMediaCatalogScan scan,DomainEventPublisher events){this.scan=scan;this.events=events;}
     @Transactional public int nextBatch(){
         var batch=scan.lockNext(100);if(!batch.due())return 0;
-        for(var s:batch.items())events.publish(new CoffeeMediaCatalogSnapshotEvent(UUID.randomUUID(),UUID.randomUUID(),s.coffeeId(),s.photos(),s.version(),s.updatedAt(),null));
+        for(var s:batch.items())events.publish(new CoffeeMediaCatalogSnapshotEvent(UUID.randomUUID(),UUID.randomUUID(),s.coffeeId(),s.photos(),s.retiredPhotos(),s.version(),s.updatedAt(),null));
         scan.advance(batch.items().isEmpty()?null:batch.items().getLast().coffeeId().value(),batch.items().size()<100);
         return batch.items().size();
     }

@@ -52,7 +52,14 @@ public class MediaCatalogEventsConfiguration {
     @Bean SqsIntegrationEventHandler catalogCoffeePhotoDeleted(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photo_deleted",CoffeePhotoDeletedIntegrationEvent.class,reader,handler::handle,sync);}
     @Bean SqsIntegrationEventHandler catalogCoffeePhotosImported(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photos_imported",CoffeePhotosImportedIntegrationEvent.class,reader,handler::handle,sync);}
     @Bean SqsIntegrationEventHandler catalogCoffeePhotosArranged(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photos_arranged",CoffeePhotosArrangedIntegrationEvent.class,reader,handler::handle,sync);}
-    @Bean SqsIntegrationEventHandler catalogCoffeeSnapshot(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.media_catalog_snapshot",CoffeePhotosArrangedIntegrationEvent.class,reader,handler::handle,sync);}
+    @Bean SqsIntegrationEventHandler catalogCoffeeSnapshot(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){
+        return route("coffee.media_catalog_snapshot",envelope->{
+            if(envelope.eventVersion()==1)handler.handle(reader.read(envelope,CoffeePhotosArrangedIntegrationEvent.class));
+            else if(envelope.eventVersion()==2)handler.handle(reader.read(envelope,CoffeeMediaCatalogSnapshotIntegrationEvent.class));
+            else throw new IllegalArgumentException("Unsupported coffee media snapshot version");
+            sync.publish(ProjectionSyncEvent.adminProjectionUpdated("media-catalog","media",envelope.aggregateId(),null,envelope.occurredAt(),List.of("media")));
+        });
+    }
     @Bean SqsIntegrationEventHandler catalogCoffeeDeleted(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.deleted",CoffeeLifecycleIntegrationEvent.class,reader,handler::deleted,sync);}
     private <T> SqsIntegrationEventHandler coffeeRoute(String type,Class<T> contract,SqsIntegrationEventPayloadReader reader,Consumer<T> apply,ProjectionSyncPublisher sync){
         return route(type,envelope->{

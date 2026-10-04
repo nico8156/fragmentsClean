@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
     private final EntityManager entities;
     public JpaCoffeePhotoRetirementRepository(SpringCoffeePhotoRetirementRepository repository,EntityManager entities){this.repository=repository;this.entities=entities;}
     public Optional<CoffeePhotoRetirement> byId(UUID id){return repository.findById(id).map(e->new CoffeePhotoRetirement(new Photo(new PhotoId(e.photoId),new CoffeeId(e.coffeeId),e.photoUri,e.wasCover,e.sortOrder),e.retiredAt));}
+    public List<CoffeePhotoRetirement> byCoffee(UUID id){return repository.findByCoffeeId(id).stream().map(e->new CoffeePhotoRetirement(new Photo(new PhotoId(e.photoId),new CoffeeId(e.coffeeId),e.photoUri,e.wasCover,e.sortOrder),e.retiredAt)).toList();}
     public void save(CoffeePhotoRetirement item){var photo=item.photo();var e=new CoffeePhotoRetirementJpaEntity();e.photoId=photo.id().value();e.coffeeId=photo.coffeeId().value();e.photoUri=photo.uri();e.wasCover=photo.isCover();e.sortOrder=photo.sortOrder();e.retiredAt=item.retiredAt();repository.save(e);}
     public void remove(UUID id){repository.deleteById(id);}
     public boolean hasForCoffee(UUID id){return repository.existsByCoffeeId(id);}

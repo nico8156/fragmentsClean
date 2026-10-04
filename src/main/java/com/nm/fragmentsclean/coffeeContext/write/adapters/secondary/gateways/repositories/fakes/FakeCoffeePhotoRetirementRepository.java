@@ -6,6 +6,7 @@ public class FakeCoffeePhotoRetirementRepository implements CoffeePhotoRetiremen
     public final Map<UUID,CoffeePhotoRetirement> items=new HashMap<>();
     public final Map<UUID,Long> currentCounts=new HashMap<>();
     public Optional<CoffeePhotoRetirement> byId(UUID id){return Optional.ofNullable(items.get(id));}
+    public List<CoffeePhotoRetirement> byCoffee(UUID id){return items.values().stream().filter(i->i.photo().coffeeId().value().equals(id)).toList();}
     public void save(CoffeePhotoRetirement item){items.put(item.photo().id().value(),item);}
     public void remove(UUID id){items.remove(id);}
     public boolean hasForCoffee(UUID id){return items.values().stream().anyMatch(i->i.photo().coffeeId().value().equals(id));}

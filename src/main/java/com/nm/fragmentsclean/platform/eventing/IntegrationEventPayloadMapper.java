@@ -1,6 +1,7 @@
 package com.nm.fragmentsclean.platform.eventing;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.nm.fragmentsclean.platform.eventing.contracts.CoffeeMediaCatalogSnapshotIntegrationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nm.fragmentsclean.platform.eventing.contracts.AccountDataErasedIntegrationEvent;
 import com.nm.fragmentsclean.platform.eventing.contracts.AppUserCreatedIntegrationEvent;
@@ -132,7 +133,8 @@ public class IntegrationEventPayloadMapper {
                 coffeeLifecycle(node, event);
             case "coffee.photo_added" -> coffeePhotoAdded(node, event);
             case "coffee.photos_imported" -> coffeePhotosImported(node, event);
-            case "coffee.photos_arranged", "coffee.media_catalog_snapshot" -> coffeePhotosArranged(node, event);
+            case "coffee.photos_arranged" -> coffeePhotosArranged(node, event);
+            case "coffee.media_catalog_snapshot" -> coffeeMediaCatalogSnapshot(node, event);
             case "coffee.opening_hours_imported" ->
                 new CoffeeOpeningHoursImportedIntegrationEvent(
                     uuidOrFallback(node, "eventId", event.getEventId()),
@@ -535,6 +537,14 @@ public class IntegrationEventPayloadMapper {
         longValue(node, "version"),
         instantOrFallback(node, "occurredAt", event.getOccurredAt()),
         instantOrFallback(node, "clientAt", event.getOccurredAt()));
+  }
+
+  private CoffeeMediaCatalogSnapshotIntegrationEvent coffeeMediaCatalogSnapshot(JsonNode node,OutboxEventData event) {
+    var active=coffeePhotosArranged(node,event);
+    List<CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto> retired=new java.util.ArrayList<>();
+    var values=node.get("retiredPhotos");
+    if(values!=null && values.isArray())for(var photo:values)retired.add(new CoffeeMediaCatalogSnapshotIntegrationEvent.RetiredPhoto(uuid(photo,"photoId"),nullableInstant(photo,"retiredAt")));
+    return new CoffeeMediaCatalogSnapshotIntegrationEvent(active.eventId(),active.commandId(),active.coffeeId(),active.photos(),retired,active.version(),active.occurredAt(),active.clientAt());
   }
 
   private CoffeePhotosArrangedIntegrationEvent coffeePhotosArranged(

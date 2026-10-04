@@ -12,12 +12,14 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
           WHEN EXISTS(SELECT 1 FROM media_catalog_article_references u WHERE u.media_id=m.media_id AND u.role<>'UPLOAD') THEN 'USED'
           WHEN EXISTS(SELECT 1 FROM media_catalog_article_references u WHERE u.media_id=m.media_id AND u.role='UPLOAD') THEN 'UNUSED'
           ELSE 'UNKNOWN' END
+        WHEN m.origin='COFFEE' AND m.status='DELETION_PENDING' THEN 'UNUSED'
         WHEN m.resource_id IS NOT NULL THEN 'USED'
         WHEN m.origin='AVATAR' AND m.status<>'DELETED' THEN 'UNUSED' ELSE 'UNKNOWN' END
         """;
     private final JdbcTemplate jdbc;
     public JdbcMediaCatalogRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}
-    public boolean apply(MediaCatalogEntry e) {
+    public boolean apply(MediaCatalogEntry e) {return apply(e,false);}
+    private boolean apply(MediaCatalogEntry e,boolean retainedInventory) {
         return jdbc.update("""
             INSERT INTO media_catalog_entries(origin,media_id,resource_id,owner_id,status,object_key,content_type,size_bytes,width,height,created_at,updated_at,source_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(origin,media_id) DO UPDATE SET
@@ -27,7 +29,8 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
             updated_at=excluded.updated_at,source_version=excluded.source_version
             WHERE excluded.source_version > media_catalog_entries.source_version
                OR (excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.created_at IS NULL AND excluded.created_at IS NOT NULL)
-            """,e.origin(),e.mediaId(),e.resourceId(),e.ownerId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),time(e.createdAt()),time(e.updatedAt()),e.version())>0;
+               OR (? AND excluded.origin='COFFEE' AND excluded.source_version = media_catalog_entries.source_version AND media_catalog_entries.status='DELETED' AND excluded.status='DELETION_PENDING')
+            """,e.origin(),e.mediaId(),e.resourceId(),e.ownerId(),e.status(),e.objectKey(),e.contentType(),e.size(),e.width(),e.height(),time(e.createdAt()),time(e.updatedAt()),e.version(),retainedInventory)>0;
     }
     @org.springframework.transaction.annotation.Transactional
     public void applyCoffee(UUID coffeeId,List<MediaCatalogEntry> entries,long version,Instant at,boolean complete,boolean deleted) {
@@ -39,11 +42,11 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
             jdbc.update("UPDATE media_catalog_coffee_versions SET snapshot_version=greatest(snapshot_version,?),deleted=? WHERE coffee_id=?",version,deleted,coffeeId);
             var sql=new StringBuilder("UPDATE media_catalog_entries SET status='DELETED',resource_id=NULL,owner_id=NULL,object_key=NULL,content_type=NULL,size_bytes=0,width=NULL,height=NULL,updated_at=?,source_version=greatest(source_version,?) WHERE origin='COFFEE' AND resource_id=?");
             var args=new ArrayList<Object>(List.of(time(at),version,coffeeId));
-            if(!deleted){sql.append(" AND source_version<=?");args.add(version);}
+            if(!deleted){sql.append(" AND source_version<=? AND status<>'DELETION_PENDING'");args.add(version);}
             if(!entries.isEmpty()){sql.append(" AND media_id NOT IN (").append(String.join(",",Collections.nCopies(entries.size(),"?"))).append(")");entries.forEach(e->args.add(e.mediaId()));}
             jdbc.update(sql.toString(),args.toArray());
         }
-        entries.forEach(this::apply);
+        entries.forEach(e->apply(e,complete && !deleted));
     }
     public void erase(UUID ownerId){jdbc.update("DELETE FROM media_catalog_entries WHERE owner_id=?",ownerId);}
     public MediaCatalogPage search(SearchMediaCatalogQuery q) {
