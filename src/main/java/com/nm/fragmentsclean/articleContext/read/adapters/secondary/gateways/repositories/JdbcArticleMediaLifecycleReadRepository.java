@@ -1,0 +1,6 @@
+package com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.repositories;
+import java.util.*;import org.springframework.jdbc.core.JdbcTemplate;import org.springframework.stereotype.Repository;import com.nm.fragmentsclean.articleContext.read.ArticleMediaLifecycleReadRepository;import com.nm.fragmentsclean.articleContext.read.ArticleMediaLifecycleView;
+@Repository public class JdbcArticleMediaLifecycleReadRepository implements ArticleMediaLifecycleReadRepository {
+ private final JdbcTemplate jdbc;public JdbcArticleMediaLifecycleReadRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}
+ public Optional<ArticleMediaLifecycleView> byId(UUID id){return jdbc.query("SELECT u.article_id,u.lifecycle_status,(SELECT count(*) FROM article_revisions r WHERE trim(r.cover_reference)=u.storage_reference)+(SELECT count(*) FROM article_revision_images i WHERE trim(i.storage_reference)=u.storage_reference) AS usages FROM article_media_uploads u WHERE u.media_id=?",(rs,n)->new ArticleMediaLifecycleView(id,rs.getObject(1,UUID.class),rs.getString(2),rs.getLong(3),rs.getLong(3)==0&&rs.getString(2).equals("ACTIVE"),rs.getString(2).equals("RETIRED"),"INDEFINITE_NO_AUTOMATIC_PURGE"),id).stream().findFirst();}
+}

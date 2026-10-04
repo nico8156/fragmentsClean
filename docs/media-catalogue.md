@@ -324,3 +324,43 @@ suite. Removing the committed-version guard causes two behavioral assertions to
 fail; source restored automatically, selected suite rerun green. Studio: 255 tests,
 production build, generated contract, bundle and delivery checks; real components
 inspected at 1440/390 widths. No deployment, bucket access or physical purge.
+
+
+## Article upload lifecycle — milestone 3a
+
+Article owns ACTIVE/RETIRED for tracked uploads; the catalogue remains read-only.
+The admin lifecycle query reports authoritative usage counts across every retained
+revision, including other articles. Retirement locks the tracked row and refuses
+any usage; restoration makes it active again. Source snapshot publication takes
+shared locks on referenced tracked uploads inside existing write transactions and
+rejects retired references, rolling back their association. New writers must preserve
+this transaction boundary. No physical storage operation is part of these commands.
+
+Admin GET /api/admin/studio/article-media/{mediaId}, POST .../lifecycle and GET
+.../operations reuse JWT authorization, canonical command receipts and existing audit.
+The operator is derived from JWT; reason is mandatory (1–240 trimmed characters).
+The operations endpoint follows Coffee's bounded recent journal convention (default
+30, maximum 100), not a complete paginated history. Same-command retries use the
+existing actor/fingerprint receipt guard. Audit and source update are transactional.
+
+Optional uploadStatus on version-1 snapshots is additive; old payloads remain
+readable. The projection displays retired tracked Article uploads as DELETION_PENDING,
+without feeding the Experience/Avatar cleaners. Article preview consults the source
+and refuses retired references even before catalogue refresh. Retention explicitly
+means INDEFINITE_NO_AUTOMATIC_PURGE. A later purge needs an explicit policy and an
+authoritative check at execution, not inferred catalogue absence.
+
+Additive article-media-lifecycle-2026-10.psql follows the article catalogue baseline;
+renderer/SSM wiring and checksums are covered. No deployment was performed.
+Validation: 110 selected backend tests in 17 classes, zero failures/errors/skips,
+including true concurrent association/retirement, retained shared revisions,
+restoration, stale preview revocation, admin authorization, journal and idempotence.
+Two domain mutations were killed by assertions and restored before the green rerun.
+The full backend suite is not claimed. Studio has 273 passing tests and its production,
+contract, bundle and delivery checks pass. FlowAtlas confirms bounded Redux command
+and reconciliation flows; the previous Java producer-resolution limitation remains,
+with actual source/outbox/router/projection integration verified by PostgreSQL tests.
+
+Milestone 3 remains in progress: this is its Article slice, not lifecycle support for
+all origins or physical purge. Existing immediate Experience/Avatar cleaners require
+source-domain adaptation before exposing reversible administrative retirement.

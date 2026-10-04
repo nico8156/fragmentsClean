@@ -749,6 +749,153 @@
           }
         }
       }
+    },
+    "/api/admin/studio/article-media/{mediaId}": {
+      "get": {
+        "operationId": "readArticleMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/article-media/{mediaId}/lifecycle": {
+      "post": {
+        "operationId": "changeArticleMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleMediaLifecycleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; canonical command status remains authoritative"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "409": {
+            "description": "Command rejected"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/article-media/{mediaId}/operations": {
+      "get": {
+        "operationId": "listArticleMediaOperations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleMediaOperation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1488,6 +1635,119 @@
             "string",
             "null"
           ]
+        }
+      }
+    },
+    "ArticleMediaLifecycle": {
+      "type": "object",
+      "required": [
+        "mediaId",
+        "articleId",
+        "status",
+        "usages",
+        "canRetire",
+        "canRestore",
+        "retention"
+      ],
+      "properties": {
+        "mediaId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "articleId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "RETIRED"
+          ]
+        },
+        "usages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canRetire": {
+          "type": "boolean"
+        },
+        "canRestore": {
+          "type": "boolean"
+        },
+        "retention": {
+          "type": "string",
+          "enum": [
+            "INDEFINITE_NO_AUTOMATIC_PURGE"
+          ]
+        }
+      }
+    },
+    "ArticleMediaLifecycleRequest": {
+      "type": "object",
+      "required": [
+        "commandId",
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "RETIRED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "ArticleMediaOperation": {
+      "type": "object",
+      "required": [
+        "id",
+        "actorUserId",
+        "action",
+        "commandId",
+        "outcome",
+        "reason",
+        "occurredAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "actorUserId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "commandId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     }

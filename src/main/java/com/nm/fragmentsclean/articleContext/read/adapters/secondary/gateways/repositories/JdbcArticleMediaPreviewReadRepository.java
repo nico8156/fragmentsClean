@@ -11,9 +11,9 @@ public class JdbcArticleMediaPreviewReadRepository implements ArticleMediaPrevie
     public Set<String> currentReferences(Collection<String> refs){
         if(refs.isEmpty())return Set.of();
         return Set.copyOf(jdbc.query("""
-            SELECT trim(cover_reference) FROM article_revisions WHERE trim(cover_reference) IN (:refs)
+            SELECT reference FROM (SELECT trim(cover_reference) AS reference FROM article_revisions WHERE trim(cover_reference) IN (:refs)
             UNION SELECT trim(storage_reference) FROM article_revision_images WHERE trim(storage_reference) IN (:refs)
-            UNION SELECT storage_reference FROM article_media_uploads WHERE storage_reference IN (:refs)
+            UNION SELECT storage_reference FROM article_media_uploads WHERE storage_reference IN (:refs)) refs WHERE NOT EXISTS (SELECT 1 FROM article_media_uploads u WHERE u.storage_reference=refs.reference AND u.lifecycle_status='RETIRED')
             """,new MapSqlParameterSource("refs",refs),(rs,n)->rs.getString(1)));
     }
 }

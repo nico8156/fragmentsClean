@@ -8,7 +8,9 @@ public record ArticleMediaCatalogSnapshotIntegrationEvent(UUID eventId,UUID arti
         if(version<1 || parts<1 || part<0 || part>=parts || references==null || references.size()>100)throw new IllegalArgumentException("Invalid article media inventory part");
         references=List.copyOf(references);
     }
-    public record Reference(UUID mediaId,String storageReference,UUID usageId,UUID revisionId,Integer revisionNumber,String title,String revisionStatus,String role,Integer sectionPosition,Integer imagePosition,String alt,Integer width,Integer height,boolean working,boolean published,String contentType,Long size,Instant uploadedAt,UUID uploadedBy,String purpose,String originalName) {
+    public record Reference(UUID mediaId,String storageReference,UUID usageId,UUID revisionId,Integer revisionNumber,String title,String revisionStatus,String role,Integer sectionPosition,Integer imagePosition,String alt,Integer width,Integer height,boolean working,boolean published,String contentType,Long size,Instant uploadedAt,UUID uploadedBy,String purpose,String originalName,String uploadStatus) {
+        public Reference(UUID mediaId,String storageReference,UUID usageId,UUID revisionId,Integer revisionNumber,String title,String revisionStatus,String role,Integer sectionPosition,Integer imagePosition,String alt,Integer width,Integer height,boolean working,boolean published,String contentType,Long size,Instant uploadedAt,UUID uploadedBy,String purpose,String originalName){this(mediaId,storageReference,usageId,revisionId,revisionNumber,title,revisionStatus,role,sectionPosition,imagePosition,alt,width,height,working,published,contentType,size,uploadedAt,uploadedBy,purpose,originalName,"ACTIVE");}
+
         public Reference {
             Objects.requireNonNull(mediaId);Objects.requireNonNull(usageId);
             if(!Set.of("COVER","SECTION","UPLOAD").contains(role))throw new IllegalArgumentException("Invalid article media role");

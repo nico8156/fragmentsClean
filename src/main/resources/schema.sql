@@ -1314,3 +1314,5 @@ CREATE INDEX IF NOT EXISTS ix_media_catalog_article_reference_media ON media_cat
 ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS original_name TEXT;
 ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS uploaded_by UUID;
 ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS purpose VARCHAR(32);
+
+ALTER TABLE article_media_uploads ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' CHECK(lifecycle_status IN ('ACTIVE','RETIRED'));

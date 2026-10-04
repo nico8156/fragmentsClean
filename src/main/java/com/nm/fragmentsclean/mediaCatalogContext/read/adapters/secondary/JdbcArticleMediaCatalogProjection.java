@@ -43,6 +43,7 @@ public class JdbcArticleMediaCatalogProjection implements ArticleMediaCatalogPro
                 max(storage_reference) AS reference,
                 max(payload_json->>'contentType') FILTER(WHERE role='UPLOAD') AS content_type,
                 max((payload_json->>'size')::bigint) FILTER(WHERE role='UPLOAD') AS size,
+                bool_or(payload_json->>'uploadStatus'='RETIRED') FILTER(WHERE role='UPLOAD') AS retired,
                 min((payload_json->>'uploadedAt')::timestamptz) FILTER(WHERE role='UPLOAD') AS uploaded_at,
                 max(payload_json->>'uploadedBy') FILTER(WHERE role='UPLOAD') AS uploaded_by,
                 max(payload_json->>'purpose') FILTER(WHERE role='UPLOAD') AS purpose,
@@ -53,7 +54,7 @@ public class JdbcArticleMediaCatalogProjection implements ArticleMediaCatalogPro
                 min((payload_json->>'height')::integer) AS min_height,max((payload_json->>'height')::integer) AS max_height
               FROM media_catalog_article_references WHERE media_id=ANY(?::uuid[]) GROUP BY media_id
             ), affected AS (SELECT m.media_id AS affected_media_id,g.* FROM media_catalog_entries m LEFT JOIN grouped g ON g.media_id=m.media_id WHERE m.origin='ARTICLE' AND m.media_id=ANY(?::uuid[]))
-            UPDATE media_catalog_entries m SET status=CASE WHEN a.total IS NULL THEN 'DELETED' ELSE 'AVAILABLE' END,
+            UPDATE media_catalog_entries m SET status=CASE WHEN a.total IS NULL THEN 'DELETED' WHEN a.retired THEN 'DELETION_PENDING' ELSE 'AVAILABLE' END,
               resource_id=CASE WHEN a.articles=1 THEN a.resource::uuid ELSE NULL END,owner_id=NULL,object_key=a.reference,
               content_type=a.content_type,size_bytes=coalesce(a.size,0),created_at=a.uploaded_at,
               width=coalesce(a.stored_width,CASE WHEN a.min_width=a.max_width THEN a.min_width END),
