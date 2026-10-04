@@ -327,6 +327,13 @@ public class IntegrationEventPayloadMapper {
                     text(node, "moderationStatus"), text(node, "reportStatus"), text(node, "reason"),
                     longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),
                     nullableInstant(node, "clientAt"));
+            case "avatar.media.changed" ->
+                new com.nm.fragmentsclean.platform.eventing.contracts.AvatarMediaChangedIntegrationEvent(
+                    uuidOrFallback(node,"eventId",event.getEventId()),uuidOrFallback(node,"commandId",event.getEventId()),
+                    uuidOrFallback(node,"mediaId",event.getAggregateId()),nullableUuid(node,"userId"),nullableUuid(node,"profileUserId"),
+                    text(node,"status"),text(node,"objectKey"),text(node,"contentType"),longValue(node,"size"),
+                    nullableInt(node,"width"),nullableInt(node,"height"),nullableInstant(node,"createdAt"),
+                    longValue(node,"version"),instantOrFallback(node,"occurredAt",event.getOccurredAt()));
             case "experience.media.changed" ->
                 new ExperienceIntegrationEvents.MediaChanged(
                     uuidOrFallback(node, "eventId", event.getEventId()),

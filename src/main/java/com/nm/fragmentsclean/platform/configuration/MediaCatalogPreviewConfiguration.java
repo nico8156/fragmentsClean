@@ -9,8 +9,9 @@ import org.springframework.context.annotation.Configuration;
 /** Composition root bridges primitive ACLs; neither context imports the other. */
 @Configuration
 public class MediaCatalogPreviewConfiguration {
-    @Bean MediaCatalogPreviewPort mediaCatalogPreviewPort(AdminExperienceMediaPreviewsQueryHandler query,AdminCoffeeMediaPreviewsQueryHandler coffee){
+    @Bean MediaCatalogPreviewPort mediaCatalogPreviewPort(AdminExperienceMediaPreviewsQueryHandler query,AdminCoffeeMediaPreviewsQueryHandler coffee,com.nm.fragmentsclean.userApplicationContext.read.AdminAvatarMediaPreviewsQueryHandler avatar){
         return new MediaCatalogPreviewPort(){
+            public Map<UUID,String> avatarPreviews(Map<UUID,UUID> refs){return avatar.handle(new com.nm.fragmentsclean.userApplicationContext.read.AdminAvatarMediaPreviewsQuery(refs));}
             public Map<UUID,String> experiencePreviews(List<UUID> ids){return query.handle(new AdminExperienceMediaPreviewsQuery(ids));}
             public Map<UUID,String> coffeePreviews(Map<UUID,UUID> refs){return coffee.handle(new AdminCoffeeMediaPreviewsQuery(refs));}
         };

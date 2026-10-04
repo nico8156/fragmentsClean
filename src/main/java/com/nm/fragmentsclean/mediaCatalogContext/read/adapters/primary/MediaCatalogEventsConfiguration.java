@@ -27,6 +27,18 @@ public class MediaCatalogEventsConfiguration {
             else if(event.userId()!=null) barrier.ifActive(AccountErasureBarrier.Scope.MEDIA_CATALOG,event.userId(),apply);
         });
     }
+    @Bean SqsIntegrationEventHandler catalogAvatarMedia(SqsIntegrationEventPayloadReader reader,
+        MediaCatalogProjectionHandler handler, AccountErasureBarrier barrier, ProjectionSyncPublisher sync) {
+        return route("avatar.media.changed", envelope->{
+            var event=reader.read(envelope,AvatarMediaChangedIntegrationEvent.class);
+            Runnable apply=()->{
+                handler.handle(event);
+                sync.publish(ProjectionSyncEvent.adminProjectionUpdated("media-catalog","media",event.mediaId().toString(),event.version(),event.occurredAt(),List.of("media")));
+            };
+            if("DELETED".equals(event.status())) apply.run();
+            else if(event.userId()!=null) barrier.ifActive(AccountErasureBarrier.Scope.MEDIA_CATALOG,event.userId(),apply);
+        });
+    }
     @Bean CoffeeMediaCatalogHandler coffeeMediaCatalogHandler(CoffeeMediaCatalogProjection projection){return new CoffeeMediaCatalogHandler(projection);}
     @Bean SqsIntegrationEventHandler catalogCoffeePhotoAdded(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photo_added",CoffeePhotoAddedIntegrationEvent.class,reader,handler::handle,sync);}
     @Bean SqsIntegrationEventHandler catalogCoffeePhotoDeleted(SqsIntegrationEventPayloadReader reader,CoffeeMediaCatalogHandler handler,ProjectionSyncPublisher sync){return coffeeRoute("coffee.photo_deleted",CoffeePhotoDeletedIntegrationEvent.class,reader,handler::handle,sync);}

@@ -48,7 +48,7 @@ class PrivateMediaCleanupTest {
     var item = AvatarMedia.pending(UUID.randomUUID(), UUID.randomUUID(), "image/png", 256,
         "pending/avatar", NOW.minus(Duration.ofDays(2)));
     repository.save(item);
-    var completion = new CompleteAvatarMediaDeletion(repository, () -> NOW);
+    var completion = new CompleteAvatarMediaDeletion(repository, () -> NOW, new FakeDomainEventPublisher());
     new CleanAvatarMediaObjects(repository, new FailingOnceStore(false), completion, () -> NOW,
         Duration.ofHours(24)).run(10);
 

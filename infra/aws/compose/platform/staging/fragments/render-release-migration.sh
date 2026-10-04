@@ -18,6 +18,7 @@ case "$driver" in
   studio-community-2026-10.psql) expected_files=2 ;;
   media-catalogue-2026-10.psql) expected_files=2 ;;
   coffee-media-catalogue-2026-10.psql) expected_files=2 ;;
+  avatar-media-catalogue-2026-10.psql) expected_files=2 ;;
   *) echo 'Unknown release driver.' >&2; exit 2 ;;
 esac
 [[ -f "$release_dir/$driver" && ! -L "$release_dir/$driver" ]]

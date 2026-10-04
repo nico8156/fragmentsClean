@@ -32,6 +32,7 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("CoffeeMediaCatalogSnapshotEvent", "coffee.media_catalog_snapshot"),
           Map.entry("CoffeePublishedEvent", "coffee.published"),
           Map.entry("CoffeeUnpublishedEvent", "coffee.unpublished"),
+          Map.entry("AvatarMediaChangedEvent", "avatar.media.changed"),
           Map.entry("AppUserCreatedEvent", "app.user.created"),
           Map.entry("AppUserProfileUpdatedEvent", "app.user.profile_updated"),
           Map.entry("AppUserDeletionRequestedEvent", "app.user.deletion_requested"),

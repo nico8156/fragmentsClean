@@ -21,6 +21,9 @@ public final class MediaCatalogQueryHandler implements QueryHandler<SearchMediaC
         var coffeeRefs=new HashMap<UUID,UUID>();
         items.stream().filter(v->"COFFEE".equals(v.origin()) && "AVAILABLE".equals(v.status()) && v.resourceId()!=null).forEach(v->coffeeRefs.put(v.mediaId(),v.resourceId()));
         var coffee=coffeeRefs.isEmpty()?Map.<UUID,String>of():previews.coffeePreviews(coffeeRefs);
-        return items.stream().map(v->new MediaCatalogView(v.id(),v.origin(),v.mediaId(),v.resourceId(),v.ownerId(),v.status(),"EXPERIENCE".equals(v.origin())?current.get(v.mediaId()):"COFFEE".equals(v.origin())?coffee.get(v.mediaId()):null,v.contentType(),v.size(),v.width(),v.height(),v.createdAt(),v.updatedAt())).toList();
+        var avatarRefs=new HashMap<UUID,UUID>();
+        items.stream().filter(v->"AVATAR".equals(v.origin()) && "AVAILABLE".equals(v.status()) && v.resourceId()!=null).forEach(v->avatarRefs.put(v.mediaId(),v.resourceId()));
+        var avatar=avatarRefs.isEmpty()?Map.<UUID,String>of():previews.avatarPreviews(avatarRefs);
+        return items.stream().map(v->new MediaCatalogView(v.id(),v.origin(),v.mediaId(),v.resourceId(),v.ownerId(),v.status(),"EXPERIENCE".equals(v.origin())?current.get(v.mediaId()):"COFFEE".equals(v.origin())?coffee.get(v.mediaId()):"AVATAR".equals(v.origin())?avatar.get(v.mediaId()):null,v.contentType(),v.size(),v.width(),v.height(),v.createdAt(),v.updatedAt())).toList();
     }
 }

@@ -146,6 +146,14 @@ class ReleaseManifestTest {
         assertThat(result.exit).isZero();
         assertThat(result.output).contains("media_catalog_coffee_versions","coffee_media_catalog_scan","version='media-catalogue-2026-10'").doesNotContain("\\ir ");
     }
+    @Test void avatar_media_manifest_preserves_erasure_and_checksums_its_fragment() throws Exception {
+        copy();var first=render("a".repeat(40),"avatar-media-catalogue-2026-10.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("avatar_media_catalog_scan","USER_APPLICATION","version='coffee-media-catalogue-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-avatar-media-catalogue.sql");
+        Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");
+        assertThat(render("a".repeat(40),"avatar-media-catalogue-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));

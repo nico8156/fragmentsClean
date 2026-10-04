@@ -43,6 +43,8 @@ public class IntegrationEventDestinationResolver {
       return List.of(COFFEES_EVENTS);
     }
 
+    if ("AvatarMedia".equals(aggregateType)) return List.of(MEDIA_CATALOG_EVENTS);
+
     if ("Experience".equals(aggregateType)) {
       if (eventType.endsWith("ExperienceLifecycleChangedEvent")) return List.of(APP_USERS_EVENTS);
       return List.of(EXPERIENCES_EVENTS);

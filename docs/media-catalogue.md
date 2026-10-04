@@ -132,3 +132,55 @@ physiques historiques. Les anciens flux de purge café restent une dette du
 jalon 3 ; aucun nouveau bouton destructif n’est ajouté dans le catalogue.
 Les contrôles de volumétrie, dont la taille des galeries et des messages,
 restent dans la consolidation du jalon 2. Aucun déploiement réalisé ici.
+
+## Avatar tranche (2c)
+
+Ownership stays in `userApplicationContext` and its existing `AvatarMedia` model.
+Upload intent, confirmation, replacement, removal and deletion completion publish
+`AvatarMediaChangedEvent` through the transactional outbox. The stable
+`avatar.media.changed` v1 contract targets `media-catalog-events` only; public
+profile contracts and the mobile outbox protocol are unchanged.
+
+The local AVATAR entry distinguishes owner (`ownerId`) from current profile usage
+(`resourceId`). A source-owned batch query validates media/profile pairs, AVAILABLE,
+ACTIVE account and the exact private avatar reference before signing. Platform
+composition connects this primitive ACL to the catalogue. No business-table joins
+across contexts, browser S3 access, arbitrary key input or public admin DTO exposure.
+URLs already issued retain the existing TTL. Metadata comes from tracked uploads;
+external OAuth avatar URLs are not invented as catalogue assets.
+
+`ReplayAvatarMediaCatalog` scans batches of 100 with a locked durable checkpoint.
+The source snapshot includes actual profile usage, original upload date and version.
+Outbox publication and checkpoint advancement are transactional. Completed scans
+resume daily; the existing replay property controls activation and defaults off.
+The additive avatar migration/manifest follows the coffee baseline, is wired into
+the existing renderer/deployment sequence and seeds historical USER_APPLICATION
+ERASED barriers into MEDIA_CATALOG. Existing privacy scope/acknowledgements are reused.
+DELETED facts and projection entries remove owner, usage, key and sensitive metadata;
+late events cannot resurrect erased associations. Ownerless non-deleted facts are
+ignored; opaque ownerless deletion tombstones are permitted.
+
+This tranche adds consultation, not admin deletion commands. Existing avatar
+cleanup remains source-owned. Admin retention, removal/restoration and purge policy
+belong to milestone 3; an index entry alone never authorizes object deletion.
+
+Tests cover source facts/idempotence, real HTTP upload/replacement/removal to stable
+envelope and projection, admin access, filters, current source preview checks,
+out-of-order facts, erasure, bounded replay with checkpoint continuation, migration
+replay and historical erasure seeding. Four separate manual mutations were killed:
+omitted replacement retirement fact, retained deleted key, missing current-profile
+preview check, and bypassed avatar erasure barrier; all sources restored in finally.
+
+FlowAtlas: Studio open/search bounded graphs each have 5 nodes/6 edges and are
+complete within the requested projection. Java integration analysis reports
+`Could not resolve integration destinations` for the avatar producer. No complete
+Java graph is claimed; runtime envelope/destination/inbox tests validate that boundary.
+
+Final local validation: 114 targeted backend tests in 23 classes pass on restored
+sources, including community/public moderation, privacy barriers, source profile
+API, catalogue, envelope, architecture, OpenAPI and release tests. A shared test
+fixture initially tried to delete auth users still referenced by the admin audit;
+its test-only cleanup was corrected and the same combined selection passed.
+Studio: 228 tests/44 files, production OAuth/HTTPS build, generated contract,
+distribution checks and three delivery checks pass. Chrome 1440/390 has no horizontal
+overflow. These are local validations, not a full backend suite/load test or deployment.

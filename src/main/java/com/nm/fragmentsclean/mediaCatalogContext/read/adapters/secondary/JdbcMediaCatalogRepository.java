@@ -48,7 +48,7 @@ public class JdbcMediaCatalogRepository implements MediaCatalogProjection, Media
         sql.append(" ORDER BY origin,media_id LIMIT ?");args.add(q.limit()+1);
         var rows=jdbc.query(sql.toString(),this::view,args.toArray());
         boolean more=rows.size()>q.limit();var items=List.copyOf(rows.subList(0,Math.min(q.limit(),rows.size())));
-        return new MediaCatalogPage(items,more?items.getLast().id():null,List.of("EXPERIENCE","COFFEE"));
+        return new MediaCatalogPage(items,more?items.getLast().id():null,List.of("EXPERIENCE","COFFEE","AVATAR"));
     }
     public Optional<MediaCatalogView> byId(String id) {
         var parts=SearchMediaCatalogQuery.parseId(id);
