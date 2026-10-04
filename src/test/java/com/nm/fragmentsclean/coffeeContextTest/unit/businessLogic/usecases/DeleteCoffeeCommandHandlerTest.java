@@ -24,6 +24,7 @@ class DeleteCoffeeCommandHandlerTest {
 	private static final UUID COFFEE_ID = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
 	FakeCoffeeRepository coffeeRepository = new FakeCoffeeRepository();
+    com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository retirements=new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository();
 	FakeDomainEventPublisher domainEventPublisher = new FakeDomainEventPublisher();
 	DeterministicDateTimeProvider dateTimeProvider = new DeterministicDateTimeProvider();
 	CreateCoffeeCommandHandler createHandler;
@@ -33,7 +34,7 @@ class DeleteCoffeeCommandHandlerTest {
 	void setUp() {
 		dateTimeProvider.instantOfNow = Instant.parse("2023-10-01T11:00:00Z");
 		createHandler = new CreateCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
-		deleteHandler = new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+		deleteHandler = new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider,retirements);
 	}
 
 	@Test
@@ -68,6 +69,18 @@ class DeleteCoffeeCommandHandlerTest {
 		assertThat(coffeeRepository.allSnapshots()).isEmpty();
 		assertThat(domainEventPublisher.published).isEmpty();
 	}
+
+    @Test void retained_photos_block_parent_deletion_before_storage_cleanup(){
+        createHandler.execute(createCommand());domainEventPublisher.published.clear();
+        retirements.save(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoRetirement(
+            new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo(
+                new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId(UUID.randomUUID()),
+                new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId(COFFEE_ID),"s3://bucket/evidence.jpg",true,0),dateTimeProvider.now()));
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->deleteHandler.execute(new DeleteCoffeeCommand(COMMAND_ID,COFFEE_ID,dateTimeProvider.now())))
+            .isInstanceOf(com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException.class);
+        assertThat(coffeeRepository.findById(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.CoffeeId(COFFEE_ID))).isPresent();
+        assertThat(domainEventPublisher.published).isEmpty();
+    }
 
 	private CreateCoffeeCommand createCommand() {
 		return new CreateCoffeeCommand(

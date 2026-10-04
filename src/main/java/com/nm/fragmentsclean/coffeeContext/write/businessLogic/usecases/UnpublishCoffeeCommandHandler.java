@@ -10,6 +10,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHa
 import java.time.Instant;
 import java.util.UUID;
 
+@org.springframework.transaction.annotation.Transactional
 public class UnpublishCoffeeCommandHandler implements CommandHandler<UnpublishCoffeeCommand> {
     private final CoffeeRepository coffeeRepository;
     private final DomainEventPublisher eventPublisher;

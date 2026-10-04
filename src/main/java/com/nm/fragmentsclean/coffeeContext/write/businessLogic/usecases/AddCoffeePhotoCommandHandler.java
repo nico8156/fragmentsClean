@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 
+@org.springframework.transaction.annotation.Transactional
 public class AddCoffeePhotoCommandHandler implements CommandHandler<AddCoffeePhotoCommand> {
 	private final CoffeeRepository coffeeRepository;
 	private final CoffeePhotoStorage photoStorage;

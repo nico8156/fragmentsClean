@@ -1316,3 +1316,13 @@ ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS uploaded_by UUID;
 ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS purpose VARCHAR(32);
 
 ALTER TABLE article_media_uploads ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' CHECK(lifecycle_status IN ('ACTIVE','RETIRED'));
+
+CREATE TABLE IF NOT EXISTS coffee_photo_retirements (
+    photo_id UUID PRIMARY KEY,
+    coffee_id UUID NOT NULL REFERENCES coffees(id) ON DELETE CASCADE,
+    photo_uri VARCHAR(2000) NOT NULL,
+    was_cover BOOLEAN NOT NULL,
+    sort_order INTEGER NOT NULL,
+    retired_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_coffee_photo_retirements_coffee ON coffee_photo_retirements(coffee_id);

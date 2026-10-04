@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 
+@org.springframework.transaction.annotation.Transactional
 public class DeleteCoffeeCommandHandler implements CommandHandler<DeleteCoffeeCommand> {
 
 	private static final Logger log = LoggerFactory.getLogger(DeleteCoffeeCommandHandler.class);
@@ -20,13 +21,15 @@ public class DeleteCoffeeCommandHandler implements CommandHandler<DeleteCoffeeCo
 	private final CoffeeRepository coffeeRepository;
 	private final DomainEventPublisher eventPublisher;
 	private final DateTimeProvider dateTimeProvider;
+	private final com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements;
 
 	public DeleteCoffeeCommandHandler(CoffeeRepository coffeeRepository,
 			DomainEventPublisher eventPublisher,
-			DateTimeProvider dateTimeProvider) {
+			DateTimeProvider dateTimeProvider,com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		this.coffeeRepository = coffeeRepository;
 		this.eventPublisher = eventPublisher;
 		this.dateTimeProvider = dateTimeProvider;
+		this.retirements=retirements;
 	}
 
 	@Override
@@ -38,6 +41,7 @@ public class DeleteCoffeeCommandHandler implements CommandHandler<DeleteCoffeeCo
 			return;
 		}
 
+        if(retirements.hasForCoffee(coffeeId.value()))throw new com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException("COFFEE_MEDIA_RETAINED","Retained photos must be resolved before permanent coffee deletion");
 		Instant now = dateTimeProvider.now();
 		int nextVersion = coffee.get().version() + 1;
 		coffeeRepository.deleteById(coffeeId);

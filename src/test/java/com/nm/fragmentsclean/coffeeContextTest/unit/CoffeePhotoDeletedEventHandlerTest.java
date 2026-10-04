@@ -24,10 +24,12 @@ class CoffeePhotoDeletedEventHandlerTest {
 	void deletes_photo_projection_and_publishes_projection_sync_event() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotoDeletedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotoDeletedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new PublishedCoffeeProjectionRepository(),syncPublisher));
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
+        source.snapshots.put(coffeeId,new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(coffeeId,"PUBLISHED",14,Instant.parse("2026-07-05T10:00:00Z"),List.of()));
 		handler.handle(new CoffeePhotoDeletedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
 				UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
@@ -37,7 +39,8 @@ class CoffeePhotoDeletedEventHandlerTest {
 				Instant.parse("2026-07-05T10:00:00Z"),
 				Instant.parse("2026-07-05T09:59:59Z")));
 
-		assertThat(repository.deleted).containsExactly(new DeletedPhoto(coffeeId, photoId));
+		assertThat(repository.replaced).containsExactly(coffeeId);
+        assertThat(repository.currentPhotos).isEmpty();
 		assertThat(syncPublisher.events).hasSize(1);
 		assertThat(syncPublisher.events.getFirst().eventName()).isEqualTo("projection.updated");
 		assertThat(syncPublisher.events.getFirst().projection()).isEqualTo("coffees");
@@ -49,6 +52,8 @@ class CoffeePhotoDeletedEventHandlerTest {
 
 	private static class RecordingPhotoProjectionRepository implements CoffeePhotoProjectionRepository {
 		private final List<DeletedPhoto> deleted = new ArrayList<>();
+        private final List<UUID> replaced=new ArrayList<>();
+        private final List<CoffeePhotoView> currentPhotos=new ArrayList<>();
 
 		@Override
 		public void insertSeed(CoffeePhotoView view) {
@@ -56,6 +61,7 @@ class CoffeePhotoDeletedEventHandlerTest {
 
 		@Override
 		public void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos) {
+            replaced.add(coffeeId);currentPhotos.clear();currentPhotos.addAll(photos);
 		}
 
 		@Override

@@ -438,3 +438,66 @@ ne modifie pas les suppressions utilisateur ni l'effacement de compte.
 
 Validation finale 3c : 24 tests backend ciblés / 3 classes, zéro échec/erreur ;
 API PostgreSQL, architecture et catalogue. Suite backend entière non exécutée.
+
+
+## Coffee : retrait/restauration source (3d)
+
+coffeeContext conserve la Photo retirée dans coffee_photo_retirements (identité,
+café, URI privée, couverture/ordre historiques, retired_at). Une restauration
+utilise Coffee.addPhoto et son ordre normalisé, sans nouvel upload. Les anciennes
+références retirées sans mémoire ne sont pas inventées. Un café ARCHIVED refuse
+ces actions ; les identités ambiguës et restaurations vers un autre café sont refusées.
+
+API admin : GET /api/admin/studio/coffee-media/{mediaId}, POST .../lifecycle,
+GET .../operations (30 décisions récentes). Query/handler/port/JDBC pour les
+capacités source, CommandBus/AuthenticatedCommand pour la décision. CommandId
+et acteur JWT sont conservés ; motif de 1–240 caractères obligatoire. Le journal
+est le port AdminAuditRecorder existant, dans la transaction. Aucune URI privée
+n'est ajoutée au contrat client.
+
+Les écrivains Coffee prennent un verrou SQL sur la ligne parent avant le chargement
+JPA : le verrou follow-on ne suffit pas à relire l'état après attente. La mémoire
+retenue bloque DeleteCoffeeCommand et son nettoyage physique. La reprise Google
+s'arrête avant téléchargement/stockage si des photos sont retenues ; elle ne
+réintroduit ni n'écrase leurs clés stables. Le verrou est propre au café, mais les
+imports/uploads le conservent pendant leur transaction et peuvent retarder une
+autre commande de ce café.
+
+Les projecteurs photo Added/Deleted/Imported/Arranged réutilisent désormais la
+convention du snapshot source Coffee : CoffeePhotoProjectionRefresh → port source
+local → parent FOR SHARE → photos source → inventaire projeté courant. Les tests
+ont reproduit un ancien Added réintroduisant un retrait et un ancien Deleted
+annulant une restauration. Les deux sont corrigés sans nouveau transport ni
+changement du contrat v1 des événements. Source et projection restent distinctes.
+
+La politique Coffee fixe 30 jours complets et absence d'usage courant pour
+l'éligibilité à une purge future ; aucune purge automatique ni exécution physique
+n'est ajoutée ici. Le read model donne la date minimale, pas la preuve d'une
+purge autorisée. Article/Avatar restent sans purge automatique jusqu'à la tranche
+qui implémentera l'action distincte, confirmée et auditée.
+
+Migration additive coffee-media-lifecycle-2026-10 après avatar-media-lifecycle :
+FK source, index, registre/checksum/advisory lock, renderer et SSM raccordés.
+Fragment testé en schéma isolé avec métadonnées conservées au second passage.
+Aucun déploiement effectué.
+
+Preuves : API RED absente, domaine/fake handler, garde import, conservation parent,
+restauration ambiguë et deux inversions publiques RED via outbox/routeur. Droits
+401/403, validation/absence, idempotence et audit attribué, concurrence à deux
+connexions, JPA, catalogue, projections publiques et release couverts. Trois
+mutations manuelles tuées par assertions : durée réduite à zéro, garde parent
+retiré, client APPLIED prématuré ; exact restore puis vérifications finales vertes.
+
+Résultat final : 72 tests backend ciblés / 17 classes, zéro échec/erreur/skipped ;
+330 tests Studio / 53 fichiers. Build sûr, contrat, bundle, checks de livraison et
+Chrome 1440/390 verts. Suite backend entière non exécutée. FlowAtlas HTTP Java
+4 nœuds/3 arêtes et Redux réconciliation 22/35, complets dans leur frontière ;
+les garanties transactionnelles et d'ordre viennent des tests réels.
+
+Consolidation restante du jalon 3 : purge explicite après 30 jours, remplacement
+compatible et fermeture de la suppression photo historique. La nouvelle page
+Studio dirige les photos vers la bibliothèque ; le DELETE backend historique
+ne crée pas encore cette mémoire (il ne purge pas les octets). La reconstruction
+d'un catalogue effacé doit également reprendre la mémoire des photos retenues :
+les snapshots Coffee actuels inventorient seulement les photos encore associées.
+Ne pas marquer le jalon 3 terminé avant ces points.

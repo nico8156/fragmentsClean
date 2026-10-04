@@ -19,6 +19,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@org.springframework.transaction.annotation.Transactional
 public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEvent> {
 	private static final Logger log = LoggerFactory.getLogger(ImportGooglePhotosForCoffee.class);
 
@@ -27,18 +28,20 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 	private final DomainEventPublisher domainEventPublisher;
 	private final DateTimeProvider dateTimeProvider;
 	private final CoffeeRepository coffeeRepository;
+	private final com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements;
 
 	public ImportGooglePhotosForCoffee(
 			GooglePlacePhotosGateway photosGateway,
 			CoffeePhotoStorage photoStorage,
 			DomainEventPublisher domainEventPublisher,
 			DateTimeProvider dateTimeProvider,
-			CoffeeRepository coffeeRepository) {
+			CoffeeRepository coffeeRepository, com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		this.photosGateway = photosGateway;
 		this.photoStorage = photoStorage;
 		this.domainEventPublisher = domainEventPublisher;
 		this.dateTimeProvider = dateTimeProvider;
 		this.coffeeRepository = coffeeRepository;
+		this.retirements=retirements;
 	}
 
 	@Override
@@ -59,6 +62,13 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 			return;
 		}
 
+        var coffee=coffeeRepository.findById(coffeeId)
+                .orElseThrow(()->new IllegalStateException("Coffee source is missing for "+coffeeId.value()));
+        // Avoid overwriting stable storage keys or reintroducing admin-retired evidence.
+        if(retirements.hasForCoffee(coffeeId.value())) {
+            log.info("Skip Google photo replay for coffeeId={} because retired photos are retained",coffeeId.value());
+            return;
+        }
 		var googlePhotos = photosGateway.findPhotos(googlePlaceId);
 		if (googlePhotos.isEmpty()) {
 			log.info("Google photo import found no photos for coffeeId={} googlePlaceId={}",
@@ -75,8 +85,7 @@ public class ImportGooglePhotosForCoffee implements EventHandler<CoffeeCreatedEv
 		}
 
 		var now = dateTimeProvider.now();
-		var coffee = coffeeRepository.findById(coffeeId)
-				.orElseThrow(() -> new IllegalStateException("Coffee source is missing for " + coffeeId.value()));
+
 		var photos = new java.util.ArrayList<Photo>();
 		for (int index = 0; index < importedPhotos.size(); index++) {
 			var imported = importedPhotos.get(index);

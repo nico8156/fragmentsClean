@@ -27,7 +27,8 @@ class CoffeePhotosImportedEventHandlerTest {
 	void replaces_photo_projection_and_publishes_projection_sync_event() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotosImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotosImportedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new PublishedCoffeeProjectionRepository(),syncPublisher));
 		var event = photosImportedEvent(List.of(
 				new ImportedCoffeePhoto(
 						UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001"),
@@ -36,6 +37,7 @@ class CoffeePhotosImportedEventHandlerTest {
 						UUID.fromString("aaaaaaaa-0000-0000-0000-000000000002"),
 						"https://cdn.fragments.test/photo-2.jpg")));
 
+        source.snapshots.put(event.coffeeId().value(),new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(event.coffeeId().value(),"PUBLISHED",12,event.occurredAt(),event.photos().stream().map(p->new CoffeePhotoView(p.photoId(),event.coffeeId().value(),p.photoUri())).toList()));
 		handler.handle(event);
 
 		assertThat(repository.replacedCoffeeIds).containsExactly(event.coffeeId().value());
@@ -62,10 +64,12 @@ class CoffeePhotosImportedEventHandlerTest {
 	void replaces_photo_projection_from_primitive_sqs_contract() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotosImportedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotosImportedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new PublishedCoffeeProjectionRepository(),syncPublisher));
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
 
+        source.snapshots.put(coffeeId,new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(coffeeId,"PUBLISHED",12,Instant.parse("2026-07-04T10:20:00Z"),List.of(new CoffeePhotoView(photoId,coffeeId,"s3://bucket/photo.jpg"))));
 		handler.handle(new CoffeePhotosImportedIntegrationEvent(
 			UUID.randomUUID(), UUID.randomUUID(), coffeeId,
 			List.of(new CoffeePhotosImportedIntegrationEvent.PhotoReference(photoId, "s3://bucket/photo.jpg")),

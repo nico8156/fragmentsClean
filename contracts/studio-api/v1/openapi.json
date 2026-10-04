@@ -897,6 +897,153 @@
         }
       }
     },
+    "/api/admin/studio/coffee-media/{mediaId}": {
+      "get": {
+        "operationId": "readCoffeeMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoffeeMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/coffee-media/{mediaId}/lifecycle": {
+      "post": {
+        "operationId": "changeCoffeeMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoffeeMediaLifecycleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; canonical command status remains authoritative"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "409": {
+            "description": "Command rejected"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/coffee-media/{mediaId}/operations": {
+      "get": {
+        "operationId": "readCoffeeMediaOperations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminMediaOperation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
     "/api/admin/studio/experience-media/{mediaId}": {
       "get": {
         "operationId": "readExperienceMediaLifecycle",
@@ -1942,6 +2089,133 @@
         }
       }
     },
+      "CoffeeMediaLifecycle": {
+        "type": "object",
+        "required": [
+          "mediaId",
+          "coffeeId",
+          "status",
+          "coffeeStatus",
+          "retiredAt",
+          "purgeEligibleAt",
+          "canRetire",
+          "canRestore"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coffeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RETIRED"
+            ]
+          },
+          "coffeeStatus": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ]
+          },
+          "retiredAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "purgeEligibleAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "canRetire": {
+            "type": "boolean"
+          },
+          "canRestore": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CoffeeMediaLifecycleRequest": {
+        "type": "object",
+        "required": [
+          "commandId",
+          "coffeeId",
+          "status",
+          "reason"
+        ],
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coffeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RETIRED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      },
+      "AdminMediaOperation": {
+        "type": "object",
+        "required": [
+          "id",
+          "actorUserId",
+          "action",
+          "commandId",
+          "outcome",
+          "reason",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "commandId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "ExperienceMediaLifecycle": {
         "type": "object",
         "required": [
