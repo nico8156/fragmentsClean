@@ -209,3 +209,50 @@ editorial command handlers, generation, serialization and architecture. Two
 separate scope mutations were killed and restored; the same combined selection
 passed on restored sources. A further RED exposed the private-path parser exception
 and drove its sanitization. No full backend suite/load test/deployment is claimed.
+
+
+## Article source usages — tranche 2d.2a
+
+The global catalogue still covers experiences, coffee references and managed
+avatars. Article source usage consultation is delivered independently at
+`GET /api/admin/studio/articles/{articleId}/media?cursor=&limit=`. ArticleContext
+owns controller → query handler → read port → JDBC. The adapter reads only
+article tables, performs two fixed queries in a REPEATABLE_READ transaction,
+distinguishes 404 from an empty page and keyset-paginates at 30/default, 100/max.
+All retained revisions are included. Revision-row ids disambiguate cursor order,
+never file identity; replacing rows requires restarting pagination. Paging across
+requests is not a durable snapshot. No schema migration is needed. No deployment performed.
+
+Reference identity is namespace `article-media-v1` plus the exact trimmed
+reference, hashed deterministically to UUID. It does not prove physical file
+existence, URL alias equivalence or permission to access/delete a resource.
+Cover and section references retain separate revision/role/position usages.
+Dimensions are declarations. Editorial author is not assumed to be uploader;
+unknown upload metadata is absent. DTOs never expose raw S3 references.
+
+Existing global admin JWT/RBAC applies. Preview resolution reuses the constrained
+article S3 resolver. Disallowed references or absent signing configuration retain
+the usage without a preview. Only HTTP(S) without credentials or the existing
+local image asset path may be rendered. There is no new storage capability,
+browser key parameter, destructive command or public read route.
+
+Evidence: initial API RED 404→200; four real PostgreSQL/API tests for repeated
+references, row recreation, pagination, authorization, missing/empty, invalid
+queries and private-reference non-disclosure. Six named-fake query/identity tests;
+existing signature, aggregate, public projection, authoring and architecture
+checks also pass: 37 targeted tests / eight classes on restored code. Manual
+constant-identity mutation KILLED by the distinct-reference assertion, restored
+in finally. Full backend suite/load tests/deployment not claimed.
+
+Studio inspector reuses its Redux listener/gateway flow and generated contract;
+242 tests / 45 files, production build, bundle and delivery checks pass. Manual
+stale-read mutation KILLED and restored. Chrome inspected at 1440/390 with no
+horizontal overflow. FlowAtlas confirms the bounded Redux projection (5 nodes,
+6 edges). The available Java command semantic request does not discover this
+query controller; static completeness is not claimed for the Java read path.
+
+Next tranche 2d.2b must add article-owned source facts/outbox, ordered multi-article
+usage projection, replay and global Article ↔ Media navigation. Unreferenced
+uploads still need owner-owned durable tracking. This source read is not a
+cross-domain SQL fallback for MediaCatalogContext. Lifecycle admin and User 360
+remain the authorized milestones 3 and 4 after catalogue consolidation.

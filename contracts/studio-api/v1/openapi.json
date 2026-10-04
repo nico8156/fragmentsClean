@@ -4,6 +4,64 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/studio/articles/{articleId}/media": {
+    "get": {
+      "operationId": "listAdminArticleMedia",
+      "summary": "Editorial image usages across article revisions; admin only",
+      "parameters": [
+        {
+          "name": "articleId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 30
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Paginated usages; dimensions are editorial declarations, not upload metadata",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleMediaUsagePage"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid query"
+        },
+        "401": {
+          "description": "Unauthenticated"
+        },
+        "403": {
+          "description": "Admin permission required"
+        },
+        "404": {
+          "description": "Article does not exist"
+        }
+      }
+    }
+  },
 
   "/api/admin/users": {
     "get": {
@@ -626,6 +684,118 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+  "ArticleMediaUsagePage": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ArticleMediaUsage"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "ArticleMediaUsage": {
+    "type": "object",
+    "required": [
+      "mediaId",
+      "articleId",
+      "revisionId",
+      "revisionNumber",
+      "width",
+      "height",
+      "title",
+      "revisionStatus",
+      "role",
+      "sectionPosition",
+      "imagePosition",
+      "alt",
+      "working",
+      "published",
+      "previewUrl"
+    ],
+    "properties": {
+      "mediaId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "articleId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "revisionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "revisionNumber": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "revisionStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "IN_REVIEW",
+          "PUBLISHED",
+          "ARCHIVED"
+        ]
+      },
+      "role": {
+        "type": "string",
+        "enum": [
+          "COVER",
+          "SECTION"
+        ]
+      },
+      "sectionPosition": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0
+      },
+      "imagePosition": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "alt": {
+        "type": "string"
+      },
+      "working": {
+        "type": "boolean"
+      },
+      "published": {
+        "type": "boolean"
+      },
+      "previewUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
 
   "AdminUser": {
     "type": "object",
