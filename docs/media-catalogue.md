@@ -364,3 +364,48 @@ with actual source/outbox/router/projection integration verified by PostgreSQL t
 Milestone 3 remains in progress: this is its Article slice, not lifecycle support for
 all origins or physical purge. Existing immediate Experience/Avatar cleaners require
 source-domain adaptation before exposing reversible administrative retirement.
+
+
+## Avatar lifecycle — milestone 3b
+
+User Application now owns admin retirement/restoration of tracked unused avatars.
+GET /api/admin/studio/avatar-media/{mediaId} exposes current source capabilities;
+POST .../lifecycle uses JWT operator, mandatory reason and durable canonical receipt;
+GET .../operations reuses the existing bounded recent journal. No raw storage key,
+new audit table or global bucket access is exposed to Studio.
+
+The handler follows existing avatar writer lock ordering (owner, then media),
+counts exact references in all application profiles and refuses used files.
+AVAILABLE → RETIRED retains bytes/metadata/ownership and emits the existing
+AvatarMediaChangedEvent. RETIRED cannot be confirmed or selected by cleanup.
+Restoration requires active ownership and no competing AVAILABLE avatar, preserves
+the existing uniqueness constraint and does not assign/overwrite the profile.
+PENDING/DELETION_PENDING/DELETED cannot be restored administratively. Source erasure
+remains allowed to move RETIRED to DELETION_PENDING; privacy intent takes priority.
+
+The stable version-1 envelope carries the existing textual status. The local
+catalogue maps RETIRED into its existing DELETION_PENDING consultation status;
+source capabilities distinguish conservative retirement from actual deletion.
+Only AVAILABLE/RETIRED report INDEFINITE_NO_AUTOMATIC_PURGE; other states report
+EXISTING_SOURCE_LIFECYCLE, not an invented retention guarantee. Existing preview
+rules are preserved: signing requires an active profile referencing AVAILABLE media.
+Additive avatar-media-lifecycle-2026-10.psql follows the Article lifecycle release;
+previous manifests remain immutable. Deploy the compatible migration/backend
+producer and consumer before enabling the new Studio actions. No deployment here.
+
+Validation: 78 targeted tests in 14 classes, no failures/errors/skips, including
+source guards, two-connection owner-lock concurrency, audit, receipt conflicts,
+restoration, cleanup exclusion, privacy transition, stable outbox/router/replay,
+repeatable PostgreSQL fragment, manifest checksums and context architecture.
+Two manual domain mutations (used guard and replacement guard) are killed by
+behavioral assertions, restored exactly, then the selected suite rerun green.
+Studio: 301 tests, safe production build, contract, bundle/delivery checks and
+Chrome 1440/390 inspection. Its premature-APPLIED mutant is likewise killed/restored.
+
+FlowAtlas Java resolves the new HTTP/controller/command/handler boundary (4 nodes,
+3 edges), and TypeScript resolves Community reconciliation/cross-catalogue refresh
+(19 nodes, 34 edges). These are complete bounded projections, not full application
+coverage. The existing Java integration-destination resolution limitation remains;
+tests verify the actual producer/outbox/envelope/router/inbox/projection flow and
+version protection after restoration. Milestone 3 remains open for Experience/Coffee,
+replacement capabilities and explicit deferred-purge policy/mechanism.

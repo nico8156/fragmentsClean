@@ -32,6 +32,20 @@ public final class AvatarMedia extends AggregateRoot {
   public boolean matchesIntent(UUID owner,String type,long requestedSize){return Objects.equals(userId,owner)&&declaredContentType.equals(normalizeType(type))&&declaredSize==requestedSize;}
   public void requireOwner(UUID owner){if(!Objects.equals(userId,owner))throw new BusinessCommandRejectedException("AVATAR_FORBIDDEN","Avatar is not owned by requester");}
   public boolean confirm(String key,String type,long bytes,int w,int h,String hash,Instant now){if(status==AvatarMediaStatus.AVAILABLE){if(!Objects.equals(objectKey,key)||!Objects.equals(sha256,hash))throw new BusinessCommandRejectedException("AVATAR_CONFIRM_CONFLICT","Avatar was already confirmed with another object");return false;}if(status!=AvatarMediaStatus.PENDING)throw new BusinessCommandRejectedException("AVATAR_NOT_PENDING","Avatar cannot be confirmed");if(!"image/jpeg".equals(type)||bytes<=0||w<=0||h<=0||w!=h||hash==null||hash.isBlank())throw new BusinessCommandRejectedException("AVATAR_INVALID","Normalized avatar metadata is invalid");objectKey=key;contentType=type;size=bytes;width=w;height=h;sha256=hash;status=AvatarMediaStatus.AVAILABLE;updatedAt=now;version++;return true;}
+  /** Admin retirement conserves both normalized object and ownership. */
+  public boolean retire(boolean used, Instant now) {
+    if (used) throw new BusinessCommandRejectedException("MEDIA_IN_USE", "Avatar is still referenced by a profile");
+    if (status == AvatarMediaStatus.RETIRED) return false;
+    if (status != AvatarMediaStatus.AVAILABLE) throw new BusinessCommandRejectedException("MEDIA_STATE_INVALID", "Only an available avatar can be retired");
+    status = AvatarMediaStatus.RETIRED; updatedAt = now; version++; return true;
+  }
+  public boolean restore(boolean used, boolean anotherAvailable, Instant now) {
+    if (used) throw new BusinessCommandRejectedException("MEDIA_IN_USE", "Avatar is still referenced by a profile");
+    if (anotherAvailable) throw new BusinessCommandRejectedException("AVATAR_RESTORE_CONFLICT", "Another available avatar belongs to this owner");
+    if (status == AvatarMediaStatus.AVAILABLE) return false;
+    if (status != AvatarMediaStatus.RETIRED) throw new BusinessCommandRejectedException("MEDIA_STATE_INVALID", "Only an administratively retired avatar can be restored");
+    status = AvatarMediaStatus.AVAILABLE; updatedAt = now; version++; return true;
+  }
   public boolean requestDeletion(Instant now){if(status==AvatarMediaStatus.DELETED||status==AvatarMediaStatus.DELETION_PENDING)return false;status=AvatarMediaStatus.DELETION_PENDING;updatedAt=now;version++;return true;}
   public boolean markDeleted(Instant now){if(status==AvatarMediaStatus.DELETED)return false;if(status!=AvatarMediaStatus.DELETION_PENDING)throw new IllegalStateException("Avatar deletion was not requested");status=AvatarMediaStatus.DELETED;userId=null;updatedAt=now;version++;return true;}
   public Snapshot snapshot(){return new Snapshot(id,userId,declaredContentType,declaredSize,pendingObjectKey,status,objectKey,contentType,size,width,height,sha256,createdAt,updatedAt,version);}

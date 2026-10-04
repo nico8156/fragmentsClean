@@ -135,6 +135,9 @@ bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$g
 download src/main/resources/db/release/article-media-lifecycle-2026-10.psql "$deployment_tmp/release/article-media-lifecycle-2026-10.psql"
 download src/main/resources/db/release/2026-10-04-article-media-lifecycle.sql "$deployment_tmp/release/2026-10-04-article-media-lifecycle.sql"
 bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" article-media-lifecycle-2026-10.psql >> "$deployment_tmp/migration.psql"
+download src/main/resources/db/release/avatar-media-lifecycle-2026-10.psql "$deployment_tmp/release/avatar-media-lifecycle-2026-10.psql"
+download src/main/resources/db/release/2026-10-04-avatar-media-lifecycle.sql "$deployment_tmp/release/2026-10-04-avatar-media-lifecycle.sql"
+bash "$deployment_tmp/render-release-migration.sh" "$deployment_tmp/release" "$git_revision" avatar-media-lifecycle-2026-10.psql >> "$deployment_tmp/migration.psql"
 
 # Resolve every SSM prerequisite and validate Compose before changing the live config or stopping a writer.
 bash "$deployment_tmp/bootstrap-runtime.sh" "$backend_image" "$deployment_tmp"

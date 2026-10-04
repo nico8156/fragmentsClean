@@ -1,0 +1,47 @@
+-- Separate additive release; prior manifests and checksums remain immutable.
+\set ON_ERROR_STOP on
+\if :{?release_checksum}
+\else
+  SELECT 1 / 0 AS missing_release_checksum;
+\endif
+\if :{?source_revision}
+\else
+  SELECT 1 / 0 AS missing_source_revision;
+\endif
+SELECT :'release_checksum' ~ '^[0-9a-f]{64}$' AND :'source_revision' ~ '^[0-9a-f]{40}$' AS valid_metadata \gset
+\if :valid_metadata
+\else
+  SELECT 1 / 0 AS invalid_migration_metadata;
+\endif
+BEGIN;
+SET LOCAL search_path TO public, pg_catalog;
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '5min';
+SELECT pg_advisory_xact_lock(20261004, 7);
+SELECT EXISTS (SELECT 1 FROM release_schema_history WHERE version='article-media-lifecycle-2026-10') AS valid_baseline \gset
+\if :valid_baseline
+\else
+  SELECT 1 / 0 AS missing_article_media_lifecycle_baseline;
+\endif
+SELECT EXISTS (SELECT 1 FROM release_schema_history WHERE version='avatar-media-lifecycle-2026-10') AS already_applied,
+       NOT EXISTS (SELECT 1 FROM release_schema_history WHERE version='avatar-media-lifecycle-2026-10'
+                   AND checksum <> :'release_checksum') AS checksum_matches \gset
+\if :checksum_matches
+\else
+  SELECT 1 / 0 AS migration_checksum_mismatch;
+\endif
+\if :already_applied
+  \echo Media catalogue migration already applied
+\else
+DO $preflight$
+BEGIN
+    IF to_regclass('public.user_avatar_media') IS NULL THEN
+        RAISE EXCEPTION 'Unsupported avatar media baseline';
+    END IF;
+END;
+$preflight$;
+\ir 2026-10-04-avatar-media-lifecycle.sql
+INSERT INTO release_schema_history(version,checksum,source_revision)
+VALUES ('avatar-media-lifecycle-2026-10', :'release_checksum', :'source_revision');
+\endif
+COMMIT;

@@ -1203,8 +1203,8 @@ CREATE TABLE IF NOT EXISTS user_avatar_media (
     size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER, sha256 VARCHAR(64),
 	created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
 	CONSTRAINT ck_user_avatar_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
-	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
-	CONSTRAINT ck_user_avatar_media_available CHECK (status <> 'AVAILABLE' OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
+	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','RETIRED','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_user_avatar_media_available CHECK (status NOT IN ('AVAILABLE','RETIRED') OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_avatar_media_available ON user_avatar_media(user_id) WHERE status='AVAILABLE';
 CREATE INDEX IF NOT EXISTS ix_user_avatar_media_cleanup ON user_avatar_media(status,updated_at);

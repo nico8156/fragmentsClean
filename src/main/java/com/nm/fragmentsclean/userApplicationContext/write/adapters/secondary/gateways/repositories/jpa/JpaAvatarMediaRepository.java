@@ -16,6 +16,7 @@ public final class JpaAvatarMediaRepository implements AvatarMediaRepository{
   @Override public Optional<AvatarMedia> byId(UUID id){return repository.findByIdForUpdate(id).map(e->AvatarMedia.fromSnapshot(e.snapshot()));}
   @Override public Optional<AvatarMedia.Snapshot> inspect(UUID id){return repository.findByMediaId(id).map(AvatarMediaJpaEntity::snapshot);}
   @Override public Optional<AvatarMedia> activeByUser(UUID id){return repository.findActiveByUser(id,AvatarMediaStatus.AVAILABLE).map(e->AvatarMedia.fromSnapshot(e.snapshot()));}
+  @Override public long profileUsageCount(String key){return repository.profileUsageCount(key);}
   @Override public void save(AvatarMedia media){repository.save(new AvatarMediaJpaEntity(media.snapshot()));}
   @Override public void replaceActive(AvatarMedia previous,AvatarMedia replacement){repository.saveAndFlush(new AvatarMediaJpaEntity(previous.snapshot()));repository.save(new AvatarMediaJpaEntity(replacement.snapshot()));}
   @Override public List<AvatarMedia> cleanupCandidates(Instant before,int limit){return repository.findCleanupCandidates(AvatarMediaStatus.DELETION_PENDING,AvatarMediaStatus.PENDING,before,PageRequest.of(0,limit)).stream().map(e->AvatarMedia.fromSnapshot(e.snapshot())).toList();}

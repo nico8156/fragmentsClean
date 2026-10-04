@@ -10,6 +10,7 @@ public interface AvatarMediaRepository {
   Optional<AvatarMedia> byId(UUID mediaId);
   Optional<AvatarMedia.Snapshot> inspect(UUID mediaId);
   Optional<AvatarMedia> activeByUser(UUID userId);
+  long profileUsageCount(String objectKey);
   void save(AvatarMedia media);
   void replaceActive(AvatarMedia previous, AvatarMedia replacement);
   List<AvatarMedia> cleanupCandidates(Instant pendingBefore,int limit);
