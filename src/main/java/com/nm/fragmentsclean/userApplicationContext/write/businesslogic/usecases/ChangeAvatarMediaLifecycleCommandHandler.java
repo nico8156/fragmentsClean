@@ -31,18 +31,19 @@ public class ChangeAvatarMediaLifecycleCommandHandler implements CommandHandler<
       throw new BusinessCommandRejectedException("ACCOUNT_NOT_ACTIVE", "Avatar owner is not active");
     var item=media.byId(command.mediaId()).orElseThrow(()->missing());
     if(!Objects.equals(item.snapshot().userId(),user.id())) throw missing();
-    if(!"RETIRED".equals(command.status()) && !"AVAILABLE".equals(command.status()))
+    if(!"RETIRED".equals(command.status()) && !"AVAILABLE".equals(command.status()) && !"PURGE_REQUESTED".equals(command.status()))
       throw new BusinessCommandRejectedException("MEDIA_STATUS_INVALID", "Unsupported avatar lifecycle decision");
     var now=clock.now();
     boolean used=media.profileUsageCount(item.snapshot().objectKey())>0;
     boolean retired="RETIRED".equals(command.status());
-    boolean changed=retired ? item.retire(used,now) : item.restore(used,
+    boolean purging="PURGE_REQUESTED".equals(command.status());
+    boolean changed=purging ? item.requestAdminPurge(used,now) : retired ? item.retire(used,now) : item.restore(used,
         media.activeByUser(user.id()).filter(other->!other.id().equals(item.id())).isPresent(),now);
     if(changed) {
       media.save(item);
       events.publish(AvatarMediaChangedEvent.from(item.snapshot(),command.commandId(),null));
     }
-    audit.recordDecision(command.operatorId(),retired?"AVATAR_MEDIA_RETIRED":"AVATAR_MEDIA_RESTORED","AVATAR_MEDIA",item.id(),
+    audit.recordDecision(command.operatorId(),purging?"AVATAR_MEDIA_PURGE_REQUESTED":retired?"AVATAR_MEDIA_RETIRED":"AVATAR_MEDIA_RESTORED","AVATAR_MEDIA",item.id(),
         command.commandId(),"APPLIED",command.reason().strip(),now);
   }
   private static BusinessCommandRejectedException missing(){return new BusinessCommandRejectedException("MEDIA_NOT_TRACKED","Tracked avatar with active ownership not found");}

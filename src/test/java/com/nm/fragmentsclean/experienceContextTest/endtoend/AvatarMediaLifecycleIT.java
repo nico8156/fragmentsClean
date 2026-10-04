@@ -15,6 +15,39 @@ class AvatarMediaLifecycleIT extends AbstractExperienceE2E {
     @Autowired org.springframework.test.web.servlet.MockMvc mvc;
     @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
 
+    @Autowired com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider clock;
+    @Test void purge_is_an_explicit_audited_request_after_retention_not_an_immediate_storage_success() throws Exception {
+        UUID owner=UUID.randomUUID(),media=UUID.randomUUID(),command=UUID.randomUUID();seed(owner,media,null);
+        var retiredAt=clock.now().minus(java.time.Duration.ofDays(31));
+        jdbc.update("UPDATE user_avatar_media SET status='RETIRED',created_at=?,updated_at=? WHERE media_id=?",java.sql.Timestamp.from(retiredAt.minusSeconds(86400)),java.sql.Timestamp.from(retiredAt),media);
+        String route="/api/admin/studio/avatar-media/"+media;
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(ADMIN)))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.canPurge").value(true)).andExpect(jsonPath("$.retiredAt").value(retiredAt.toString()))
+            .andExpect(jsonPath("$.purgeEligibleAt").value(retiredAt.plus(java.time.Duration.ofDays(30)).toString()));
+        assertThat(sourceMedia.cleanupCandidates(clock.now(),100).stream().map(m->m.id())).doesNotContain(media);
+        change(media,"PURGE_REQUESTED","Rétention terminée",command).andExpect(status().isAccepted());
+        change(media,"PURGE_REQUESTED","Rétention terminée",command).andExpect(status().isAccepted());
+        assertThat(jdbc.queryForObject("SELECT status FROM user_avatar_media WHERE media_id=?",String.class,media)).isEqualTo("DELETION_PENDING");
+        assertThat(jdbc.queryForObject("SELECT object_key FROM user_avatar_media WHERE media_id=?",String.class,media)).isEqualTo("avatars/"+media);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM admin_audit_log WHERE command_id=?",Integer.class,command)).isOne();
+        mvc.perform(get(route+"/operations").with(jwt().jwt(j->j.subject(ADMIN)))).andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].action").value("AVATAR_MEDIA_PURGE_REQUESTED")).andExpect(jsonPath("$[0].actorUserId").value(ADMIN)).andExpect(jsonPath("$[0].reason").value("Rétention terminée"));
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(ADMIN)))).andExpect(status().isOk()).andExpect(jsonPath("$.canPurge").value(false)).andExpect(jsonPath("$.canRestore").value(false));
+        assertThat(sourceMedia.cleanupCandidates(clock.now(),100).stream().map(m->m.id())).contains(media);
+        change(media,"AVAILABLE","Restore",UUID.randomUUID()).andExpect(status().isUnprocessableEntity());
+    }
+    @Test void source_refuses_purge_before_retention_or_while_a_profile_still_uses_the_file() throws Exception {
+        UUID owner=UUID.randomUUID(),media=UUID.randomUUID();seed(owner,media,null);
+        var retiredAt=clock.now().minus(java.time.Duration.ofDays(30)).plusMillis(1);
+        jdbc.update("UPDATE user_avatar_media SET status='RETIRED',created_at=?,updated_at=? WHERE media_id=?",java.sql.Timestamp.from(retiredAt.minusSeconds(86400)),java.sql.Timestamp.from(retiredAt),media);
+        mvc.perform(get("/api/admin/studio/avatar-media/"+media).with(jwt().jwt(j->j.subject(ADMIN)))).andExpect(status().isOk()).andExpect(jsonPath("$.canPurge").value(false));
+        change(media,"PURGE_REQUESTED","Early",UUID.randomUUID()).andExpect(status().isUnprocessableEntity());
+        jdbc.update("UPDATE user_avatar_media SET updated_at=? WHERE media_id=?",java.sql.Timestamp.from(clock.now().minus(java.time.Duration.ofDays(31))),media);
+        jdbc.update("UPDATE app_users SET avatar_url=? WHERE id=?","media:avatar:avatars/"+media,owner);
+        mvc.perform(get("/api/admin/studio/avatar-media/"+media).with(jwt().jwt(j->j.subject(ADMIN)))).andExpect(status().isOk()).andExpect(jsonPath("$.canPurge").value(false));
+        change(media,"PURGE_REQUESTED","Used",UUID.randomUUID()).andExpect(status().isUnprocessableEntity());
+        assertThat(jdbc.queryForObject("SELECT status FROM user_avatar_media WHERE media_id=?",String.class,media)).isEqualTo("RETIRED");
+    }
     @Test void unused_available_avatar_can_be_retired_without_deleting_the_object() throws Exception {
         UUID owner=UUID.randomUUID(), media=UUID.randomUUID(); seed(owner,media,null);
         mvc.perform(post("/api/admin/studio/avatar-media/"+media+"/lifecycle")

@@ -2292,7 +2292,10 @@
           "usages",
           "canRetire",
           "canRestore",
-          "retention"
+          "retention",
+          "canPurge",
+          "retiredAt",
+          "purgeEligibleAt"
         ],
         "properties": {
           "mediaId": {
@@ -2319,6 +2322,9 @@
           "canRestore": {
             "type": "boolean"
           },
+          "canPurge": { "type": "boolean" },
+          "retiredAt": { "type": "string", "format": "date-time", "nullable": true },
+          "purgeEligibleAt": { "type": "string", "format": "date-time", "nullable": true },
           "retention": {
             "type": "string",
             "enum": [
@@ -2349,7 +2355,8 @@
             "type": "string",
             "enum": [
               "AVAILABLE",
-              "RETIRED"
+              "RETIRED",
+              "PURGE_REQUESTED"
             ]
           },
           "reason": {

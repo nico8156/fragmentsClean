@@ -557,3 +557,44 @@ handler bornée 4/3 ; service ReplayCoffeeMediaCatalog non reconnu en Handler,
 limite statique explicite. Tests runtime prouvent le parcours source→outbox→
 enveloppe v2→inbox/routeur→projection→GET ainsi que v1, restauration, tombstones,
 événements anciens et absence de preview privée. Pas de suite globale backend.
+
+### Consolidation 3e.3 : demande explicite de purge Avatar après 30 jours
+
+Réutilisation du cycle source userApplicationContext : RETIRED → DELETION_PENDING
+sur demande admin PURGE_REQUESTED motivée, puis DELETED via le nettoyeur existant.
+Pas de nouvel état persistant, table, migration ou job. Le domaine refuse avant
+30 jours pleins et si un profil utilise le fichier. Verrouillage propriétaire
+puis média, compte actif, motif 1–240 caractères et identité JWT inchangés.
+Audit AVATAR_MEDIA_PURGE_REQUESTED, cible AVATAR_MEDIA, opérateur/reason/commandId
+serveur dans la même transaction ; reçu canonique idempotent inchangé.
+
+La query source fournit canPurge, retiredAt et purgeEligibleAt, sans clé de
+stockage. Les dates viennent de la dernière mise en retrait source et du délai
+domaine ; le Studio ne calcule aucun droit. L’ancienne valeur de rétention
+INDEFINITE_NO_AUTOMATIC_PURGE reste correcte : aucun nettoyage par seul âge.
+Le contrat de demande inclut PURGE_REQUESTED ; les états source restent distincts.
+
+APPLIED signifie demande acceptée, jamais suppression physique acquise. Le
+nettoyeur CleanAvatarMediaObjects utilise uniquement les clés source privées,
+appelle le stockage hors transaction puis CompleteAvatarMediaDeletion. Une panne
+laisse DELETION_PENDING, réessayable ; le fait DELETED/version/date est émis
+seulement après nettoyage réussi. L’audit garde la demande initiale ; la fin
+physique est attestée par le cycle source existant, pas par un second audit admin
+inventant un opérateur. La purge dépend de fragments.media.cleanup.enabled ;
+aucune activation/configuration production ou exécution S3 réelle dans cette passe.
+Les règles d’effacement de compte restent prioritaires et inchangées.
+
+Preuves BEHAVIOUR command/query/UI : RED 30 jours et usage rejetés comme statut
+non supporté ; source canPurge absent ; confirmation UI absente ; retry contenant
+error/statusOfCommand au lieu du seul intent. GREEN/contrats puis 3 mutations
+manuelles EXECUTED/KILLED : délai 30→0, garde usage supprimé, canonical PENDING
+forcé APPLIED. Restauration exacte et validation finale : 52 tests backend/9
+classes, 339 tests Studio/53 fichiers, build OAuth/HTTPS, contrat/bundle/3 tests
+livraison verts. Faux stockage prouve absence de purge par âge, panne partielle,
+reprise et fin physique ; PostgreSQL/API prouvent capacités, refus, audit unique,
+restauration interdite après demande, previews et circuits Avatar précédents.
+Chrome 390/1440 : confirmation/motif/journal dans le design existant, aucune
+largeur document excédentaire. FlowAtlas Java commande 4/3 borné ; Redux canonical
+6/5 borné complet, couverture application non évaluée. Tests portent la preuve
+runtime vers outbox/routeur/catalogue ; graphe statique non assimilé à l’exécution.
+Pas de suite backend globale ni de déploiement.

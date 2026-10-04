@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 public final class AvatarMedia extends AggregateRoot {
+  public static final java.time.Duration MINIMUM_ADMIN_RETENTION=java.time.Duration.ofDays(30);
   private UUID userId;
   private final String declaredContentType;
   private final long declaredSize;
@@ -45,6 +46,14 @@ public final class AvatarMedia extends AggregateRoot {
     if (status == AvatarMediaStatus.AVAILABLE) return false;
     if (status != AvatarMediaStatus.RETIRED) throw new BusinessCommandRejectedException("MEDIA_STATE_INVALID", "Only an administratively retired avatar can be restored");
     status = AvatarMediaStatus.AVAILABLE; updatedAt = now; version++; return true;
+  }
+  /** Explicit admin intent; elapsed time alone never requests deletion. */
+  public boolean requestAdminPurge(boolean used,Instant now) {
+    if(used)throw new BusinessCommandRejectedException("MEDIA_IN_USE","Avatar is still referenced by a profile");
+    if(status==AvatarMediaStatus.DELETION_PENDING)return false;
+    if(status!=AvatarMediaStatus.RETIRED)throw new BusinessCommandRejectedException("MEDIA_STATE_INVALID","Only an administratively retired avatar can request purge");
+    if(now.isBefore(updatedAt.plus(MINIMUM_ADMIN_RETENTION)))throw new BusinessCommandRejectedException("MEDIA_RETENTION_ACTIVE","Thirty full days of retention have not elapsed");
+    return requestDeletion(now);
   }
   public boolean requestDeletion(Instant now){if(status==AvatarMediaStatus.DELETED||status==AvatarMediaStatus.DELETION_PENDING)return false;status=AvatarMediaStatus.DELETION_PENDING;updatedAt=now;version++;return true;}
   public boolean markDeleted(Instant now){if(status==AvatarMediaStatus.DELETED)return false;if(status!=AvatarMediaStatus.DELETION_PENDING)throw new IllegalStateException("Avatar deletion was not requested");status=AvatarMediaStatus.DELETED;userId=null;updatedAt=now;version++;return true;}
