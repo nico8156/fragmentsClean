@@ -501,3 +501,24 @@ ne crée pas encore cette mémoire (il ne purge pas les octets). La reconstructi
 d'un catalogue effacé doit également reprendre la mémoire des photos retenues :
 les snapshots Coffee actuels inventorient seulement les photos encore associées.
 Ne pas marquer le jalon 3 terminé avant ces points.
+
+### Consolidation 3e.1 : fermeture du DELETE Coffee historique
+
+L’ancien DELETE `/api/admin/coffees/{coffeeId}/photos/{photoId}` renvoie 410 sans
+commande ni écriture. Authentification/autorisation restent exigées (401/403).
+Utiliser la commande `/api/admin/studio/coffee-media/{mediaId}/lifecycle` : motif,
+identité JWT, mémoire source réversible, audit et statut canonique. Le contrat
+OpenAPI marque la route historique deprecated. Déployer le backend puis le
+Studio compatible ; les anciens bundles sont refusés au lieu de retirer une
+photo sans mémoire/audit. Aucun changement physique S3 ni migration.
+
+BEHAVIOUR command/sécurité : RED 410 attendu/202 reçu, minimum GREEN. Mutation
+manuelle 410→202 exécutée et tuée par le test de route, restauration exacte puis
+45 tests backend/3 classes réussis (AdminRoutesControllerTest,
+CoffeeMediaLifecycleIT, BoundedContextArchitectureTest). Studio : 331 tests/53
+fichiers, build OAuth/HTTPS, contrat généré, contrôle bundle et livraison réussis.
+Mutation adaptateur qui invente un commandId détectée puis restaurée. FlowAtlas
+Redux final ancien intent→listener→mediaCatalogOpened : 4 nœuds/3 liens complets
+sur ce périmètre, sans appel gateway. Le handler interne legacy est conservé,
+sans exposition par cette route admin. Replay des photos retirées et purge
+explicitement demandée après 30 jours restent les prochaines tranches.

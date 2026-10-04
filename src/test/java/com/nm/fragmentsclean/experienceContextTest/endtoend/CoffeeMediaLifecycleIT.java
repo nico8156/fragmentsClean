@@ -15,6 +15,14 @@ class CoffeeMediaLifecycleIT extends AbstractExperienceE2E {
  UUID[] seed(){UUID coffee=UUID.randomUUID(),photo=UUID.randomUUID();
   jdbc.update("INSERT INTO coffees(id,name,lat,lon,version,updated_at,publication_status) VALUES(?,'Lifecycle Coffee',0,0,1,now(),'PUBLISHED')",coffee);
   jdbc.update("INSERT INTO coffee_photos(coffee_id,photo_id,photo_uri,is_cover,sort_order) VALUES(?,?,?,true,0)",coffee,photo,"https://images.test/"+photo+".jpg");return new UUID[]{coffee,photo};}
+ @Test void legacy_delete_cannot_bypass_source_retirement_or_admin_security() throws Exception {
+  var ids=seed();String route="/api/admin/coffees/"+ids[0]+"/photos/"+ids[1];
+  mvc.perform(delete(route)).andExpect(status().isUnauthorized());
+  mvc.perform(delete(route).with(jwt().jwt(j->j.subject(UUID.randomUUID().toString())))).andExpect(status().isForbidden());
+  mvc.perform(delete(route).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isGone());
+  assertThat(jdbc.queryForObject("SELECT count(*) FROM coffee_photos WHERE coffee_id=? AND photo_id=?",Integer.class,ids[0],ids[1])).isEqualTo(1);
+  assertThat(jdbc.queryForObject("SELECT count(*) FROM coffee_photo_retirements WHERE photo_id=?",Integer.class,ids[1])).isZero();
+ }
  @Test void reads_current_source_association_and_caps_without_exposing_private_uri() throws Exception {
   var ids=seed();String route="/api/admin/studio/coffee-media/"+ids[1];
   mvc.perform(get(route).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk())

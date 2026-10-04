@@ -483,8 +483,10 @@
     "/api/admin/coffees/{coffeeId}/photos/{photoId}": {
       "delete": {
         "operationId": "deleteCoffeePhoto",
+        "deprecated": true,
+        "description": "Obsolete: use the audited coffee media lifecycle command with a reason.",
         "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }, { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+        "responses": { "410": { "description": "Use the audited media lifecycle command" }, "401": { "description": "Authentication required" }, "403": { "description": "Admin access required" } }
       }
     },
     "/api/admin/coffees/{coffeeId}/photos/order": {

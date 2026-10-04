@@ -238,7 +238,10 @@ une nouvelle lecture.
 
 ```text
 DELETE /api/admin/coffees/{coffeeId}/photos/{photoId}
--> DeleteCoffeePhotoCommand
+-> 410 Gone (obsolete; no source mutation)
+
+POST /api/admin/studio/coffee-media/{mediaId}/lifecycle
+-> ChangeCoffeeMediaLifecycleCommand (RETIRED / AVAILABLE, required reason)
 -> CoffeePhotoDeletedEvent
 -> Outbox/SQS
 -> CoffeePhotoDeletedEventHandler

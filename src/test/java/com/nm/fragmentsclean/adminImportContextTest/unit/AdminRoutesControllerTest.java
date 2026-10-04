@@ -226,19 +226,13 @@ class AdminRoutesControllerTest {
 	}
 
 	@Test
-	void admin_delete_coffee_photo_with_valid_token_dispatches_delete_photo_command() throws Exception {
+	void legacy_photo_delete_is_gone_without_dispatching_an_untracked_command() throws Exception {
 		var handlers = new RecordingCoffeeCommandHandlers();
-
 		mockMvc("admin-secret", new CountingListCoffeesQueryHandler(), handlers)
 				.perform(delete("/api/admin/coffees/11111111-1111-1111-1111-111111111111/photos/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
 						.header(HttpHeaders.AUTHORIZATION, "Bearer admin-secret"))
-				.andExpect(status().isAccepted());
-
-		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands).hasSize(1);
-		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands.getFirst().coffeeId())
-				.isEqualTo(UUID.fromString("11111111-1111-1111-1111-111111111111"));
-		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands.getFirst().photoId())
-				.isEqualTo(UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"));
+				.andExpect(status().isGone());
+		org.assertj.core.api.Assertions.assertThat(handlers.deletePhoto.commands).isEmpty();
 	}
 
 	@Test
