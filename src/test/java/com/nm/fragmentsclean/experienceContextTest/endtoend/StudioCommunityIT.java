@@ -53,6 +53,24 @@ class StudioCommunityIT extends AbstractExperienceE2E {
         jdbc.update("UPDATE experience_media_views SET status='DELETION_PENDING' WHERE media_id=?",mediaId);
         mvc.perform(get("/api/admin/experience-media/"+mediaId).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk()).andExpect(jsonPath("$.url").isEmpty());
     }
+    @Test void media_lifecycle_reads_source_and_never_exposes_storage_keys() throws Exception {
+        UUID experience=UUID.randomUUID(), media=UUID.randomUUID(), owner=UUID.randomUUID(), coffee=UUID.randomUUID();
+        jdbc.update("INSERT INTO experiences VALUES(?,?,?,?,?,?,now(),now(),null,1)",experience,owner,coffee,"Source lifecycle","PUBLISHED","VISIBLE");
+        jdbc.update("INSERT INTO experience_media(media_id,experience_id,coffee_id,user_id,declared_content_type,declared_size,pending_object_key,status,object_key,content_type,size_bytes,width,height,sha256,created_at,updated_at,version) VALUES(?,?,?,?,?,1024,?,'AVAILABLE',?,'image/jpeg',1024,640,480,?,now(),now(),1)",media,experience,coffee,owner,"image/jpeg","pending/test","experiences/test/source.jpg","a".repeat(64));
+        String route="/api/admin/studio/experience-media/"+media;
+        mvc.perform(get(route)).andExpect(status().isUnauthorized());
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(owner.toString())))).andExpect(status().isForbidden());
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.experienceId").value(experience.toString())).andExpect(jsonPath("$.canHidePublication").value(true))
+            .andExpect(jsonPath("$.canRestorePublication").value(false)).andExpect(jsonPath("$.objectKey").doesNotExist());
+        jdbc.update("UPDATE experiences SET moderation_status='HIDDEN' WHERE experience_id=?",experience);
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.canHidePublication").value(false)).andExpect(jsonPath("$.canRestorePublication").value(true));
+        jdbc.update("UPDATE experiences SET publication_status='DELETED' WHERE experience_id=?",experience);
+        mvc.perform(get(route).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isOk())
+            .andExpect(jsonPath("$.canHidePublication").value(false)).andExpect(jsonPath("$.canRestorePublication").value(false));
+        mvc.perform(get("/api/admin/studio/experience-media/"+UUID.randomUUID()).with(jwt().jwt(j->j.subject(admin)))).andExpect(status().isNotFound());
+    }
     @Test void reviewing_an_already_visible_experience_closes_the_report_projection() throws Exception {
         jdbc.update("INSERT INTO auth_users(id,provider,provider_user_id,email_verified,last_login_at) VALUES(?,'GOOGLE',?,true,now()) ON CONFLICT DO NOTHING",UUID.fromString(admin),admin);
         UUID author=UUID.randomUUID(),coffee=UUID.randomUUID(),id=UUID.randomUUID(),report=UUID.randomUUID();

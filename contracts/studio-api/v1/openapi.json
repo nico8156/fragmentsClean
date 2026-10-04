@@ -897,6 +897,50 @@
         }
       }
     },
+    "/api/admin/studio/experience-media/{mediaId}": {
+      "get": {
+        "operationId": "readExperienceMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
     "/api/admin/studio/avatar-media/{mediaId}": {
       "get": {
         "operationId": "readAvatarMediaLifecycle",
@@ -1898,6 +1942,71 @@
         }
       }
     },
+      "ExperienceMediaLifecycle": {
+        "type": "object",
+        "required": [
+          "mediaId",
+          "experienceId",
+          "coffeeId",
+          "ownerId",
+          "status",
+          "publicationStatus",
+          "moderationStatus",
+          "canHidePublication",
+          "canRestorePublication"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "experienceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coffeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "DELETION_PENDING",
+              "DELETED"
+            ]
+          },
+          "publicationStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "DELETED"
+            ]
+          },
+          "moderationStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "VISIBLE",
+              "HIDDEN"
+            ]
+          },
+          "canHidePublication": {
+            "type": "boolean"
+          },
+          "canRestorePublication": {
+            "type": "boolean"
+          }
+        }
+      },
       "AvatarMediaLifecycle": {
         "type": "object",
         "required": [

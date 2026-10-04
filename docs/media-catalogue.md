@@ -409,3 +409,32 @@ coverage. The existing Java integration-destination resolution limitation remain
 tests verify the actual producer/outbox/envelope/router/inbox/projection flow and
 version protection after restoration. Milestone 3 remains open for Experience/Coffee,
 replacement capabilities and explicit deferred-purge policy/mechanism.
+
+
+## Experience : capacités média source et modération réutilisée (3c)
+
+GET /api/admin/studio/experience-media/{mediaId} est une lecture authentifiée admin
+de experience_media et experiences, exclusivement dans experienceContext. Controller
+→ query handler → port → JDBC ; aucune clé/URL S3 supplémentaire retournée. Les
+capabilities sont consultatives : ModerateExperienceCommand demeure l'unique
+autorité pour masquer/restaurer une publication avec motif, outbox et audit existant.
+Une association absente ou une publication DELETED ne permet aucune restauration.
+
+Pas de RETIRED sur ExperienceMedia ni de commande parallèle : le fichier conserve
+son association immuable. Masquer une publication ne supprime pas ses preuves.
+Une suppression source DELETION_PENDING reste distincte et n'est pas réversible
+par la restauration de la publication. Catalogue et projections restent des lectures.
+
+Test API ajouté à StudioCommunityIT : source disponible sans projection, droits
+401/403, capacités VISIBLE/HIDDEN/DELETED, absence de clé exposée, identifiant absent.
+La suite existante vérifie modération, restauration, audit et visibilité publique
+après routage des événements, avec rejeu. RED constaté : endpoint absent 404/200.
+Mutation manuelle exécutée : suppression du garde DELETED dans la query, tuée par
+l'assertion canRestorePublication ; source restaurée exactement avant vérification.
+
+La durée future de rétention admin est confirmée à 30 jours, puis purge distincte
+confirmée et auditée. Ce contrat Experience ne livre pas encore cette purge et
+ne modifie pas les suppressions utilisateur ni l'effacement de compte.
+
+Validation finale 3c : 24 tests backend ciblés / 3 classes, zéro échec/erreur ;
+API PostgreSQL, architecture et catalogue. Suite backend entière non exécutée.
