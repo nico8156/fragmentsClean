@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.articleContext.read.adapters.secondary.gateways.st
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 
 import com.nm.fragmentsclean.articleContext.read.ArticleImageUriResolver;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.ArticleImageStorageProperties;
@@ -28,18 +29,15 @@ public class DefaultArticleImageUriResolver implements ArticleImageUriResolver {
 			return storedImageUri;
 		}
 		var trimmed = storedImageUri.trim();
-		if (!trimmed.startsWith(S3_SCHEME + "://")) {
+		if (!trimmed.regionMatches(true, 0, S3_SCHEME + "://", 0, 5)) {
 			return trimmed;
 		}
+		var uri = scopedReference(trimmed);
 		if (s3Presigner == null) {
 			throw new IllegalStateException("S3 article image URI cannot be resolved without an S3 presigner");
 		}
-		var uri = URI.create(trimmed);
 		var bucket = uri.getHost();
 		var key = uri.getPath() == null ? "" : uri.getPath().replaceFirst("^/", "");
-		if (bucket == null || bucket.isBlank() || key.isBlank()) {
-			throw new IllegalArgumentException("Invalid S3 article image URI: " + trimmed);
-		}
 		Duration ttl = properties.getS3PresignTtl() == null ? Duration.ofMinutes(15) : properties.getS3PresignTtl();
 		var request = GetObjectPresignRequest.builder()
 				.signatureDuration(ttl)
@@ -47,4 +45,38 @@ public class DefaultArticleImageUriResolver implements ArticleImageUriResolver {
 				.build();
 		return s3Presigner.presignGetObject(request).url().toString();
 	}
+	private URI scopedReference(String reference) {
+		String bucket = properties.getS3Bucket();
+		if (bucket == null || bucket.isBlank()) {
+			throw new IllegalStateException("Article image storage bucket must be configured before signing");
+		}
+		String configuredPrefix = properties.getS3Prefix();
+		String prefix = (configuredPrefix == null || configuredPrefix.isBlank()
+				? "fragments/staging/articles" : configuredPrefix.trim()).replaceAll("^/+|/+$", "");
+		if (prefix.isEmpty() || hasDotSegment(prefix)) {
+			throw new IllegalStateException("Article image storage prefix must define a bounded scope");
+		}
+		URI uri;
+		try {
+			uri = URI.create(reference);
+		} catch (IllegalArgumentException malformed) {
+			throw new IllegalArgumentException("Invalid article image storage reference");
+		}
+		String path = uri.getPath();
+		String root = "/" + prefix + "/";
+		if (!S3_SCHEME.equals(uri.getScheme()) || !bucket.trim().equals(uri.getHost())
+				|| uri.getUserInfo() != null || uri.getPort() != -1
+				|| uri.getRawQuery() != null || uri.getRawFragment() != null
+				|| path == null || !path.equals(uri.getRawPath())
+				|| !path.startsWith(root) || path.length() <= root.length()
+				|| path.indexOf('\\') >= 0 || hasDotSegment(path)) {
+			throw new IllegalArgumentException("Article image reference is outside configured storage scope");
+		}
+		return uri;
+	}
+
+	private boolean hasDotSegment(String path) {
+		return Arrays.stream(path.split("/", -1)).anyMatch(segment -> segment.equals(".") || segment.equals(".."));
+	}
+
 }

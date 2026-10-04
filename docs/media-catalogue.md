@@ -184,3 +184,28 @@ its test-only cleanup was corrected and the same combined selection passed.
 Studio: 228 tests/44 files, production OAuth/HTTPS build, generated contract,
 distribution checks and three delivery checks pass. Chrome 1440/390 has no horizontal
 overflow. These are local validations, not a full backend suite/load test or deployment.
+
+## Article exploration: preview signing prerequisite (2d.1)
+
+Article images currently live as `ArticleImageRef` references in covers and
+revision images. Image row identifiers are recreated when sections are persisted;
+they cannot identify physical files. Reuse between revisions must remain visible,
+and revision timestamps/editorial authors must not be invented as upload metadata.
+The Studio upload boundary currently returns assets without a durable media registry.
+The article catalogue and upload registration work remain in progress.
+
+Before reusing `DefaultArticleImageUriResolver` for catalogue queries, its signing
+scope has been restricted to the configured article bucket and exact prefix boundary.
+Foreign buckets, other namespaces, prefix lookalikes, URI decorations, ambiguous
+encoded paths and dot segments are refused before signing. Missing bucket or a
+root-only prefix cannot authorize signing. HTTP/local references and configured TTL
+remain supported. Malformed-reference errors omit private paths and parser causes.
+Historical S3 references outside this configured scope must be reconciled rather
+than extending bucket access. No migration, new endpoint or browser SDK is added.
+
+Validation: 28 targeted tests in 7 classes pass, including real SDK signing with
+fake credentials and no AWS requests, PostgreSQL article projections/persistence,
+editorial command handlers, generation, serialization and architecture. Two
+separate scope mutations were killed and restored; the same combined selection
+passed on restored sources. A further RED exposed the private-path parser exception
+and drove its sanitization. No full backend suite/load test/deployment is claimed.
