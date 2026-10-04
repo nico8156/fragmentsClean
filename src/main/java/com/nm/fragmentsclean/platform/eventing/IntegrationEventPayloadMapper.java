@@ -322,7 +322,7 @@ public class IntegrationEventPayloadMapper {
                 new ExperienceIntegrationEvents.Moderated(
                     uuidOrFallback(node, "eventId", event.getEventId()),
                     uuidOrFallback(node, "commandId", event.getEventId()),
-                    uuid(node, "actionId"), uuid(node, "reportId"), uuid(node, "experienceId"),
+                    uuid(node, "actionId"), nullableUuid(node, "reportId"), uuid(node, "experienceId"),
                     uuid(node, "coffeeId"), uuid(node, "authorId"), uuid(node, "operatorId"),
                     text(node, "moderationStatus"), text(node, "reportStatus"), text(node, "reason"),
                     longValue(node, "version"), instantOrFallback(node, "occurredAt", event.getOccurredAt()),

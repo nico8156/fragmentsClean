@@ -29,6 +29,7 @@ public final class ExperienceIntegrationEvents {
             UUID authorId, UUID reporterId, String reason, String details, String status,
             long version, Instant occurredAt, Instant clientAt) { }
 
+    /** v2 permits a null reportId for direct admin moderation; v1 payloads remain readable. */
     public record Moderated(
             UUID eventId, UUID commandId, UUID actionId, UUID reportId, UUID experienceId,
             UUID coffeeId, UUID authorId, UUID operatorId, String moderationStatus,

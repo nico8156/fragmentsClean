@@ -21,6 +21,40 @@ class ExperienceCommandHandlersTest {
     private final ExperienceContentPolicy policy=new ExperienceContentPolicy(Set.of());
     private final Instant clientAt=Instant.parse("2026-09-11T12:00:00Z");
 
+    @Test void moderates_without_a_report_and_restores_with_attributed_audit() {
+        clock.instantOfNow=clientAt;
+        experiences.save(Experience.create(experienceId,user,coffee,"Visite",ExperiencePublicationStatus.PUBLISHED,policy,clientAt));
+        var handler=new ModerateExperienceCommandHandler(experiences,reports,events,clock);
+        UUID operator=UUID.randomUUID(), action=UUID.randomUUID();
+        handler.execute(new ModerateExperienceCommand(UUID.randomUUID(),action,null,experienceId,operator,ExperienceModerationStatus.HIDDEN,"Spam confirmé",clientAt));
+        assertThat(experiences.byId(experienceId).orElseThrow().toSnapshot().moderationStatus()).isEqualTo(ExperienceModerationStatus.HIDDEN);
+        assertThat(events.published).filteredOn(ExperienceModerationDecidedEvent.class::isInstance).singleElement().satisfies(value->{
+            var audit=(ExperienceModerationDecidedEvent)value;
+            assertThat(audit.actionId()).isEqualTo(action);assertThat(audit.operatorId()).isEqualTo(operator);
+            assertThat(audit.reportId()).isNull();assertThat(audit.reason()).isEqualTo("Spam confirmé");assertThat(audit.occurredAt()).isEqualTo(clock.now());
+        });
+        events.published.clear();
+        handler.execute(new ModerateExperienceCommand(UUID.randomUUID(),UUID.randomUUID(),null,experienceId,operator,ExperienceModerationStatus.VISIBLE,"Erreur de classement",clientAt));
+        assertThat(experiences.byId(experienceId).orElseThrow().toSnapshot().moderationStatus()).isEqualTo(ExperienceModerationStatus.VISIBLE);
+        assertThat(events.published).anyMatch(e->e instanceof ExperienceModerationDecidedEvent a && a.moderationStatus()==ExperienceModerationStatus.VISIBLE);
+    }
+    @Test void records_a_direct_decision_even_when_visibility_is_unchanged() {
+        experiences.save(Experience.create(experienceId,user,coffee,"Visite",ExperiencePublicationStatus.PUBLISHED,policy,clientAt));
+        new ModerateExperienceCommandHandler(experiences,reports,events,clock).execute(new ModerateExperienceCommand(UUID.randomUUID(),UUID.randomUUID(),null,experienceId,user,ExperienceModerationStatus.VISIBLE,"Vérifié",clientAt));
+        assertThat(events.published).singleElement().isInstanceOf(ExperienceModerationDecidedEvent.class);
+        assertThat(experiences.byId(experienceId).orElseThrow().toSnapshot().version()).isEqualTo(1);
+    }
+    @Test void refuses_missing_reason_before_changing_content() {
+        experiences.save(Experience.create(experienceId,user,coffee,"Visite",ExperiencePublicationStatus.PUBLISHED,policy,clientAt));
+        var handler=new ModerateExperienceCommandHandler(experiences,reports,events,clock);
+        for(String reason:java.util.Arrays.asList(null,"", "   ")) {
+            assertThatThrownBy(()->handler.execute(new ModerateExperienceCommand(UUID.randomUUID(),UUID.randomUUID(),null,experienceId,user,ExperienceModerationStatus.HIDDEN,reason,clientAt)))
+                .isInstanceOf(BusinessCommandRejectedException.class).hasMessageContaining("reason is required");
+        }
+        assertThat(events.published).isEmpty();
+        assertThat(experiences.byId(experienceId).orElseThrow().toSnapshot().moderationStatus()).isEqualTo(ExperienceModerationStatus.VISIBLE);
+    }
+
     @Test void creates_a_published_experience_without_a_ticket_and_emits_snapshot_and_pass_fact(){
         var handler=new CreateExperienceCommandHandler(experiences,id->id.equals(coffee),policy,events,clock);
         handler.execute(new CreateExperienceCommand(UUID.randomUUID(),experienceId,user,coffee,"Très bon café",ExperiencePublicationStatus.PUBLISHED,clientAt));

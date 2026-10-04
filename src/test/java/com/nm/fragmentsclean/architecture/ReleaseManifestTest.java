@@ -12,6 +12,13 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void studio_community_manifest_renders_the_additive_audit_upgrade() throws Exception {
+        copy();
+        var result=render("a".repeat(40),"studio-community-2026-10.psql");
+        assertThat(result.exit).isZero();
+        assertThat(result.output).contains("studio-community-2026-10", "ALTER COLUMN report_id DROP NOT NULL").doesNotContain("\\ir ");
+    }
+
     @Test void manifest_hash_is_stable_across_source_revisions_but_covers_every_fragment() throws Exception {
         copy();
         var first = render("a".repeat(40));

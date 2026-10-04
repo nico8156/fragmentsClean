@@ -77,6 +77,6 @@ public final class IntegrationEventTypeCatalog {
   }
 
   public static int currentVersion(String stableEventType) {
-    return 1;
+    return "experience.moderated".equals(stableEventType) ? 2 : 1;
   }
 }
