@@ -233,3 +233,49 @@ explicitly deliver stored events through the existing projection handler; this
 is not a claim of live production SQS delivery. FlowAtlas Java maps the Social
 HTTP entry/command/handler (4 nodes/3 edges), as it does Experience; SQL/audit
 persistence coverage is supplied by code and PostgreSQL tests.
+
+## User 360 Social reports and decision history (2026-10-05)
+
+Social now owns author-scoped paginated GETs at
+`/api/admin/comments/reports` (`authorId`, optional `status`, `cursor`, `limit`)
+and `/api/admin/comments/actions` (`authorId`, optional `cursor`, `limit`).
+`ListUserCommentReportsQuery` and `ListUserCommentActionsQuery` pass through
+explicit query handlers into the existing `AdminCommentReadRepository`. These
+queries consume existing Social projections; no new business entity, event,
+projection or write capability is introduced. The API defaults to 30 items and
+accepts 1..100. Both pages use descending timestamp/UUID keysets preserving
+microseconds. Each page executes one owner-local SQL query. Decisions join only
+Social reports and actions; author filtering is mandatory. No cross-BC SQL.
+
+User report DTOs expose report/comment/target references, reason, details, status
+and date; decision DTOs expose action/report/comment references, operator,
+decision, reason and date. Reporter identity and profile data are intentionally
+absent. Existing admin security supplies 401/403. Existing account erasure removes
+these results too. User 360 keeps Social collections separate from Experience
+pages and opens the exact report through the owner detail API already added.
+SSE triggers fresh queries; payloads do not become authoritative snapshots.
+
+The additive `studio-user-social-moderation-2026-10.psql` release adds the report
+author/date/id index and is registered in migration rendering/deployment
+preparation. Previous manifests/checksums remain unchanged. No release is applied
+to production here. Decision-history ordering still sorts the author's matching
+rows; realistic volume and execution-plan verification remain Operations work.
+
+Evidence: the two missing routes first failed API assertions with 404, zero setup
+errors. Final restored verification: 48 targeted tests across 5 classes green
+(6 Social activity API/PostgreSQL, 5 existing comments, 4 exact report detail,
+22 release manifests, 11 BC architecture). Tests cover scope/privacy, status,
+microsecond/tied pagination, admin rights, invalid/empty queries, account erasure
+and additive-index replay. Two independent manual SQL mutations invert report
+and action author predicates; both are killed by behavioral API assertions with
+zero test errors. Sources were exactly restored and the selected suite rerun.
+The complete backend suite was not run. Studio separately verifies fake-first
+queries, stale results, filters, paging, UI states, owner navigation and HTTP
+success/error contracts; generated OpenAPI DTOs remain its transport source.
+
+FlowAtlas maps the new Studio report/history intents, listeners, loaded/failed,
+reducers and SSE retrieval (11 nodes/15 edges each, bounded complete,
+application not assessed). Java query exploration did not produce a graph of
+these read paths; PostgreSQL and architecture tests, plus source inspection,
+provide the backend integration evidence. No claim of full graph validation,
+production SQS delivery or real-browser visual acceptance is made.

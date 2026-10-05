@@ -18,6 +18,7 @@ case "$driver" in
   studio-community-2026-10.psql) expected_files=2 ;;
   studio-user-reports-2026-10.psql) expected_files=2 ;;
   studio-user-comments-2026-10.psql) expected_files=2 ;;
+  studio-user-social-moderation-2026-10.psql) expected_files=2 ;;
   media-catalogue-2026-10.psql) expected_files=2 ;;
   coffee-media-catalogue-2026-10.psql) expected_files=2 ;;
   avatar-media-catalogue-2026-10.psql) expected_files=2 ;;

@@ -257,6 +257,10 @@ CREATE INDEX IF NOT EXISTS idx_social_reports_status_created
 CREATE INDEX IF NOT EXISTS idx_social_reports_comment
     ON social_content_reports_projection (comment_id);
 
+-- Owner-local author lookup for received reports and their decision history.
+CREATE INDEX IF NOT EXISTS ix_social_reports_author_created
+    ON social_content_reports_projection (author_id, created_at DESC, report_id DESC);
+
 CREATE TABLE IF NOT EXISTS social_user_blocks_projection (
     block_id UUID PRIMARY KEY,
     blocker_id UUID NOT NULL,

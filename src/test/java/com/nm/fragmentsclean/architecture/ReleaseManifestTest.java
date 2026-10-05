@@ -12,6 +12,10 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void user_social_moderation_manifest_is_additive()throws Exception{
+        copy();var result=render("a".repeat(40),"studio-user-social-moderation-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("version='outbox-delivery-2026-09'","studio-user-social-moderation-2026-10","ix_social_reports_author_created").doesNotContain("\\ir ");
+    }
     @Test void user_comments_manifest_preserves_prior_releases()throws Exception{
         copy();var result=render("a".repeat(40),"studio-user-comments-2026-10.psql");
         assertThat(result.exit).isZero();assertThat(result.output).contains("version='outbox-delivery-2026-09'","studio-user-comments-2026-10","ix_social_comments_author_created").doesNotContain("\\ir ");

@@ -4,6 +4,130 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/comments/reports": {
+    "get": {
+      "operationId": "listUserCommentReports",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ]
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCommentReports"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/comments/actions": {
+    "get": {
+      "operationId": "listUserCommentActions",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCommentActions"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
   "/api/admin/comments": {
     "get": {
       "operationId": "searchAdminUserComments",
@@ -1506,6 +1630,142 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+  "AdminUserCommentReport": {
+    "type": "object",
+    "required": [
+      "reportId",
+      "commentId",
+      "targetId",
+      "reason",
+      "details",
+      "status",
+      "createdAt"
+    ],
+    "properties": {
+      "reportId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "commentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "targetId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "reason": {
+        "type": "string"
+      },
+      "details": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "OPEN",
+          "RESOLVED",
+          "DISMISSED"
+        ]
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "AdminUserCommentReports": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserCommentReport"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminUserCommentAction": {
+    "type": "object",
+    "required": [
+      "actionId",
+      "reportId",
+      "commentId",
+      "operatorId",
+      "decision",
+      "reason",
+      "occurredAt"
+    ],
+    "properties": {
+      "actionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "reportId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "commentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "operatorId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "decision": {
+        "type": "string",
+        "enum": [
+          "PUBLISHED",
+          "HIDDEN"
+        ]
+      },
+      "reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "occurredAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "AdminUserCommentActions": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserCommentAction"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
   "AdminUserComment": {
     "type": "object",
     "required": [
