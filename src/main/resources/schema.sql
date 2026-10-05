@@ -637,6 +637,13 @@ ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS reason VARCHAR(240);
 
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_target_occurred_at ON admin_audit_log (target_type, target_id, occurred_at DESC);
+-- Owner-local selective audit reads, preserving timestamp/UUID keyset order.
+CREATE INDEX IF NOT EXISTS ix_admin_audit_actor_cursor
+    ON admin_audit_log (actor_user_id, occurred_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS ix_admin_audit_command_cursor
+    ON admin_audit_log (command_id, occurred_at DESC, id DESC)
+    WHERE command_id IS NOT NULL;
+
 
 
 CREATE TABLE IF NOT EXISTS app_users (
