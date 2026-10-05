@@ -38,6 +38,28 @@ class AdminAccessPolicyTest {
 		assertThat(new AdminAccessPolicy(properties, repository).isAllowed(jwtAuthentication(UUID.randomUUID(), "other@example.test"))).isFalse();
 	}
 
+	@Test
+	void exclusive_owner_overrides_legacy_email_and_granted_access() {
+		var properties = new AdminSecurityProperties();
+		var owner = UUID.randomUUID();
+		var other = UUID.randomUUID();
+		properties.setExclusiveOwnerId(owner.toString());
+		properties.setBootstrapEmails("legacy@example.test");
+		properties.setBootstrapUserIds(other.toString());
+		var repository = new FakeRepository();
+		repository.allowedId = other;
+		var policy = new AdminAccessPolicy(properties, repository);
+		assertThat(policy.isAllowed(jwtAuthentication(owner, "owner@example.test"))).isTrue();
+		assertThat(policy.isAllowed(jwtAuthentication(other, "legacy@example.test"))).isFalse();
+		assertThat(policy.isAllowed(null)).isFalse();
+	}
+
+	@Test
+	void invalid_owner_configuration_fails_instead_of_falling_back_to_allowlist() {
+		org.assertj.core.api.Assertions.assertThatThrownBy(() -> new AdminSecurityProperties().setExclusiveOwnerId("not-an-id"))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
 	private static JwtAuthenticationToken jwtAuthentication(UUID userId, String email) {
 		var jwt = Jwt.withTokenValue("test-token")
 				.header("alg", "HS256")

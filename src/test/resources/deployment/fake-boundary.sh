@@ -5,6 +5,15 @@ printf '%s %s\n' "$tool" "$*" >> /tmp/deploy-trace
 case "$tool" in
   aws)
     if [[ "$SCENARIO" == missing_ssm && "$*" == *APPLE_TEAM_ID* ]]; then exit 1; fi
+    if [[ "$*" == *ADMIN_SECURITY_BOOTSTRAP_USER_IDS* ]]; then
+      case "$SCENARIO" in
+        missing_owner) exit 1 ;;
+        invalid_owner) printf 'not-an-id\n' ;;
+        multiple_owners) printf '99999999-9999-4999-8999-999999999999,88888888-8888-4888-8888-888888888888\n' ;;
+        *) printf '99999999-9999-4999-8999-999999999999\n' ;;
+      esac
+      exit 0
+    fi
     printf 'synthetic-value\n'
     ;;
   curl)

@@ -37,6 +37,16 @@ class DeploymentSafetyIT {
     }
     @AfterAll static void stop() { SANDBOX.stop(); }
 
+    @Test void invalid_exclusive_owner_never_changes_live_configuration_or_stops_backend() throws Exception {
+        for (var scenario : List.of("missing_owner", "invalid_owner", "multiple_owners")) {
+            var result = deploy(scenario);
+            assertThat(result.getExitCode()).as(scenario).isNotZero();
+            assertThat(result.getStderr()).contains("requires one valid owner UUID");
+            assertThat(trace()).doesNotContain("docker stop", "docker exec", "systemctl start");
+            assertThat(environment()).isEqualTo("ORIGINAL_ENV=true\n");
+        }
+    }
+
     @Test void missing_ssm_keeps_live_environment_and_backend_untouched() throws Exception {
         var result = deploy("missing_ssm");
         assertThat(result.getExitCode()).isNotZero();
@@ -77,7 +87,8 @@ class DeploymentSafetyIT {
         assertThat(trace.indexOf("systemctl start fragments-postgres-backup.service")).isLessThan(trace.indexOf("docker exec"));
         assertThat(trace.indexOf("docker exec")).isLessThan(trace.indexOf("docker compose up"));
         assertThat(trace).doesNotContain("docker rm", "compose down", "schema.sql");
-        assertThat(environment()).contains("BACKEND_IMAGE=" + IMAGE);
+        assertThat(environment()).contains("BACKEND_IMAGE=" + IMAGE,
+                "ADMIN_SECURITY_EXCLUSIVE_OWNER_ID=99999999-9999-4999-8999-999999999999");
         var sql = SANDBOX.execInContainer("cat", "/tmp/received-migration.psql").getStdout();
         assertThat(sql).contains("release_schema_history", "Migration checksum mismatch", "article-curation-2026-09",
                 "messaging-safety-2026-09", "account-erasure-safety-2026-09",
@@ -102,6 +113,7 @@ class DeploymentSafetyIT {
         Files.writeString(fakeAws, """
                 #!/bin/sh
                 case "$*" in
+                  *ADMIN_SECURITY_BOOTSTRAP_USER_IDS*) printf 99999999-9999-4999-8999-999999999999 ;;
                   *APPLE_PRIVATE_KEY*) printf '%s\\n' '-----BEGIN PRIVATE KEY-----' 'synthetic$payload#only' '-----END PRIVATE KEY-----' ;;
                   *AUTH_JWT_SECRET*) printf "synthetic's\\044literal#value" ;;
                   *) printf synthetic ;;

@@ -19,6 +19,12 @@ runtime_provider_credential_encryption_key=$(aws ssm get-parameter --region "$aw
 # This is deliberately a normal SSM String, not a secret: it identifies the
 # operator account allowed to bootstrap an otherwise empty admin allow-list.
 runtime_admin_bootstrap_user_ids=$(aws ssm get-parameter --region "$aws_region" --name /fragments/staging/ADMIN_SECURITY_BOOTSTRAP_USER_IDS --query Parameter.Value --output text 2>/dev/null || true)
+# Studio is reserved to its single owner. Do not silently fall back to grants
+# if the bootstrap parameter is missing or contains multiple identities.
+if [[ ! "$runtime_admin_bootstrap_user_ids" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$ ]]; then
+  echo "Studio staging requires one valid owner UUID in ADMIN_SECURITY_BOOTSTRAP_USER_IDS." >&2
+  exit 1
+fi
 runtime_aws_account_id=$(aws sts get-caller-identity --query Account --output text)
 
 umask 077
@@ -81,6 +87,7 @@ write_env GOOGLE_STUDIO_CLIENT_ID 255942605258-1nji47405hqf1q2imk35toejorv1opsk.
 write_env GOOGLE_STUDIO_REDIRECT_URI https://studio-staging.anchor-event.fr/
 write_env GOOGLE_STUDIO_CLIENT_SECRET "$runtime_google_studio_secret"
 write_env ADMIN_SECURITY_BOOTSTRAP_USER_IDS "$runtime_admin_bootstrap_user_ids"
+write_env ADMIN_SECURITY_EXCLUSIVE_OWNER_ID "$runtime_admin_bootstrap_user_ids"
 write_env AUTH_JWT_ISSUER https://auth.fragments
 write_env FRAGMENTS_CORS_ALLOWED_ORIGINS https://studio-staging.anchor-event.fr
 write_env APP_MESSAGING_LOCAL_EVENT_BUS_ENABLED false

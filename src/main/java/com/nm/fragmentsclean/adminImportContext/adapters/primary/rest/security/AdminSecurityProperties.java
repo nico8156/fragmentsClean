@@ -8,6 +8,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "admin.security")
 public class AdminSecurityProperties {
+	private java.util.UUID exclusiveOwnerId;
+
+	public void setExclusiveOwnerId(String ownerId) {
+		exclusiveOwnerId = ownerId == null || ownerId.isBlank() ? null : java.util.UUID.fromString(ownerId.trim());
+	}
+	public boolean isExclusiveOwnerMode() { return exclusiveOwnerId != null; }
+	public boolean isExclusiveOwner(String userId) {
+		try { return exclusiveOwnerId != null && exclusiveOwnerId.equals(java.util.UUID.fromString(userId)); }
+		catch (IllegalArgumentException exception) { return false; }
+	}
+
 	private String bootstrapUserIds = "";
 	private String bootstrapEmails = "";
 
