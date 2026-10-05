@@ -82,7 +82,7 @@ public final class ExperienceMedia extends AggregateRoot {
 
   public void registerChanged(UUID commandId, String reason, Instant clientAt, Instant now) {
     registerEvent(new ExperienceMediaChangedEvent(UUID.randomUUID(), commandId, id, experienceId,
-        coffeeId, userId, status, objectKey, contentType, size, width, height, reason, version, now, clientAt));
+        coffeeId, userId, status, objectKey, contentType, size, width, height, reason, version, now, clientAt, createdAt));
   }
 
   public Snapshot snapshot() {

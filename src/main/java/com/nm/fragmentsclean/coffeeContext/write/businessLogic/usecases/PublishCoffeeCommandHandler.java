@@ -9,6 +9,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHa
 import java.time.Instant;
 import java.util.UUID;
 
+@org.springframework.transaction.annotation.Transactional
 public class PublishCoffeeCommandHandler implements CommandHandler<PublishCoffeeCommand> {
     private final CoffeeRepository coffeeRepository;
     private final DomainEventPublisher eventPublisher;

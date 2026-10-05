@@ -31,7 +31,7 @@ public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 	@Override
 	public ImportedCoffeePhoto store(CoffeeId coffeeId, GooglePlaceId googlePlaceId, GooglePlacePhoto photo) {
 		var bucket = requireConfigured(properties.getS3Bucket(), "coffee.photos.storage.s3-bucket");
-		var photoId = UUID.nameUUIDFromBytes((coffeeId.value() + ":" + photo.sourceName()).getBytes(StandardCharsets.UTF_8));
+		var photoId = CoffeePhotoStorage.photoId(coffeeId,photo.sourceName());
 		var key = keyFor(coffeeId, photoId, extensionFor(photo.contentType()));
 		s3Client.putObject(
 				PutObjectRequest.builder()
@@ -42,6 +42,12 @@ public class S3CoffeePhotoStorage implements CoffeePhotoStorage {
 				RequestBody.fromBytes(photo.bytes()));
 		return new ImportedCoffeePhoto(photoId, "s3://" + bucket + "/" + key);
 	}
+
+    @Override public boolean canDeletePhoto(CoffeeId coffee,UUID photo,String reference){return CoffeeManagedPhotoReference.s3Key(properties,coffee,photo,reference).isPresent();}
+    @Override public void deletePhoto(CoffeeId coffee,UUID photo,String reference){
+        String key=CoffeeManagedPhotoReference.s3Key(properties,coffee,photo,reference).orElseThrow(()->new CoffeePhotoStorageException("Unmanaged coffee photo reference"));
+        s3Client.deleteObject(software.amazon.awssdk.services.s3.model.DeleteObjectRequest.builder().bucket(properties.getS3Bucket().trim()).key(key).build());
+    }
 
 	@Override
 	public void deleteForCoffee(CoffeeId coffeeId) {

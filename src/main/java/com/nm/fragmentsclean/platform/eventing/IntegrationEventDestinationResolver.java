@@ -12,7 +12,7 @@ public class IntegrationEventDestinationResolver {
     String eventType = event.getEventType();
 
     if (eventType.endsWith("AppUserDeletionRequestedEvent")) {
-      return List.of(APP_USERS_EVENTS, AUTH_USERS_EVENTS, DOMAIN_EVENTS, TICKET_EVENTS, EXPERIENCES_EVENTS);
+      return List.of(APP_USERS_EVENTS, AUTH_USERS_EVENTS, DOMAIN_EVENTS, TICKET_EVENTS, EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
     }
     if (eventType.endsWith("AccountDataErasedEvent")) {
       return List.of(APP_USERS_EVENTS);
@@ -26,6 +26,12 @@ public class IntegrationEventDestinationResolver {
     }
 
     if ("Coffee".equals(aggregateType)) {
+      if (eventType.endsWith("CoffeeMediaCatalogSnapshotEvent")) return List.of(MEDIA_CATALOG_EVENTS);
+      if (eventType.endsWith("CoffeePhotoAddedEvent") || eventType.endsWith("CoffeePhotoDeletedEvent")
+          || eventType.endsWith("CoffeePhotosImportedEvent") || eventType.endsWith("CoffeePhotosArrangedEvent")) {
+        return List.of(COFFEES_EVENTS, MEDIA_CATALOG_EVENTS);
+      }
+      if (eventType.endsWith("CoffeeDeletedEvent")) return List.of(COFFEES_EVENTS, APP_USERS_EVENTS, EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
       if (eventType.endsWith("CoffeeCreatedEvent")
           || eventType.endsWith("CoffeeArchivedEvent")
           || eventType.endsWith("CoffeeDeletedEvent")) {
@@ -37,12 +43,21 @@ public class IntegrationEventDestinationResolver {
       return List.of(COFFEES_EVENTS);
     }
 
+    if ("ArticleMediaCatalog".equals(aggregateType)) return List.of(MEDIA_CATALOG_EVENTS);
+
+    if ("AvatarMedia".equals(aggregateType)) return List.of(MEDIA_CATALOG_EVENTS);
+
     if ("Experience".equals(aggregateType)) {
       if (eventType.endsWith("ExperienceLifecycleChangedEvent")) return List.of(APP_USERS_EVENTS);
       return List.of(EXPERIENCES_EVENTS);
     }
     if ("ExperienceReport".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
-    if ("ExperienceMedia".equals(aggregateType)) return List.of(EXPERIENCES_EVENTS);
+    if ("ExperienceMedia".equals(aggregateType)) {
+      if (eventType.endsWith("ExperienceMediaChangedEvent")) {
+        return List.of(EXPERIENCES_EVENTS, MEDIA_CATALOG_EVENTS);
+      }
+      return List.of(EXPERIENCES_EVENTS);
+    }
     if ("ExperienceAccountDeletion".equals(aggregateType)) return List.of(APP_USERS_EVENTS);
     if ("UserBlock".equals(aggregateType)) return List.of(DOMAIN_EVENTS, EXPERIENCES_EVENTS);
     if ("AppUser".equals(aggregateType)

@@ -65,6 +65,12 @@ public final class Experience extends AggregateRoot {
         moderationStatus = decision; updatedAt = now; version++; return true;
     }
 
+    public void recordModerationReview(Instant now) {
+        requireNotDeleted();
+        updatedAt = now;
+        version++;
+    }
+
     public void registerChange(UUID commandId, String reason, Instant clientAt, Instant now) {
         registerEvent(new ExperienceSnapshotChangedEvent(UUID.randomUUID(), commandId, id, userId, coffeeId,
                 message, publicationStatus, moderationStatus, reason, version, createdAt, updatedAt,

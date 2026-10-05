@@ -12,6 +12,35 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void admin_audit_search_manifest_is_additive() throws Exception {
+        copy();var result=render("a".repeat(40),"studio-admin-audit-search-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("studio-admin-audit-search-2026-10","ix_admin_audit_actor_cursor","ix_admin_audit_command_cursor").doesNotContain("\\ir ");
+    }
+    @Test void user_social_moderation_manifest_is_additive()throws Exception{
+        copy();var result=render("a".repeat(40),"studio-user-social-moderation-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("version='outbox-delivery-2026-09'","studio-user-social-moderation-2026-10","ix_social_reports_author_created").doesNotContain("\\ir ");
+    }
+    @Test void user_comments_manifest_preserves_prior_releases()throws Exception{
+        copy();var result=render("a".repeat(40),"studio-user-comments-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("version='outbox-delivery-2026-09'","studio-user-comments-2026-10","ix_social_comments_author_created").doesNotContain("\\ir ");
+    }
+    @Test void user_reports_manifest_is_additive_and_requires_community_baseline()throws Exception{
+        copy();var result=render("a".repeat(40),"studio-user-reports-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("version='studio-community-2026-10'","studio-user-reports-2026-10","ix_experience_reports_author_created").doesNotContain("\\ir ");
+    }
+    @Test void coffee_purge_manifest_requires_lifecycle_and_is_additive()throws Exception{
+        copy();var result=render("a".repeat(40),"coffee-media-purge-2026-10.psql");assertThat(result.exit).isZero();assertThat(result.output).contains("version='coffee-media-lifecycle-2026-10'","coffee-media-purge-2026-10","physically_deleted","ix_coffee_media_purge_pending").doesNotContain("\\ir ");
+    }
+    @Test void article_purge_manifest_requires_lifecycle_and_renders_a_separate_additive_upgrade()throws Exception{
+        copy();var first=render("a".repeat(40),"article-media-purge-2026-10.psql");assertThat(first.exit).isZero();assertThat(first.output).contains("version='article-media-lifecycle-2026-10'","article-media-purge-2026-10","DELETION_PENDING","ix_article_media_purge_pending").doesNotContain("\\ir ");
+    }
+    @Test void studio_community_manifest_renders_the_additive_audit_upgrade() throws Exception {
+        copy();
+        var result=render("a".repeat(40),"studio-community-2026-10.psql");
+        assertThat(result.exit).isZero();
+        assertThat(result.output).contains("studio-community-2026-10", "ALTER COLUMN report_id DROP NOT NULL").doesNotContain("\\ir ");
+    }
+
     @Test void manifest_hash_is_stable_across_source_revisions_but_covers_every_fragment() throws Exception {
         copy();
         var first = render("a".repeat(40));
@@ -134,6 +163,39 @@ class ReleaseManifestTest {
         assertThat(changed.output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
     }
 
+    @Test void coffee_media_manifest_renders_after_the_catalogue_baseline() throws Exception {
+        copy();var result=render("a".repeat(40),"coffee-media-catalogue-2026-10.psql");
+        assertThat(result.exit).isZero();
+        assertThat(result.output).contains("media_catalog_coffee_versions","coffee_media_catalog_scan","version='media-catalogue-2026-10'").doesNotContain("\\ir ");
+    }
+    @Test void avatar_media_manifest_preserves_erasure_and_checksums_its_fragment() throws Exception {
+        copy();var first=render("a".repeat(40),"avatar-media-catalogue-2026-10.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("avatar_media_catalog_scan","USER_APPLICATION","version='coffee-media-catalogue-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-avatar-media-catalogue.sql");
+        Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");
+        assertThat(render("a".repeat(40),"avatar-media-catalogue-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+    @Test void article_media_manifest_tracks_uploads_and_hashes_its_additive_fragment() throws Exception {
+        copy();var first=render("a".repeat(40),"article-media-catalogue-2026-10.psql");
+        assertThat(first.exit).isZero();
+        assertThat(first.output).contains("article_media_uploads","media_catalog_article_parts","version='avatar-media-catalogue-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-article-media-catalogue.sql");
+        Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");
+        assertThat(render("a".repeat(40),"article-media-catalogue-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+    @Test void article_media_lifecycle_release_is_additive_and_checksums_its_fragment()throws Exception{
+        copy();var first=render("a".repeat(40),"article-media-lifecycle-2026-10.psql");assertThat(first.exit).isZero();assertThat(first.output).contains("lifecycle_status","version='article-media-catalogue-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-article-media-lifecycle.sql");Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");assertThat(render("a".repeat(40),"article-media-lifecycle-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+    @Test void avatar_media_lifecycle_release_is_additive_and_checksums_its_fragment()throws Exception{
+        copy();var first=render("a".repeat(40),"avatar-media-lifecycle-2026-10.psql");assertThat(first.exit).isZero();assertThat(first.output).contains("RETIRED","version='article-media-lifecycle-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-avatar-media-lifecycle.sql");Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");assertThat(render("a".repeat(40),"avatar-media-lifecycle-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
+    @Test void coffee_media_lifecycle_release_is_additive_and_checksums_its_fragment()throws Exception{
+        copy();var first=render("a".repeat(40),"coffee-media-lifecycle-2026-10.psql");assertThat(first.exit).isZero();assertThat(first.output).contains("coffee_photo_retirements","version='avatar-media-lifecycle-2026-10'").doesNotContain("\\ir ");
+        var fragment=temporary.resolve("2026-10-04-coffee-media-lifecycle.sql");Files.writeString(fragment,Files.readString(fragment)+"\n-- Reviewed change\n");assertThat(render("a".repeat(40),"coffee-media-lifecycle-2026-10.psql").output.lines().findFirst()).isNotEqualTo(first.output.lines().findFirst());
+    }
     private void copy() throws Exception {
         try (var files = Files.list(RELEASE)) {
             for (var file : files.toList()) Files.copy(file, temporary.resolve(file.getFileName()));

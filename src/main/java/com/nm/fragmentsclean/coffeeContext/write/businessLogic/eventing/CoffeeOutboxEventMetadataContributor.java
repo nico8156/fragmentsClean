@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.coffeeContext.write.businessLogic.eventing;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeArchivedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeCreatedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDeletedEvent;
+import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeMediaCatalogSnapshotEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeDetailsEditedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursImportedEvent;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeeOpeningHoursUpdatedEvent;
@@ -24,6 +25,9 @@ import java.util.Optional;
 public class CoffeeOutboxEventMetadataContributor implements OutboxEventMetadataContributor {
 	@Override
 	public Optional<OutboxEventMetadata> resolve(DomainEvent event) {
+		if (event instanceof CoffeeMediaCatalogSnapshotEvent snapshot) {
+			return Optional.of(coffee(snapshot.coffeeId()));
+		}
 		if (event instanceof CoffeeCreatedEvent coffeeEvent) {
 			return Optional.of(coffee(coffeeEvent.coffeeId()));
 		}

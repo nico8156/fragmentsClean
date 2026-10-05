@@ -34,7 +34,7 @@ public final class ExperienceProjectionEventHandler {
 
 	public void handle(ExperienceIntegrationEvents.Moderated event) {
 		projections.apply(event);
-		publishAdmin("experience-moderation", "report", event.reportId(), event.version(), event.occurredAt(), "moderated");
+		publishAdmin("experience-moderation", "experience", event.experienceId(), event.version(), event.occurredAt(), "moderated");
 		publishPublic("experiences", "coffee", event.coffeeId(), event.version(), event.occurredAt(), "moderated");
 		publishUser(event.authorId(), "experiences", "user", event.authorId(), event.version(), event.occurredAt(), "moderated");
 	}

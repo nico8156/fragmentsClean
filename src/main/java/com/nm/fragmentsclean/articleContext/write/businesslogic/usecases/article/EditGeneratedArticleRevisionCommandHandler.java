@@ -28,6 +28,7 @@ import jakarta.transaction.Transactional;
 @Transactional
 public class EditGeneratedArticleRevisionCommandHandler
 		implements CommandHandler<EditGeneratedArticleRevisionCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
 	private final ArticleAuthoringSagaRepository sagas;
 	private final GeneratedArticleRevisionRepository revisions;
 	private final DomainEventPublisher events;
@@ -39,7 +40,8 @@ public class EditGeneratedArticleRevisionCommandHandler
 			GeneratedArticleRevisionRepository revisions,
 			DomainEventPublisher events,
 			DateTimeProvider clock,
-			CommandStatusRecorder statuses) {
+			CommandStatusRecorder statuses, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
 		this.sagas = sagas;
 		this.revisions = revisions;
 		this.events = events;
@@ -96,6 +98,7 @@ public class EditGeneratedArticleRevisionCommandHandler
 				command.revisionId(),
 				now,
 				command.clientAt()));
+		mediaCatalog.publish(command.articleId());
 		statuses.markApplied(
 				command.commandId(),
 				"Article",

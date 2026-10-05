@@ -4,6 +4,958 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/operations/audit": {
+  "get": {
+    "operationId": "searchStudioAdminAudit",
+    "description": "Searches the admin boundary audit only. Domain-owned moderation/media journals are not merged into this feed. Outcomes describe the recorded fact, not projection freshness.",
+    "parameters": [
+      {
+        "name": "targetType",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      {
+        "name": "targetId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "actorId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "commandId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "action",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      {
+        "name": "outcome",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 32
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Audit page, most recent first (timestamp and ID)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StudioAdminAuditPage"
+            }
+          }
+        }
+      },
+      "400": {
+        "description": "Invalid search or cursor"
+      },
+      "401": {
+        "description": "Unauthenticated"
+      },
+      "403": {
+        "description": "Admin access denied"
+      }
+    }
+  }
+},
+  "/api/admin/access/me": {
+  "get": {
+    "operationId": "getStudioAdminSession",
+    "description": "Authorization probe. The existing admin security chain rejects non-admin identities; exclusive-owner mode rejects legacy grants.",
+    "responses": {
+      "200": {
+        "description": "Authorized Studio operator",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "userId",
+                "exclusiveOwner"
+              ],
+              "properties": {
+                "userId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "exclusiveOwner": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Unauthenticated"
+      },
+      "403": {
+        "description": "Studio access denied"
+      }
+    }
+  }
+},
+  "/api/admin/comments/reports": {
+    "get": {
+      "operationId": "listUserCommentReports",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "schema": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ]
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCommentReports"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/comments/actions": {
+    "get": {
+      "operationId": "listUserCommentActions",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserCommentActions"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/comments": {
+    "get": {
+      "operationId": "searchAdminUserComments",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "moderation",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "PUBLISHED",
+              "PENDING",
+              "REJECTED",
+              "HIDDEN",
+              "SOFT_DELETED"
+            ]
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserComments"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences/reports": {
+    "get": {
+      "operationId": "listUserExperienceReports",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "status",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "RESOLVED",
+              "DISMISSED"
+            ]
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserExperienceReports"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences/actions": {
+    "get": {
+      "operationId": "listUserExperienceActions",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserExperienceActions"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+    "/api/admin/studio/coffee-media/{mediaId}/replacement": {
+  "post": {
+    "operationId": "replaceCoffeeMedia",
+    "parameters": [
+      {
+        "name": "mediaId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "multipart/form-data": {
+          "schema": {
+            "type": "object",
+            "required": [
+              "commandId",
+              "coffeeId",
+              "reason",
+              "photo"
+            ],
+            "properties": {
+              "commandId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "coffeeId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "photo": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "202": {
+        "description": "Command accepted; query canonical command status"
+      },
+      "401": {
+        "description": "Authentication required"
+      },
+      "403": {
+        "description": "Admin access required"
+      },
+      "422": {
+        "description": "Source command rejected"
+      }
+    }
+  }
+},
+  "/api/admin/studio/articles/{articleId}/media": {
+    "get": {
+      "operationId": "listAdminArticleMedia",
+      "summary": "Editorial image usages across article revisions; admin only",
+      "parameters": [
+        {
+          "name": "articleId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 30
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Paginated usages; dimensions are editorial declarations, not upload metadata",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleMediaUsagePage"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Invalid query"
+        },
+        "401": {
+          "description": "Unauthenticated"
+        },
+        "403": {
+          "description": "Admin permission required"
+        },
+        "404": {
+          "description": "Article does not exist"
+        }
+      }
+    }
+  },
+
+  "/api/admin/users": {
+    "get": {
+      "operationId": "searchAdminUsers",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserPage"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/users/{id}": {
+    "get": {
+      "operationId": "getAdminUser",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUser"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences": {
+    "get": {
+      "operationId": "searchAdminExperiences",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "q",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "authorId",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "moderation",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "publication",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminExperiencePage"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences/{id}": {
+    "get": {
+      "operationId": "getAdminExperience",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminExperienceDetail"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences/{id}/actions": {
+    "get": {
+      "operationId": "listAdminExperienceActions",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminExperienceActions"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experience-media/{id}": {
+    "get": {
+      "operationId": "getAdminExperienceMedia",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminExperienceMedia"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "404": {
+          "description": "Resource not found"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
+  "/api/admin/experiences/{id}/moderation": {
+    "post": {
+      "operationId": "moderateAdminExperience",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ModerateExperience"
+            }
+          }
+        }
+      },
+      "responses": {
+        "202": {
+          "description": "Command accepted; query canonical command status"
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "422": {
+          "description": "Business rejection"
+        }
+      }
+    }
+  }
+,
     "/api/admin/coffees": {
       "get": { "operationId": "listAdminCoffees", "responses": { "200": { "description": "Authoritative admin coffee projection", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/AdminCoffee" } } } } } } }
     },
@@ -49,8 +1001,10 @@
     "/api/admin/coffees/{coffeeId}/photos/{photoId}": {
       "delete": {
         "operationId": "deleteCoffeePhoto",
+        "deprecated": true,
+        "description": "Obsolete: use the audited coffee media lifecycle command with a reason.",
         "parameters": [{ "$ref": "#/components/parameters/CoffeeId" }, { "name": "photoId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
-        "responses": { "202": { "$ref": "#/components/responses/CommandAccepted" } }
+        "responses": { "410": { "description": "Use the audited media lifecycle command" }, "401": { "description": "Authentication required" }, "403": { "description": "Admin access required" } }
       }
     },
     "/api/admin/coffees/{coffeeId}/photos/order": {
@@ -86,6 +1040,7 @@
         "responses": { "200": { "description": "Moderation queue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ModerationReport" } } } } } }
       }
     },
+    "/api/admin/moderation/reports/{reportId}": {"get": {"operationId": "getModerationReport", "parameters": [{"name": "reportId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "Owner moderation report and audit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ModerationReport"}}}}, "400": {"description": "Invalid report id"}, "401": {"description": "Authentication required"}, "403": {"description": "Admin role required"}, "404": {"description": "Report not found in this bounded context"}}}},
     "/api/admin/moderation/reports/{reportId}/decision": {
       "post": {
         "operationId": "moderateReportedComment",
@@ -104,6 +1059,7 @@
         "responses": { "200": { "description": "Experience moderation queue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceModerationReport" } } } } } }
       }
     },
+    "/api/admin/experience-moderation/reports/{reportId}": {"get": {"operationId": "getExperienceModerationReport", "parameters": [{"name": "reportId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "Owner moderation report and audit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ExperienceModerationReport"}}}}, "400": {"description": "Invalid report id"}, "401": {"description": "Authentication required"}, "403": {"description": "Admin role required"}, "404": {"description": "Report not found in this bounded context"}}}},
     "/api/admin/experience-moderation/reports/{reportId}/decision": {
       "post": {
         "operationId": "moderateReportedExperience",
@@ -121,6 +1077,685 @@
         "parameters": [{ "name": "commandId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }],
         "responses": { "200": { "description": "Canonical command outcome", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandStatus" } } } } }
       }
+    },
+    "/api/admin/media": {
+      "get": {
+        "operationId": "searchAdminMedia",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ownerId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "usage",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USED",
+                "UNUSED",
+                "UNKNOWN"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/media/{id}": {
+      "get": {
+        "operationId": "getAdminMedia",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/media/{id}/usages": {
+      "get": {
+        "operationId": "listMediaCatalogArticleUsages",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaCatalogArticleUsagePage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/article-media/{mediaId}": {
+      "get": {
+        "operationId": "readArticleMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArticleMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/article-media/{mediaId}/lifecycle": {
+      "post": {
+        "operationId": "changeArticleMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleMediaLifecycleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; canonical command status remains authoritative"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "409": {
+            "description": "Command rejected"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/article-media/{mediaId}/operations": {
+      "get": {
+        "operationId": "listArticleMediaOperations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ArticleMediaOperation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/coffee-media/{mediaId}": {
+      "get": {
+        "operationId": "readCoffeeMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoffeeMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/coffee-media/{mediaId}/lifecycle": {
+      "post": {
+        "operationId": "changeCoffeeMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoffeeMediaLifecycleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; canonical command status remains authoritative"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "409": {
+            "description": "Command rejected"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/coffee-media/{mediaId}/operations": {
+      "get": {
+        "operationId": "readCoffeeMediaOperations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminMediaOperation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/experience-media/{mediaId}": {
+      "get": {
+        "operationId": "readExperienceMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/avatar-media/{mediaId}": {
+      "get": {
+        "operationId": "readAvatarMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarMediaLifecycle"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/avatar-media/{mediaId}/lifecycle": {
+      "post": {
+        "operationId": "changeAvatarMediaLifecycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvatarMediaLifecycleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted; canonical command status remains authoritative"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin required"
+          },
+          "409": {
+            "description": "Command rejected"
+          }
+        }
+      }
+    },
+    "/api/admin/studio/avatar-media/{mediaId}/operations": {
+      "get": {
+        "operationId": "listAvatarMediaOperations",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "mediaId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AvatarMediaOperation"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Admin access required"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "400": {
+            "description": "Invalid query"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -128,6 +1763,817 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+"StudioAdminAuditEntry": {
+  "type": "object",
+  "required": [
+    "id",
+    "actorUserId",
+    "targetId",
+    "commandId",
+    "action",
+    "targetType",
+    "outcome",
+    "reason",
+    "occurredAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actorUserId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "targetId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "commandId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "action": {
+      "type": "string"
+    },
+    "targetType": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 240
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+},
+"StudioAdminAuditPage": {
+  "type": "object",
+  "required": [
+    "items",
+    "nextCursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StudioAdminAuditEntry"
+      }
+    },
+    "nextCursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 512
+    }
+  },
+  "additionalProperties": false
+},
+  "AdminUserCommentReport": {
+    "type": "object",
+    "required": [
+      "reportId",
+      "commentId",
+      "targetId",
+      "reason",
+      "details",
+      "status",
+      "createdAt"
+    ],
+    "properties": {
+      "reportId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "commentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "targetId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "reason": {
+        "type": "string"
+      },
+      "details": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "OPEN",
+          "RESOLVED",
+          "DISMISSED"
+        ]
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "AdminUserCommentReports": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserCommentReport"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminUserCommentAction": {
+    "type": "object",
+    "required": [
+      "actionId",
+      "reportId",
+      "commentId",
+      "operatorId",
+      "decision",
+      "reason",
+      "occurredAt"
+    ],
+    "properties": {
+      "actionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "reportId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "commentId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "operatorId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "decision": {
+        "type": "string",
+        "enum": [
+          "PUBLISHED",
+          "HIDDEN"
+        ]
+      },
+      "reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "occurredAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "AdminUserCommentActions": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserCommentAction"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminUserComment": {
+    "type": "object",
+    "required": [
+      "id",
+      "targetId",
+      "authorId",
+      "parentId",
+      "body",
+      "createdAt",
+      "editedAt",
+      "deletedAt",
+      "moderation"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "targetId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "authorId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "parentId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid"
+      },
+      "body": {
+        "type": "string"
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "editedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "deletedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "moderation": {
+        "type": "string",
+        "enum": [
+          "PUBLISHED",
+          "PENDING",
+          "REJECTED",
+          "HIDDEN",
+          "SOFT_DELETED"
+        ]
+      }
+    }
+  },
+  "AdminUserComments": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserComment"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminUserExperienceReport": {
+    "type": "object",
+    "required": [
+      "reportId",
+      "experienceId",
+      "reason",
+      "details",
+      "status",
+      "createdAt"
+    ],
+    "properties": {
+      "reportId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "experienceId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "reason": {
+        "type": "string"
+      },
+      "details": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "OPEN",
+          "RESOLVED",
+          "DISMISSED"
+        ]
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      }
+    }
+  },
+  "AdminUserExperienceReports": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserExperienceReport"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminUserExperienceAction": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "actionId",
+      "operatorId",
+      "decision",
+      "occurredAt",
+      "experienceId"
+    ],
+    "properties": {
+      "actionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "operatorId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "decision": {
+        "type": "string",
+        "enum": [
+          "HIDDEN",
+          "VISIBLE"
+        ]
+      },
+      "reason": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "occurredAt": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "experienceId": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "AdminUserExperienceActions": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserExperienceAction"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "ArticleMediaUsagePage": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ArticleMediaUsage"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "ArticleMediaUsage": {
+    "type": "object",
+    "required": [
+      "mediaId",
+      "articleId",
+      "revisionId",
+      "revisionNumber",
+      "width",
+      "height",
+      "title",
+      "revisionStatus",
+      "role",
+      "sectionPosition",
+      "imagePosition",
+      "alt",
+      "working",
+      "published",
+      "previewUrl"
+    ],
+    "properties": {
+      "mediaId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "articleId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "revisionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "revisionNumber": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "width": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "title": {
+        "type": "string"
+      },
+      "revisionStatus": {
+        "type": "string",
+        "enum": [
+          "DRAFT",
+          "IN_REVIEW",
+          "PUBLISHED",
+          "ARCHIVED"
+        ]
+      },
+      "role": {
+        "type": "string",
+        "enum": [
+          "COVER",
+          "SECTION"
+        ]
+      },
+      "sectionPosition": {
+        "type": [
+          "integer",
+          "null"
+        ],
+        "minimum": 0
+      },
+      "imagePosition": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "alt": {
+        "type": "string"
+      },
+      "working": {
+        "type": "boolean"
+      },
+      "published": {
+        "type": "boolean"
+      },
+      "previewUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+
+  "AdminUser": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "userId",
+      "displayName",
+      "avatarUrl",
+      "status",
+      "createdAt",
+      "updatedAt"
+    ],
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "displayName": {
+        "type": "string"
+      },
+      "avatarUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "type": "string"
+      },
+      "createdAt": {
+        "type": "string"
+      },
+      "updatedAt": {
+        "type": "string"
+      }
+    }
+  },
+  "AdminUserPage": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUser"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminExperience": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "experienceId",
+      "coffeeId",
+      "authorId",
+      "authorName",
+      "avatarUrl",
+      "message",
+      "publicationStatus",
+      "moderationStatus",
+      "createdAt",
+      "updatedAt",
+      "version",
+      "media"
+    ],
+    "properties": {
+      "experienceId": {
+        "type": "string"
+      },
+      "coffeeId": {
+        "type": "string"
+      },
+      "authorId": {
+        "type": "string"
+      },
+      "authorName": {
+        "type": "string"
+      },
+      "avatarUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "message": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "publicationStatus": {
+        "type": "string"
+      },
+      "moderationStatus": {
+        "type": "string"
+      },
+      "createdAt": {
+        "type": "string"
+      },
+      "updatedAt": {
+        "type": "string"
+      },
+      "version": {
+        "type": "integer"
+      },
+      "media": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExperienceMedia"
+        }
+      }
+    }
+  },
+  "AdminExperiencePage": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "items",
+      "nextCursor",
+      "serverTime"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminExperience"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "serverTime": {
+        "type": "string"
+      }
+    }
+  },
+  "AdminExperienceMedia": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "mediaId",
+      "experienceId",
+      "ownerId",
+      "status",
+      "url",
+      "contentType",
+      "updatedAt",
+      "size",
+      "width",
+      "height"
+    ],
+    "properties": {
+      "mediaId": {
+        "type": "string"
+      },
+      "experienceId": {
+        "type": "string"
+      },
+      "ownerId": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "status": {
+        "type": "string"
+      },
+      "url": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "contentType": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "updatedAt": {
+        "type": "string"
+      },
+      "size": {
+        "type": "integer"
+      },
+      "width": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "height": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminExperienceDetail": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "experience",
+      "media",
+      "actions",
+      "nextActionsCursor"
+    ],
+    "properties": {
+      "experience": {
+        "$ref": "#/components/schemas/AdminExperience"
+      },
+      "media": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminExperienceMedia"
+        }
+      },
+      "actions": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExperienceModerationAction"
+        }
+      },
+      "nextActionsCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
+  "AdminExperienceActions": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ExperienceModerationAction"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  }
+,
       "CommandAccepted": {
         "type": "object", "additionalProperties": false, "required": ["commandId", "status"],
         "properties": { "commandId": { "type": "string", "format": "uuid" }, "status": { "type": "string", "const": "PENDING" } }
@@ -141,6 +2587,11 @@
         "required": ["actionId", "operatorId", "decision", "occurredAt"],
         "properties": { "actionId": { "type": "string", "format": "uuid" }, "operatorId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } }
       },
+      "ExperienceModerationAction": {
+        "type": "object", "additionalProperties": false,
+        "required": ["actionId", "operatorId", "decision", "occurredAt"],
+        "properties": { "actionId": { "type": "string", "format": "uuid" }, "operatorId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "VISIBLE"] }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } }
+      },
       "ModerationReport": {
         "type": "object", "additionalProperties": false,
         "required": ["reportId", "commentId", "targetId", "authorId", "reporterId", "reason", "status", "reportCount", "createdAt", "actions"],
@@ -148,8 +2599,8 @@
       },
       "ModerateComment": {
         "type": "object", "additionalProperties": false,
-        "required": ["commandId", "actionId", "commentId", "decision", "at"],
-        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "commentId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
+        "required": ["commandId", "actionId", "commentId", "decision", "reason", "at"],
+        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "commentId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
       },
       "ExperienceMedia": {
         "type": "object", "additionalProperties": false,
@@ -159,12 +2610,12 @@
       "ExperienceModerationReport": {
         "type": "object", "additionalProperties": false,
         "required": ["reportId", "experienceId", "coffeeId", "authorId", "reporterId", "reason", "status", "reportCount", "createdAt", "media", "actions"],
-        "properties": { "reportId": { "type": "string", "format": "uuid" }, "experienceId": { "type": "string", "format": "uuid" }, "coffeeId": { "type": "string", "format": "uuid" }, "authorId": { "type": "string", "format": "uuid" }, "authorName": { "type": ["string", "null"] }, "reporterId": { "type": "string", "format": "uuid" }, "reason": { "type": "string" }, "details": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] }, "content": { "type": ["string", "null"] }, "reportCount": { "type": "integer", "format": "int64" }, "createdAt": { "type": "string", "format": "date-time" }, "media": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceMedia" } }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ModerationAction" } } }
+        "properties": { "reportId": { "type": "string", "format": "uuid" }, "experienceId": { "type": "string", "format": "uuid" }, "coffeeId": { "type": "string", "format": "uuid" }, "authorId": { "type": "string", "format": "uuid" }, "authorName": { "type": ["string", "null"] }, "reporterId": { "type": "string", "format": "uuid" }, "reason": { "type": "string" }, "details": { "type": ["string", "null"] }, "status": { "type": "string", "enum": ["OPEN", "RESOLVED", "DISMISSED"] }, "content": { "type": ["string", "null"] }, "reportCount": { "type": "integer", "format": "int64" }, "createdAt": { "type": "string", "format": "date-time" }, "media": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceMedia" } }, "actions": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceModerationAction" } } }
       },
       "ModerateExperience": {
         "type": "object", "additionalProperties": false,
-        "required": ["commandId", "actionId", "decision", "at"],
-        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
+        "required": ["commandId", "actionId", "decision", "reason", "at"],
+        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "VISIBLE"] }, "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
       },
       "TopicCandidate": {
         "type": "object", "additionalProperties": false, "required": ["id", "subject", "suggestedAngle", "signalIds", "status"],
@@ -230,7 +2681,726 @@
       "Address": { "type": "object", "additionalProperties": false, "properties": { "line1": { "type": ["string", "null"] }, "city": { "type": ["string", "null"] }, "postalCode": { "type": ["string", "null"] }, "country": { "type": ["string", "null"] } } },
       "CoffeePhoto": { "type": "object", "additionalProperties": false, "required": ["id", "photoUri", "cover", "sortOrder"], "properties": { "id": { "type": "string", "format": "uuid" }, "photoUri": { "type": "string", "format": "uri" }, "cover": { "type": "boolean" }, "sortOrder": { "type": "integer", "minimum": 0 } } },
       "CoffeeOpeningHours": { "type": "object", "additionalProperties": false, "required": ["id", "weekdayDescription"], "properties": { "id": { "type": "string", "format": "uuid" }, "weekdayDescription": { "type": "string" } } }
-      ,"CoffeeOperation": { "type": "object", "additionalProperties": false, "required": ["id", "actorUserId", "action", "outcome", "occurredAt"], "properties": { "id": { "type": "string", "format": "uuid" }, "actorUserId": { "type": "string", "format": "uuid" }, "action": { "type": "string" }, "commandId": { "type": ["string", "null"], "format": "uuid" }, "outcome": { "type": "string" }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } } }
+      ,"CoffeeOperation": { "type": "object", "additionalProperties": false, "required": ["id", "actorUserId", "action", "outcome", "occurredAt"], "properties": { "id": { "type": "string", "format": "uuid" }, "actorUserId": { "type": "string", "format": "uuid" }, "action": { "type": "string" }, "commandId": { "type": ["string", "null"], "format": "uuid" }, "outcome": { "type": "string" }, "reason": { "type": ["string", "null"] }, "occurredAt": { "type": "string", "format": "date-time" } } },
+      "MediaCatalogItem": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "mediaId",
+          "updatedAt",
+          "origin",
+          "status",
+          "resourceId",
+          "ownerId",
+          "previewUrl",
+          "contentType",
+          "createdAt",
+          "size",
+          "width",
+          "height"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mediaId": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "EXPERIENCE",
+              "COFFEE",
+              "AVATAR",
+              "ARTICLE"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "DELETION_PENDING",
+              "DELETED"
+            ]
+          },
+          "resourceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ownerId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "previewUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "contentType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "width": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "height": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "originalName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "uploadedBy": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "purpose": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "usageStatus": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "articleUsages": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MediaCatalogArticleUsagePage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MediaCatalogPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "nextCursor",
+          "coverage"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MediaCatalogItem"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "coverage": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+    "MediaCatalogArticleUsage": {
+      "type": "object",
+      "required": [
+        "articleId",
+        "revisionId",
+        "revisionNumber",
+        "title",
+        "revisionStatus",
+        "role",
+        "sectionPosition",
+        "imagePosition",
+        "width",
+        "height",
+        "working",
+        "published"
+      ],
+      "properties": {
+        "articleId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "revisionStatus": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "revisionNumber": {
+          "type": "integer"
+        },
+        "sectionPosition": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "imagePosition": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "width": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "height": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "working": {
+          "type": "boolean"
+        },
+        "published": {
+          "type": "boolean"
+        }
+      }
+    },
+    "MediaCatalogArticleUsagePage": {
+      "type": "object",
+      "required": [
+        "items",
+        "nextCursor"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/MediaCatalogArticleUsage"
+          }
+        },
+        "nextCursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "ArticleMediaLifecycle": {
+      "type": "object",
+      "required": [
+        "mediaId",
+        "articleId",
+        "status",
+        "usages",
+        "canRetire",
+        "canRestore",
+        "retention",
+        "canPurge",
+        "retiredAt",
+        "purgeEligibleAt"
+      ],
+      "properties": {
+        "mediaId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "articleId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "RETIRED",
+            "DELETION_PENDING",
+            "DELETED"
+          ]
+        },
+        "usages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "canRetire": {
+          "type": "boolean"
+        },
+        "canRestore": {
+          "type": "boolean"
+        },
+        "retention": {
+          "type": "string",
+          "enum": [
+            "INDEFINITE_NO_AUTOMATIC_PURGE"
+          ]
+        },
+        "canPurge": {
+          "type": "boolean"
+        },
+        "retiredAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        },
+        "purgeEligibleAt": {
+          "type": "string",
+          "format": "date-time",
+          "nullable": true
+        }
+      }
+    },
+    "ArticleMediaLifecycleRequest": {
+      "type": "object",
+      "required": [
+        "commandId",
+        "status",
+        "reason"
+      ],
+      "properties": {
+        "commandId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "RETIRED",
+            "PURGE_REQUESTED"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      }
+    },
+    "ArticleMediaOperation": {
+      "type": "object",
+      "required": [
+        "id",
+        "actorUserId",
+        "action",
+        "commandId",
+        "outcome",
+        "reason",
+        "occurredAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "actorUserId": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string"
+        },
+        "commandId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+      "CoffeeMediaLifecycle": {
+  "type": "object",
+  "required": [
+    "mediaId",
+    "coffeeId",
+    "status",
+    "coffeeStatus",
+    "retiredAt",
+    "purgeEligibleAt",
+    "canRetire",
+    "canRestore",
+    "canPurge",
+    "purgeRequestedAt",
+    "purgedAt",
+    "canReplace"
+  ],
+  "properties": {
+    "mediaId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "coffeeId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "AVAILABLE",
+        "RETIRED",
+        "DELETION_PENDING",
+        "DELETED"
+      ]
+    },
+    "coffeeStatus": {
+      "type": "string",
+      "enum": [
+        "DRAFT",
+        "PUBLISHED",
+        "ARCHIVED"
+      ]
+    },
+    "retiredAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "purgeEligibleAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "canRetire": {
+      "type": "boolean"
+    },
+    "canRestore": {
+      "type": "boolean"
+    },
+    "canPurge": {
+      "type": "boolean"
+    },
+    "purgeRequestedAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "purgedAt": {
+      "type": "string",
+      "format": "date-time",
+      "nullable": true
+    },
+    "canReplace": {
+      "type": "boolean"
+    }
+  }
+},
+    "CoffeeMediaLifecycleRequest": {
+        "type": "object",
+        "required": [
+          "commandId",
+          "coffeeId",
+          "status",
+          "reason"
+        ],
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coffeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RETIRED",
+              "PURGE_REQUESTED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      },
+      "AdminMediaOperation": {
+        "type": "object",
+        "required": [
+          "id",
+          "actorUserId",
+          "action",
+          "commandId",
+          "outcome",
+          "reason",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "commandId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExperienceMediaLifecycle": {
+        "type": "object",
+        "required": [
+          "mediaId",
+          "experienceId",
+          "coffeeId",
+          "ownerId",
+          "status",
+          "publicationStatus",
+          "moderationStatus",
+          "canHidePublication",
+          "canRestorePublication"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "experienceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coffeeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "DELETION_PENDING",
+              "DELETED"
+            ]
+          },
+          "publicationStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "DELETED"
+            ]
+          },
+          "moderationStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "VISIBLE",
+              "HIDDEN"
+            ]
+          },
+          "canHidePublication": {
+            "type": "boolean"
+          },
+          "canRestorePublication": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AvatarMediaLifecycle": {
+        "type": "object",
+        "required": [
+          "mediaId",
+          "ownerId",
+          "status",
+          "usages",
+          "canRetire",
+          "canRestore",
+          "retention",
+          "canPurge",
+          "retiredAt",
+          "purgeEligibleAt"
+        ],
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "AVAILABLE",
+              "RETIRED",
+              "DELETION_PENDING",
+              "DELETED"
+            ]
+          },
+          "usages": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "canRetire": {
+            "type": "boolean"
+          },
+          "canRestore": {
+            "type": "boolean"
+          },
+          "canPurge": { "type": "boolean" },
+          "retiredAt": { "type": "string", "format": "date-time", "nullable": true },
+          "purgeEligibleAt": { "type": "string", "format": "date-time", "nullable": true },
+          "retention": {
+            "type": "string",
+            "enum": [
+              "INDEFINITE_NO_AUTOMATIC_PURGE",
+              "EXISTING_SOURCE_LIFECYCLE"
+            ]
+          },
+          "ownerId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          }
+        }
+      },
+      "AvatarMediaLifecycleRequest": {
+        "type": "object",
+        "required": [
+          "commandId",
+          "status",
+          "reason"
+        ],
+        "properties": {
+          "commandId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "RETIRED",
+              "PURGE_REQUESTED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      },
+      "AvatarMediaOperation": {
+        "type": "object",
+        "required": [
+          "id",
+          "actorUserId",
+          "action",
+          "commandId",
+          "outcome",
+          "reason",
+          "occurredAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string"
+          },
+          "commandId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   }
 }

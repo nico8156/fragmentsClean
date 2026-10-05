@@ -13,6 +13,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DateTimeProvider;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.DomainEventPublisher;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.models.command.CommandHandler;
 
+@org.springframework.transaction.annotation.Transactional
 public class ArchiveCoffeeCommandHandler implements CommandHandler<ArchiveCoffeeCommand> {
 
 	private static final Logger log = LoggerFactory.getLogger(ArchiveCoffeeCommandHandler.class);

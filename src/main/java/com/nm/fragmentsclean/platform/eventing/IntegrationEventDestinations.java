@@ -2,6 +2,7 @@ package com.nm.fragmentsclean.platform.eventing;
 
 public final class IntegrationEventDestinations {
 
+    public static final String MEDIA_CATALOG_EVENTS = "media-catalog-events";
     public static final String ARTICLES_EVENTS = "articles-events";
     public static final String AUTH_USERS_EVENTS = "auth-users-events";
     public static final String APP_USERS_EVENTS = "app-users-events";

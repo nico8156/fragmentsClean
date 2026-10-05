@@ -10,5 +10,7 @@ public interface ExperienceReadRepository {
 
   ExperiencePage listForUser(UUID userId, String cursor, int limit);
 
+  java.util.Optional<ExperienceModerationReportView> findModerationReport(UUID reportId);
+
   List<ExperienceModerationReportView> listModerationReports(String status, int limit);
 }

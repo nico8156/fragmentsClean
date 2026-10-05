@@ -26,7 +26,7 @@ public class LocalCoffeePhotoStorage implements CoffeePhotoStorage {
 
 	@Override
 	public ImportedCoffeePhoto store(CoffeeId coffeeId, GooglePlaceId googlePlaceId, GooglePlacePhoto photo) {
-		var photoId = UUID.nameUUIDFromBytes((coffeeId.value() + ":" + photo.sourceName()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+		var photoId = CoffeePhotoStorage.photoId(coffeeId,photo.sourceName());
 		var fileName = photoId + extensionFor(photo.contentType());
 		var target = properties.getDirectory().resolve(fileName).normalize();
 		if (!target.startsWith(properties.getDirectory().normalize())) {
@@ -42,6 +42,17 @@ public class LocalCoffeePhotoStorage implements CoffeePhotoStorage {
 
 		return new ImportedCoffeePhoto(photoId, publicUri(fileName));
 	}
+
+    @Override public java.util.List<String> referencesForPhoto(CoffeeId coffee,UUID photo,String reference){
+        String file=CoffeeManagedPhotoReference.localFile(properties,coffee,photo,reference).orElseThrow(()->new CoffeePhotoStorageException("Unmanaged coffee photo reference"));
+        String relative=PUBLIC_PATH+file;String base=properties.getPublicBaseUrl();return base==null||base.isBlank()?java.util.List.of(relative):java.util.stream.Stream.of(relative,trimTrailingSlash(base)+relative).distinct().toList();
+    }
+    @Override public boolean canDeletePhoto(CoffeeId coffee,UUID photo,String reference){return CoffeeManagedPhotoReference.localFile(properties,coffee,photo,reference).isPresent();}
+    @Override public void deletePhoto(CoffeeId coffee,UUID photo,String reference){
+        String file=CoffeeManagedPhotoReference.localFile(properties,coffee,photo,reference).orElseThrow(()->new CoffeePhotoStorageException("Unmanaged coffee photo reference"));
+        var root=properties.getDirectory().toAbsolutePath().normalize();var target=root.resolve(file).normalize();if(!target.getParent().equals(root))throw new CoffeePhotoStorageException("Invalid coffee photo storage path");
+        try{Files.deleteIfExists(target);}catch(IOException failure){throw new CoffeePhotoStorageException("Failed to delete coffee photo",failure);}
+    }
 
 	private String publicUri(String fileName) {
 		var baseUrl = properties.getPublicBaseUrl();

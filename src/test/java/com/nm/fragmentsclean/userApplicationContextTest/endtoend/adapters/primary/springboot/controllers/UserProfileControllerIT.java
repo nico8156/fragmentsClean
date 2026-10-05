@@ -27,6 +27,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
   @Autowired MockMvc mockMvc;
   @Autowired JdbcTemplate jdbc;
   @Autowired SpringOutboxEventRepository outbox;
+  @Autowired com.nm.fragmentsclean.sharedKernel.adapters.primary.springboot.sqs.SqsIntegrationEventRouting avatarRouter;
 
   @BeforeEach
   void setUp() {
@@ -36,6 +37,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
     jdbc.update("DELETE FROM user_avatar_media");
     jdbc.update("DELETE FROM saved_coffees");
     jdbc.update("DELETE FROM app_users");
+    jdbc.update("DELETE FROM admin_audit_log");
     jdbc.update("DELETE FROM auth_users");
     seedUser();
   }
@@ -128,6 +130,8 @@ class UserProfileControllerIT extends AbstractBaseE2E {
         {"commandId":"%s","at":"2026-09-11T10:01:00Z"}
         """.formatted(confirm))).andExpect(status().isAccepted());
     mockMvc.perform(get("/api/users/me").with(userJwt())).andExpect(status().isOk()).andExpect(jsonPath("$.avatarUrl").value(org.hamcrest.Matchers.startsWith("https://download.test/")));
+    projectAvatarFacts();
+    assertThat(jdbc.queryForObject("SELECT resource_id FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",UUID.class,mediaId)).isEqualTo(USER_ID);
 	UUID replacementId=UUID.randomUUID();UUID replacementCommand=UUID.randomUUID();
 	mockMvc.perform(post("/api/users/me/avatar/upload-intents").with(userJwt()).contentType("application/json").content("""
 		{"mediaId":"%s","contentType":"image/jpeg","size":1024}
@@ -137,10 +141,23 @@ class UserProfileControllerIT extends AbstractBaseE2E {
 		""".formatted(replacementCommand))).andExpect(status().isAccepted());
 	assertThat(jdbc.queryForObject("SELECT count(*) FROM user_avatar_media WHERE user_id=? AND status='AVAILABLE'",Integer.class,USER_ID)).isEqualTo(1);
 	assertThat(jdbc.queryForObject("SELECT status FROM user_avatar_media WHERE media_id=?",String.class,mediaId)).isEqualTo("DELETION_PENDING");
+    projectAvatarFacts();
+    assertThat(jdbc.queryForObject("SELECT status FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",String.class,mediaId)).isEqualTo("DELETION_PENDING");
+    assertThat(jdbc.queryForObject("SELECT resource_id FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",UUID.class,replacementId)).isEqualTo(USER_ID);
     UUID remove=UUID.randomUUID();mockMvc.perform(delete("/api/users/me/avatar").with(userJwt()).contentType("application/json").content("""
         {"commandId":"%s","at":"2026-09-11T10:02:00Z"}
         """.formatted(remove))).andExpect(status().isAccepted());
     mockMvc.perform(get("/api/users/me").with(userJwt())).andExpect(status().isOk()).andExpect(jsonPath("$.avatarUrl").doesNotExist());
+    projectAvatarFacts();
+    assertThat(jdbc.queryForObject("SELECT status FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",String.class,replacementId)).isEqualTo("DELETION_PENDING");
+    assertThat(jdbc.queryForObject("SELECT resource_id FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",UUID.class,replacementId)).isNull();
+  }
+
+  private void projectAvatarFacts(){
+    var factory=new com.nm.fragmentsclean.platform.eventing.IntegrationEventEnvelopeFactory();
+    outbox.findAll().stream().filter(e->e.getEventType().endsWith("AvatarMediaChangedEvent"))
+        .sorted(java.util.Comparator.comparingLong(e->e.getId()))
+        .forEach(e->avatarRouter.route(factory.from(e,"media-catalog-events")));
   }
 
   @Test

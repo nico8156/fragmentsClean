@@ -16,11 +16,14 @@ public class AdminAccessPolicy {
 		this.repository = repository;
 	}
 
+	public boolean isExclusiveOwnerMode() { return properties.isExclusiveOwnerMode(); }
+
 	public boolean isAllowed(Authentication authentication) {
 		if (authentication == null || !authentication.isAuthenticated()) {
 			return false;
 		}
 		String userId = authentication.getName();
+		if (properties.isExclusiveOwnerMode()) return properties.isExclusiveOwner(userId);
 		String email = null;
 		if (authentication.getPrincipal() instanceof Jwt jwt) {
 			email = jwt.getClaimAsString("email");

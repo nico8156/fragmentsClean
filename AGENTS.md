@@ -59,6 +59,7 @@ Active backend bounded contexts:
 - `socialContext`: likes, comments, social interactions and their projections.
 - `ticketContext`: ticket submission, OCR/verification pipeline, entitlements source signals.
 - `experienceContext`: textual coffee experiences, their publication lifecycle, reports and moderation projections.
+- `mediaCatalogContext`: admin media consultation projection; producer contexts retain media lifecycle ownership.
 - `adminImportContext`: Fragments Studio/admin import and editorial authoring boundary.
 - `sharedKernel`: technical abstractions only.
 

@@ -1,0 +1,3 @@
+package com.nm.fragmentsclean.mediaCatalogContext.read;
+import com.nm.fragmentsclean.platform.eventing.contracts.ArticleMediaCatalogSnapshotIntegrationEvent;
+public interface ArticleMediaCatalogProjection {boolean apply(ArticleMediaCatalogSnapshotIntegrationEvent event);}

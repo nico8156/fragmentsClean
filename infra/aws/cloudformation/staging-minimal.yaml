@@ -128,6 +128,13 @@ Resources:
       MessageRetentionPeriod: 1209600
       SqsManagedSseEnabled: true
 
+  MediaCatalogEventsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-media-catalog-events-dlq
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+
   TicketVerificationRequestedDeadLetterQueue:
     Type: AWS::SQS::Queue
     Properties:
@@ -203,6 +210,17 @@ Resources:
       SqsManagedSseEnabled: true
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt ExperiencesEventsDeadLetterQueue.Arn
+        maxReceiveCount: 5
+
+  MediaCatalogEventsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${ProjectName}-${EnvironmentName}-media-catalog-events
+      VisibilityTimeout: 120
+      ReceiveMessageWaitTimeSeconds: 20
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt MediaCatalogEventsDeadLetterQueue.Arn
         maxReceiveCount: 5
 
   TicketVerificationRequestedQueue:
@@ -410,6 +428,26 @@ Resources:
       AlarmActions: [!Ref OperationsAlarmTopic]
       OKActions: [!Ref OperationsAlarmTopic]
 
+  MediaCatalogEventsDeadLetterQueueDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-media-catalog-events-dlq-not-empty
+      AlarmDescription: Media catalogue events reached their dead-letter queue.
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt MediaCatalogEventsDeadLetterQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
   ExperiencesEventsOldestMessageAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -420,6 +458,26 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt ExperiencesEventsQueue.QueueName
+      Statistic: Maximum
+      Period: 60
+      EvaluationPeriods: 5
+      DatapointsToAlarm: 3
+      Threshold: !Ref QueueOldestMessageAlarmSeconds
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions: [!Ref OperationsAlarmTopic]
+      OKActions: [!Ref OperationsAlarmTopic]
+
+  MediaCatalogEventsOldestMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub ${ProjectName}-${EnvironmentName}-media-catalog-events-oldest-message
+      AlarmDescription: Media catalogue projections may be blocked by an old message.
+      Namespace: AWS/SQS
+      MetricName: ApproximateAgeOfOldestMessage
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt MediaCatalogEventsQueue.QueueName
       Statistic: Maximum
       Period: 60
       EvaluationPeriods: 5
@@ -653,6 +711,7 @@ Resources:
                   - !GetAtt CoffeesEventsQueue.Arn
                   - !GetAtt DomainEventsQueue.Arn
                   - !GetAtt ExperiencesEventsQueue.Arn
+                  - !GetAtt MediaCatalogEventsQueue.Arn
                   - !GetAtt TicketEventsQueue.Arn
                   - !GetAtt TicketVerificationRequestedQueue.Arn
               - Effect: Allow
@@ -903,3 +962,8 @@ Outputs:
     Value: !Ref OperationsAlarmTopic
   GitHubDeployRoleArn:
     Value: !GetAtt GitHubDeployRole.Arn
+
+  MediaCatalogEventsQueueUrl:
+    Value: !Ref MediaCatalogEventsQueue
+  MediaCatalogEventsDeadLetterQueueUrl:
+    Value: !Ref MediaCatalogEventsDeadLetterQueue

@@ -90,8 +90,8 @@ public class userApplicationDependenciesConfiguration {
 
   @Bean
   RegisterAvatarUploadIntent registerAvatarUploadIntent(AppUserRepository users, AvatarMediaRepository media,
-      PrivateMediaObjectKeys keys, DateTimeProvider clock) {
-    return new RegisterAvatarUploadIntent(users, media, keys, clock);
+      PrivateMediaObjectKeys keys, DateTimeProvider clock, DomainEventPublisher events) {
+    return new RegisterAvatarUploadIntent(users, media, keys, clock, events);
   }
 
   @Bean
@@ -118,7 +118,7 @@ public class userApplicationDependenciesConfiguration {
     return new RemoveAvatarCommandHandler(users, media, events, clock);
   }
 
-  @Bean CompleteAvatarMediaDeletion completeAvatarMediaDeletion(AvatarMediaRepository media,DateTimeProvider clock){return new CompleteAvatarMediaDeletion(media,clock);}
+  @Bean CompleteAvatarMediaDeletion completeAvatarMediaDeletion(AvatarMediaRepository media,DateTimeProvider clock,DomainEventPublisher events){return new CompleteAvatarMediaDeletion(media,clock,events);}
   @Bean CleanAvatarMediaObjects cleanAvatarMediaObjects(AvatarMediaRepository media,PrivateImageStore store,CompleteAvatarMediaDeletion completion,DateTimeProvider clock){return new CleanAvatarMediaObjects(media,store,completion,clock,java.time.Duration.ofHours(24));}
 
   @Bean

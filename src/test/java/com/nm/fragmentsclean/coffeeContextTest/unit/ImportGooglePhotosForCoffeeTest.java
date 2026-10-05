@@ -45,7 +45,7 @@ class ImportGooglePhotosForCoffeeTest {
 		var publisher = new RecordingDomainEventPublisher();
 		var created = coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
 		var repository = repositoryFor(created);
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repository);
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repository,new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository());
 
 		useCase.handle(created);
 
@@ -73,7 +73,7 @@ class ImportGooglePhotosForCoffeeTest {
 		var storage = new RecordingPhotoStorage(List.of());
 		var publisher = new RecordingDomainEventPublisher();
 		var created = coffeeCreatedEvent(null);
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created));
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created),new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository());
 
 		useCase.handle(created);
 
@@ -88,7 +88,7 @@ class ImportGooglePhotosForCoffeeTest {
 		var storage = new RecordingPhotoStorage(List.of());
 		var publisher = new RecordingDomainEventPublisher();
 		var created = coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
-		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created));
+		var useCase = new ImportGooglePhotosForCoffee(gateway, storage, publisher, fixedClock(), repositoryFor(created),new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository());
 
 		useCase.handle(created);
 
@@ -96,6 +96,21 @@ class ImportGooglePhotosForCoffeeTest {
 		assertThat(storage.storedPhotos).isEmpty();
 		assertThat(publisher.events).isEmpty();
 	}
+
+    @Test void replay_with_retired_photos_must_not_overwrite_their_files_or_reassociate_them(){
+        var created=coffeeCreatedEvent(new GooglePlaceId("places/google-1"));
+        var repository=repositoryFor(created);
+        var memory=new com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.repositories.fakes.FakeCoffeePhotoRetirementRepository();
+        UUID photoId=UUID.randomUUID();
+        memory.save(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.CoffeePhotoRetirement(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.Photo(new com.nm.fragmentsclean.coffeeContext.write.businessLogic.models.VO.PhotoId(photoId),created.coffeeId(),"s3://bucket/evidence.jpg",true,0),NOW));
+        var gateway=new RecordingPhotosGateway(List.of(new GooglePlacePhoto("photo","image/jpeg","bytes".getBytes())));
+        var storage=new RecordingPhotoStorage(List.of(new ImportedCoffeePhoto(photoId,"s3://bucket/evidence.jpg")));
+        var publisher=new RecordingDomainEventPublisher();
+        new ImportGooglePhotosForCoffee(gateway,storage,publisher,fixedClock(),repository,memory).handle(created);
+        assertThat(gateway.requestedPlaceIds).isEmpty();
+        assertThat(storage.storedPhotos).isEmpty();
+        assertThat(publisher.events).isEmpty();
+    }
 
 	private static DateTimeProvider fixedClock() {
 		return () -> NOW;

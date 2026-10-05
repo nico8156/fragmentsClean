@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Transactional
 public class EditArticleDraftCommandHandler implements CommandHandler<EditArticleDraftCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher events;
     private final DateTimeProvider clock;
@@ -19,7 +20,8 @@ public class EditArticleDraftCommandHandler implements CommandHandler<EditArticl
     public EditArticleDraftCommandHandler(ArticleAggregateRepository repository,
                                           DomainEventPublisher events,
                                           DateTimeProvider clock,
-                                          CommandStatusRecorder statuses) {
+                                          CommandStatusRecorder statuses, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
         this.repository = repository;
         this.events = events;
         this.clock = clock;
@@ -40,6 +42,7 @@ public class EditArticleDraftCommandHandler implements CommandHandler<EditArticl
         repository.save(article);
         article.domainEvents().forEach(events::publish);
         article.clearDomainEvents();
+        mediaCatalog.publish(article.id());
         statuses.markApplied(command.commandId(), "Article", article.id().toString(),
                 "article.draft.edited", now);
     }

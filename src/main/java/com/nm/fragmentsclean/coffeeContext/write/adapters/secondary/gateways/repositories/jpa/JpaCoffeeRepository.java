@@ -35,7 +35,9 @@ public class JpaCoffeeRepository implements CoffeeRepository, CoffeeGooglePlaceL
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public Optional<Coffee> findById(CoffeeId id) {
+        if(springRepo.lockSourceById(id.value()).isEmpty())return Optional.empty();
         return springRepo.findById(id.value())
                 .map(this::mapToDomain);
     }

@@ -17,7 +17,8 @@ public interface AccountErasureBarrier {
     USER_APPLICATION,
     SOCIAL,
     TICKET,
-    EXPERIENCE
+    EXPERIENCE,
+    MEDIA_CATALOG
   }
 
   boolean ifAllActive(Scope scope, Collection<UUID> userIds, Runnable mutation);

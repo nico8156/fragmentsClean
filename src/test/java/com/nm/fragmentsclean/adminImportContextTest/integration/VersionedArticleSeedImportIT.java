@@ -3,6 +3,10 @@ package com.nm.fragmentsclean.adminImportContextTest.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.nm.fragmentsclean.TestContainers;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDraftCreatedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionSubmittedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleRevisionPublishedEvent;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleMediaCatalogSnapshotEvent;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleBlock;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleImageRef;
 import com.nm.fragmentsclean.adminImportContext.businessLogic.models.StudioArticleSubmission;
@@ -53,9 +57,11 @@ class VersionedArticleSeedImportIT extends TestContainers {
         "SELECT count(*) FROM command_status WHERE command_id IN (?, ?, ?)",
         Integer.class, commandId("save"), commandId("review"), commandId("publish")))
         .isEqualTo(3);
-    assertThat(jdbc.queryForObject(
-        "SELECT count(*) FROM outbox_events WHERE aggregate_id = ?", Integer.class, ARTICLE_ID.toString()))
-        .isEqualTo(3);
+    assertThat(jdbc.queryForList(
+        "SELECT event_type FROM outbox_events WHERE aggregate_id = ?", String.class, ARTICLE_ID.toString()))
+        .containsExactlyInAnyOrder(ArticleDraftCreatedEvent.class.getName(), ArticleRevisionSubmittedEvent.class.getName(),
+            ArticleRevisionPublishedEvent.class.getName(), ArticleMediaCatalogSnapshotEvent.class.getName(),
+            ArticleMediaCatalogSnapshotEvent.class.getName(), ArticleMediaCatalogSnapshotEvent.class.getName());
     assertThat(jdbc.queryForObject(
         "SELECT count(*) FROM articles_projection WHERE id = ?", Integer.class, ARTICLE_ID))
         .as("projection changes only after the normal integration-event consumer runs")

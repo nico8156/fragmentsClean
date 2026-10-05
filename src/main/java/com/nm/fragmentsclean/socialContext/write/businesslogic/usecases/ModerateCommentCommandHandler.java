@@ -26,6 +26,9 @@ public class ModerateCommentCommandHandler implements CommandHandler<ModerateCom
     }
 
     @Override public void execute(ModerateCommentCommand command) {
+        if (command.reason() == null || command.reason().isBlank()) {
+            throw new BusinessCommandRejectedException("MODERATION_REASON_REQUIRED", "Moderation reason is required");
+        }
         if (command.moderation() != ModerationStatus.HIDDEN && command.moderation() != ModerationStatus.PUBLISHED) {
             throw new BusinessCommandRejectedException("MODERATION_DECISION_INVALID", "Unsupported moderation decision");
         }
@@ -55,10 +58,10 @@ public class ModerateCommentCommandHandler implements CommandHandler<ModerateCom
             reportChanged |= changed;
             if (changed) reports.save(reportToClose);
         }
-        if (!commentChanged && !reportChanged) return;
+        if (!commentChanged) comment.recordModerationReview();
         comments.save(comment);
         comment.registerModeratedEvent(command.commandId(), command.actionId(), command.reportId(),
-                command.operatorId(), reportStatus, command.reason(), command.clientAt(), now);
+                command.operatorId(), reportStatus, command.reason().strip(), command.clientAt(), now);
         comment.domainEvents().forEach(events::publish);
         comment.clearDomainEvents();
     }

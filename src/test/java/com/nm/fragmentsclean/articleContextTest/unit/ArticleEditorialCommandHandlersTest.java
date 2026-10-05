@@ -59,15 +59,15 @@ class ArticleEditorialCommandHandlersTest {
         var status = new RecordingCommandStatus();
         var content = content();
 
-        new CreateArticleDraftCommandHandler(repository, publisher, () -> NOW, status).execute(
+        new CreateArticleDraftCommandHandler(repository, publisher, () -> NOW, status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher()).execute(
                 new CreateArticleDraftCommand(CREATE_COMMAND_ID, NOW, ARTICLE_ID, REVISION_ID,
                         "guide-cafe", "fr-FR", AUTHOR_ID, "Studio", draft(content)));
-        new EditArticleDraftCommandHandler(repository, publisher, () -> NOW.plusSeconds(30), status).execute(
+        new EditArticleDraftCommandHandler(repository, publisher, () -> NOW.plusSeconds(30), status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher()).execute(
                 new EditArticleDraftCommand(EDIT_COMMAND_ID, NOW, ARTICLE_ID, REVISION_ID,
                         draft(content("Guide café corrigé"))));
-        new SubmitArticleRevisionForReviewCommandHandler(repository, publisher, () -> NOW.plusSeconds(60), status)
+        new SubmitArticleRevisionForReviewCommandHandler(repository, publisher, () -> NOW.plusSeconds(60), status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher())
                 .execute(new SubmitArticleRevisionForReviewCommand(REVIEW_COMMAND_ID, NOW, ARTICLE_ID));
-        new PublishArticleRevisionCommandHandler(repository, publisher, () -> NOW.plusSeconds(120), status)
+        new PublishArticleRevisionCommandHandler(repository, publisher, () -> NOW.plusSeconds(120), status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher())
                 .execute(new PublishArticleRevisionCommand(PUBLISH_COMMAND_ID, NOW, ARTICLE_ID, REVISION_ID));
 
         var article = repository.byId(ARTICLE_ID).orElseThrow();
@@ -92,7 +92,7 @@ class ArticleEditorialCommandHandlersTest {
         article.submitForReview(NOW.plusSeconds(30));
         article.publishWorkingRevision(NOW.plusSeconds(60));
         repository.save(article);
-        var handler = new WithdrawArticleCommandHandler(repository, publisher, () -> NOW.plusSeconds(120), status);
+        var handler = new WithdrawArticleCommandHandler(repository, publisher, () -> NOW.plusSeconds(120), status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
         var command = new WithdrawArticleCommand(UUID.randomUUID(), NOW, ARTICLE_ID, UUID.randomUUID());
 
         handler.execute(command);

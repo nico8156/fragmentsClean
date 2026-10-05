@@ -257,6 +257,10 @@ CREATE INDEX IF NOT EXISTS idx_social_reports_status_created
 CREATE INDEX IF NOT EXISTS idx_social_reports_comment
     ON social_content_reports_projection (comment_id);
 
+-- Owner-local author lookup for received reports and their decision history.
+CREATE INDEX IF NOT EXISTS ix_social_reports_author_created
+    ON social_content_reports_projection (author_id, created_at DESC, report_id DESC);
+
 CREATE TABLE IF NOT EXISTS social_user_blocks_projection (
     block_id UUID PRIMARY KEY,
     blocker_id UUID NOT NULL,
@@ -633,6 +637,13 @@ ALTER TABLE admin_audit_log ADD COLUMN IF NOT EXISTS reason VARCHAR(240);
 
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_occurred_at ON admin_audit_log (occurred_at DESC);
 CREATE INDEX IF NOT EXISTS ix_admin_audit_log_target_occurred_at ON admin_audit_log (target_type, target_id, occurred_at DESC);
+-- Owner-local selective audit reads, preserving timestamp/UUID keyset order.
+CREATE INDEX IF NOT EXISTS ix_admin_audit_actor_cursor
+    ON admin_audit_log (actor_user_id, occurred_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS ix_admin_audit_command_cursor
+    ON admin_audit_log (command_id, occurred_at DESC, id DESC)
+    WHERE command_id IS NOT NULL;
+
 
 
 CREATE TABLE IF NOT EXISTS app_users (
@@ -1203,8 +1214,8 @@ CREATE TABLE IF NOT EXISTS user_avatar_media (
     size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER, sha256 VARCHAR(64),
 	created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
 	CONSTRAINT ck_user_avatar_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
-	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
-	CONSTRAINT ck_user_avatar_media_available CHECK (status <> 'AVAILABLE' OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
+	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','RETIRED','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_user_avatar_media_available CHECK (status NOT IN ('AVAILABLE','RETIRED') OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_avatar_media_available ON user_avatar_media(user_id) WHERE status='AVAILABLE';
 CREATE INDEX IF NOT EXISTS ix_user_avatar_media_cleanup ON user_avatar_media(status,updated_at);
@@ -1226,3 +1237,123 @@ CREATE TABLE IF NOT EXISTS account_erasure_barriers (
         (status='ACTIVE' AND request_id IS NULL AND erased_at IS NULL)
         OR (status='ERASED' AND request_id IS NOT NULL AND erased_at IS NOT NULL))
 );
+
+-- Direct moderation has no synthetic user report. Deploy before enabling the admin route.
+ALTER TABLE experience_moderation_actions_projection ALTER COLUMN report_id DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_experience_moderation_actions_experience ON experience_moderation_actions_projection(experience_id,occurred_at DESC,action_id DESC);
+CREATE INDEX IF NOT EXISTS ix_experience_views_admin_created ON experience_views(created_at DESC,experience_id DESC);
+CREATE INDEX IF NOT EXISTS ix_experience_views_admin_author ON experience_views(user_id,created_at DESC,experience_id DESC);
+
+-- Catalogue owns only its local projection. No cross-context data copy.
+CREATE TABLE IF NOT EXISTS media_catalog_entries (
+    origin varchar(24) NOT NULL,
+    media_id uuid NOT NULL,
+    resource_id uuid,
+    owner_id uuid,
+    status varchar(24) NOT NULL,
+    object_key text,
+    content_type varchar(128),
+    size_bytes bigint NOT NULL DEFAULT 0,
+    width integer,
+    height integer,
+    created_at timestamptz,
+    updated_at timestamptz NOT NULL,
+    source_version bigint NOT NULL,
+    PRIMARY KEY(origin,media_id),
+    CHECK (origin IN ('EXPERIENCE','COFFEE','AVATAR','ARTICLE')),
+    CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED'))
+);
+CREATE INDEX IF NOT EXISTS ix_media_catalog_owner ON media_catalog_entries(owner_id,origin,media_id);
+CREATE INDEX IF NOT EXISTS ix_media_catalog_status ON media_catalog_entries(status,origin,media_id);
+
+ALTER TABLE account_erasure_barriers DROP CONSTRAINT IF EXISTS ck_account_erasure_barriers_context;
+ALTER TABLE account_erasure_barriers ADD CONSTRAINT ck_account_erasure_barriers_context CHECK (context_name IN ('AUTHENTICATION','USER_APPLICATION','SOCIAL','TICKET','EXPERIENCE','MEDIA_CATALOG'));
+
+-- Cursor belongs to the producer, alongside experience_media.
+CREATE TABLE IF NOT EXISTS experience_media_catalog_scan (
+    id integer PRIMARY KEY CHECK(id=1),cursor_id uuid,
+    next_scan_at timestamptz NOT NULL DEFAULT now(),completed_at timestamptz
+);
+INSERT INTO experience_media_catalog_scan(id) VALUES(1) ON CONFLICT DO NOTHING;
+
+-- Preserve pre-existing erasure barriers before any old media events can be replayed.
+INSERT INTO account_erasure_barriers(context_name,user_id,status,request_id,erased_at,created_at,updated_at)
+SELECT 'MEDIA_CATALOG',user_id,'ERASED',request_id,erased_at,created_at,updated_at
+FROM account_erasure_barriers WHERE context_name='EXPERIENCE' AND status='ERASED'
+ON CONFLICT(context_name,user_id) DO UPDATE SET status='ERASED',request_id=excluded.request_id,erased_at=excluded.erased_at,updated_at=excluded.updated_at;
+
+CREATE TABLE IF NOT EXISTS media_catalog_coffee_versions (
+    coffee_id UUID PRIMARY KEY,
+    snapshot_version BIGINT NOT NULL DEFAULT -1,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE TABLE IF NOT EXISTS coffee_media_catalog_scan (
+    id INTEGER PRIMARY KEY CHECK(id=1),cursor_id UUID,next_scan_at TIMESTAMPTZ NOT NULL DEFAULT now(),completed_at TIMESTAMPTZ
+);
+INSERT INTO coffee_media_catalog_scan(id) VALUES(1) ON CONFLICT DO NOTHING;
+
+CREATE INDEX IF NOT EXISTS ix_media_catalog_resource ON media_catalog_entries(origin,resource_id,source_version);
+
+-- Checkpoint belongs to userApplicationContext; tracked avatars only.
+CREATE TABLE IF NOT EXISTS avatar_media_catalog_scan (
+    id INTEGER PRIMARY KEY CHECK(id=1),cursor_id UUID,next_scan_at TIMESTAMPTZ NOT NULL DEFAULT now(),completed_at TIMESTAMPTZ
+);
+INSERT INTO avatar_media_catalog_scan(id) VALUES(1) ON CONFLICT DO NOTHING;
+-- Historical user erasure must survive the first avatar replay.
+INSERT INTO account_erasure_barriers(context_name,user_id,status,request_id,erased_at,created_at,updated_at)
+SELECT 'MEDIA_CATALOG',user_id,'ERASED',request_id,erased_at,created_at,updated_at
+FROM account_erasure_barriers WHERE context_name='USER_APPLICATION' AND status='ERASED'
+ON CONFLICT(context_name,user_id) DO UPDATE SET status='ERASED',request_id=excluded.request_id,erased_at=excluded.erased_at,updated_at=excluded.updated_at;
+
+-- articleContext owns uploads, inventory order and replay checkpoint.
+CREATE TABLE IF NOT EXISTS article_media_uploads (
+    media_id UUID PRIMARY KEY,article_id UUID NOT NULL,storage_reference TEXT NOT NULL,
+    original_name TEXT,content_type VARCHAR(128),size_bytes BIGINT NOT NULL CHECK(size_bytes>0),
+    width INTEGER,height INTEGER,purpose VARCHAR(32) NOT NULL CHECK(purpose IN ('STUDIO','GENERATION')),
+    uploaded_by UUID,uploaded_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL,
+    CHECK((width IS NULL AND height IS NULL) OR (width>0 AND height>0))
+);
+CREATE INDEX IF NOT EXISTS ix_article_media_uploads_article ON article_media_uploads(article_id,media_id);
+CREATE TABLE IF NOT EXISTS article_media_catalog_versions(article_id UUID PRIMARY KEY,version BIGINT NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS article_media_catalog_scan(id INTEGER PRIMARY KEY CHECK(id=1),cursor_id UUID,next_scan_at TIMESTAMPTZ NOT NULL DEFAULT now(),completed_at TIMESTAMPTZ);
+INSERT INTO article_media_catalog_scan(id) VALUES(1) ON CONFLICT DO NOTHING;
+-- mediaCatalogContext owns these local projections and incomplete message parts.
+CREATE TABLE IF NOT EXISTS media_catalog_article_versions(article_id UUID PRIMARY KEY,snapshot_version BIGINT NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS media_catalog_article_parts(article_id UUID NOT NULL,version BIGINT NOT NULL,part INTEGER NOT NULL,parts INTEGER NOT NULL,payload_json TEXT NOT NULL,PRIMARY KEY(article_id,version,part));
+CREATE TABLE IF NOT EXISTS media_catalog_article_references(article_id UUID NOT NULL,role VARCHAR(16) NOT NULL,usage_id UUID NOT NULL,media_id UUID NOT NULL,storage_reference TEXT,payload_json JSONB NOT NULL,PRIMARY KEY(article_id,role,usage_id));
+CREATE INDEX IF NOT EXISTS ix_media_catalog_article_reference_media ON media_catalog_article_references(media_id,article_id,role,usage_id);
+ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS original_name TEXT;
+ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS uploaded_by UUID;
+ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS purpose VARCHAR(32);
+
+ALTER TABLE article_media_uploads ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' CHECK(lifecycle_status IN ('ACTIVE','RETIRED'));
+
+CREATE TABLE IF NOT EXISTS coffee_photo_retirements (
+    photo_id UUID PRIMARY KEY,
+    coffee_id UUID NOT NULL REFERENCES coffees(id) ON DELETE CASCADE,
+    photo_uri VARCHAR(2000) NOT NULL,
+    was_cover BOOLEAN NOT NULL,
+    sort_order INTEGER NOT NULL,
+    retired_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_coffee_photo_retirements_coffee ON coffee_photo_retirements(coffee_id);
+
+-- Explicit Article purge; no age-based cleanup.
+ALTER TABLE article_media_uploads DROP CONSTRAINT IF EXISTS article_media_uploads_lifecycle_status_check;
+ALTER TABLE article_media_uploads ADD CONSTRAINT article_media_uploads_lifecycle_status_check CHECK(lifecycle_status IN ('ACTIVE','RETIRED','DELETION_PENDING','DELETED'));
+CREATE INDEX IF NOT EXISTS ix_article_media_purge_pending ON article_media_uploads(updated_at,media_id) WHERE lifecycle_status='DELETION_PENDING';
+
+-- Explicit Coffee purge and consumer tombstone safety.
+ALTER TABLE coffee_photo_retirements ADD COLUMN IF NOT EXISTS lifecycle_status VARCHAR(16) NOT NULL DEFAULT 'RETIRED' CHECK(lifecycle_status IN ('RETIRED','DELETION_PENDING','DELETED'));
+ALTER TABLE coffee_photo_retirements ADD COLUMN IF NOT EXISTS purge_requested_at TIMESTAMPTZ;
+ALTER TABLE coffee_photo_retirements ADD COLUMN IF NOT EXISTS purged_at TIMESTAMPTZ;
+ALTER TABLE coffee_photo_retirements ADD COLUMN IF NOT EXISTS purge_command_id UUID;
+CREATE INDEX IF NOT EXISTS ix_coffee_media_purge_pending ON coffee_photo_retirements(purge_requested_at,photo_id) WHERE lifecycle_status='DELETION_PENDING';
+-- mediaCatalogContext-owned fact: older inventories may never revive a physically deleted resource.
+ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS physically_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- User 360 received report pagination
+CREATE INDEX IF NOT EXISTS ix_experience_reports_author_created ON experience_reports_projection(author_id,created_at DESC,report_id DESC);
+
+-- User 360 comment pagination
+CREATE INDEX IF NOT EXISTS ix_social_comments_author_created ON social_comments_projection(author_id,created_at DESC,id DESC);

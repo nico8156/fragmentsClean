@@ -102,9 +102,9 @@ public class CoffeeContextDependenciesConfiguration {
 
 	@Bean
 	DeleteCoffeeCommandHandler deleteCoffeeCommandHandler(CoffeeRepository coffeeRepository,
-			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
-		return new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider);
+            DomainEventPublisher domainEventPublisher,DateTimeProvider dateTimeProvider,
+            com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
+        return new DeleteCoffeeCommandHandler(coffeeRepository, domainEventPublisher, dateTimeProvider,retirements);
 	}
 
 	@Bean
@@ -123,12 +123,12 @@ public class CoffeeContextDependenciesConfiguration {
 	AddCoffeePhotoCommandHandler addCoffeePhotoCommandHandler(CoffeeRepository coffeeRepository,
 			CoffeePhotoStorage coffeePhotoStorage,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider) {
+			DateTimeProvider dateTimeProvider, com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		return new AddCoffeePhotoCommandHandler(
 				coffeeRepository,
 				coffeePhotoStorage,
 				domainEventPublisher,
-				dateTimeProvider);
+				dateTimeProvider,retirements);
 	}
 
 	@Bean ArrangeCoffeePhotosCommandHandler arrangeCoffeePhotosCommandHandler(CoffeeRepository coffeeRepository,
@@ -266,42 +266,30 @@ public class CoffeeContextDependenciesConfiguration {
 			GooglePlacePhotosGateway photosGateway,
 			CoffeePhotoStorage photoStorage,
 			DomainEventPublisher domainEventPublisher,
-			DateTimeProvider dateTimeProvider, CoffeeRepository coffeeRepository) {
+			DateTimeProvider dateTimeProvider, CoffeeRepository coffeeRepository, com.nm.fragmentsclean.coffeeContext.write.businessLogic.gateways.CoffeePhotoRetirementRepository retirements) {
 		return new ImportGooglePhotosForCoffee(photosGateway, photoStorage, domainEventPublisher, dateTimeProvider,
-				coffeeRepository);
+				coffeeRepository, retirements);
 	}
 
-	@Bean
-	CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler(
-			CoffeePhotoProjectionRepository photoProjectionRepository,
-			CoffeeProjectionRepository coffeeProjectionRepository,
-			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotosImportedEventHandler(
-				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
-	}
+    @Bean
+    CoffeePhotosImportedEventHandler coffeePhotosImportedEventHandler(com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh refresh){
+        return new CoffeePhotosImportedEventHandler(refresh);
+    }
 
-	@Bean CoffeePhotosArrangedEventHandler coffeePhotosArrangedEventHandler(CoffeePhotoProjectionRepository photos,
-			CoffeeProjectionRepository coffees, ProjectionSyncPublisher sync) {
-		return new CoffeePhotosArrangedEventHandler(photos, coffees, sync);
-	}
+    @Bean
+    CoffeePhotosArrangedEventHandler coffeePhotosArrangedEventHandler(com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh refresh){
+        return new CoffeePhotosArrangedEventHandler(refresh);
+    }
 
-	@Bean
-	CoffeePhotoAddedEventHandler coffeePhotoAddedEventHandler(
-			CoffeePhotoProjectionRepository photoProjectionRepository,
-			CoffeeProjectionRepository coffeeProjectionRepository,
-			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoAddedEventHandler(
-				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
-	}
+    @Bean
+    CoffeePhotoAddedEventHandler coffeePhotoAddedEventHandler(com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh refresh){
+        return new CoffeePhotoAddedEventHandler(refresh);
+    }
 
-	@Bean
-	CoffeePhotoDeletedEventHandler coffeePhotoDeletedEventHandler(
-			CoffeePhotoProjectionRepository photoProjectionRepository,
-			CoffeeProjectionRepository coffeeProjectionRepository,
-			ProjectionSyncPublisher projectionSyncPublisher) {
-		return new CoffeePhotoDeletedEventHandler(
-				photoProjectionRepository, coffeeProjectionRepository, projectionSyncPublisher);
-	}
+    @Bean
+    CoffeePhotoDeletedEventHandler coffeePhotoDeletedEventHandler(com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh refresh){
+        return new CoffeePhotoDeletedEventHandler(refresh);
+    }
 
 	@Bean
 	CoffeePhotoUriResolver coffeePhotoUriResolver(

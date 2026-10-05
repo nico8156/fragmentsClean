@@ -46,6 +46,11 @@ public final class AdminStudioArticlesController {
         return new ArticleListResponse(catalog.list().stream().map(ArticleDocumentResponse::from).toList());
     }
 
+    @GetMapping("/{articleId}")
+    public ResponseEntity<ArticleDocumentResponse> detail(@PathVariable UUID articleId) {
+        return ResponseEntity.of(catalog.byId(articleId).map(ArticleDocumentResponse::from));
+    }
+
     @PutMapping("/{articleId}")
     public ResponseEntity<ArticleDocumentResponse> saveDraft(@PathVariable UUID articleId,
                                                               @RequestBody ArticleDraftRequest body,
@@ -100,7 +105,7 @@ public final class AdminStudioArticlesController {
                                                              @RequestPart("image") MultipartFile image,
                                                              Authentication authentication) throws IOException {
         var asset = storeImage.execute(UUID.fromString(rawArticleId), image.getOriginalFilename(),
-                image.getContentType(), image.getBytes(), alt);
+                image.getContentType(), image.getBytes(), alt, UUID.fromString(authentication.getName()));
         record(authentication, "ARTICLE_IMAGE_UPLOADED", asset.assetId(), null, "APPLIED");
         return ResponseEntity.status(HttpStatus.CREATED).body(ArticleImageResponse.from(asset));
     }

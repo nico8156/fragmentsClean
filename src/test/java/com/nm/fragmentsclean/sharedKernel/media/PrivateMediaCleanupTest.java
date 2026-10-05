@@ -48,14 +48,27 @@ class PrivateMediaCleanupTest {
     var item = AvatarMedia.pending(UUID.randomUUID(), UUID.randomUUID(), "image/png", 256,
         "pending/avatar", NOW.minus(Duration.ofDays(2)));
     repository.save(item);
-    var completion = new CompleteAvatarMediaDeletion(repository, () -> NOW);
+    var completion = new CompleteAvatarMediaDeletion(repository, () -> NOW, new FakeDomainEventPublisher());
     new CleanAvatarMediaObjects(repository, new FailingOnceStore(false), completion, () -> NOW,
         Duration.ofHours(24)).run(10);
 
     assertThat(repository.inspect(item.id()).orElseThrow().status()).isEqualTo(AvatarMediaStatus.DELETED);
   }
 
-  private static final class FailingOnceStore implements PrivateImageStore {
+  @Test void admin_retired_avatar_is_never_a_cleanup_candidate() {
+    var repository = new FakeAvatarMediaRepository();
+    var item = AvatarMedia.pending(UUID.randomUUID(), UUID.randomUUID(), "image/jpeg", 256,"pending/avatar", NOW.minus(Duration.ofDays(2)));
+    item.confirm("avatars/retired", "image/jpeg", 256, 512, 512, "hash", NOW.minus(Duration.ofDays(2)));
+    item.retire(false, NOW.minus(Duration.ofDays(2))); repository.save(item);
+    PrivateImageStore store = new FailingOnceStore(){@Override public void delete(String key){throw new AssertionError("retired file must be retained");}};
+    new CleanAvatarMediaObjects(repository, store, new CompleteAvatarMediaDeletion(repository, ()->NOW, new FakeDomainEventPublisher()), ()->NOW, Duration.ofHours(24)).run(10);
+    assertThat(repository.inspect(item.id()).orElseThrow().status()).isEqualTo(AvatarMediaStatus.RETIRED);
+    // Privacy erasure remains a distinct, irreversible source decision.
+    item.requestDeletion(NOW); repository.save(item);
+    assertThat(repository.cleanupCandidates(NOW,10)).hasSize(1);
+  }
+
+  private static class FailingOnceStore implements PrivateImageStore {
     private boolean fail;
     private FailingOnceStore() { this(true); }
     private FailingOnceStore(boolean fail) { this.fail = fail; }

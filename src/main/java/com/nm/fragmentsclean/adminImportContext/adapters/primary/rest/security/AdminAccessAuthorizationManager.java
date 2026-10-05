@@ -16,6 +16,13 @@ public class AdminAccessAuthorizationManager implements AuthorizationManager<Req
 
 	@Override
 	public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
-		return new AuthorizationDecision(policy.isAllowed(authentication.get()));
+		var request = context.getRequest();
+		String path = request.getServletPath();
+		// MockMvc can leave servletPath empty; URI excludes the context prefix.
+		if (path.isEmpty()) path = request.getRequestURI().substring(request.getContextPath().length());
+		boolean accessMutation = (path.equals("/api/admin/access/users") || path.startsWith("/api/admin/access/users/"))
+				&& !(request.getMethod().equals("GET") || request.getMethod().equals("HEAD") || request.getMethod().equals("OPTIONS"));
+		return new AuthorizationDecision(!(policy.isExclusiveOwnerMode() && accessMutation)
+				&& policy.isAllowed(authentication.get()));
 	}
 }

@@ -11,7 +11,8 @@ public final class AccountDeletionProcess {
     AUTHENTICATION,
     SOCIAL,
     TICKET,
-    EXPERIENCE
+    EXPERIENCE,
+    MEDIA_CATALOG
   }
 
   public enum Status {

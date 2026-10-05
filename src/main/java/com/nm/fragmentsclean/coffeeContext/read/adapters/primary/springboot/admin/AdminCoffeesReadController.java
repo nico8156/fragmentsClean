@@ -29,7 +29,6 @@ import com.nm.fragmentsclean.coffeeContext.read.projections.CoffeePhotoView;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArchiveCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.AddCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.ArrangeCoffeePhotosCommand;
-import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeePhotoCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.DeleteCoffeeCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.EditCoffeeDetailsCommand;
 import com.nm.fragmentsclean.coffeeContext.write.businessLogic.usecases.PublishCoffeeCommand;
@@ -179,15 +178,9 @@ public class AdminCoffeesReadController {
 
 	@DeleteMapping("/api/admin/coffees/{coffeeId}/photos/{photoId}")
 	public ResponseEntity<AdminCommandAcceptedResponse> deletePhoto(@PathVariable UUID coffeeId, @PathVariable UUID photoId, Authentication authentication) {
-		var commandId = UUID.randomUUID();
-		var now = java.time.Instant.now();
-		commandBus.dispatch(new DeleteCoffeePhotoCommand(
-				commandId,
-				coffeeId,
-				photoId,
-				now));
-		audit(authentication, "COFFEE_PHOTO_DELETED", photoId, commandId, "ACCEPTED", now);
-		return ResponseEntity.accepted().body(AdminCommandAcceptedResponse.pending(commandId));
+		// Retirement now requires an identified operator, a reason and source-owned audit.
+		// Keep the old route fail-closed for clients predating the media library.
+		return ResponseEntity.status(org.springframework.http.HttpStatus.GONE).build();
 	}
 
 	@PutMapping("/api/admin/coffees/{coffeeId}/photos/order")

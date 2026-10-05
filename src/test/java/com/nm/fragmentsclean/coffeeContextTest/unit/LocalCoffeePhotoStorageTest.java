@@ -51,4 +51,18 @@ class LocalCoffeePhotoStorageTest {
 		assertThat(stored.photoUri()).startsWith("/api/coffees/photo-assets/");
 		assertThat(stored.photoUri()).endsWith(".png");
 	}
+    @Test void deletes_only_the_known_photo_and_tolerates_retry()throws Exception{
+        var properties=new CoffeePhotoStorageProperties();properties.setDirectory(tempDir);var storage=new LocalCoffeePhotoStorage(properties);var coffee=new CoffeeId(UUID.randomUUID());
+        var photo=storage.store(coffee,new GooglePlaceId("places/google"),new GooglePlacePhoto("photo/one","image/png",new byte[]{1}));
+        var other=storage.store(coffee,new GooglePlaceId("places/google"),new GooglePlacePhoto("photo/two","image/png",new byte[]{2}));
+        assertThat(storage.canDeletePhoto(coffee,photo.photoId(),photo.photoUri())).isTrue();storage.deletePhoto(coffee,photo.photoId(),photo.photoUri());storage.deletePhoto(coffee,photo.photoId(),photo.photoUri());
+        assertThat(Files.exists(tempDir.resolve(photo.photoId()+".png"))).isFalse();assertThat(Files.readAllBytes(tempDir.resolve(other.photoId()+".png"))).containsExactly((byte)2);
+    }
+    @Test void targeted_local_delete_rejects_foreign_names_urls_and_traversal_without_touching_files()throws Exception{
+        var props=new CoffeePhotoStorageProperties();props.setDirectory(tempDir);props.setPublicBaseUrl("https://fragments.test/");var storage=new LocalCoffeePhotoStorage(props);var coffee=new CoffeeId(UUID.randomUUID());var id=UUID.randomUUID();String file=id+".png";Files.write(tempDir.resolve(file),new byte[]{3});
+        for(String bad:java.util.List.of("/api/coffees/photo-assets/../"+file,"https://foreign.test/api/coffees/photo-assets/"+file,"/api/coffees/photo-assets/"+UUID.randomUUID()+".png","/api/coffees/photo-assets/"+file+"?key=other")){
+            assertThat(storage.canDeletePhoto(coffee,id,bad)).isFalse();org.assertj.core.api.Assertions.assertThatThrownBy(()->storage.deletePhoto(coffee,id,bad)).isInstanceOf(com.nm.fragmentsclean.coffeeContext.write.adapters.secondary.gateways.storage.CoffeePhotoStorageException.class);
+        }
+        assertThat(Files.exists(tempDir.resolve(file))).isTrue();String valid="https://fragments.test/api/coffees/photo-assets/"+file;assertThat(storage.canDeletePhoto(coffee,id,valid)).isTrue();storage.deletePhoto(coffee,id,valid);assertThat(Files.exists(tempDir.resolve(file))).isFalse();
+    }
 }

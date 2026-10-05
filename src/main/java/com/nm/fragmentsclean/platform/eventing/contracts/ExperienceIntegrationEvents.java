@@ -29,6 +29,7 @@ public final class ExperienceIntegrationEvents {
             UUID authorId, UUID reporterId, String reason, String details, String status,
             long version, Instant occurredAt, Instant clientAt) { }
 
+    /** v2 permits a null reportId for direct admin moderation; v1 payloads remain readable. */
     public record Moderated(
             UUID eventId, UUID commandId, UUID actionId, UUID reportId, UUID experienceId,
             UUID coffeeId, UUID authorId, UUID operatorId, String moderationStatus,
@@ -38,5 +39,11 @@ public final class ExperienceIntegrationEvents {
     public record MediaChanged(
             UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID userId,
             UUID coffeeId, String status, String objectKey, String contentType, long size, Integer width,
-            Integer height, String reason, long version, Instant occurredAt, Instant clientAt) { }
+            Integer height, String reason, long version, Instant occurredAt, Instant clientAt, Instant createdAt) {
+        public MediaChanged(UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID userId, UUID coffeeId,
+            String status, String objectKey, String contentType, long size, Integer width, Integer height,
+            String reason, long version, Instant occurredAt, Instant clientAt) {
+            this(eventId,commandId,mediaId,experienceId,userId,coffeeId,status,objectKey,contentType,size,width,height,reason,version,occurredAt,clientAt,null);
+        }
+    }
 }

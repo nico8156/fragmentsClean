@@ -6,6 +6,7 @@ public final class IntegrationEventTypeCatalog {
 
   private static final Map<String, String> STABLE_TYPES =
       Map.ofEntries(
+          Map.entry("ArticleMediaCatalogSnapshotEvent", "article.media_catalog_snapshot"),
           Map.entry("ArticleCreatedEvent", "article.created"),
           Map.entry("ArticleDraftCreatedEvent", "article.draft.created"),
           Map.entry("ArticleDraftEditedEvent", "article.draft.edited"),
@@ -29,8 +30,10 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("CoffeeOpeningHoursUpdatedEvent", "coffee.opening_hours_updated"),
           Map.entry("CoffeePhotosImportedEvent", "coffee.photos_imported"),
           Map.entry("CoffeePhotosArrangedEvent", "coffee.photos_arranged"),
+          Map.entry("CoffeeMediaCatalogSnapshotEvent", "coffee.media_catalog_snapshot"),
           Map.entry("CoffeePublishedEvent", "coffee.published"),
           Map.entry("CoffeeUnpublishedEvent", "coffee.unpublished"),
+          Map.entry("AvatarMediaChangedEvent", "avatar.media.changed"),
           Map.entry("AppUserCreatedEvent", "app.user.created"),
           Map.entry("AppUserProfileUpdatedEvent", "app.user.profile_updated"),
           Map.entry("AppUserDeletionRequestedEvent", "app.user.deletion_requested"),
@@ -38,6 +41,7 @@ public final class IntegrationEventTypeCatalog {
           Map.entry("SocialAccountDataErasedEvent", "account.data_erased"),
           Map.entry("TicketAccountDataErasedEvent", "account.data_erased"),
           Map.entry("ExperienceAccountDataErasedEvent", "account.data_erased"),
+          Map.entry("MediaCatalogAccountDataErasedEvent", "account.data_erased"),
           Map.entry("SavedCoffeeSetEvent", "user.saved_coffee.set"),
           Map.entry("LikeSetEvent", "social.like.set"),
           Map.entry("CommentCreatedEvent", "social.comment.created"),
@@ -77,6 +81,6 @@ public final class IntegrationEventTypeCatalog {
   }
 
   public static int currentVersion(String stableEventType) {
-    return 1;
+    return "coffee.media_catalog_snapshot".equals(stableEventType)?3:"experience.moderated".equals(stableEventType)?2:1;
   }
 }

@@ -34,7 +34,7 @@ class EditGeneratedArticleRevisionCommandHandlerTest {
 		var status = new CommandStatusRecorderFake();
 		DomainEventPublisher events = event -> {};
 		var handler = new EditGeneratedArticleRevisionCommandHandler(
-				sagas, revisions, events, () -> now.plusSeconds(1), status);
+				sagas, revisions, events, () -> now.plusSeconds(1), status, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
 		var cover = new EditGeneratedArticleRevisionCommand.Cover(
 				"s3://bucket/cover", 1024, 1536, "Couverture");
 		var sections = List.of(section("A"), section("B"), section("C"));

@@ -254,6 +254,15 @@ public final class Coffee extends AggregateRoot {
 		touch(now);
 	}
 
+	public void replacePhoto(PhotoId previousId, Photo replacement, Instant now) {
+        Objects.requireNonNull(replacement,"replacement required");
+        if(!replacement.coffeeId().equals(coffeeId))throw new IllegalArgumentException("Photo belongs to another coffee");
+        if(photos.stream().anyMatch(p->p.id().equals(replacement.id())))throw new IllegalArgumentException("Replacement must have a new identity");
+        var previous=photos.stream().filter(p->p.id().equals(previousId)).findFirst().orElseThrow(()->new IllegalArgumentException("Photo not found"));
+        var next=photos.stream().map(p->p.id().equals(previousId)?new Photo(replacement.id(),coffeeId,replacement.uri(),previous.isCover(),previous.sortOrder()):p).toList();
+        this.photos=normalizePhotos(next);touch(now);
+    }
+
 	public void removePhoto(PhotoId photoId, Instant now) {
 		var next = photos.stream().filter(photo -> !photo.id().equals(photoId)).toList();
 		if (next.size() == photos.size()) throw new IllegalArgumentException("Photo not found: " + photoId.value());
@@ -318,6 +327,9 @@ public final class Coffee extends AggregateRoot {
 		touch(now);
 		publicationStatus = CoffeePublicationStatus.DRAFT;
 	}
+
+	/** Records a retained-photo lifecycle fact without changing the public gallery. */
+	public void recordMediaLifecycleChange(Instant now) { touch(now); }
 
 	private void touch(Instant now) {
 		this.version += 1;

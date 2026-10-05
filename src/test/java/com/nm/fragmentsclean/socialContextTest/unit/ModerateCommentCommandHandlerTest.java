@@ -58,4 +58,25 @@ class ModerateCommentCommandHandlerTest {
         assertThat(comments.byId(commentId).orElseThrow().toSnapshot().moderation()).isEqualTo(ModerationStatus.PUBLISHED);
         assertThat(reports.byId(reportId).orElseThrow().toSnapshot().status()).isEqualTo(ReportStatus.DISMISSED);
     }
+    @Test void requires_a_reason_before_any_comment_or_report_change() {
+        var comments=new FakeCommentRepository();var reports=new FakeContentReportRepository();var events=new FakeDomainEventPublisher();var clock=new DeterministicDateTimeProvider();
+        UUID comment=UUID.randomUUID(),target=UUID.randomUUID(),author=UUID.randomUUID(),report=UUID.randomUUID();
+        comments.save(Comment.createNew(comment,target,author,null,"content",clock.now()));
+        reports.save(ContentReport.create(report,comment,target,author,UUID.randomUUID(),ReportReason.SPAM,null,clock.now()));
+        var handler=new ModerateCommentCommandHandler(comments,reports,events,clock);
+        for(var reason:java.util.Arrays.asList(null,"","   "))assertThatThrownBy(()->handler.execute(new ModerateCommentCommand(UUID.randomUUID(),UUID.randomUUID(),report,comment,UUID.randomUUID(),ModerationStatus.HIDDEN,reason,clock.now())))
+            .isInstanceOf(com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException.class).hasMessageContaining("reason is required");
+        assertThat(comments.byId(comment).orElseThrow().toSnapshot().moderation()).isEqualTo(ModerationStatus.PUBLISHED);
+        assertThat(reports.byId(report).orElseThrow().toSnapshot().status()).isEqualTo(ReportStatus.OPEN);assertThat(events.published).isEmpty();
+    }
+    @Test void audits_a_new_review_even_when_the_selected_report_is_already_resolved() {
+        var comments=new FakeCommentRepository();var reports=new FakeContentReportRepository();var events=new FakeDomainEventPublisher();var clock=new DeterministicDateTimeProvider();
+        UUID comment=UUID.randomUUID(),target=UUID.randomUUID(),author=UUID.randomUUID(),report=UUID.randomUUID(),operator=UUID.randomUUID(),action=UUID.randomUUID();
+        var content=Comment.createNew(comment,target,author,null,"content",clock.now());content.hide();comments.save(content);
+        var reported=ContentReport.create(report,comment,target,author,UUID.randomUUID(),ReportReason.SPAM,null,clock.now());reported.resolve(ReportStatus.RESOLVED,clock.now());reports.save(reported);
+        new ModerateCommentCommandHandler(comments,reports,events,clock).execute(new ModerateCommentCommand(UUID.randomUUID(),action,report,comment,operator,ModerationStatus.HIDDEN,"  Still spam  ",clock.now()));
+        assertThat(events.published).singleElement().satisfies(value->{var audit=(CommentModeratedEvent)value;assertThat(audit.actionId()).isEqualTo(action);assertThat(audit.operatorId()).isEqualTo(operator);assertThat(audit.reason()).isEqualTo("Still spam");assertThat(audit.version()).isEqualTo(2);});
+        assertThat(comments.byId(comment).orElseThrow().toSnapshot().moderation()).isEqualTo(ModerationStatus.HIDDEN);
+    }
+
 }

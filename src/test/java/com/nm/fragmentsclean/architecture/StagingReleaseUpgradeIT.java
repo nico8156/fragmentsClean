@@ -29,8 +29,44 @@ class StagingReleaseUpgradeIT {
     private static final String COMMAND = "33333333-3333-4333-8333-333333333333";
     private static final Path RELEASE = Path.of("src/main/resources/db/release");
 
+    private static final List<String> RELEASE_DRIVERS = List.of(
+            "app-store-2026-09.psql",
+            "apple-login-2026-09.psql",
+            "article-curation-2026-09.psql",
+            "messaging-safety-2026-09.psql",
+            "account-erasure-safety-2026-09.psql",
+            "projection-sync-audience-2026-09.psql",
+            "refresh-token-hardening-2026-09.psql",
+            "logout-revocation-2026-09.psql",
+            "outbox-delivery-2026-09.psql",
+            "studio-community-2026-10.psql",
+            "studio-user-reports-2026-10.psql",
+            "studio-user-comments-2026-10.psql",
+            "studio-user-social-moderation-2026-10.psql",
+            "studio-admin-audit-search-2026-10.psql",
+            "media-catalogue-2026-10.psql",
+            "coffee-media-catalogue-2026-10.psql",
+            "avatar-media-catalogue-2026-10.psql",
+            "article-media-catalogue-2026-10.psql",
+            "article-media-lifecycle-2026-10.psql",
+            "avatar-media-lifecycle-2026-10.psql",
+            "coffee-media-lifecycle-2026-10.psql",
+            "article-media-purge-2026-10.psql",
+            "coffee-media-purge-2026-10.psql");
+
     @BeforeAll static void start() { POSTGRES.start(); }
     @AfterAll static void stop() { POSTGRES.stop(); }
+
+    @Test void qualifies_the_same_release_driver_order_as_staging_deployment() throws Exception {
+        var lines = Files.readAllLines(Path.of(
+                "infra/aws/compose/platform/staging/fragments/deploy-via-ssm.sh"))
+                .stream().filter(line -> line.startsWith("bash ") && line.contains("render-release-migration.sh"))
+                .toList();
+        assertThat(lines).hasSize(RELEASE_DRIVERS.size());
+        for (int i = 1; i < RELEASE_DRIVERS.size(); i++) {
+            assertThat(lines.get(i)).contains(" " + RELEASE_DRIVERS.get(i) + " ");
+        }
+    }
 
     @Test void upgrades_observed_schema_preserves_legacy_and_replays_without_resetting_new_state() throws Exception {
         String database = database();
@@ -66,7 +102,9 @@ class StagingReleaseUpgradeIT {
             assertThat(rows(connection, "SELECT count(DISTINCT history_position)::text FROM ticket_status_projection"))
                     .containsExactly("11");
             var receipt = rows(connection, "SELECT version,checksum,source_revision,applied_at::text FROM release_schema_history");
-            assertThat(receipt).hasSize(9);
+            assertThat(receipt).hasSize(RELEASE_DRIVERS.size());
+            assertThat(receipt.stream().map(row -> row.split("\\|", 2)[0]).toList())
+                    .containsExactlyElementsOf(RELEASE_DRIVERS.stream().map(name -> name.replace(".psql", "")).toList());
             assertThat(receipt.getFirst()).startsWith("app-store-2026-09|");
             assertThat(receipt.get(1)).startsWith("apple-login-2026-09|");
             assertThat(receipt.get(2)).startsWith("article-curation-2026-09|");
@@ -112,7 +150,7 @@ class StagingReleaseUpgradeIT {
                         .filter(row -> changedTables.contains(row.split("\\|", 2)[0]))
                         .filter(row -> !row.contains("|UNIQUE (")).toList());
                 assertThat(indexes(connection)).containsAll(indexes(target).stream()
-                        .filter(row -> changedTables.contains(row.split("\\|", 2)[0])).toList());
+                        .filter(row -> changedTables.contains(row.split("\\|", 2)[0]) || row.startsWith("admin_audit_log|")).toList());
             }
 
             try (var statement = connection.createStatement()) {
@@ -190,7 +228,7 @@ class StagingReleaseUpgradeIT {
             assertThat(a.getStdout() + b.getStdout()).containsOnlyOnce("Migration already applied; backfills skipped");
         }
         try (var connection = connect(database)) {
-            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly("9");
+            assertThat(rows(connection, "SELECT count(*)::text FROM release_schema_history")).containsExactly(Integer.toString(RELEASE_DRIVERS.size()));
         }
     }
 
@@ -277,8 +315,19 @@ class StagingReleaseUpgradeIT {
         }
         POSTGRES.copyFileToContainer(MountableFile.forHostPath(Path.of(
                 "infra/aws/compose/platform/staging/fragments/render-release-migration.sh")), directory + "/render.sh");
-        var rendered = POSTGRES.execInContainer("bash", "-c", "set -e; bash \"$1/render.sh\" \"$1\" \"$2\" > \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" apple-login-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" article-curation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" messaging-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" account-erasure-safety-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" projection-sync-audience-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" refresh-token-hardening-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" logout-revocation-2026-09.psql >> \"$1/bundle.psql\"; bash \"$1/render.sh\" \"$1\" \"$2\" outbox-delivery-2026-09.psql >> \"$1/bundle.psql\"",
-                "render", directory, "a".repeat(40));
+        var renderScript = """
+                set -e
+                directory=$1
+                revision=$2
+                shift 2
+                : > "$directory/bundle.psql"
+                for driver in "$@"; do
+                    bash "$directory/render.sh" "$directory" "$revision" "$driver" >> "$directory/bundle.psql"
+                done
+                """;
+        var rendered = POSTGRES.execInContainer(java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of("bash", "-c", renderScript, "render", directory, "a".repeat(40)),
+                        RELEASE_DRIVERS.stream()).toArray(String[]::new));
         assertThat(rendered.getExitCode()).as(rendered.getStderr()).isZero();
         return POSTGRES.execInContainer("psql", "-X", "-v", "ON_ERROR_STOP=1", "-U", POSTGRES.getUsername(),
                 "-d", database, "-f", directory + "/bundle.psql");

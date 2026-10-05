@@ -7,12 +7,15 @@ import com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleImage
 
 public class StoreStudioArticleImage {
 	private final ArticleImageStorage articleImageStorage;
+    private final com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleMediaUploadTracking tracking;
 
-	public StoreStudioArticleImage(ArticleImageStorage articleImageStorage) {
-		this.articleImageStorage = articleImageStorage;
+	public StoreStudioArticleImage(ArticleImageStorage articleImageStorage, com.nm.fragmentsclean.adminImportContext.businessLogic.ports.ArticleMediaUploadTracking tracking) {
+		this.articleImageStorage = articleImageStorage;this.tracking=tracking;
 	}
 
-	public StudioArticleImageAsset execute(UUID articleId, String fileName, String contentType, byte[] bytes, String alt) {
-		return articleImageStorage.store(articleId, fileName, contentType, bytes, alt);
+	public StudioArticleImageAsset execute(UUID articleId, String fileName, String contentType, byte[] bytes, String alt, UUID uploadedBy) {
+		var asset=articleImageStorage.store(articleId,fileName,contentType,bytes,alt);
+        tracking.record(articleId,asset.url(),fileName,contentType,bytes,asset.width(),asset.height(),uploadedBy,"STUDIO");
+        return asset;
 	}
 }

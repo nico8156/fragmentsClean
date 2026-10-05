@@ -33,9 +33,9 @@ class ApproveArticlePublicationFlowTest {
         var sagas = new FakeSagas(saga);
         var statuses = new FakeStatuses();
         DomainEventPublisher events = event -> { };
-        var submit = new SubmitArticleRevisionForReviewCommandHandler(articles, events, () -> now, statuses);
+        var submit = new SubmitArticleRevisionForReviewCommandHandler(articles, events, () -> now, statuses, new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
         var publish = new PublishArticleRevisionCommandHandler(articles, events, () -> now, statuses,
-                ignored -> 29, new ArticlePublicationPolicy());
+                ignored -> 29, new ArticlePublicationPolicy(), new com.nm.fragmentsclean.articleContextTest.unit.FakeArticleMediaCatalogPublisher());
         var bus = new CommandBus();
         bus.registerCommandHandlers(java.util.List.of(submit, publish));
         var approval = new ArticleReviewApproval(UUID.randomUUID(), sagaId, articleId, revisionId,

@@ -16,6 +16,7 @@ import java.util.Objects;
 @Component
 @Transactional
 public class PublishArticleRevisionCommandHandler implements CommandHandler<PublishArticleRevisionCommand> {
+    private final com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog;
 
     private final ArticleAggregateRepository repository;
     private final DomainEventPublisher eventPublisher;
@@ -27,8 +28,8 @@ public class PublishArticleRevisionCommandHandler implements CommandHandler<Publ
     public PublishArticleRevisionCommandHandler(ArticleAggregateRepository repository,
                                                 DomainEventPublisher eventPublisher,
                                                 DateTimeProvider clock,
-                                                CommandStatusRecorder commandStatus) {
-        this(repository, eventPublisher, clock, commandStatus, articleId -> 0, new ArticlePublicationPolicy());
+                                                CommandStatusRecorder commandStatus, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this(repository, eventPublisher, clock, commandStatus, articleId -> 0, new ArticlePublicationPolicy(), mediaCatalog);
     }
 
     @Autowired
@@ -36,8 +37,8 @@ public class PublishArticleRevisionCommandHandler implements CommandHandler<Publ
                                                 DomainEventPublisher eventPublisher,
                                                 DateTimeProvider clock,
                                                 CommandStatusRecorder commandStatus,
-                                                ArticlePublicationCapacityPort publicationCapacity) {
-        this(repository, eventPublisher, clock, commandStatus, publicationCapacity, new ArticlePublicationPolicy());
+                                                ArticlePublicationCapacityPort publicationCapacity, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this(repository, eventPublisher, clock, commandStatus, publicationCapacity, new ArticlePublicationPolicy(), mediaCatalog);
     }
 
     public PublishArticleRevisionCommandHandler(ArticleAggregateRepository repository,
@@ -45,7 +46,8 @@ public class PublishArticleRevisionCommandHandler implements CommandHandler<Publ
                                                 DateTimeProvider clock,
                                                 CommandStatusRecorder commandStatus,
                                                 ArticlePublicationCapacityPort publicationCapacity,
-                                                ArticlePublicationPolicy publicationPolicy) {
+                                                ArticlePublicationPolicy publicationPolicy, com.nm.fragmentsclean.articleContext.write.businesslogic.gateways.ArticleMediaCatalogPublisher mediaCatalog) {
+        this.mediaCatalog=mediaCatalog;
         this.repository = repository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
@@ -72,6 +74,7 @@ public class PublishArticleRevisionCommandHandler implements CommandHandler<Publ
         repository.save(article);
         article.domainEvents().forEach(eventPublisher::publish);
         article.clearDomainEvents();
+        mediaCatalog.publish(article.id());
         commandStatus.markApplied(command.commandId(), "Article", article.id().toString(),
                 "article.revision.published", now);
     }

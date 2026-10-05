@@ -25,12 +25,15 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 
 class CoffeePhotoAddedEventHandlerTest {
 	@Test
-	void appends_photo_projection_and_publishes_projection_sync_event() {
+	void refreshes_photo_projection_and_publishes_projection_sync_event() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotoAddedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotoAddedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new PublishedCoffeeProjectionRepository(),syncPublisher));
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
+        source.snapshots.put(coffeeId,new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(coffeeId,"PUBLISHED",13,Instant.parse("2026-07-05T10:00:00Z"),List.of(new CoffeePhotoView(photoId,coffeeId,"s3://bucket/key.jpg"))));
 
 		handler.handle(new CoffeePhotoAddedEvent(
 				UUID.fromString("99999999-9999-9999-9999-999999999999"),
@@ -49,12 +52,15 @@ class CoffeePhotoAddedEventHandlerTest {
 	}
 
 	@Test
-	void appends_photo_from_primitive_sqs_contract() {
+	void refreshes_photo_from_primitive_sqs_contract() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotoAddedEventHandler(repository, new PublishedCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotoAddedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new PublishedCoffeeProjectionRepository(),syncPublisher));
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
+        source.snapshots.put(coffeeId,new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(coffeeId,"PUBLISHED",13,Instant.parse("2026-07-05T10:00:00Z"),List.of(new CoffeePhotoView(photoId,coffeeId,"s3://bucket/key.jpg"))));
 
 		handler.handle(new CoffeePhotoAddedIntegrationEvent(
 			UUID.randomUUID(), UUID.randomUUID(), coffeeId, photoId, "s3://bucket/key.jpg", 13,
@@ -64,12 +70,15 @@ class CoffeePhotoAddedEventHandlerTest {
 	}
 
 	@Test
-	void appends_draft_photo_without_notifying_the_public_mobile_catalogue() {
+	void refreshes_draft_photo_without_notifying_the_public_mobile_catalogue() {
 		var repository = new RecordingPhotoProjectionRepository();
 		var syncPublisher = new RecordingProjectionSyncPublisher();
-		var handler = new CoffeePhotoAddedEventHandler(repository, new DraftCoffeeProjectionRepository(), syncPublisher);
+		var source=new com.nm.fragmentsclean.coffeeContextTest.support.FakeCoffeePhotoProjectionSource();
+        var handler = new CoffeePhotoAddedEventHandler(new com.nm.fragmentsclean.coffeeContext.read.CoffeePhotoProjectionRefresh(source,repository,new DraftCoffeeProjectionRepository(),syncPublisher));
 		var coffeeId = UUID.fromString("11111111-1111-1111-1111-111111111111");
 		var photoId = UUID.fromString("22222222-2222-2222-2222-222222222222");
+
+        source.snapshots.put(coffeeId,new com.nm.fragmentsclean.coffeeContext.read.adapters.secondary.gateways.repositories.CoffeePhotoProjectionSource.Snapshot(coffeeId,"PUBLISHED",13,Instant.parse("2026-07-05T10:00:00Z"),List.of(new CoffeePhotoView(photoId,coffeeId,"s3://bucket/key.jpg"))));
 
 		handler.handle(new CoffeePhotoAddedIntegrationEvent(
 				UUID.randomUUID(), UUID.randomUUID(), coffeeId, photoId, "s3://bucket/key.jpg", 13,
@@ -97,6 +106,7 @@ class CoffeePhotoAddedEventHandlerTest {
 
 		@Override
 		public void replaceForCoffee(UUID coffeeId, List<CoffeePhotoView> photos) {
+            appended.clear();appended.addAll(photos);
 		}
 
 		@Override

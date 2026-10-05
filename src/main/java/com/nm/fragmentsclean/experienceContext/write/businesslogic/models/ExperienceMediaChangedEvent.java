@@ -7,4 +7,10 @@ import java.util.UUID;
 public record ExperienceMediaChangedEvent(UUID eventId, UUID commandId, UUID mediaId,
     UUID experienceId, UUID coffeeId, UUID userId, ExperienceMediaStatus status, String objectKey,
     String contentType, long size, Integer width, Integer height, String reason, long version,
-    Instant occurredAt, Instant clientAt) implements DomainEvent {}
+    Instant occurredAt, Instant clientAt, Instant createdAt) implements DomainEvent {
+    public ExperienceMediaChangedEvent(UUID eventId, UUID commandId, UUID mediaId, UUID experienceId, UUID coffeeId, UUID userId,
+        ExperienceMediaStatus status, String objectKey, String contentType, long size, Integer width, Integer height,
+        String reason, long version, Instant occurredAt, Instant clientAt) {
+        this(eventId,commandId,mediaId,experienceId,coffeeId,userId,status,objectKey,contentType,size,width,height,reason,version,occurredAt,clientAt,null);
+    }
+}
