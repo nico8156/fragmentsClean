@@ -4,6 +4,101 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/operations/audit": {
+  "get": {
+    "operationId": "searchStudioAdminAudit",
+    "description": "Searches the admin boundary audit only. Domain-owned moderation/media journals are not merged into this feed. Outcomes describe the recorded fact, not projection freshness.",
+    "parameters": [
+      {
+        "name": "targetType",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      {
+        "name": "targetId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "actorId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "commandId",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      {
+        "name": "action",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 64
+        }
+      },
+      {
+        "name": "outcome",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 32
+        }
+      },
+      {
+        "name": "cursor",
+        "in": "query",
+        "schema": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "Audit page, most recent first (timestamp and ID)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StudioAdminAuditPage"
+            }
+          }
+        }
+      },
+      "400": {
+        "description": "Invalid search or cursor"
+      },
+      "401": {
+        "description": "Unauthenticated"
+      },
+      "403": {
+        "description": "Admin access denied"
+      }
+    }
+  }
+},
   "/api/admin/access/me": {
   "get": {
     "operationId": "getStudioAdminSession",
@@ -1668,6 +1763,88 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+"StudioAdminAuditEntry": {
+  "type": "object",
+  "required": [
+    "id",
+    "actorUserId",
+    "targetId",
+    "commandId",
+    "action",
+    "targetType",
+    "outcome",
+    "reason",
+    "occurredAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actorUserId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "targetId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "commandId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "action": {
+      "type": "string"
+    },
+    "targetType": {
+      "type": "string"
+    },
+    "outcome": {
+      "type": "string"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 240
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+},
+"StudioAdminAuditPage": {
+  "type": "object",
+  "required": [
+    "items",
+    "nextCursor"
+  ],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/components/schemas/StudioAdminAuditEntry"
+      }
+    },
+    "nextCursor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 512
+    }
+  },
+  "additionalProperties": false
+},
   "AdminUserCommentReport": {
     "type": "object",
     "required": [
