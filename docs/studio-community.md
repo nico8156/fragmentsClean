@@ -63,3 +63,29 @@ not run. Studio separately passed 194 tests, build and delivery checks.
 FlowAtlas confirms the HTTP command boundary (4 nodes / 3 edges). Source inspection
 and PostgreSQL tests establish persistence, outbox, audit and visibility guarantees;
 these are not inferred from static graph completeness.
+
+## User 360: author moderation history (milestone 4a)
+
+GET /api/admin/experiences/actions requires authorId and accepts cursor and
+limit (1..100, default 30). The existing admin identity authorization applies.
+A missing author projection returns an empty page; malformed queries return 400.
+ListUserExperienceActionsQuery -> its handler -> AdminExperienceReadRepository
+uses only experience_moderation_actions_projection and experience_views.
+One bounded SQL query returns actionId, experienceId, operatorId, decision,
+nullable historical reason and occurredAt. No profile/email, reporter identity,
+media key or cross-context join is added. Existing author/experience indexes
+are reused; no migration or integration event change is needed.
+
+Keyset pagination sorts by occurredAt and actionId descending. Joining the
+existing experience projection means an erased experience's orphaned direct
+audit cannot be returned for that author. Existing account erasure remains
+unchanged; direct audit may remain stored according to that existing eraser.
+
+Evidence: StudioUserModerationHistoryIT (3), StudioCommunityIT (6), architecture
+boundaries (11), all green after exact mutation restoration. Two manual mutants
+(author filtering removed, strict cursor changed to inclusive) each triggered
+behavioral assertions with zero test errors. Logs /tmp/user-history-backend-*.
+The full backend suite and production load testing were not run.
+FlowAtlas moderation command remains 4 nodes/3 edges within its configured
+scope. The new JDBC query is validated by source inspection and PostgreSQL
+integration tests, not claimed as an end-to-end Java graph. No deployment.

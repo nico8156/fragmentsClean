@@ -9,6 +9,14 @@ import org.springframework.jdbc.core.JdbcTemplate;import org.springframework.ste
  private final JdbcTemplate jdbc;private final PrivateMediaUrlResolver urls;
  public JdbcAdminExperienceReadRepository(JdbcTemplate jdbc,PrivateMediaUrlResolver urls){this.jdbc=jdbc;this.urls=urls;}
  private static final String SELECT="SELECT v.*,p.display_name,p.avatar_url FROM experience_views v LEFT JOIN experience_user_profiles p ON p.user_id=v.user_id";
+ public AdminExperienceViews.UserActions userActions(ListUserExperienceActionsQuery q){
+  var sql=new StringBuilder("SELECT a.* FROM experience_moderation_actions_projection a JOIN experience_views v ON v.experience_id=a.experience_id WHERE v.user_id=?");
+  var args=new ArrayList<Object>();args.add(q.authorId());
+  cursor(sql,args,q.cursor(),"a.occurred_at","a.action_id");sql.append(" ORDER BY a.occurred_at DESC,a.action_id DESC LIMIT ?");args.add(q.limit()+1);
+  var rows=jdbc.query(sql.toString(),(rs,n)->new AdminExperienceViews.UserAction(rs.getObject("action_id",UUID.class),rs.getObject("experience_id",UUID.class),rs.getObject("operator_id",UUID.class),rs.getString("decision"),rs.getString("reason"),rs.getTimestamp("occurred_at").toInstant()),args.toArray());
+  boolean more=rows.size()>q.limit();var items=List.copyOf(rows.subList(0,Math.min(rows.size(),q.limit())));
+  return new AdminExperienceViews.UserActions(items,more?new ExperienceCursor(items.getLast().occurredAt(),items.getLast().actionId()).encode():null);
+ }
  public ExperiencePage search(SearchAdminExperiencesQuery q){
   var sql=new StringBuilder(SELECT+" WHERE (?='' OR position(lower(?) in lower(v.message))>0 OR cast(v.experience_id as text)=?)");
   var args=new ArrayList<Object>(List.of(q.q(),q.q(),q.q()));
