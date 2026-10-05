@@ -12,6 +12,10 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void user_reports_manifest_is_additive_and_requires_community_baseline()throws Exception{
+        copy();var result=render("a".repeat(40),"studio-user-reports-2026-10.psql");
+        assertThat(result.exit).isZero();assertThat(result.output).contains("version='studio-community-2026-10'","studio-user-reports-2026-10","ix_experience_reports_author_created").doesNotContain("\\ir ");
+    }
     @Test void coffee_purge_manifest_requires_lifecycle_and_is_additive()throws Exception{
         copy();var result=render("a".repeat(40),"coffee-media-purge-2026-10.psql");assertThat(result.exit).isZero();assertThat(result.output).contains("version='coffee-media-lifecycle-2026-10'","coffee-media-purge-2026-10","physically_deleted","ix_coffee_media_purge_pending").doesNotContain("\\ir ");
     }

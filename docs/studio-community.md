@@ -89,3 +89,40 @@ The full backend suite and production load testing were not run.
 FlowAtlas moderation command remains 4 nodes/3 edges within its configured
 scope. The new JDBC query is validated by source inspection and PostgreSQL
 integration tests, not claimed as an end-to-end Java graph. No deployment.
+
+## User 360: received experience reports (milestone 4b)
+
+GET /api/admin/experiences/reports requires authorId, with optional status
+(OPEN/RESOLVED/DISMISSED), cursor and limit 1..100 (default 30). A missing author
+returns an empty page; invalid query parameters return 400. Existing admin
+identity authorization remains mandatory. ListUserExperienceReportsQuery and
+its handler delegate to AdminExperienceReadRepository; one bounded query joins
+only experience_reports_projection and experience_views within this BC.
+
+DTO: reportId, experienceId, reason, nullable details, status and createdAt.
+Reporter identity, private profiles, media keys, report counters and nested
+histories are deliberately omitted. The publication link reuses existing
+moderation; no command, audit subsystem or integration contract is added.
+Account erasure removes report projections; the query also requires an existing
+experience projection matching the stored author.
+
+Deploy the additive studio-user-reports-2026-10 manifest after
+studio-community-2026-10. It adds the author/createdAt/reportId pagination index
+and reuses ledger/checksum/lock limits. Older manifests stay immutable. The
+renderer and deployment script include the new driver; no deployment occurred.
+Large production volumes and migration lock durations were not measured.
+
+Final selected verification: 44 tests/5 classes green after exact restoration,
+including PostgreSQL filtering, equal-time pagination, admin denial, erasure,
+migration replay, release rendering and BC architecture. Manual mutations
+removing author and status filters each caused assertion failures (zero test
+errors), then were restored. Logs /tmp/user-reports-backend-*. The full backend
+suite was not run. Studio: 412 tests/58 files, production OAuth/HTTPS build,
+contract, distribution and delivery checks green; four manual Studio mutations
+caught and restored. Chrome 390/1440 checked with fake data.
+
+FlowAtlas userReportsRequested: 15 nodes/20 edges complete within the configured
+bounds. Existing Java moderation command remains 4/3. Java JDBC query coverage
+is established by inspected code and integration tests, not a claimed static
+end-to-end graph. User 360 comments and final activity consolidation remain
+subsequent milestone 4 work.

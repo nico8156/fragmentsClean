@@ -1340,3 +1340,6 @@ ALTER TABLE coffee_photo_retirements ADD COLUMN IF NOT EXISTS purge_command_id U
 CREATE INDEX IF NOT EXISTS ix_coffee_media_purge_pending ON coffee_photo_retirements(purge_requested_at,photo_id) WHERE lifecycle_status='DELETION_PENDING';
 -- mediaCatalogContext-owned fact: older inventories may never revive a physically deleted resource.
 ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS physically_deleted BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- User 360 received report pagination
+CREATE INDEX IF NOT EXISTS ix_experience_reports_author_created ON experience_reports_projection(author_id,created_at DESC,report_id DESC);

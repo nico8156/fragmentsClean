@@ -9,6 +9,15 @@ import org.springframework.jdbc.core.JdbcTemplate;import org.springframework.ste
  private final JdbcTemplate jdbc;private final PrivateMediaUrlResolver urls;
  public JdbcAdminExperienceReadRepository(JdbcTemplate jdbc,PrivateMediaUrlResolver urls){this.jdbc=jdbc;this.urls=urls;}
  private static final String SELECT="SELECT v.*,p.display_name,p.avatar_url FROM experience_views v LEFT JOIN experience_user_profiles p ON p.user_id=v.user_id";
+ public AdminExperienceViews.UserReports userReports(ListUserExperienceReportsQuery q){
+  var sql=new StringBuilder("SELECT r.report_id,r.experience_id,r.reason,r.details,r.status,r.created_at FROM experience_reports_projection r JOIN experience_views v ON v.experience_id=r.experience_id AND v.user_id=r.author_id WHERE r.author_id=?");
+  var args=new ArrayList<Object>();args.add(q.authorId());
+  if(q.status()!=null){sql.append(" AND r.status=?");args.add(q.status());}
+  cursor(sql,args,q.cursor(),"r.created_at","r.report_id");sql.append(" ORDER BY r.created_at DESC,r.report_id DESC LIMIT ?");args.add(q.limit()+1);
+  var rows=jdbc.query(sql.toString(),(rs,n)->new AdminExperienceViews.UserReport(rs.getObject("report_id",UUID.class),rs.getObject("experience_id",UUID.class),rs.getString("reason"),rs.getString("details"),rs.getString("status"),rs.getTimestamp("created_at").toInstant()),args.toArray());
+  boolean more=rows.size()>q.limit();var items=List.copyOf(rows.subList(0,Math.min(rows.size(),q.limit())));
+  return new AdminExperienceViews.UserReports(items,more?new ExperienceCursor(items.getLast().createdAt(),items.getLast().reportId()).encode():null);
+ }
  public AdminExperienceViews.UserActions userActions(ListUserExperienceActionsQuery q){
   var sql=new StringBuilder("SELECT a.* FROM experience_moderation_actions_projection a JOIN experience_views v ON v.experience_id=a.experience_id WHERE v.user_id=?");
   var args=new ArrayList<Object>();args.add(q.authorId());
