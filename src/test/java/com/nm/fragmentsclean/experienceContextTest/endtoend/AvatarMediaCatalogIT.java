@@ -62,6 +62,9 @@ class AvatarMediaCatalogIT extends AbstractExperienceE2E {
     @Autowired com.nm.fragmentsclean.userApplicationContext.write.businesslogic.usecases.ReplayAvatarMediaCatalog replay;
     @Autowired com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jpa.SpringOutboxEventRepository outbox;
     @Test void source_replay_resumes_batches_and_uses_stable_avatar_envelopes() throws Exception {
+        // This scan owns the complete source inventory, not just this test's owner.
+        // Other integration classes share PostgreSQL; qualify exactly our 101 rows.
+        jdbc.update("DELETE FROM user_avatar_media");
         UUID owner=UUID.randomUUID(),id=UUID.randomUUID();source(owner,id);
         jdbc.update("UPDATE avatar_media_catalog_scan SET cursor_id=NULL,next_scan_at=now(),completed_at=NULL");
         for(int i=0;i<100;i++){
@@ -70,7 +73,7 @@ class AvatarMediaCatalogIT extends AbstractExperienceE2E {
         }
         assertThat(replay.nextBatch()).isEqualTo(100);
         assertThat(jdbc.queryForObject("SELECT cursor_id FROM avatar_media_catalog_scan WHERE id=1",UUID.class)).isNotNull();
-        assertThat(replay.nextBatch()).isBetween(1,10);
+        assertThat(replay.nextBatch()).isEqualTo(1);
         var snapshots=outbox.findAll().stream().filter(e->e.getEventType().endsWith("AvatarMediaChangedEvent") && e.getPayloadJson().contains(id.toString())).toList();
         assertThat(snapshots).hasSize(1);
         var snapshot=snapshots.getFirst();
