@@ -126,3 +126,46 @@ bounds. Existing Java moderation command remains 4/3. Java JDBC query coverage
 is established by inspected code and integration tests, not a claimed static
 end-to-end graph. User 360 comments and final activity consolidation remain
 subsequent milestone 4 work.
+
+## User 360: authored comments (milestone 4c)
+
+GET /api/admin/comments requires authorId; moderation and cursor are optional,
+limit is 1..100 (default 30). The five existing Social statuses are retained:
+PUBLISHED/PENDING/REJECTED/HIDDEN/SOFT_DELETED. The admin read includes moderated
+and logically deleted comments for review; account erasure removes them through
+the existing Social eraser. A missing author returns an empty page. Invalid
+queries return 400; unauthenticated and non-admin access remains denied.
+
+SearchAdminCommentsQuery -> its handler -> AdminCommentReadRepository -> JDBC
+reads only social_comments_projection, with a single bounded query. DTO fields
+are id, targetId, parentId, authorId, body, creation/edit/deletion dates and
+moderation. No email, avatar, profile join, storage key or synthetic metric is
+added. targetId has no authoritative target type: Studio shows its reference
+without fabricating a coffee/article link. No comment moderation command is
+introduced in this read slice; the existing Social moderation workflow remains
+report-based and is not bypassed.
+
+AdminCommentCursor preserves the full Instant through an ISO/base64 keyset.
+The existing public millisecond cursor and public APIs remain unchanged.
+The additive studio-user-comments-2026-10 manifest adds the author/date/id
+index and requires outbox-delivery-2026-09 plus a Social table preflight. Existing
+release files/checksums stay immutable; renderer and deploy driver include it.
+No deployment or production lock/load measurement was performed.
+
+Final evidence: 60 selected backend tests/9 classes green after exact source
+restoration, including microsecond and equal-time paging, authorization,
+effacement, public Social regressions, existing User 360 reads, migration replay,
+release rendering and BC architecture. Three manual backend mutants (author,
+moderation, truncated cursor precision) caused behavioral assertions with zero
+test errors, then were restored. Full backend suite was not run.
+Studio: 437 tests/59 files green; four manual mutants (old success, old failure,
+lost freshness filter, unrelated author accepted by HTTP) caught and restored.
+Build OAuth/HTTPS, generated contract, bundle and delivery checks green.
+Chrome 390/1440 checked, including long uninterrupted comment text.
+
+FlowAtlas userCommentsRequested: 11 nodes/15 edges complete within its bounds;
+no application-wide coverage claim. Java read path is established by inspected
+code and PostgreSQL tests, not a claimed semantic query graph. Logs under
+/tmp/user-comments-*. Existing projection freshness dispatches a fresh GET,
+never payload-derived content. Milestone 4 remains open for final activity
+consolidation and review of the remaining Social report/history navigation.

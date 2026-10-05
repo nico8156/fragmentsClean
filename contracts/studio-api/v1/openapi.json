@@ -4,6 +4,77 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/comments": {
+    "get": {
+      "operationId": "searchAdminUserComments",
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "parameters": [
+        {
+          "name": "authorId",
+          "in": "query",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        {
+          "name": "cursor",
+          "in": "query",
+          "schema": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "limit",
+          "in": "query",
+          "schema": {
+            "type": "integer"
+          }
+        },
+        {
+          "name": "moderation",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string",
+            "enum": [
+              "PUBLISHED",
+              "PENDING",
+              "REJECTED",
+              "HIDDEN",
+              "SOFT_DELETED"
+            ]
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Admin snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUserComments"
+              }
+            }
+          }
+        },
+        "401": {
+          "description": "Authentication required"
+        },
+        "403": {
+          "description": "Admin access required"
+        },
+        "400": {
+          "description": "Invalid query"
+        }
+      }
+    }
+  },
   "/api/admin/experiences/reports": {
     "get": {
       "operationId": "listUserExperienceReports",
@@ -1433,6 +1504,93 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+  "AdminUserComment": {
+    "type": "object",
+    "required": [
+      "id",
+      "targetId",
+      "authorId",
+      "parentId",
+      "body",
+      "createdAt",
+      "editedAt",
+      "deletedAt",
+      "moderation"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "targetId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "authorId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "parentId": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "uuid"
+      },
+      "body": {
+        "type": "string"
+      },
+      "createdAt": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "editedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "deletedAt": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "format": "date-time"
+      },
+      "moderation": {
+        "type": "string",
+        "enum": [
+          "PUBLISHED",
+          "PENDING",
+          "REJECTED",
+          "HIDDEN",
+          "SOFT_DELETED"
+        ]
+      }
+    }
+  },
+  "AdminUserComments": {
+    "type": "object",
+    "required": [
+      "items",
+      "nextCursor"
+    ],
+    "properties": {
+      "items": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/AdminUserComment"
+        }
+      },
+      "nextCursor": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    }
+  },
   "AdminUserExperienceReport": {
     "type": "object",
     "required": [

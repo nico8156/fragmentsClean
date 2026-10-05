@@ -1343,3 +1343,6 @@ ALTER TABLE media_catalog_entries ADD COLUMN IF NOT EXISTS physically_deleted BO
 
 -- User 360 received report pagination
 CREATE INDEX IF NOT EXISTS ix_experience_reports_author_created ON experience_reports_projection(author_id,created_at DESC,report_id DESC);
+
+-- User 360 comment pagination
+CREATE INDEX IF NOT EXISTS ix_social_comments_author_created ON social_comments_projection(author_id,created_at DESC,id DESC);
