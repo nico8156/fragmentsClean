@@ -3,6 +3,8 @@ package com.nm.fragmentsclean.socialContextTest.endtoend.adapters.primary.spring
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.providers.DeterministicDateTimeProvider;
@@ -28,11 +30,15 @@ class WriteModerationControllerIT extends AbstractBaseE2E {
     @Autowired SpringUserBlockRepository blocks;
     @Autowired SpringOutboxEventRepository outbox;
     @Autowired DateTimeProvider dateTimeProvider;
+    @Autowired com.fasterxml.jackson.databind.ObjectMapper json;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Autowired com.nm.fragmentsclean.socialContext.read.projections.ModerationProjectionEventHandler projection;
     private final UUID author=UUID.randomUUID(), reporter=UUID.randomUUID(), operator=UUID.fromString("99999999-9999-9999-9999-999999999999");
     private final UUID commentId=UUID.randomUUID(), targetId=UUID.randomUUID();
 
     @BeforeEach void setup() {
         reports.deleteAll(); blocks.deleteAll(); comments.deleteAll(); outbox.deleteAll();
+        jdbc.update("INSERT INTO auth_users(id,provider,provider_user_id,email_verified,last_login_at) VALUES(?,'GOOGLE',?,true,now()) ON CONFLICT DO NOTHING",operator,operator.toString());
         ((DeterministicDateTimeProvider) dateTimeProvider).instantOfNow=Instant.parse("2026-09-11T10:00:00Z");
         comments.save(new CommentJpaEntity(commentId,targetId,author,null,"visible content",
                 Instant.parse("2026-09-11T09:00:00Z"),null,null,ModerationStatus.PUBLISHED,0));
@@ -74,6 +80,39 @@ class WriteModerationControllerIT extends AbstractBaseE2E {
                     """.formatted(UUID.randomUUID(),UUID.randomUUID())))
                 .andExpect(status().isBadRequest());
         assertThat(outbox.findAll()).isEmpty();
+    }
+
+
+    @Test void rejects_an_unmotivated_admin_command_and_records_its_canonical_rejection() throws Exception {
+        UUID command=UUID.randomUUID();
+        mvc.perform(post("/api/admin/moderation/reports/{id}/decision",UUID.randomUUID()).with(user(operator)).contentType("application/json").content("""
+            {"commandId":"%s","actionId":"%s","commentId":"%s","decision":"HIDDEN","at":"2026-09-11T10:00:00Z"}
+            """.formatted(command,UUID.randomUUID(),commentId))).andExpect(status().isUnprocessableEntity());
+        mvc.perform(get("/api/admin/commands/{id}",command).with(user(operator))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REJECTED"));
+        assertThat(comments.findById(commentId).orElseThrow().getModeration()).isEqualTo(ModerationStatus.PUBLISHED);assertThat(outbox.findAll()).isEmpty();
+    }
+
+    @Test void new_reviews_are_audited_while_replaying_the_same_command_is_duplicate_safe() throws Exception {
+        UUID report=UUID.randomUUID(),firstAction=UUID.randomUUID(),secondAction=UUID.randomUUID(),secondCommand=UUID.randomUUID();
+        mvc.perform(post("/api/social/comments/{id}/reports",commentId).with(user(reporter)).contentType("application/json").content("""
+            {"commandId":"%s","reportId":"%s","reason":"SPAM","at":"2026-09-11T10:00:00Z"}
+            """.formatted(UUID.randomUUID(),report))).andExpect(status().isAccepted());
+        decide(report,UUID.randomUUID(),firstAction,"Spam confirmé");
+        decide(report,secondCommand,secondAction,"Toujours masqué après revue");
+        decide(report,secondCommand,secondAction,"Toujours masqué après revue");
+        var stored=outbox.findAll();
+        assertThat(stored).filteredOn(event->event.getEventType().equals(CommentModeratedEvent.class.getName())).hasSize(2);
+        assertThat(comments.findById(commentId).orElseThrow().getVersion()).isEqualTo(2);
+        jdbc.update("INSERT INTO social_comments_projection VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",commentId,targetId,author,null,"visible content",java.sql.Timestamp.from(Instant.parse("2026-09-11T09:00:00Z")),null,null,"PUBLISHED",0,0,0);
+        for(var event:stored)if(event.getEventType().equals(CommentReportedEvent.class.getName()))projection.handle(json.readValue(event.getPayloadJson(),CommentReportedEvent.class));
+        for(var event:stored)if(event.getEventType().equals(CommentModeratedEvent.class.getName()))projection.handle(json.readValue(event.getPayloadJson(),CommentModeratedEvent.class));
+        mvc.perform(get("/api/admin/moderation/reports/{id}",report).with(user(operator))).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("RESOLVED")).andExpect(jsonPath("$.actions.length()").value(2));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM social_moderation_actions_projection WHERE action_id=? AND operator_id=? AND reason=?",Long.class,secondAction,operator,"Toujours masqué après revue")).isEqualTo(1);
+    }
+    private void decide(UUID report,UUID command,UUID action,String reason)throws Exception {
+        mvc.perform(post("/api/admin/moderation/reports/{id}/decision",report).with(user(operator)).contentType("application/json").content("""
+            {"commandId":"%s","actionId":"%s","commentId":"%s","decision":"HIDDEN","reason":"%s","at":"2026-09-11T10:00:00Z"}
+            """.formatted(command,action,commentId,reason))).andExpect(status().isAccepted());
     }
 
     private static org.springframework.test.web.servlet.request.RequestPostProcessor user(UUID id) {

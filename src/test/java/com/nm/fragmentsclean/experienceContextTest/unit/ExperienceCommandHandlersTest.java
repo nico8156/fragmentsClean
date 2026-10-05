@@ -100,4 +100,14 @@ class ExperienceCommandHandlersTest {
         assertThat(events.published).extracting(Object::getClass)
                 .containsExactly(ExperienceModerationDecidedEvent.class);
     }
+    @Test void audits_a_new_review_of_an_already_resolved_report() {
+        clock.instantOfNow=clientAt;
+        var experience=Experience.create(experienceId,user,coffee,"Visite",ExperiencePublicationStatus.PUBLISHED,policy,clientAt);experience.moderate(ExperienceModerationStatus.HIDDEN,clientAt);experiences.save(experience);
+        UUID reportId=UUID.randomUUID(),action=UUID.randomUUID();
+        var report=ExperienceReport.create(reportId,experienceId,coffee,user,UUID.randomUUID(),ExperienceReportReason.SPAM,null,clientAt);report.resolve(ExperienceReportStatus.RESOLVED,clientAt);reports.save(report);
+        new ModerateExperienceCommandHandler(experiences,reports,events,clock).execute(new ModerateExperienceCommand(UUID.randomUUID(),action,reportId,experienceId,user,ExperienceModerationStatus.HIDDEN,"Reste masqué",clientAt));
+        assertThat(events.published).singleElement().satisfies(value->{var audit=(ExperienceModerationDecidedEvent)value;assertThat(audit.actionId()).isEqualTo(action);assertThat(audit.reportId()).isEqualTo(reportId);assertThat(audit.reason()).isEqualTo("Reste masqué");});
+        assertThat(experiences.byId(experienceId).orElseThrow().toSnapshot().version()).isEqualTo(2);
+    }
+
 }

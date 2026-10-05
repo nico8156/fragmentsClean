@@ -194,3 +194,42 @@ Logs: /tmp/moderation-report-detail-* and /tmp/moderation-detail-final.log.
 No deployment. Follow-up: commands that accept a new review must emit its audit
 fact even if the content status is already at the requested value; Social also
 needs server-side mandatory reason validation. This is a separate command task.
+
+
+## Milestone 4d — motivated, audited reviews through existing commands
+
+Separate BEHAVIOUR / command-feature task after report-detail delivery.
+ModerateCommentCommandHandler now rejects null/blank reasons before mutation;
+MODERATION_REASON_REQUIRED and the existing 1000-character bound remain backend
+business rejections through durable receipts. ModerateComment OpenAPI requires
+a non-null reason. Studio already asks for it; admin clients omitting it now
+receive 422 plus a canonical REJECTED command. Public user APIs are unchanged.
+Audit reason is normalized by the owner, matching the Experience convention.
+
+A newly submitted moderation review always emits the existing owner audit event,
+even when visibility and the selected report state are unchanged. Comment gains
+recordModerationReview to advance its version without changing text/edit dates;
+Experience reuses that existing domain operation. No new event, audit BC, table
+or migration. A replay with the exact same commandId/fingerprint is still
+suppressed by DurableCommandExecutor, so retry does not create another review.
+
+Fake-first RED: 12 selected unit tests, 3 expected assertions, 0 errors (missing
+reason, Social no-op audit, Experience no-op audit); then minimum green.
+Three independent manual mutants restored the omitted reason guard/old no-op
+returns. Each produced 1 behavioral failure and 0 errors, followed by exact
+restoration. Integration then verifies the durable rejection, source version,
+outbox, projection and report-detail audit, including replay without duplicate.
+The first integration run lacked the mocked administrator's auth_users identity
+required by the existing audit FK; this setup error was corrected, never counted
+as a behavioral RED/mutation kill. Final restored verification: 46 tests / 8
+classes green, including existing public moderation and BC architecture.
+Full backend suite not run. Evidence: /tmp/moderation-audit-*.log and
+/tmp/moderation-backend-delivery-final.log. No deployment.
+
+Representative route: admin decision -> existing command bus/durable receipt ->
+owner handler/domain review -> JPA/outbox -> existing moderation projection ->
+owner report GET including matching actionId -> Studio confirmation. Tests
+explicitly deliver stored events through the existing projection handler; this
+is not a claim of live production SQS delivery. FlowAtlas Java maps the Social
+HTTP entry/command/handler (4 nodes/3 edges), as it does Experience; SQL/audit
+persistence coverage is supplied by code and PostgreSQL tests.

@@ -127,6 +127,11 @@ public class Comment extends AggregateRoot {
         return true;
     }
 
+    public void recordModerationReview() {
+        if (deletedAt != null) throw new IllegalStateException("Deleted comment cannot be moderated");
+        version++;
+    }
+
     public void registerModeratedEvent(UUID commandId, UUID actionId, UUID reportId,
                                        UUID operatorId, ReportStatus reportStatus,
                                        String reason, Instant clientAt, Instant serverNow) {

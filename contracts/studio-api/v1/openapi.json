@@ -2124,8 +2124,8 @@
       },
       "ModerateComment": {
         "type": "object", "additionalProperties": false,
-        "required": ["commandId", "actionId", "commentId", "decision", "at"],
-        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "commentId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": ["string", "null"], "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
+        "required": ["commandId", "actionId", "commentId", "decision", "reason", "at"],
+        "properties": { "commandId": { "type": "string", "format": "uuid" }, "actionId": { "type": "string", "format": "uuid" }, "commentId": { "type": "string", "format": "uuid" }, "decision": { "type": "string", "enum": ["HIDDEN", "PUBLISHED"] }, "reason": { "type": "string", "minLength": 1, "maxLength": 1000 }, "at": { "type": "string", "format": "date-time" } }
       },
       "ExperienceMedia": {
         "type": "object", "additionalProperties": false,

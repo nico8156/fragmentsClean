@@ -42,7 +42,6 @@ public class ModerateExperienceCommandHandler implements CommandHandler<Moderate
             boolean changed=item.resolve(reportStatus,now); reportChanged|=changed;
             if(changed) reports.save(item);
         }
-        if(!experienceChanged&&!reportChanged&&command.reportId()!=null) return;
         if(!experienceChanged) experience.recordModerationReview(now);
         experiences.save(experience);
         if(experienceChanged) {
