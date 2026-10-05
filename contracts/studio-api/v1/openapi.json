@@ -783,6 +783,7 @@
         "responses": { "200": { "description": "Moderation queue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ModerationReport" } } } } } }
       }
     },
+    "/api/admin/moderation/reports/{reportId}": {"get": {"operationId": "getModerationReport", "parameters": [{"name": "reportId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "Owner moderation report and audit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ModerationReport"}}}}, "400": {"description": "Invalid report id"}, "401": {"description": "Authentication required"}, "403": {"description": "Admin role required"}, "404": {"description": "Report not found in this bounded context"}}}},
     "/api/admin/moderation/reports/{reportId}/decision": {
       "post": {
         "operationId": "moderateReportedComment",
@@ -801,6 +802,7 @@
         "responses": { "200": { "description": "Experience moderation queue", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ExperienceModerationReport" } } } } } }
       }
     },
+    "/api/admin/experience-moderation/reports/{reportId}": {"get": {"operationId": "getExperienceModerationReport", "parameters": [{"name": "reportId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}}], "responses": {"200": {"description": "Owner moderation report and audit", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ExperienceModerationReport"}}}}, "400": {"description": "Invalid report id"}, "401": {"description": "Authentication required"}, "403": {"description": "Admin role required"}, "404": {"description": "Report not found in this bounded context"}}}},
     "/api/admin/experience-moderation/reports/{reportId}/decision": {
       "post": {
         "operationId": "moderateReportedExperience",

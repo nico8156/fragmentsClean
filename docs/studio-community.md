@@ -169,3 +169,28 @@ code and PostgreSQL tests, not a claimed semantic query graph. Logs under
 /tmp/user-comments-*. Existing projection freshness dispatches a fresh GET,
 never payload-derived content. Milestone 4 remains open for final activity
 consolidation and review of the remaining Social report/history navigation.
+
+
+## Milestone 4d — report detail for projection confirmation
+
+BEHAVIOUR / query-feature. The existing queue read is limited and cannot prove
+that an absent report was resolved. Add GET /api/admin/moderation/reports/{reportId}
+and GET /api/admin/experience-moderation/reports/{reportId}, each owned by its BC,
+through query -> handler -> read port -> JDBC. Reuse existing report/audit DTOs,
+local projections and admin authorization. Missing/wrong-owner IDs return 404;
+invalid UUIDs return 400. No storage access, cross-BC SQL, migration or command
+change in this slice. Experience reuses its existing read repository/media URL
+resolver; Social adds a narrow read port. Detail retrieval uses a fixed number
+of reads, independent of queue size; legacy queue N+1 remains separate debt.
+
+Evidence: expected HTTP RED (3 failures, 0 errors), then 18 integration tests
+passed. Two exact, independent manual mutants changed the owner report-id
+predicate; both caused 2 assertion failures / 0 errors, then were restored.
+The first restored integration run lost its PostgreSQL connection and the next
+had no Docker environment. After operator restarted Docker, final restored
+verification: 29 tests / 5 classes green (detail, existing Social moderation,
+User 360 reports, community, BC architecture). Full backend suite not run.
+Logs: /tmp/moderation-report-detail-* and /tmp/moderation-detail-final.log.
+No deployment. Follow-up: commands that accept a new review must emit its audit
+fact even if the content status is already at the requested value; Social also
+needs server-side mandatory reason validation. This is a separate command task.

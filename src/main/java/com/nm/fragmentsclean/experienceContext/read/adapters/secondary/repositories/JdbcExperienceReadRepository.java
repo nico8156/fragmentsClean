@@ -83,6 +83,15 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
       String requestedStatus, int requestedLimit) {
     String status = requestedStatus == null || requestedStatus.isBlank() ? "OPEN" : requestedStatus;
     int limit = Math.min(Math.max(requestedLimit, 1), 100);
+    return moderationReports("report.status = ? ORDER BY report.created_at ASC LIMIT ?", status, limit);
+  }
+
+  @Override
+  public Optional<ExperienceModerationReportView> findModerationReport(UUID reportId) {
+    return moderationReports("report.report_id = ?", reportId).stream().findFirst();
+  }
+
+  private List<ExperienceModerationReportView> moderationReports(String predicate,Object... parameters) {
     var reports =
         jdbc.query(
             """
@@ -92,10 +101,8 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
             FROM experience_reports_projection report
             LEFT JOIN experience_views view ON view.experience_id = report.experience_id
             LEFT JOIN experience_user_profiles profile ON profile.user_id = report.author_id
-            WHERE report.status = ?
-            ORDER BY report.created_at ASC
-            LIMIT ?
-            """,
+            WHERE
+            """ + predicate,
             (rs, row) ->
                 new ExperienceModerationReportView(
                     rs.getObject("report_id", UUID.class),
@@ -112,8 +119,7 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
                     rs.getTimestamp("created_at").toInstant(),
                     List.of(),
                     List.of()),
-            status,
-            limit);
+            parameters);
     var media = mediaForExperiences(reports.stream().map(ExperienceModerationReportView::experienceId).toList());
     return reports.stream()
 		.map(report -> withMedia(report, media.getOrDefault(report.experienceId(), List.of())))
