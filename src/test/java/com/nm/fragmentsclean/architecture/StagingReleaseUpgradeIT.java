@@ -52,7 +52,8 @@ class StagingReleaseUpgradeIT {
             "avatar-media-lifecycle-2026-10.psql",
             "coffee-media-lifecycle-2026-10.psql",
             "article-media-purge-2026-10.psql",
-            "coffee-media-purge-2026-10.psql");
+            "coffee-media-purge-2026-10.psql",
+            "article-art-direction-2026-10.psql");
 
     @BeforeAll static void start() { POSTGRES.start(); }
     @AfterAll static void stop() { POSTGRES.stop(); }
