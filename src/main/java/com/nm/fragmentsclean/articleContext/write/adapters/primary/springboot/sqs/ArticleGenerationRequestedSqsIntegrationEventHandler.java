@@ -43,7 +43,7 @@ public final class ArticleGenerationRequestedSqsIntegrationEventHandler implemen
         var now=Instant.now(); var work=claimer.claim(request.sagaId(), "article-generation-"+UUID.randomUUID(), now, Duration.ofMinutes(5));
         try {
             var result=provider.generate(new ArticleGenerationProvider.Request(request.sagaId(), subject, request.locale()));
-            var enriched=media.generate(request.sagaId(),request.articleId(),result.draft());
+            var enriched=media.generate(request.sagaId(),request.articleId(),result.draft(),work.saga().artDirection());
             completer.complete(work, "openai", result.providerResponseId(), result.model(), result.schemaVersion(), enriched, Instant.now());
         } catch (RuntimeException failure) {
             observability.generationFailed(failure.getClass().getSimpleName());

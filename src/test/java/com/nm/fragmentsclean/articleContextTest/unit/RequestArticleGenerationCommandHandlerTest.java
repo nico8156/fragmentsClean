@@ -63,6 +63,26 @@ class RequestArticleGenerationCommandHandlerTest {
         assertThat(writes).hasValue(0);
     }
 
+    @Test void persistsTheChosenDirectionAndRejectsUnknownDirectionsBeforeAnyWrite() {
+        var captured = new java.util.ArrayList<ArticleAuthoringSaga.Snapshot>();
+        var effects = new AtomicInteger();
+        ArticleAuthoringSagaRepository sagas = new ArticleAuthoringSagaRepository() {
+            public Optional<ArticleAuthoringSaga> byId(UUID ignored) { return Optional.empty(); }
+            public void save(ArticleAuthoringSaga saga) { captured.add(saga.snapshot()); }
+        };
+        var handler = new RequestArticleGenerationCommandHandler(sagas, ignored -> effects.incrementAndGet(), ignored -> effects.incrementAndGet(),
+                () -> Instant.parse("2026-10-07T10:00:00Z"), (id, type, aggregateId, eventType, at) -> {}, ArticleAuthoringObservability.noop());
+        var c = command("Café et silence");
+        handler.execute(new RequestArticleGenerationCommand(c.commandId(), c.clientAt(), c.sagaId(), c.articleId(), c.revisionId(),
+                c.theme(), c.slug(), c.locale(), c.authorId(), c.authorName(), c.trigger(), "CONTEMPLATIVE"));
+        assertThat(captured).hasSize(2).allSatisfy(snapshot -> assertThat(snapshot.artDirection()).isEqualTo(
+                com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection.CONTEMPLATIVE));
+        effects.set(0); captured.clear();
+        assertThatThrownBy(() -> handler.execute(new RequestArticleGenerationCommand(c.commandId(), c.clientAt(), c.sagaId(), c.articleId(), c.revisionId(),
+                c.theme(), c.slug(), c.locale(), c.authorId(), c.authorName(), c.trigger(), "unknown"))).isInstanceOf(ArticleDomainException.class);
+        assertThat(effects).hasValue(0); assertThat(captured).isEmpty();
+    }
+
     private static RequestArticleGenerationCommand command(String theme) {
         return new RequestArticleGenerationCommand(
                 UUID.randomUUID(), Instant.parse("2026-09-09T12:59:00Z"), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),

@@ -18,21 +18,21 @@ public class JdbcArticleAuthoringSagaRepository implements ArticleAuthoringSagaR
 
     @Override public Optional<ArticleAuthoringSaga> byId(UUID sagaId) {
         try {
-            return Optional.of(jdbc.queryForObject("SELECT saga_id, article_id, revision_id, theme, trigger, state, version, generation_attempts, lease_owner, lease_until, failure_category, created_at, updated_at FROM article_authoring_sagas WHERE saga_id = ?", (rs, n) -> ArticleAuthoringSaga.reconstitute(new ArticleAuthoringSaga.Snapshot(
+            return Optional.of(jdbc.queryForObject("SELECT saga_id, article_id, revision_id, theme, art_direction, trigger, state, version, generation_attempts, lease_owner, lease_until, failure_category, created_at, updated_at FROM article_authoring_sagas WHERE saga_id = ?", (rs, n) -> ArticleAuthoringSaga.reconstitute(new ArticleAuthoringSaga.Snapshot(
                     rs.getObject("saga_id", UUID.class), rs.getObject("article_id", UUID.class), rs.getObject("revision_id", UUID.class),
                     rs.getString("theme"), ArticleAuthoringTrigger.valueOf(rs.getString("trigger")), ArticleAuthoringSagaState.valueOf(rs.getString("state")),
                     rs.getLong("version"), rs.getInt("generation_attempts"), rs.getString("lease_owner"),
                     rs.getTimestamp("lease_until") == null ? null : rs.getTimestamp("lease_until").toInstant(),
                     rs.getString("failure_category") == null ? null : ArticleAuthoringFailureCategory.valueOf(rs.getString("failure_category")),
-                    rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant())), sagaId));
+                    rs.getTimestamp("created_at").toInstant(), rs.getTimestamp("updated_at").toInstant(), com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection.from(rs.getString("art_direction")))), sagaId));
         } catch (EmptyResultDataAccessException e) { return Optional.empty(); }
     }
 
     @Override public void save(ArticleAuthoringSaga saga) {
         var s = saga.snapshot();
         if (s.version() == 0) {
-            jdbc.update("INSERT INTO article_authoring_sagas (saga_id, article_id, revision_id, theme, trigger, state, version, generation_attempts, lease_owner, lease_until, failure_category, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
-                    s.sagaId(), s.articleId(), s.revisionId(), s.theme(), s.trigger().name(), s.state().name(), s.version(), s.generationAttempts(), s.leaseOwner(), timestamp(s.leaseUntil()), failure(s.failureCategory()), timestamp(s.createdAt()), timestamp(s.updatedAt()));
+            jdbc.update("INSERT INTO article_authoring_sagas (saga_id, article_id, revision_id, theme, art_direction, trigger, state, version, generation_attempts, lease_owner, lease_until, failure_category, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    s.sagaId(), s.articleId(), s.revisionId(), s.theme(), s.artDirection().name(), s.trigger().name(), s.state().name(), s.version(), s.generationAttempts(), s.leaseOwner(), timestamp(s.leaseUntil()), failure(s.failureCategory()), timestamp(s.createdAt()), timestamp(s.updatedAt()));
             return;
         }
         int updated = jdbc.update("UPDATE article_authoring_sagas SET state=?, version=?, generation_attempts=?, lease_owner=?, lease_until=?, failure_category=?, updated_at=? WHERE saga_id=? AND version=?",

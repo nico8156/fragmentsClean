@@ -3,6 +3,7 @@ package com.nm.fragmentsclean.articleContext.write.businesslogic.processManagers
 import com.nm.fragmentsclean.articleContext.write.businesslogic.models.ArticleDomainException;
 
 import java.time.Instant;
+import com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ public final class ArticleAuthoringSaga {
     private final UUID articleId;
     private final UUID revisionId;
     private final String theme;
+    private final ArticleArtDirection artDirection;
     private final ArticleAuthoringTrigger trigger;
     private ArticleAuthoringSagaState state;
     private long version;
@@ -25,9 +27,10 @@ public final class ArticleAuthoringSaga {
     private ArticleAuthoringSaga(UUID sagaId, UUID articleId, UUID revisionId, String theme,
                                  ArticleAuthoringTrigger trigger, ArticleAuthoringSagaState state,
                                  long version, int generationAttempts, String leaseOwner, Instant leaseUntil,
-                                 ArticleAuthoringFailureCategory failureCategory, Instant createdAt, Instant updatedAt) {
+                                 ArticleAuthoringFailureCategory failureCategory, Instant createdAt, Instant updatedAt, ArticleArtDirection artDirection) {
         this.sagaId = require(sagaId, "sagaId"); this.articleId = require(articleId, "articleId");
         this.revisionId = require(revisionId, "revisionId"); this.theme = requireText(theme, "theme");
+        this.artDirection = Objects.requireNonNull(artDirection, "artDirection");
         this.trigger = Objects.requireNonNull(trigger); this.state = Objects.requireNonNull(state);
         if (version < 0 || generationAttempts < 0) throw new ArticleDomainException("Invalid saga counters");
         this.version = version; this.generationAttempts = generationAttempts; this.leaseOwner = leaseOwner;
@@ -37,13 +40,18 @@ public final class ArticleAuthoringSaga {
 
     public static ArticleAuthoringSaga request(UUID sagaId, UUID articleId, UUID revisionId, String theme,
                                                ArticleAuthoringTrigger trigger, Instant now) {
+        return request(sagaId, articleId, revisionId, theme, trigger, now, ArticleArtDirection.ORIGINAL);
+    }
+
+    public static ArticleAuthoringSaga request(UUID sagaId, UUID articleId, UUID revisionId, String theme,
+                                               ArticleAuthoringTrigger trigger, Instant now, ArticleArtDirection artDirection) {
         return new ArticleAuthoringSaga(sagaId, articleId, revisionId, theme, trigger,
-                ArticleAuthoringSagaState.REQUESTED, 0, 0, null, null, null, now, now);
+                ArticleAuthoringSagaState.REQUESTED, 0, 0, null, null, null, now, now, artDirection);
     }
 
     public static ArticleAuthoringSaga reconstitute(Snapshot s) {
         return new ArticleAuthoringSaga(s.sagaId(), s.articleId(), s.revisionId(), s.theme(), s.trigger(), s.state(),
-                s.version(), s.generationAttempts(), s.leaseOwner(), s.leaseUntil(), s.failureCategory(), s.createdAt(), s.updatedAt());
+                s.version(), s.generationAttempts(), s.leaseOwner(), s.leaseUntil(), s.failureCategory(), s.createdAt(), s.updatedAt(), s.artDirection());
     }
 
     public void enqueueGeneration(Instant now) { transition(ArticleAuthoringSagaState.REQUESTED, ArticleAuthoringSagaState.GENERATION_PENDING, now); }
@@ -91,7 +99,7 @@ public final class ArticleAuthoringSaga {
     private static String requireText(String value, String name) { if (value == null || value.isBlank()) throw new ArticleDomainException(name + " must not be blank"); return value; }
     private static void reject(String message) { throw new ArticleDomainException(message); }
 
-    public Snapshot snapshot() { return new Snapshot(sagaId, articleId, revisionId, theme, trigger, state, version, generationAttempts, leaseOwner, leaseUntil, failureCategory, createdAt, updatedAt); }
+    public Snapshot snapshot() { return new Snapshot(sagaId, articleId, revisionId, theme, trigger, state, version, generationAttempts, leaseOwner, leaseUntil, failureCategory, createdAt, updatedAt, artDirection); }
     public boolean leaseExpired(Instant now) { return leaseExpiredAt(now); }
-    public record Snapshot(UUID sagaId, UUID articleId, UUID revisionId, String theme, ArticleAuthoringTrigger trigger, ArticleAuthoringSagaState state, long version, int generationAttempts, String leaseOwner, Instant leaseUntil, ArticleAuthoringFailureCategory failureCategory, Instant createdAt, Instant updatedAt) {}
+    public record Snapshot(UUID sagaId, UUID articleId, UUID revisionId, String theme, ArticleAuthoringTrigger trigger, ArticleAuthoringSagaState state, long version, int generationAttempts, String leaseOwner, Instant leaseUntil, ArticleAuthoringFailureCategory failureCategory, Instant createdAt, Instant updatedAt, ArticleArtDirection artDirection) {}
 }

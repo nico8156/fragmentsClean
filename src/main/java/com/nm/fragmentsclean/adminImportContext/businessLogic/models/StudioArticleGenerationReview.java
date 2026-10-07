@@ -6,7 +6,11 @@ import java.util.UUID;
 
 public record StudioArticleGenerationReview(
         UUID sagaId, UUID articleId, UUID revisionId, String subject, String state,
-        int attempts, Instant updatedAt, Revision revision) {
+        int attempts, Instant updatedAt, Revision revision, String artDirection) {
+    public StudioArticleGenerationReview(UUID sagaId, UUID articleId, UUID revisionId, String subject, String state,
+            int attempts, Instant updatedAt, Revision revision) {
+        this(sagaId, articleId, revisionId, subject, state, attempts, updatedAt, revision, "ORIGINAL");
+    }
     public record Revision(String title, String introduction, String conclusion,
             String coverReference, String coverUrl, Integer coverWidth, Integer coverHeight,
             String coverAlt, int readingTime, List<String> tags, List<Section> sections) { }

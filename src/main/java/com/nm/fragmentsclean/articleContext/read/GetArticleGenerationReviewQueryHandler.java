@@ -22,7 +22,7 @@ public final class GetArticleGenerationReviewQueryHandler implements ArticleGene
 	@Override
 	public GetArticleGenerationReview handle(UUID sagaId) {
 		var saga = jdbcTemplate.queryForMap("""
-				SELECT saga_id, article_id, revision_id, theme, state, generation_attempts, updated_at
+				SELECT saga_id, article_id, revision_id, theme, art_direction, state, generation_attempts, updated_at
 				FROM article_authoring_sagas
 				WHERE saga_id = ?
 				""", sagaId);
@@ -54,7 +54,7 @@ public final class GetArticleGenerationReviewQueryHandler implements ArticleGene
 				(String) saga.get("state"),
 				((Number) saga.get("generation_attempts")).intValue(),
 				((Timestamp) saga.get("updated_at")).toInstant(),
-				revisions.stream().findFirst().orElse(null));
+				revisions.stream().findFirst().orElse(null), (String) saga.get("art_direction"));
 	}
 
 	private List<String> tags(UUID revisionId) {

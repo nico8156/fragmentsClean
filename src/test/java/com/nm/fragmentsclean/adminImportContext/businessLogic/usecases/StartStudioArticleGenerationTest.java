@@ -17,6 +17,12 @@ class StartStudioArticleGenerationTest {
         assertEquals(uuid(2),result.sagaId()); assertEquals(uuid(3),result.articleId()); assertEquals("ACCEPTED",result.status());
         assertEquals("comprendre-le-cafe-filtre-00000000",fake.command.slug()); assertEquals(uuid(4),fake.command.revisionId());
     }
+    @Test void forwardsTheSelectedDirectionToTheArticleBoundary() {
+        var fake = new FakePort();
+        var useCase = new StartStudioArticleGeneration(fake, UUID::randomUUID, () -> Instant.parse("2026-10-07T10:00:00Z"));
+        useCase.execute(new StudioArticleGenerationRequest("Café et silence", "fr-FR", uuid(9), "Nicolas", "CONTEMPLATIVE"));
+        assertEquals("CONTEMPLATIVE", fake.command.artDirection());
+    }
     private static UUID uuid(int value){return UUID.fromString("00000000-0000-0000-0000-00000000000"+value);}
     private static final class FakePort implements ArticleGenerationAuthoringPort { StudioArticleGenerationCommand command; public void requestGeneration(StudioArticleGenerationCommand command){this.command=command;} }
 }

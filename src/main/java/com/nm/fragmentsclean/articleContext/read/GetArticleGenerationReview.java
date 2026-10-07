@@ -12,7 +12,11 @@ public record GetArticleGenerationReview(
 		String state,
 		int attempts,
 		Instant updatedAt,
-		Revision revision) {
+		Revision revision, String artDirection) {
+    public GetArticleGenerationReview(UUID sagaId, UUID articleId, UUID revisionId, String subject, String state,
+            int attempts, Instant updatedAt, Revision revision) {
+        this(sagaId, articleId, revisionId, subject, state, attempts, updatedAt, revision, "ORIGINAL");
+    }
 	public record Revision(
 			String title,
 			String introduction,

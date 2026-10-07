@@ -47,12 +47,13 @@ public class RequestArticleGenerationCommandHandler implements CommandHandler<Re
         // Validate before persisting or enqueueing. A malformed theme is a command
         // rejection, never an asynchronous worker failure with a stranded lease.
         var subject = ArticleSubject.from(command.theme());
+        var artDirection = com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection.from(command.artDirection());
         var now = clock.now();
         var article = ArticleAggregate.awaitingGeneration(command.articleId(), command.slug(), command.locale(),
                 command.authorId(), command.authorName(), now);
         articles.save(article);
         var saga = ArticleAuthoringSaga.request(command.sagaId(), command.articleId(), command.revisionId(),
-                subject.value(), command.trigger(), now);
+                subject.value(), command.trigger(), now, artDirection);
         // Persist the REQUESTED snapshot first. The transition increments the
         // optimistic version and must therefore be persisted as an UPDATE.
         sagas.save(saga);

@@ -48,7 +48,7 @@ public final class AdminStudioArticleGenerationController {
 			Authentication authentication) {
 		UUID operatorId = UUID.fromString(authentication.getName());
 		var request = new StudioArticleGenerationRequest(
-				body.subject(), body.locale(), operatorId, authentication.getName());
+				body.subject(), body.locale(), operatorId, authentication.getName(), body.artDirection());
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body(start.execute(request));
 	}
 
@@ -70,7 +70,7 @@ public final class AdminStudioArticleGenerationController {
 		return ResponseEntity.accepted().body(new CommandAccepted(approve.execute(token)));
 	}
 
-	public record Request(String subject, String locale) {
+	public record Request(String subject, String locale, String artDirection) {
 	}
 
 	public record EditRequest(

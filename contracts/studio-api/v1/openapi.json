@@ -4,6 +4,61 @@
   "servers": [{ "url": "https://fragments-staging.anchor-event.fr" }],
   "security": [{ "studioOAuth": [] }],
   "paths": {
+  "/api/admin/studio/article-generations": {
+    "post": {
+      "operationId": "startStudioArticleGeneration",
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/StudioArticleGenerationRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "202": {
+          "description": "Generation intent accepted; query the saga for progress.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArticleGenerationStarted"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "/api/admin/studio/article-generations/{sagaId}": {
+    "get": {
+      "operationId": "getStudioArticleGeneration",
+      "parameters": [
+        {
+          "name": "sagaId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Durable generation snapshot",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudioArticleGenerationReview"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "/api/admin/operations/audit": {
   "get": {
     "operationId": "searchStudioAdminAudit",
@@ -1763,6 +1818,210 @@
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
     "responses": { "CommandAccepted": { "description": "Command accepted; projection may still be stale", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CommandAccepted" } } } } },
     "schemas": {
+  "ArticleArtDirection": {
+    "type": "string",
+    "enum": [
+      "ORIGINAL",
+      "INTIMATE",
+      "LIVELY",
+      "CONTEMPLATIVE",
+      "BOLD"
+    ],
+    "description": "Article illustration mood. ORIGINAL preserves the historical Fragments prompt."
+  },
+  "StudioArticleGenerationRequest": {
+    "type": "object",
+    "required": [
+      "subject"
+    ],
+    "properties": {
+      "subject": {
+        "type": "string"
+      },
+      "locale": {
+        "type": "string",
+        "default": "fr-FR"
+      },
+      "artDirection": {
+        "$ref": "#/components/schemas/ArticleArtDirection",
+        "default": "ORIGINAL"
+      }
+    }
+  },
+  "StudioArticleGenerationReview": {
+    "type": "object",
+    "required": [
+      "sagaId",
+      "articleId",
+      "revisionId",
+      "subject",
+      "state",
+      "attempts",
+      "updatedAt",
+      "artDirection",
+      "revision"
+    ],
+    "properties": {
+      "sagaId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "articleId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "revisionId": {
+        "type": "string",
+        "format": "uuid"
+      },
+      "subject": {
+        "type": "string"
+      },
+      "state": {
+        "type": "string"
+      },
+      "attempts": {
+        "type": "integer"
+      },
+      "updatedAt": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "artDirection": {
+        "$ref": "#/components/schemas/ArticleArtDirection"
+      },
+      "revision": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/StudioGeneratedRevision"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    }
+  },
+  "StudioGeneratedRevision": {
+    "type": "object",
+    "required": [
+      "title",
+      "introduction",
+      "conclusion",
+      "coverReference",
+      "coverUrl",
+      "coverAlt",
+      "coverWidth",
+      "coverHeight",
+      "readingTime",
+      "tags",
+      "sections"
+    ],
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "introduction": {
+        "type": "string"
+      },
+      "conclusion": {
+        "type": "string"
+      },
+      "coverReference": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "coverUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "coverAlt": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "coverWidth": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "coverHeight": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "readingTime": {
+        "type": "integer"
+      },
+      "tags": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "sections": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "heading",
+            "paragraph",
+            "imageReference",
+            "imageUrl",
+            "imageAlt",
+            "imageWidth",
+            "imageHeight"
+          ],
+          "properties": {
+            "heading": {
+              "type": "string"
+            },
+            "paragraph": {
+              "type": "string"
+            },
+            "imageReference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "imageUrl": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "imageAlt": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "imageWidth": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "imageHeight": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+
 "StudioAdminAuditEntry": {
   "type": "object",
   "required": [

@@ -934,6 +934,8 @@ create table if not exists article_authoring_sagas (
     constraint article_authoring_saga_version_ck check (version >= 0),
     constraint article_authoring_saga_attempts_ck check (generation_attempts >= 0)
 );
+-- Idempotent upgrade for existing installations; legacy generations retain their original direction.
+alter table article_authoring_sagas add column if not exists art_direction varchar(32) not null default 'ORIGINAL';
 create unique index if not exists uq_article_authoring_saga_revision on article_authoring_sagas(revision_id);
 create index if not exists idx_article_authoring_saga_state on article_authoring_sagas(state, updated_at);
 create index if not exists idx_article_authoring_saga_lease on article_authoring_sagas(lease_until);

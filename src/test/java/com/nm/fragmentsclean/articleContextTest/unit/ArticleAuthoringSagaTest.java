@@ -14,6 +14,16 @@ class ArticleAuthoringSagaTest {
     private final UUID article = UUID.randomUUID();
     private final UUID revision = UUID.randomUUID();
 
+    @Test void keepsTheSelectedDirectionAfterReloadAndLeaseRecovery() {
+        var direction = com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection.BOLD;
+        var saga = ArticleAuthoringSaga.request(UUID.randomUUID(), article, revision, "origines", ArticleAuthoringTrigger.MANUAL, T0, direction);
+        saga.enqueueGeneration(T0);
+        saga.claimGeneration("worker", T0, T0.plusSeconds(10));
+        var restored = ArticleAuthoringSaga.reconstitute(saga.snapshot());
+        restored.recoverExpiredGeneration(T0.plusSeconds(10));
+        assertEquals(direction, restored.snapshot().artDirection());
+    }
+
     @Test
     void modelsTheHappyPathAndKeepsEachTransitionExplicit() {
         var saga = ArticleAuthoringSaga.request(UUID.randomUUID(), article, revision, "origines", ArticleAuthoringTrigger.MANUAL, T0);

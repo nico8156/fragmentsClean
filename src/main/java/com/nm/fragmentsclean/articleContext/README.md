@@ -277,3 +277,70 @@ Il démontre comment construire un domaine :
 * maintenable
 
 ---
+
+## Directions artistiques des illustrations Studio (2026-10-07)
+
+Dans Studio, l’onglet **Assistance** propose une humeur pour chaque nouvelle
+génération : `ORIGINAL`, `INTIMATE`, `LIVELY`, `CONTEMPLATIVE` ou `BOLD`.
+`ORIGINAL` reste le défaut et conserve exactement le prompt historique.
+Les autres directions modifient palette, lumière et composition, avec une
+priorité explicite sur les indications visuelles du brief généré. Le choix est
+manuel ; aucune rotation automatique ni re-génération des images existantes
+n’est introduite.
+
+Itération `BEHAVIOUR`, routes commande Studio, adaptateur externe et lecture.
+`articleContext` possède `ArticleArtDirection` et valide les valeurs avant toute
+écriture. `adminImportContext` transmet une chaîne primitive par son ACL de
+commande. La saga conserve le choix dans `article_authoring_sagas.art_direction`
+et l’expose dans son snapshot de consultation. Le worker utilise le choix de
+la saga réclamée pour la couverture et toutes les sections, même après une
+reprise. Le contrat événementiel SQS reste inchangé ; les appels OpenAI restent
+hors transaction. La traduction en consignes visuelles appartient à
+`OpenAiArticleImageGenerationProvider`.
+
+Avant le déploiement backend, appliquer le manifeste additif
+`src/main/resources/db/release/article-art-direction-2026-10.psql` avec le
+renderer de release existant. Il inclut
+`2026-10-07-article-art-direction.sql`. La colonne a pour défaut `ORIGINAL` ; les
+anciens appels, générations et messages restent compatibles. Déployer ensuite
+le backend puis le Studio. Aucun déploiement n’a été effectué pendant cette
+itération.
+
+Les exemples moteurs sont : conservation exacte du prompt original, palettes
+et compositions différentes pour les quatre alternatives, transmission de
+l’intention Studio, rejet d’une valeur inconnue avant écriture, cohérence
+couverture/sections et maintien du choix après reconstitution et reprise.
+La découverte principale est que les anciens briefs imposent aussi un style
+chaud : la nouvelle direction doit donc être explicitement prioritaire sur
+leur couleur et leur style, tout en conservant leur sujet.
+
+Vérifications : 76 tests backend sélectionnés passent, dont
+`ArticleArtDirectionPersistenceIT`, les contrats MockMvc/OpenAPI, les tests de
+reprise, `ReleaseManifestTest` et `BoundedContextArchitectureTest`. Le contexte
+article Studio passe ses 87 tests ; compilation TypeScript/Vite de production
+et synchronisation du contrat généré passent.
+
+Checkpoint de mutation manuel `EXECUTED` : retirer la direction du listener
+Studio fait échouer `articleArtDirectionIntent.test.ts` ; retirer la direction
+de la requête image fait échouer
+`ArticleGeneratedMediaServiceTest.sharesTheSelectedDirectionAcrossCoverAndSections`.
+Forcer l’adaptateur à utiliser le prompt historique pour toutes les directions
+fait échouer les quatre exemples de palette/composition et l’exemple de priorité
+sur un brief chaud dans `OpenAiArticleGenerationProviderTest`. Les trois mutants
+sont `KILLED`, sans survivant dans ce périmètre et sans erreur de setup ou de
+compilation. Les fichiers originaux sont restaurés et les suites repassent.
+Les logs et patchs exacts de cette session sont dans `/tmp/art-front-mutation.log`,
+`/tmp/art-mutation-media.log` et `/tmp/art-mutation-prompt.log` ; les mutations
+exactes sont dans `/tmp/art-front-mutation.py`, `/tmp/art-mutation.py` et
+`/tmp/art-mutation-prompt.py`. Baselines : `npm test -- tests/articleStudioContext`
+et la commande Maven ci-dessous (tests pertinents inclus dans les 76 tests
+backend). Chaque mutant est
+exécuté séparément et restauré par `finally`. La vérification finale de ces
+15 tests backend restaurés est consignée dans `/tmp/art-restored.log` ; la suite
+Studio complète restaurée reste verte. Aucun `PIN` supplémentaire n’a été
+nécessaire ; aucun score de campagne n’est revendiqué.
+
+```sh
+JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home mvn -q -o \
+  -Dtest=OpenAiArticleGenerationProviderTest,ArticleGeneratedMediaServiceTest,ArticleArtDirectionTest test
+```

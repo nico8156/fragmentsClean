@@ -19,7 +19,7 @@ public final class ArticleContextGenerationReviewAdapter implements ArticleGener
     public StudioArticleGenerationReview get(UUID sagaId) {
         var source = query.handle(sagaId);
         return new StudioArticleGenerationReview(source.sagaId(), source.articleId(), source.revisionId(),
-                source.subject(), source.state(), source.attempts(), source.updatedAt(), revision(source.revision()));
+                source.subject(), source.state(), source.attempts(), source.updatedAt(), revision(source.revision()), source.artDirection());
     }
 
     private static StudioArticleGenerationReview.Revision revision(GetArticleGenerationReview.Revision source) {

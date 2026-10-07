@@ -11,6 +11,18 @@ import org.junit.jupiter.api.Test;
 class StudioOpenApiContractTest {
     private static final Path CONTRACT = Path.of("contracts/studio-api/v1/openapi.json");
 
+    @Test void article_generation_contract_keeps_direction_optional_with_the_historical_default() throws Exception {
+        JsonNode root = new ObjectMapper().readTree(Files.readString(CONTRACT));
+        var schemas = root.path("components").path("schemas");
+        var expected = java.util.Arrays.stream(com.nm.fragmentsclean.articleContext.write.businesslogic.models.generation.ArticleArtDirection.values()).map(Enum::name).toList();
+        var values = new java.util.ArrayList<String>();
+        schemas.path("ArticleArtDirection").path("enum").forEach(value -> values.add(value.asText()));
+        assertThat(values).containsExactlyElementsOf(expected);
+        assertThat(schemas.path("StudioArticleGenerationRequest").path("properties").path("artDirection").path("default").asText()).isEqualTo("ORIGINAL");
+        assertThat(schemas.path("StudioArticleGenerationRequest").path("required").toString()).doesNotContain("artDirection");
+        assertThat(root.path("paths").has("/api/admin/studio/article-generations")).isTrue();
+    }
+
     @Test
     void experience_moderation_uses_its_domain_status_in_requests_and_audit() throws Exception {
         JsonNode schemas = new ObjectMapper().readTree(Files.readString(CONTRACT)).path("components").path("schemas");

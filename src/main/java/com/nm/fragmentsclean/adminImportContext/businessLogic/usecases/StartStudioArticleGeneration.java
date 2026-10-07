@@ -13,7 +13,7 @@ public final class StartStudioArticleGeneration {
         var commandId=ids.generate(); var sagaId=ids.generate(); var articleId=ids.generate(); var revisionId=ids.generate();
         String slug=slug(subject)+"-"+articleId.toString().substring(0,8);
         port.requestGeneration(new StudioArticleGenerationCommand(commandId,clock.now(),sagaId,articleId,revisionId,subject,slug,locale,
-                java.util.Objects.requireNonNull(request.operatorId(),"operatorId"),require(request.operatorName(),"operatorName")));
+                java.util.Objects.requireNonNull(request.operatorId(),"operatorId"),require(request.operatorName(),"operatorName"),request.artDirection()));
         return new StudioArticleGenerationResult(commandId,sagaId,articleId,revisionId,"ACCEPTED");
     }
     private static String slug(String value) { String normalized=Normalizer.normalize(value,Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+","-").replaceAll("(^-|-$)",""); return normalized.isBlank()?"article":normalized.substring(0,Math.min(80,normalized.length())); }

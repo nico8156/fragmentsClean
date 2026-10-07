@@ -95,7 +95,7 @@ class DeploymentSafetyIT {
                 "projection-sync-audience-2026-09", "refresh-token-hardening-2026-09",
                 "logout-revocation-2026-09", "outbox-delivery-2026-09", "lease_owner", "next_attempt_at",
                 "account_erasure_barriers", "recipient_id", "token_hash", "family_id",
-                "uq_articles_featured_rank").doesNotContain("\\ir ");
+                "uq_articles_featured_rank", "article-art-direction-2026-10", "add column if not exists art_direction", "default 'ORIGINAL'").doesNotContain("\\ir ");
     }
 
     @Test void approval_and_matching_image_revision_are_required_before_external_calls() throws Exception {

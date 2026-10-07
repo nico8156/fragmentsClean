@@ -12,6 +12,12 @@ class ReleaseManifestTest {
     private static final Path RENDERER = Path.of("infra/aws/compose/platform/staging/fragments/render-release-migration.sh");
     @TempDir Path temporary;
 
+    @Test void article_art_direction_manifest_is_additive_and_preserves_original() throws Exception {
+        copy(); var result = render("a".repeat(40), "article-art-direction-2026-10.psql");
+        assertThat(result.exit).isZero();
+        assertThat(result.output).contains("article-art-direction-2026-10", "add column if not exists art_direction", "default 'ORIGINAL'").doesNotContain("\\ir ");
+    }
+
     @Test void admin_audit_search_manifest_is_additive() throws Exception {
         copy();var result=render("a".repeat(40),"studio-admin-audit-search-2026-10.psql");
         assertThat(result.exit).isZero();assertThat(result.output).contains("studio-admin-audit-search-2026-10","ix_admin_audit_actor_cursor","ix_admin_audit_command_cursor").doesNotContain("\\ir ");
