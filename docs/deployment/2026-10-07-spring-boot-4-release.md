@@ -45,4 +45,17 @@ PostgreSQL migration tests.
 
 ## Qualification
 
-Final validation and staging evidence will be recorded after completion.
+Local verification: `JAVA_HOME=...jdk-21... bash scripts/verify-backend-ci.sh`
+passed: 866 tests, zero failures, errors or skipped tests; executable packaging
+and secret/configuration checks passed. This local test run exercised the Boot
+migration before the final Tomcat/Jackson 3 patch overrides; the final packaged
+SBOM contains Spring MVC 7.0.9, Tomcat 11.0.26, Jackson 2.21.7 / 3.1.7 and Netty
+4.2.17.Final. Trivy 0.70.0 scanned this final `target/bom.json` with
+`--severity HIGH,CRITICAL --exit-code 1`: zero findings.
+
+The final committed runtime is also qualified by the full official Backend CI
+and staging deployment workflow before publication. Staging uses its existing
+backup, journaled migration and release health gates.
+
+Official Backend CI run `37614124825` on `d6dfe31` passed the complete release
+verification and mandatory dependency security scan before integration into main.
