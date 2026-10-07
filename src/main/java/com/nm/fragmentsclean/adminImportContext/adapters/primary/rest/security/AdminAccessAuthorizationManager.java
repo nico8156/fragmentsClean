@@ -15,7 +15,7 @@ public class AdminAccessAuthorizationManager implements AuthorizationManager<Req
 	}
 
 	@Override
-	public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+	public AuthorizationDecision authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
 		var request = context.getRequest();
 		String path = request.getServletPath();
 		// MockMvc can leave servletPath empty; URI excludes the context prefix.

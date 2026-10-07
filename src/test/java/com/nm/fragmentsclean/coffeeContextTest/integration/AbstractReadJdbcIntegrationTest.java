@@ -7,7 +7,7 @@ import com.nm.fragmentsclean.TestContainers;
 
 @SpringBootTest
 @TestPropertySource(locations = "classpath:application.properties", properties = {
-        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration,org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration"
+        "spring.autoconfigure.exclude=org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration,org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration"
 })
 public abstract class AbstractReadJdbcIntegrationTest extends TestContainers {
 }

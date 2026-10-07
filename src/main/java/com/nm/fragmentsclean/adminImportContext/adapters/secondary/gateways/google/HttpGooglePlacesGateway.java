@@ -89,7 +89,7 @@ public class HttpGooglePlacesGateway implements GooglePlacesGateway {
 		}
 
 		var url = UriComponentsBuilder
-				.fromHttpUrl(properties.getBaseUrl() + "/" + mediaResourceName(photo.name()))
+				.fromUriString(properties.getBaseUrl() + "/" + mediaResourceName(photo.name()))
 				.queryParam("maxWidthPx", properties.getPhotoMaxWidthPx())
 				.queryParam("skipHttpRedirect", true)
 				.toUriString();

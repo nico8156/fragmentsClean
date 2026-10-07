@@ -6,8 +6,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.actuate.health.SimpleStatusAggregator;
-import org.springframework.boot.actuate.health.Status;
+import org.springframework.boot.health.actuate.endpoint.SimpleStatusAggregator;
+import org.springframework.boot.health.contributor.Status;
 
 class ReleaseHealthConfigurationTest {
 

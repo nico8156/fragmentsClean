@@ -25,7 +25,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.PersonalDataResi
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.JdbcPersonalDataResidueStore;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.repositories.jdbc.JdbcAccountErasureBarrier;
 
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

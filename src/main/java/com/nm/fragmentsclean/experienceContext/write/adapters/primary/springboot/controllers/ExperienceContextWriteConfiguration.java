@@ -11,7 +11,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.DurableCom
 import com.nm.fragmentsclean.sharedKernel.businesslogic.media.*;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBarrier;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.PrivateImageStorageProperties;
-import java.time.Duration;import java.util.*;import java.util.stream.Collectors;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.autoconfigure.domain.EntityScan;import org.springframework.boot.context.properties.EnableConfigurationProperties;import org.springframework.context.annotation.*;import org.springframework.data.jpa.repository.config.EnableJpaRepositories;import org.springframework.jdbc.core.JdbcTemplate;
+import java.time.Duration;import java.util.*;import java.util.stream.Collectors;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.persistence.autoconfigure.EntityScan;import org.springframework.boot.context.properties.EnableConfigurationProperties;import org.springframework.context.annotation.*;import org.springframework.data.jpa.repository.config.EnableJpaRepositories;import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 @EntityScan("com.nm.fragmentsclean.experienceContext.write.adapters.secondary.repositories.jpa.entities")

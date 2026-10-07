@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,7 +39,7 @@ public class AuthRefreshIT extends AbstractBaseE2E {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
-    @SpyBean
+    @MockitoSpyBean
     JwtTokenService tokenService;
 
     @BeforeEach

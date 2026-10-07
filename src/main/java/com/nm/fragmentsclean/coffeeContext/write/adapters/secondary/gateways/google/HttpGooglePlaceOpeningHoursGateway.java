@@ -43,7 +43,7 @@ public class HttpGooglePlaceOpeningHoursGateway implements GooglePlaceOpeningHou
 	public ImportedOpeningHours findOpeningHours(GooglePlaceId googlePlaceId) {
 		requireApiKey();
 		var url = UriComponentsBuilder
-				.fromHttpUrl(baseUrl + "/places/" + googlePlaceId.value())
+				.fromUriString(baseUrl + "/places/" + googlePlaceId.value())
 				.queryParam("languageCode", languageCode)
 				.queryParam("regionCode", regionCode)
 				.toUriString();

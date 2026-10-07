@@ -64,7 +64,7 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 
 	private PlacePhotosResponse fetchPlacePhotos(GooglePlaceId googlePlaceId) {
 		var url = UriComponentsBuilder
-				.fromHttpUrl(baseUrl + "/places/" + googlePlaceId.value())
+				.fromUriString(baseUrl + "/places/" + googlePlaceId.value())
 				.queryParam("languageCode", languageCode)
 				.queryParam("regionCode", regionCode)
 				.toUriString();
@@ -73,7 +73,7 @@ public class HttpGooglePlacePhotosGateway implements GooglePlacePhotosGateway {
 
 	private GooglePlacePhoto downloadPhoto(String photoName) {
 		var url = UriComponentsBuilder
-				.fromHttpUrl(baseUrl + "/" + mediaResourceName(photoName))
+				.fromUriString(baseUrl + "/" + mediaResourceName(photoName))
 				.queryParam("maxWidthPx", maxWidthPx)
 				.queryParam("skipHttpRedirect", true)
 				.toUriString();

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import com.nm.fragmentsclean.authenticationContext.write.businesslogic.gateways.AppleAuthService;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -20,7 +20,7 @@ class AuthAppleMobileIT extends AbstractBaseE2E {
   @Autowired JdbcTemplate jdbc;
   @Autowired com.fasterxml.jackson.databind.ObjectMapper json;
   @Autowired org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder;
-  @MockBean AppleAuthService apple;
+  @MockitoBean AppleAuthService apple;
 
   @BeforeEach
   void clean() {

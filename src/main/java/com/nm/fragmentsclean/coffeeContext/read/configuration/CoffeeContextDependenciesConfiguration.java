@@ -49,7 +49,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.projectionSync.Projectio
 
 import java.util.List;
 
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;

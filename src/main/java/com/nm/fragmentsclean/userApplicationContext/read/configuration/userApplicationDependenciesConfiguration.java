@@ -26,7 +26,7 @@ import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureBa
 import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.AccountErasureJournal;
 import com.nm.fragmentsclean.sharedKernel.businesslogic.privacy.PersonalDataResidueStore;
 import com.nm.fragmentsclean.sharedKernel.adapters.secondary.gateways.storage.PrivateImageStorageProperties;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.persistence.autoconfigure.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;

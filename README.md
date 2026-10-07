@@ -1,5 +1,5 @@
 ![Java](https://img.shields.io/badge/java-21-blue)
-![Spring Boot](https://img.shields.io/badge/springboot-3.x-green)
+![Spring Boot](https://img.shields.io/badge/springboot-4.x-green)
 ![SQS](https://img.shields.io/badge/aws-sqs-orange)
 ![Docker](https://img.shields.io/badge/docker-ready-blue)
 ![React Native](https://img.shields.io/badge/mobile-react--native-61dafb)
