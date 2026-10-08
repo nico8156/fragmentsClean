@@ -162,3 +162,17 @@ par le Studio. Contrôle opérationnel CHORE, sans modification de configuration
 **Aucune nouvelle clé nécessaire pour ce serveur.** Ce contrôle ne déploie pas
 l’intégration : migration, livraison serveur/Studio/mobile et recette iPhone
 restent à effectuer. Mutation non applicable à ce contrôle opérationnel.
+
+## Qualification globale pendant le déploiement
+
+La première CI globale a exécuté 891 tests et détecté deux échecs dans
+StagingReleaseUpgradeIT : son manifeste de qualification explicite n’incluait
+pas encore image-moderation-2026-10. Son garde d’égalité avec le script de
+déploiement et la comparaison au schéma neuf ont tous deux détecté cet oubli.
+Le déploiement s’est arrêté avant construction/push d’image et intervention SSM.
+
+Correction CHORE de qualification : ajouter le nouveau driver à la liste
+ordonnée du test, sans supprimer ni assouplir ses assertions. La qualification
+locale StagingReleaseUpgradeIT repasse, y compris application depuis le schéma
+historique, équivalence au schéma neuf et reprise idempotente. Le workflow
+complet est ensuite relancé sur le commit corrigé.
