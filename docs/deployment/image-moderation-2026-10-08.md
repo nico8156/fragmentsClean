@@ -4,7 +4,8 @@
 
 Itération **BEHAVIOUR**, routes external-adapter / command-feature, workflow
 de commande Studio et réconciliation mobile. Implémentation locale dans les
-trois dépôts ; aucun déploiement effectué. Les tests automatisés simulent OpenAI.
+trois dépôts. L’état de la livraison staging et TestFlight est consigné en fin
+de document. Les tests automatisés simulent OpenAI.
 Un contrôle réel ultérieur depuis le serveur staging a réussi avec une image
 unie synthétique, sans envoi de photo utilisateur (voir ci-dessous).
 
@@ -176,3 +177,92 @@ ordonnée du test, sans supprimer ni assouplir ses assertions. La qualification
 locale StagingReleaseUpgradeIT repasse, y compris application depuis le schéma
 historique, équivalence au schéma neuf et reprise idempotente. Le workflow
 complet est ensuite relancé sur le commit corrigé.
+
+
+## Livraison autorisée — staging et TestFlight
+
+Itération **CHORE**, route technical/external-adapter. Nicolas a autorisé le
+déploiement ; aucune publication App Store publique n’est effectuée.
+
+Révisions de la livraison initiale :
+- Backend : `1878e5760c722fad8bc7c082d1a5bd58224f6605`.
+  Backend CI `37780599886` réussie : **891 tests, 0 échec, 0 erreur, 0 ignoré**.
+  Déploiement staging `37780646673` réussi, y compris le contrôle des
+  vulnérabilités de l’image, la sauvegarde préalable et la santé applicative.
+- Studio : `8d2b39a017814830ce20a3da15eedecfc456db1b`.
+  CI `37779637109` et déploiement `37779850467` réussis ; manifeste HTTPS
+  sur https://studio-staging.anchor-event.fr/release-manifest.json conforme.
+- Mobile : `57ab8e410b1a9ccb990d3c0e3fed467d6e2a8271`, CI `37779588171` réussie.
+  Compilation EAS `9464553c-d087-4938-a86e-aa68ece18774` FINISHED,
+  **1.0.0 (11)** ; soumission `e2d2a3d7-d817-4358-8643-52eedb2e9149`
+  FINISHED sans erreur. Le traitement Apple et la disponibilité aux testeurs
+  ne sont pas confirmés par ce seul statut EAS.
+
+L’IPA téléchargé a été inspecté avec `scripts/inspect-ios-ipa.mjs` :
+bundle `com.nico8156.fragments`, version/build conformes, connexion Apple
+présente, attachement debugger désactivé, 13 manifests de confidentialité.
+SHA-256 : `78ba4821b8fb31b4a4722daefcd852cc1df85186921612eb423e8d6b5544dacf`.
+Signature : `integrity-checked-local-trust-unavailable` ; le contrôle local
+ne constitue pas une validation Apple. Compilation réalisée depuis un clone
+propre du commit, sans les captures ou archives locales non suivies.
+
+Confidentialité publiée et contrôlée par HTTPS sur les deux racines :
+- https://fragments.anchor-event.fr/legal/confidentialite.html :
+  SHA-256 `ba806514aca1ec0c192b3583c3cf97323ea822f74e5698ac33acdbc4b0182c15`,
+  release `moderation-a2d72b8`, précédent lien conservé.
+  SSM `19ad377f-c65c-463d-aa55-fc4cd8b61ba1` Success.
+- https://fragments-staging.anchor-event.fr/legal/confidentialite.html :
+  SHA-256 `50e283124565faa51d3d9708706fc2816cd4fd830959d34f0292d3cac3ae112c`,
+  sauvegarde de l’ancienne page hors racine publique.
+  SSM `eacecb2a-ac76-42c7-a842-bd7134cf0920` Success.
+
+La recette iPhone reste humaine : installer le build 11, vérifier annulation
+et permission OpenAI, photo normale et avatar, puis revue Studio si une image
+est signalée. Ne pas déduire de l’absence de signalement qu’une revue humaine
+a été exercée. Les contrôles automatisés couvrent approbation/refus et reprise.
+Mutation non applicable aux seules opérations de déploiement ; preuves des
+mutations comportementales ci-dessus.
+
+
+### Vérification serveur après bascule
+
+SSM `b72efe54-e583-483b-a3d1-4d0770acae4e` : Success. Le conteneur actif utilise
+exactement l’image `sha-1878e5760c722fad8bc7c082d1a5bd58224f6605`.
+Le journal PostgreSQL confirme `image-moderation-2026-10`, source identique,
+appliquée le 8 octobre à 13:11:21 UTC. Les quatre contraintes attendues
+acceptent REVIEW_REQUIRED et REJECTED. La sauvegarde préalable est réussie
+(dernier achèvement 13:11:21 UTC). Le contrôle HTTPS `verify-release-health.sh`
+a confirmé tous les composants obligatoires UP après le déploiement.
+
+### Ajustement visuel mobile demandé pendant la livraison
+
+Nicolas a demandé d’harmoniser le bouton Google avec le bouton Apple avant
+une nouvelle compilation TestFlight. CHORE visuel, route screen feature :
+commit mobile `de2ffd1760b2f6331082806a04fc1e6be05d4547`, un composant seulement.
+Le groupe logo/texte est centré ; texte système noir 21,5 points pour une
+hauteur normale de 50 points, d’après les proportions de la documentation
+[Apple](https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple/).
+Le libellé reste sur une ligne et peut se réduire sur un écran étroit ; le
+spinner occupe le même espace que le logo. Largeur et coins arrondis restent
+alignés sur Apple. Le bouton Apple reste le composant natif existant.
+Tests existants du composant : 3 réussis ; TypeScript et lint réussis.
+Mutation non applicable à ce changement visuel. Aucun simulateur iOS installé :
+comparaison visuelle native à confirmer sur iPhone, sans revendication d’une
+égalité de rendu mesurée. Le prochain build remplace le 11 pour la recette.
+
+
+### Build final pour la recette : 1.0.0 (12)
+
+- CI mobile `37782445798` : réussite sur `de2ffd1`.
+- Build EAS `6d8b5b2c-3b43-4f59-a8c7-ca1bc1c41b8d` : FINISHED.
+- Soumission Apple `37e9e816-c862-493e-a31b-5ff0568f0339` : FINISHED, sans erreur.
+- IPA inspecté : version **1.0.0**, build **12**, bundle attendu, entitlement
+  Apple présent, debugger désactivé et 13 manifests de confidentialité.
+- SHA-256 IPA : `eeaef54d223260359e38c2a60392991d390b99e1c8824275644640d0e32f918a`.
+  Même limite de confiance locale de signature que le build 11, explicitée plus haut.
+
+Installer **le build 12** pour la recette finale (modération et présentation des
+boutons). L’envoi Apple est terminé ; l’achèvement du traitement App Store
+Connect et la disponibilité aux groupes TestFlight ne sont pas vérifiés ici.
+Aucune publication App Store publique effectuée. Aucun autre changement mobile
+n’a été ajouté après la demande d’harmonisation des boutons.
