@@ -13,6 +13,7 @@ import org.springframework.data.repository.query.Param;
 public interface SpringAvatarMediaRepository extends JpaRepository<AvatarMediaJpaEntity,UUID>{
   @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select media from avatar_media media where media.mediaId=:id") Optional<AvatarMediaJpaEntity> findByIdForUpdate(@Param("id")UUID id);
   @Query("select count(u) from AppUserJpaEntity u where u.avatarUrl=concat('media:avatar:',:key)") long profileUsageCount(@Param("key") String key);
+  @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select media from avatar_media media where media.userId=:userId order by media.mediaId") List<AvatarMediaJpaEntity> findByUser(@Param("userId")UUID userId);
   Optional<AvatarMediaJpaEntity> findByMediaId(UUID id);
   @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select media from avatar_media media where media.userId=:userId and media.status=:status") Optional<AvatarMediaJpaEntity> findActiveByUser(@Param("userId")UUID userId,@Param("status")AvatarMediaStatus status);
   @Query("select media from avatar_media media where media.status=:deletionPending or (media.status=:pending and media.updatedAt<:before) order by media.updatedAt") List<AvatarMediaJpaEntity> findCleanupCandidates(@Param("deletionPending")AvatarMediaStatus deletionPending,@Param("pending")AvatarMediaStatus pending,@Param("before")Instant before,org.springframework.data.domain.Pageable page);

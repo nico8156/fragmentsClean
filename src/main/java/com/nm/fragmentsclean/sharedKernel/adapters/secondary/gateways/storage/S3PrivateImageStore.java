@@ -24,12 +24,14 @@ public final class S3PrivateImageStore implements PrivateImageStore {
   private final S3Client client;
   private final S3Presigner presigner;
   private final SafeImageNormalizer normalizer;
+  private final com.nm.fragmentsclean.sharedKernel.businesslogic.media.ImageContentAnalyzer analyzer;
 
-  public S3PrivateImageStore(PrivateImageStorageProperties properties, S3Client client, S3Presigner presigner, SafeImageNormalizer normalizer) {
+  public S3PrivateImageStore(PrivateImageStorageProperties properties, S3Client client, S3Presigner presigner, SafeImageNormalizer normalizer, com.nm.fragmentsclean.sharedKernel.businesslogic.media.ImageContentAnalyzer analyzer) {
     this.properties = properties;
     this.client = client;
     this.presigner = presigner;
     this.normalizer = normalizer;
+    this.analyzer = analyzer;
   }
 
   @Override
@@ -43,10 +45,13 @@ public final class S3PrivateImageStore implements PrivateImageStore {
   @Override
   public ProcessedImage normalize(String pendingObjectKey, String finalObjectKey, String declaredContentType, ImageRules rules) {
     var normalized = normalizer.normalize(readBounded(pendingObjectKey, rules.maxInputBytes()), declaredContentType, rules);
+    // Analyze these exact bytes before writing. A provider failure creates no normalized orphan.
+    boolean flagged = analyzer.flagged(URI.create("data:" + normalized.contentType() + ";base64," + java.util.Base64.getEncoder().encodeToString(normalized.bytes())));
+    finalObjectKey = finalObjectKey + "." + normalized.sha256() + ".jpg";
     client.putObject(
         PutObjectRequest.builder().bucket(properties.requiredBucket()).key(finalObjectKey).contentType(normalized.contentType()).contentLength((long) normalized.bytes().length).cacheControl("private, max-age=21600").serverSideEncryption(ServerSideEncryption.AES256).build(),
         RequestBody.fromBytes(normalized.bytes()));
-    return new ProcessedImage(finalObjectKey, normalized.contentType(), normalized.bytes().length, normalized.width(), normalized.height(), normalized.sha256());
+    return new ProcessedImage(finalObjectKey, normalized.contentType(), normalized.bytes().length, normalized.width(), normalized.height(), normalized.sha256(), flagged);
   }
 
   private byte[] readBounded(String objectKey, long maximumBytes) {

@@ -1193,7 +1193,7 @@ CREATE TABLE IF NOT EXISTS experience_media (
     width INTEGER, height INTEGER, sha256 VARCHAR(64), created_at TIMESTAMPTZ NOT NULL,
 	updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
 	CONSTRAINT ck_experience_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
-	CONSTRAINT ck_experience_media_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_experience_media_status CHECK (status IN ('PENDING','REVIEW_REQUIRED','REJECTED','AVAILABLE','DELETION_PENDING','DELETED')),
 	CONSTRAINT ck_experience_media_available CHECK (status <> 'AVAILABLE' OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND sha256 IS NOT NULL))
 );
 CREATE INDEX IF NOT EXISTS ix_experience_media_experience_status ON experience_media(experience_id,status);
@@ -1204,7 +1204,7 @@ CREATE TABLE IF NOT EXISTS experience_media_views (
     status VARCHAR(32) NOT NULL, object_key VARCHAR(1024), content_type VARCHAR(64),
     size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER,
 	position INTEGER NOT NULL DEFAULT 0, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
-	CONSTRAINT ck_experience_media_view_status CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_experience_media_view_status CHECK (status IN ('PENDING','REVIEW_REQUIRED','REJECTED','AVAILABLE','DELETION_PENDING','DELETED')),
 	CONSTRAINT ck_experience_media_view_position CHECK (position >= 0)
 );
 CREATE INDEX IF NOT EXISTS ix_experience_media_views_experience ON experience_media_views(experience_id,status,position);
@@ -1216,7 +1216,7 @@ CREATE TABLE IF NOT EXISTS user_avatar_media (
     size_bytes BIGINT NOT NULL DEFAULT 0, width INTEGER, height INTEGER, sha256 VARCHAR(64),
 	created_at TIMESTAMPTZ NOT NULL, updated_at TIMESTAMPTZ NOT NULL, version BIGINT NOT NULL,
 	CONSTRAINT ck_user_avatar_media_declared_size CHECK (declared_size BETWEEN 1 AND 8000000),
-	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','AVAILABLE','RETIRED','DELETION_PENDING','DELETED')),
+	CONSTRAINT ck_user_avatar_media_status CHECK (status IN ('PENDING','REVIEW_REQUIRED','REJECTED','AVAILABLE','RETIRED','DELETION_PENDING','DELETED')),
 	CONSTRAINT ck_user_avatar_media_available CHECK (status NOT IN ('AVAILABLE','RETIRED') OR (object_key IS NOT NULL AND content_type='image/jpeg' AND size_bytes > 0 AND width > 0 AND height > 0 AND width=height AND sha256 IS NOT NULL))
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_user_avatar_media_available ON user_avatar_media(user_id) WHERE status='AVAILABLE';
@@ -1263,7 +1263,7 @@ CREATE TABLE IF NOT EXISTS media_catalog_entries (
     source_version bigint NOT NULL,
     PRIMARY KEY(origin,media_id),
     CHECK (origin IN ('EXPERIENCE','COFFEE','AVATAR','ARTICLE')),
-    CHECK (status IN ('PENDING','AVAILABLE','DELETION_PENDING','DELETED'))
+    CHECK (status IN ('PENDING','REVIEW_REQUIRED','REJECTED','AVAILABLE','DELETION_PENDING','DELETED'))
 );
 CREATE INDEX IF NOT EXISTS ix_media_catalog_owner ON media_catalog_entries(owner_id,origin,media_id);
 CREATE INDEX IF NOT EXISTS ix_media_catalog_status ON media_catalog_entries(status,origin,media_id);

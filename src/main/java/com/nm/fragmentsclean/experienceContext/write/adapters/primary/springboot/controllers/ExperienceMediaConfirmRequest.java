@@ -3,4 +3,4 @@ package com.nm.fragmentsclean.experienceContext.write.adapters.primary.springboo
 import java.time.Instant;
 import java.util.UUID;
 
-public record ExperienceMediaConfirmRequest(UUID commandId, Instant at) {}
+public record ExperienceMediaConfirmRequest(UUID commandId, Instant at, Boolean moderationConsent) {}

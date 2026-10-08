@@ -52,6 +52,38 @@ class S3PrivateImageStoreTest {
     assertThat(aborted).isTrue();
   }
 
+  @Test void analyzes_exact_stored_bytes_and_preserves_the_flag() throws Exception {
+    byte[] png = png();
+    respond((long)png.length, new java.io.ByteArrayInputStream(png));
+    var inspected = new java.util.concurrent.atomic.AtomicReference<byte[]>();
+    var properties = new PrivateImageStorageProperties(); properties.setBucket("test-private-media");
+    var store = new S3PrivateImageStore(properties, client, null, new SafeImageNormalizer(), image -> {
+      inspected.set(java.util.Base64.getDecoder().decode(image.toString().split(",",2)[1]));
+      return true;
+    });
+    var result = store.normalize("pending","final","image/png",new ImageRules(100000,100000,10,10,false,.8f));
+    var body = org.mockito.ArgumentCaptor.forClass(software.amazon.awssdk.core.sync.RequestBody.class);
+    var request = org.mockito.ArgumentCaptor.forClass(software.amazon.awssdk.services.s3.model.PutObjectRequest.class);
+    verify(client).putObject(request.capture(),body.capture());
+    assertThat(body.getValue().contentStreamProvider().newStream().readAllBytes()).isEqualTo(inspected.get());
+    assertThat(result.contentFlagged()).isTrue();
+    assertThat(request.getValue().key()).isEqualTo("final."+result.sha256()+".jpg");
+  }
+
+  @Test void provider_outage_writes_no_normalized_object() throws Exception {
+    byte[] png=png(); respond((long)png.length,new java.io.ByteArrayInputStream(png));
+    var properties=new PrivateImageStorageProperties();properties.setBucket("test-private-media");
+    var store=new S3PrivateImageStore(properties,client,null,new SafeImageNormalizer(),image->{throw new IllegalStateException("unavailable");});
+    assertThatThrownBy(()->store.normalize("pending","final","image/png",new ImageRules(100000,100000,10,10,false,.8f))).isInstanceOf(IllegalStateException.class);
+    verify(client,never()).putObject(any(software.amazon.awssdk.services.s3.model.PutObjectRequest.class),any(software.amazon.awssdk.core.sync.RequestBody.class));
+  }
+
+  private byte[] png() throws Exception {
+    var out=new java.io.ByteArrayOutputStream();
+    javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(2,2,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",out);
+    return out.toByteArray();
+  }
+
   private void assertTooLarge() {
     assertThatThrownBy(() -> store().normalize("pending", "final", "image/png", rules))
         .isInstanceOf(ImageUploadRejectedException.class)
@@ -69,7 +101,7 @@ class S3PrivateImageStoreTest {
   private S3PrivateImageStore store() {
     var properties = new PrivateImageStorageProperties();
     properties.setBucket("test-private-media");
-    return new S3PrivateImageStore(properties, client, null, new SafeImageNormalizer());
+    return new S3PrivateImageStore(properties, client, null, new SafeImageNormalizer(), image -> false);
   }
 
   private static class CountingPayload extends InputStream {

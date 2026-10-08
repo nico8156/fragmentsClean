@@ -22,7 +22,7 @@ public final class IssueExperienceMediaUploadIntent {
   public ExperienceMediaUploadIntent issue(UUID experienceId, UUID mediaId, UUID userId,
       String contentType, long size) {
     var pending = register.register(experienceId, mediaId, userId, contentType, size).snapshot();
-    if (pending.status() == ExperienceMediaStatus.AVAILABLE) {
+    if (pending.status() == ExperienceMediaStatus.AVAILABLE || pending.status() == ExperienceMediaStatus.REVIEW_REQUIRED || pending.status() == ExperienceMediaStatus.REJECTED) {
       return new ExperienceMediaUploadIntent(mediaId, false, null, null, Map.of(), null);
     }
     if (pending.status() != ExperienceMediaStatus.PENDING) throw new com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException(

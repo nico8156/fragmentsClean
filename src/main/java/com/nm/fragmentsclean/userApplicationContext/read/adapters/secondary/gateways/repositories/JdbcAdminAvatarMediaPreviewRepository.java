@@ -13,7 +13,7 @@ public class JdbcAdminAvatarMediaPreviewRepository implements AdminAvatarMediaPr
         var clauses=new ArrayList<String>();var args=new ArrayList<Object>();
         mediaProfiles.forEach((media,profile)->{clauses.add("(m.media_id=? AND m.user_id=?)");args.add(media);args.add(profile);});
         Map<UUID,String> result=new HashMap<>();
-        jdbc.query("SELECT m.media_id,m.object_key FROM user_avatar_media m JOIN app_users u ON u.id=m.user_id WHERE m.status='AVAILABLE' AND u.lifecycle_status='ACTIVE' AND m.object_key IS NOT NULL AND u.avatar_url='media:avatar:' || m.object_key AND ("+String.join(" OR ",clauses)+")",rs->{
+        jdbc.query("SELECT m.media_id,m.object_key FROM user_avatar_media m JOIN app_users u ON u.id=m.user_id WHERE m.status IN ('AVAILABLE','REVIEW_REQUIRED') AND u.lifecycle_status='ACTIVE' AND m.object_key IS NOT NULL AND (m.status='REVIEW_REQUIRED' OR u.avatar_url='media:avatar:' || m.object_key) AND ("+String.join(" OR ",clauses)+")",rs->{
             result.put(rs.getObject("media_id",UUID.class),resolver.resolve("media:avatar:"+rs.getString("object_key")));
         },args.toArray());
         return Map.copyOf(result);

@@ -23,7 +23,9 @@ public final class GetAppUserProfileQueryHandler
     try {
       return jdbc.queryForObject(
           """
-          SELECT id, display_name, avatar_url, created_at, updated_at, version
+          SELECT id, display_name, avatar_url, created_at, updated_at, version,
+            (SELECT CASE WHEN m.status IN ('REVIEW_REQUIRED','REJECTED') THEN m.status ELSE NULL END
+             FROM user_avatar_media m WHERE m.user_id=app_users.id ORDER BY m.created_at DESC,m.media_id DESC LIMIT 1) AS avatar_moderation_status
           FROM app_users
           WHERE id = ? AND lifecycle_status = 'ACTIVE'
           """,
@@ -34,7 +36,7 @@ public final class GetAppUserProfileQueryHandler
                   mediaUrls.resolve(rs.getString("avatar_url")),
                   rs.getTimestamp("created_at").toInstant(),
                   rs.getTimestamp("updated_at").toInstant(),
-                  rs.getLong("version")),
+                  rs.getLong("version"),rs.getString("avatar_moderation_status")),
           query.userId());
     } catch (EmptyResultDataAccessException missing) {
       return null;

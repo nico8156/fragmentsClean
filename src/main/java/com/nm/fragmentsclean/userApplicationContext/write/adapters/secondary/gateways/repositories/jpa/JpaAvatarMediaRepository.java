@@ -15,6 +15,7 @@ public final class JpaAvatarMediaRepository implements AvatarMediaRepository{
   public JpaAvatarMediaRepository(SpringAvatarMediaRepository repository){this.repository=repository;}
   @Override public Optional<AvatarMedia> byId(UUID id){return repository.findByIdForUpdate(id).map(e->AvatarMedia.fromSnapshot(e.snapshot()));}
   @Override public Optional<AvatarMedia.Snapshot> inspect(UUID id){return repository.findByMediaId(id).map(AvatarMediaJpaEntity::snapshot);}
+  @Override public List<AvatarMedia> byUser(UUID id){return repository.findByUser(id).stream().map(e->AvatarMedia.fromSnapshot(e.snapshot())).toList();}
   @Override public Optional<AvatarMedia> activeByUser(UUID id){return repository.findActiveByUser(id,AvatarMediaStatus.AVAILABLE).map(e->AvatarMedia.fromSnapshot(e.snapshot()));}
   @Override public long profileUsageCount(String key){return repository.profileUsageCount(key);}
   @Override public void save(AvatarMedia media){repository.save(new AvatarMediaJpaEntity(media.snapshot()));}

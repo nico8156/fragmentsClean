@@ -55,6 +55,25 @@ public final class AvatarMedia extends AggregateRoot {
     if(now.isBefore(updatedAt.plus(MINIMUM_ADMIN_RETENTION)))throw new BusinessCommandRejectedException("MEDIA_RETENTION_ACTIVE","Thirty full days of retention have not elapsed");
     return requestDeletion(now);
   }
+  public boolean review(boolean approve, Instant now) {
+    var target = approve ? AvatarMediaStatus.AVAILABLE : AvatarMediaStatus.REJECTED;
+    if (status == target) return false;
+    if (status != AvatarMediaStatus.REVIEW_REQUIRED) throw new BusinessCommandRejectedException(
+        "MEDIA_NOT_AWAITING_REVIEW", "Only an image awaiting review can receive a decision");
+    status = target; updatedAt = now; version++; return true;
+  }
+
+  public boolean confirmForReview(String key, String type, long bytes, int w, int h, String hash, Instant now) {
+    if (status == AvatarMediaStatus.REVIEW_REQUIRED) {
+      if (!Objects.equals(objectKey, key) || !Objects.equals(sha256, hash))
+        throw new BusinessCommandRejectedException("MEDIA_CONFIRM_CONFLICT", "Another image is already awaiting review");
+      return false;
+    }
+    boolean changed = confirm(key, type, bytes, w, h, hash, now);
+    if (changed) status = AvatarMediaStatus.REVIEW_REQUIRED;
+    return changed;
+  }
+
   public boolean requestDeletion(Instant now){if(status==AvatarMediaStatus.DELETED||status==AvatarMediaStatus.DELETION_PENDING)return false;status=AvatarMediaStatus.DELETION_PENDING;updatedAt=now;version++;return true;}
   public boolean markDeleted(Instant now){if(status==AvatarMediaStatus.DELETED)return false;if(status!=AvatarMediaStatus.DELETION_PENDING)throw new IllegalStateException("Avatar deletion was not requested");status=AvatarMediaStatus.DELETED;userId=null;updatedAt=now;version++;return true;}
   public Snapshot snapshot(){return new Snapshot(id,userId,declaredContentType,declaredSize,pendingObjectKey,status,objectKey,contentType,size,width,height,sha256,createdAt,updatedAt,version);}

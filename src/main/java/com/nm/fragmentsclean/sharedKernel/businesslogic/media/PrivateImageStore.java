@@ -13,6 +13,8 @@ public interface PrivateImageStore {
   void delete(String objectKey);
 
   record UploadTarget(URI url, String method, Map<String, String> headers, Instant expiresAt) {}
-  record ProcessedImage(String objectKey, String contentType, long size, int width, int height, String sha256) {}
+  record ProcessedImage(String objectKey, String contentType, long size, int width, int height, String sha256, boolean contentFlagged) {
+    public ProcessedImage(String objectKey,String contentType,long size,int width,int height,String sha256){this(objectKey,contentType,size,width,height,sha256,false);}
+  }
   record ImageRules(long maxInputBytes, long maxPixels, int maxWidth, int maxHeight, boolean squareCrop, float jpegQuality) {}
 }

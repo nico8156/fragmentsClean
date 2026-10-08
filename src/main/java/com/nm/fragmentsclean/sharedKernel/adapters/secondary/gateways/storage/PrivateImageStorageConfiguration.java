@@ -61,7 +61,7 @@ public class PrivateImageStorageConfiguration {
       PrivateImageStorageProperties properties,
       @Qualifier("privateMediaS3Client") S3Client client,
       @Qualifier("privateMediaS3Presigner") S3Presigner presigner,
-      SafeImageNormalizer normalizer) {
-    return new S3PrivateImageStore(properties, client, presigner, normalizer);
+      SafeImageNormalizer normalizer, com.nm.fragmentsclean.sharedKernel.businesslogic.media.ImageContentAnalyzer analyzer) {
+    return new S3PrivateImageStore(properties, client, presigner, normalizer, analyzer);
   }
 }

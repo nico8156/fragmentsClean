@@ -9,4 +9,6 @@ public record AppUserProfileView(
     String avatarUrl,
     Instant createdAt,
     Instant updatedAt,
-    long version) {}
+    long version, String avatarModerationStatus) {
+  public AppUserProfileView(UUID userId,String displayName,String avatarUrl,Instant createdAt,Instant updatedAt,long version){this(userId,displayName,avatarUrl,createdAt,updatedAt,version,null);}
+}

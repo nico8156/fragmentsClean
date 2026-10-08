@@ -29,7 +29,7 @@ public final class ConfirmExperienceMediaUpload {
       throw new BusinessCommandRejectedException("EXPERIENCE_MEDIA_FORBIDDEN", "Media upload is not owned by requester");
     }
     PrivateImageStore.ProcessedImage processed;
-    if (pending.status() == ExperienceMediaStatus.AVAILABLE) {
+    if (pending.status() == ExperienceMediaStatus.AVAILABLE || pending.status() == ExperienceMediaStatus.REVIEW_REQUIRED || pending.status() == ExperienceMediaStatus.REJECTED) {
       processed = new PrivateImageStore.ProcessedImage(pending.objectKey(), pending.contentType(),
           pending.size(), pending.width(), pending.height(), pending.sha256());
     } else if (pending.status() == ExperienceMediaStatus.PENDING) {
@@ -38,10 +38,12 @@ public final class ConfirmExperienceMediaUpload {
     } else {
       throw new BusinessCommandRejectedException("EXPERIENCE_MEDIA_NOT_PENDING", "Media upload cannot be confirmed");
     }
+    boolean reviewRequired = pending.status() == ExperienceMediaStatus.REVIEW_REQUIRED
+        || (pending.status() == ExperienceMediaStatus.PENDING && processed.contentFlagged());
     var command = new ConfirmExperienceMediaCommand(commandId, experienceId, mediaId, userId,
         processed.objectKey(), processed.contentType(), processed.size(), processed.width(),
         processed.height(), processed.sha256(), clientAt);
-    durable.execute(command, () -> handler.execute(command));
+    durable.execute(command, () -> handler.executeReviewed(command, reviewRequired));
     store.delete(pending.pendingObjectKey());
   }
 }

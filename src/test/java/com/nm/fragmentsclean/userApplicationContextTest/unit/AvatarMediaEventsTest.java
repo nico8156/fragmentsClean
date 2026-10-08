@@ -47,6 +47,41 @@ class AvatarMediaEventsTest {
         assertThat(event.status()).isEqualTo("DELETED");assertThat(event.userId()).isNull();assertThat(event.profileUserId()).isNull();
         assertThat(event.objectKey()).isNull();assertThat(event.contentType()).isNull();assertThat(event.size()).isZero();assertThat(event.width()).isNull();
     }
+    @Test void flagged_avatar_keeps_old_profile_until_human_approval(){
+        UUID old=pending();confirm(old);String oldUrl=users.value.avatarUrl();
+        UUID candidate=pending();flag(candidate);
+        assertThat(users.value.avatarUrl()).isEqualTo(oldUrl);
+        assertThat(media.byId(candidate).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.REVIEW_REQUIRED);
+        review(candidate,true);
+        assertThat(media.byId(candidate).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.AVAILABLE);
+        assertThat(media.byId(old).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.DELETION_PENDING);
+        assertThat(users.value.avatarUrl()).isNotEqualTo(oldUrl);
+        assertThat(changes()).anySatisfy(e->{assertThat(e.mediaId()).isEqualTo(candidate);assertThat(e.profileUserId()).isEqualTo(user);});
+    }
+    @Test void refusal_preserves_the_previous_avatar(){
+        UUID old=pending();confirm(old);String oldUrl=users.value.avatarUrl();UUID candidate=pending();flag(candidate);
+        review(candidate,false);
+        assertThat(users.value.avatarUrl()).isEqualTo(oldUrl);
+        assertThat(media.byId(old).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.AVAILABLE);
+        assertThat(media.byId(candidate).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.REJECTED);
+    }
+    @Test void removal_cancels_review_even_without_an_active_avatar(){
+        UUID candidate=pending();flag(candidate);
+        new RemoveAvatarCommandHandler(users,media,events,()->at).execute(new RemoveAvatarCommand(UUID.randomUUID(),user,at));
+        assertThat(media.byId(candidate).orElseThrow().snapshot().status()).isEqualTo(AvatarMediaStatus.DELETION_PENDING);
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->review(candidate,true)).isInstanceOf(com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException.class);
+        assertThat(users.value.avatarUrl()).isNull();
+    }
+    @Test void an_older_review_cannot_replace_a_newer_active_avatar(){
+        UUID candidate=pending();flag(candidate);
+        UUID newer=UUID.randomUUID();media.save(AvatarMedia.pending(newer,user,"image/png",256,"pending/"+newer,at.plusSeconds(1)));confirm(newer);
+        String current=users.value.avatarUrl();
+        org.assertj.core.api.Assertions.assertThatThrownBy(()->review(candidate,true)).isInstanceOf(com.nm.fragmentsclean.sharedKernel.businesslogic.commandStatus.BusinessCommandRejectedException.class);
+        assertThat(users.value.avatarUrl()).isEqualTo(current);
+    }
+    private void flag(UUID id){new ConfirmAvatarCommandHandler(users,media,events,()->at).executeReviewed(new ConfirmAvatarCommand(UUID.randomUUID(),id,user,"avatars/"+id,"image/jpeg",1024,512,512,"hash",at),true);}
+    private void review(UUID id,boolean approve){new ReviewAvatarMediaCommandHandler(users,media,events,(a,b,c,d,e,f,g)->{},()->at).execute(new ReviewAvatarMediaCommand(UUID.randomUUID(),id,user,approve,"Décision opérateur"));}
+
     private UUID pending(){UUID id=UUID.randomUUID();media.save(AvatarMedia.pending(id,user,"image/png",256,"pending/"+id,at));return id;}
     private void confirm(UUID id){new ConfirmAvatarCommandHandler(users,media,events,()->at).execute(new ConfirmAvatarCommand(UUID.randomUUID(),id,user,"avatars/"+id,"image/jpeg",1024,512,512,"hash",at));}
     private List<AvatarMediaChangedEvent> changes(){return events.published.stream().filter(AvatarMediaChangedEvent.class::isInstance).map(AvatarMediaChangedEvent.class::cast).toList();}

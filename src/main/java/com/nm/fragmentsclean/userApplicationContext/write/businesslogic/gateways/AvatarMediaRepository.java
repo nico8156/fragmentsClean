@@ -9,6 +9,7 @@ import java.util.UUID;
 public interface AvatarMediaRepository {
   Optional<AvatarMedia> byId(UUID mediaId);
   Optional<AvatarMedia.Snapshot> inspect(UUID mediaId);
+  List<AvatarMedia> byUser(UUID userId);
   Optional<AvatarMedia> activeByUser(UUID userId);
   long profileUsageCount(String objectKey);
   void save(AvatarMedia media);

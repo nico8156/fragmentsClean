@@ -35,6 +35,7 @@ public final class WriteExperienceMediaController {
   ResponseEntity<Void> confirm(@PathVariable UUID experienceId, @PathVariable UUID mediaId,
       @RequestBody ExperienceMediaConfirmRequest body, @AuthenticationPrincipal Jwt jwt) {
 	if (body.commandId() == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "commandId is required");
+    if (!Boolean.TRUE.equals(body.moderationConsent())) throw new BusinessCommandRejectedException("IMAGE_MODERATION_CONSENT_REQUIRED", "Choisis à nouveau la photo et autorise son analyse par OpenAI.");
     try {
       confirmations.confirm(body.commandId(), experienceId, mediaId, user(jwt), body.at());
     } catch (ImageUploadRejectedException rejected) {

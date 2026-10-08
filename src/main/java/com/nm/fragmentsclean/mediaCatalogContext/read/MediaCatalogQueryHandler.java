@@ -17,13 +17,13 @@ public final class MediaCatalogQueryHandler implements QueryHandler<SearchMediaC
     }
     public Optional<MediaCatalogArticleUsagePage> articleUsages(ListMediaCatalogArticleUsagesQuery query){return repository.byId(query.id()).map(v->repository.articleUsages(query));}
     private List<MediaCatalogView> withCurrentPreviews(List<MediaCatalogView> items){
-        var ids=items.stream().filter(v->"EXPERIENCE".equals(v.origin()) && "AVAILABLE".equals(v.status())).map(MediaCatalogView::mediaId).toList();
+        var ids=items.stream().filter(v->"EXPERIENCE".equals(v.origin()) && Set.of("AVAILABLE","REVIEW_REQUIRED").contains(v.status())).map(MediaCatalogView::mediaId).toList();
         var current=ids.isEmpty()?Map.<UUID,String>of():previews.experiencePreviews(ids);
         var coffeeRefs=new HashMap<UUID,UUID>();
         items.stream().filter(v->"COFFEE".equals(v.origin()) && "AVAILABLE".equals(v.status()) && v.resourceId()!=null).forEach(v->coffeeRefs.put(v.mediaId(),v.resourceId()));
         var coffee=coffeeRefs.isEmpty()?Map.<UUID,String>of():previews.coffeePreviews(coffeeRefs);
         var avatarRefs=new HashMap<UUID,UUID>();
-        items.stream().filter(v->"AVATAR".equals(v.origin()) && "AVAILABLE".equals(v.status()) && v.resourceId()!=null).forEach(v->avatarRefs.put(v.mediaId(),v.resourceId()));
+        items.stream().filter(v->"AVATAR".equals(v.origin()) && Set.of("AVAILABLE","REVIEW_REQUIRED").contains(v.status()) && v.ownerId()!=null && ("REVIEW_REQUIRED".equals(v.status()) || v.resourceId()!=null)).forEach(v->avatarRefs.put(v.mediaId(),"REVIEW_REQUIRED".equals(v.status())?v.ownerId():v.resourceId()));
         var avatar=avatarRefs.isEmpty()?Map.<UUID,String>of():previews.avatarPreviews(avatarRefs);
         var articleIds=items.stream().filter(v->"ARTICLE".equals(v.origin()) && "AVAILABLE".equals(v.status())).map(MediaCatalogView::mediaId).toList();
         var refs=articleIds.isEmpty()?Map.<UUID,String>of():repository.articleReferences(articleIds);

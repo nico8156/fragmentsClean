@@ -1811,8 +1811,102 @@
           }
         }
       }
+    },
+"/api/admin/studio/avatar-media/{mediaId}/review": {
+  "post": {
+    "operationId": "reviewAvatarMedia",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "mediaId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ImageReviewRequest"
+          }
+        }
+      }
+    },
+    "responses": {
+      "202": {
+        "description": "Accepted; canonical command status remains authoritative"
+      },
+      "400": {
+        "description": "Invalid request"
+      },
+      "401": {
+        "description": "Authentication required"
+      },
+      "403": {
+        "description": "Admin required"
+      },
+      "409": {
+        "description": "Command rejected"
+      }
     }
-  },
+  }
+},
+"/api/admin/studio/experience-media/{mediaId}/review": {
+  "post": {
+    "operationId": "reviewExperienceMedia",
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+    "parameters": [
+      {
+        "name": "mediaId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+    ],
+    "requestBody": {
+      "required": true,
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ImageReviewRequest"
+          }
+        }
+      }
+    },
+    "responses": {
+      "202": {
+        "description": "Accepted; canonical command status remains authoritative"
+      },
+      "400": {
+        "description": "Invalid request"
+      },
+      "401": {
+        "description": "Authentication required"
+      },
+      "403": {
+        "description": "Admin required"
+      },
+      "409": {
+        "description": "Command rejected"
+      }
+    }
+  }
+}
+},
   "components": {
     "securitySchemes": { "studioOAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" } },
     "parameters": { "CoffeeId": { "name": "coffeeId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } } },
@@ -2980,12 +3074,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "AVAILABLE",
-              "DELETION_PENDING",
-              "DELETED"
-            ]
+            "enum": ["PENDING", "AVAILABLE", "DELETION_PENDING", "DELETED", "REVIEW_REQUIRED", "REJECTED"]
           },
           "resourceId": {
             "type": [
@@ -3503,12 +3592,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "AVAILABLE",
-              "DELETION_PENDING",
-              "DELETED"
-            ]
+            "enum": ["PENDING", "AVAILABLE", "DELETION_PENDING", "DELETED", "REVIEW_REQUIRED", "REJECTED"]
           },
           "publicationStatus": {
             "type": "string",
@@ -3556,13 +3640,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "AVAILABLE",
-              "RETIRED",
-              "DELETION_PENDING",
-              "DELETED"
-            ]
+            "enum": ["PENDING", "AVAILABLE", "RETIRED", "DELETION_PENDING", "DELETED", "REVIEW_REQUIRED", "REJECTED"]
           },
           "usages": {
             "type": "integer",
@@ -3659,7 +3737,29 @@
             "format": "date-time"
           }
         }
-      }
+      },
+"ImageReviewRequest": {
+  "type": "object",
+  "required": [
+    "commandId",
+    "approve",
+    "reason"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "approve": {
+      "type": "boolean"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
     }
+  }
+}
+}
   }
 }

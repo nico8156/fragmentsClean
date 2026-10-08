@@ -52,7 +52,7 @@ class PrivateMediaCleanupLocalStackTest {
             properties.setBucket(bucket);
             properties.setRegion(localStack.getRegion());
             properties.setEndpointOverride(localStack.getEndpointOverride(LocalStackContainer.Service.S3));
-            var store = new S3PrivateImageStore(properties, client, presigner, new SafeImageNormalizer());
+            var store = new S3PrivateImageStore(properties, client, presigner, new SafeImageNormalizer(), input -> false);
             var repository = new FakeExperienceMediaRepository();
             var media = ExperienceMedia.pending(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
                     UUID.randomUUID(), "image/jpeg", 3, objectKey, NOW.minus(Duration.ofDays(2)));
@@ -92,7 +92,7 @@ class PrivateMediaCleanupLocalStackTest {
                     RequestBody.fromBytes(png.toByteArray()));
             var properties = new PrivateImageStorageProperties();
             properties.setBucket(bucket);
-            var store = new S3PrivateImageStore(properties, client, presigner, new SafeImageNormalizer());
+            var store = new S3PrivateImageStore(properties, client, presigner, new SafeImageNormalizer(), input -> false);
 
             var result = store.normalize("pending.png", "normalized.jpg", "image/png",
                     new com.nm.fragmentsclean.sharedKernel.businesslogic.media.PrivateImageStore.ImageRules(
@@ -101,7 +101,7 @@ class PrivateMediaCleanupLocalStackTest {
             assertThat(result.width()).isEqualTo(16);
             assertThat(result.height()).isEqualTo(8);
             var saved = client.getObjectAsBytes(software.amazon.awssdk.services.s3.model.GetObjectRequest
-                    .builder().bucket(bucket).key("normalized.jpg").build());
+                    .builder().bucket(bucket).key(result.objectKey()).build());
             assertThat(saved.response().contentType()).isEqualTo("image/jpeg");
             assertThat(saved.response().serverSideEncryptionAsString()).isEqualTo("AES256");
             assertThat(saved.response().cacheControl()).isEqualTo("private, max-age=21600");

@@ -69,6 +69,25 @@ public final class ExperienceMedia extends AggregateRoot {
     updatedAt = now; version++; return true;
   }
 
+  public boolean review(boolean approve, Instant now) {
+    var target = approve ? ExperienceMediaStatus.AVAILABLE : ExperienceMediaStatus.REJECTED;
+    if (status == target) return false;
+    if (status != ExperienceMediaStatus.REVIEW_REQUIRED) throw new BusinessCommandRejectedException(
+        "MEDIA_NOT_AWAITING_REVIEW", "Only an image awaiting review can receive a decision");
+    status = target; updatedAt = now; version++; return true;
+  }
+
+  public boolean confirmForReview(String key, String type, long bytes, int w, int h, String hash, Instant now) {
+    if (status == ExperienceMediaStatus.REVIEW_REQUIRED) {
+      if (!Objects.equals(objectKey, key) || !Objects.equals(sha256, hash))
+        throw new BusinessCommandRejectedException("MEDIA_CONFIRM_CONFLICT", "Another image is already awaiting review");
+      return false;
+    }
+    boolean changed = confirm(key, type, bytes, w, h, hash, now);
+    if (changed) status = ExperienceMediaStatus.REVIEW_REQUIRED;
+    return changed;
+  }
+
   public boolean requestDeletion(UUID requesterId, Instant now) { requireOwner(requesterId); return requestDeletion(now); }
   public boolean requestDeletion(Instant now) {
     if (status == ExperienceMediaStatus.DELETED || status == ExperienceMediaStatus.DELETION_PENDING) return false;

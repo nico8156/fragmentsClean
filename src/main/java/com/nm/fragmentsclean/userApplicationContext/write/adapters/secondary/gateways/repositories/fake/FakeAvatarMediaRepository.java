@@ -8,6 +8,7 @@ public final class FakeAvatarMediaRepository implements AvatarMediaRepository{
   private final Map<UUID,AvatarMedia.Snapshot> rows=new HashMap<>();
   public Optional<AvatarMedia> byId(UUID id){return Optional.ofNullable(rows.get(id)).map(AvatarMedia::fromSnapshot);}
   public Optional<AvatarMedia.Snapshot> inspect(UUID id){return Optional.ofNullable(rows.get(id));}
+  public List<AvatarMedia> byUser(UUID id){return rows.values().stream().filter(s->Objects.equals(s.userId(),id)).map(AvatarMedia::fromSnapshot).toList();}
   public Optional<AvatarMedia> activeByUser(UUID id){return rows.values().stream().filter(s->Objects.equals(s.userId(),id)&&s.status()==AvatarMediaStatus.AVAILABLE).findFirst().map(AvatarMedia::fromSnapshot);}
   public final Map<String,Long> profileUsages=new HashMap<>();
   public long profileUsageCount(String objectKey){return profileUsages.getOrDefault(objectKey,0L);}

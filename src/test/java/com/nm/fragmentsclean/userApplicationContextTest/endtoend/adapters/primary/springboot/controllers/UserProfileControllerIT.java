@@ -127,7 +127,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
         {"mediaId":"%s","contentType":"image/png","size":2048}
         """.formatted(mediaId))).andExpect(status().isCreated()).andExpect(jsonPath("$.uploadRequired").value(true));
     mockMvc.perform(post("/api/users/me/avatar/{mediaId}/confirm",mediaId).with(userJwt()).contentType("application/json").content("""
-        {"commandId":"%s","at":"2026-09-11T10:01:00Z"}
+        {"commandId":"%s","at":"2026-09-11T10:01:00Z","moderationConsent":true}
         """.formatted(confirm))).andExpect(status().isAccepted());
     mockMvc.perform(get("/api/users/me").with(userJwt())).andExpect(status().isOk()).andExpect(jsonPath("$.avatarUrl").value(org.hamcrest.Matchers.startsWith("https://download.test/")));
     projectAvatarFacts();
@@ -137,7 +137,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
 		{"mediaId":"%s","contentType":"image/jpeg","size":1024}
 		""".formatted(replacementId))).andExpect(status().isCreated());
 	mockMvc.perform(post("/api/users/me/avatar/{mediaId}/confirm",replacementId).with(userJwt()).contentType("application/json").content("""
-		{"commandId":"%s","at":"2026-09-11T10:01:30Z"}
+		{"commandId":"%s","at":"2026-09-11T10:01:30Z","moderationConsent":true}
 		""".formatted(replacementCommand))).andExpect(status().isAccepted());
 	assertThat(jdbc.queryForObject("SELECT count(*) FROM user_avatar_media WHERE user_id=? AND status='AVAILABLE'",Integer.class,USER_ID)).isEqualTo(1);
 	assertThat(jdbc.queryForObject("SELECT status FROM user_avatar_media WHERE media_id=?",String.class,mediaId)).isEqualTo("DELETION_PENDING");
@@ -145,7 +145,7 @@ class UserProfileControllerIT extends AbstractBaseE2E {
     assertThat(jdbc.queryForObject("SELECT status FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",String.class,mediaId)).isEqualTo("DELETION_PENDING");
     assertThat(jdbc.queryForObject("SELECT resource_id FROM media_catalog_entries WHERE origin='AVATAR' AND media_id=?",UUID.class,replacementId)).isEqualTo(USER_ID);
     UUID remove=UUID.randomUUID();mockMvc.perform(delete("/api/users/me/avatar").with(userJwt()).contentType("application/json").content("""
-        {"commandId":"%s","at":"2026-09-11T10:02:00Z"}
+        {"commandId":"%s","at":"2026-09-11T10:02:00Z","moderationConsent":true}
         """.formatted(remove))).andExpect(status().isAccepted());
     mockMvc.perform(get("/api/users/me").with(userJwt())).andExpect(status().isOk()).andExpect(jsonPath("$.avatarUrl").doesNotExist());
     projectAvatarFacts();

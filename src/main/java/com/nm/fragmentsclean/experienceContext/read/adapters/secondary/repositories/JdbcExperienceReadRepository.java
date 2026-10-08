@@ -75,7 +75,7 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
             """);
     List<Object> parameters = new ArrayList<>(List.of(userId));
     appendCursor(sql, parameters, cursor);
-    return page(sql, parameters, limit);
+    return page(sql, parameters, limit, true);
   }
 
   @Override
@@ -127,7 +127,8 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
         .toList();
   }
 
-  private ExperiencePage page(StringBuilder sql, List<Object> parameters, int limit) {
+  private ExperiencePage page(StringBuilder sql, List<Object> parameters, int limit) { return page(sql, parameters, limit, false); }
+  private ExperiencePage page(StringBuilder sql, List<Object> parameters, int limit, boolean owner) {
     sql.append(" ORDER BY view.created_at DESC, view.experience_id DESC LIMIT ?");
     parameters.add(limit + 1);
     var rows =
@@ -150,7 +151,7 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
             parameters.toArray());
     boolean hasMore = rows.size() > limit;
 	var baseItems = hasMore ? List.copyOf(rows.subList(0, limit)) : List.copyOf(rows);
-	var media = mediaForExperiences(baseItems.stream().map(ExperienceView::experienceId).toList());
+	var media = mediaForExperiences(baseItems.stream().map(ExperienceView::experienceId).toList(), owner);
 	var items = baseItems.stream().map(item -> withMedia(item, media.getOrDefault(item.experienceId(), List.of()))).toList();
     String nextCursor =
         hasMore && !items.isEmpty()
@@ -189,10 +190,11 @@ public class JdbcExperienceReadRepository implements ExperienceReadRepository {
 
 	private static ExperienceView withMedia(ExperienceView item,List<ExperienceMediaView> media){return new ExperienceView(item.experienceId(),item.coffeeId(),item.authorId(),item.authorName(),item.avatarUrl(),item.message(),item.publicationStatus(),item.moderationStatus(),item.createdAt(),item.updatedAt(),item.version(),media);}
 
-	private Map<UUID,List<ExperienceMediaView>> mediaForExperiences(List<UUID> experienceIds){
+	private Map<UUID,List<ExperienceMediaView>> mediaForExperiences(List<UUID> experienceIds){return mediaForExperiences(experienceIds,false);}
+	private Map<UUID,List<ExperienceMediaView>> mediaForExperiences(List<UUID> experienceIds,boolean owner){
 		if(experienceIds.isEmpty())return Map.of();
 		String placeholders=String.join(",",java.util.Collections.nCopies(experienceIds.size(),"?"));
-		var rows=jdbc.query("SELECT experience_id,media_id,object_key,width,height,position FROM experience_media_views WHERE experience_id IN ("+placeholders+") AND status='AVAILABLE' AND object_key IS NOT NULL ORDER BY experience_id,position,media_id",(rs,row)->Map.entry(rs.getObject("experience_id",UUID.class),new ExperienceMediaView(rs.getObject("media_id",UUID.class),mediaUrls.resolve(PrivateMediaReferences.experience(rs.getString("object_key"))),rs.getObject("width",Integer.class),rs.getObject("height",Integer.class),rs.getInt("position"))),experienceIds.toArray());
+		var rows=jdbc.query("SELECT experience_id,media_id,object_key,width,height,position,status FROM experience_media_views WHERE experience_id IN ("+placeholders+") AND status IN ("+(owner?"'AVAILABLE','REVIEW_REQUIRED','REJECTED'":"'AVAILABLE'")+") AND object_key IS NOT NULL ORDER BY experience_id,position,media_id",(rs,row)->Map.entry(rs.getObject("experience_id",UUID.class),new ExperienceMediaView(rs.getObject("media_id",UUID.class),"AVAILABLE".equals(rs.getString("status"))?mediaUrls.resolve(PrivateMediaReferences.experience(rs.getString("object_key"))):null,rs.getObject("width",Integer.class),rs.getObject("height",Integer.class),rs.getInt("position"),rs.getString("status"))),experienceIds.toArray());
 		Map<UUID,List<ExperienceMediaView>> result=new LinkedHashMap<>();
 		for(var row:rows)result.computeIfAbsent(row.getKey(),ignored->new ArrayList<>()).add(row.getValue());
 		return result;

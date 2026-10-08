@@ -8,7 +8,7 @@ public record SearchMediaCatalogQuery(String q, String origin, String status, UU
         q=q==null?"":q.strip();
         if(q.length()>200 || limit<1 || limit>100) throw new IllegalArgumentException("Invalid search");
         if(origin!=null && !Set.of("EXPERIENCE","COFFEE","AVATAR","ARTICLE").contains(origin)) throw new IllegalArgumentException("Invalid origin");
-        if(status!=null && !Set.of("PENDING","AVAILABLE","DELETION_PENDING","DELETED").contains(status)) throw new IllegalArgumentException("Invalid status");
+        if(status!=null && !Set.of("PENDING","REVIEW_REQUIRED","REJECTED","AVAILABLE","DELETION_PENDING","DELETED").contains(status)) throw new IllegalArgumentException("Invalid status");
         if(usage!=null && !Set.of("USED","UNUSED","UNKNOWN").contains(usage))throw new IllegalArgumentException("Invalid usage filter");
         if(cursor!=null) parseId(cursor);
     }

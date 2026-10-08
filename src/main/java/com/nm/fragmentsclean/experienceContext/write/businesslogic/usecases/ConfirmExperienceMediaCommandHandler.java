@@ -19,6 +19,10 @@ public class ConfirmExperienceMediaCommandHandler implements CommandHandler<Conf
   }
   @Override @Transactional
   public void execute(ConfirmExperienceMediaCommand command) {
+    executeReviewed(command, false);
+  }
+  @Transactional
+  public void executeReviewed(ConfirmExperienceMediaCommand command, boolean reviewRequired) {
     var experience = experiences.byId(command.experienceId()).orElseThrow(() -> new BusinessCommandRejectedException(
         "EXPERIENCE_NOT_FOUND", "Experience does not exist"));
     if (!experience.toSnapshot().userId().equals(command.userId())) throw new BusinessCommandRejectedException(
@@ -29,9 +33,11 @@ public class ConfirmExperienceMediaCommandHandler implements CommandHandler<Conf
     if (!item.snapshot().experienceId().equals(command.experienceId())) throw new BusinessCommandRejectedException(
         "EXPERIENCE_MEDIA_MISMATCH", "Media does not belong to experience");
     var now = clock.now();
-    if (!item.confirm(command.objectKey(), command.contentType(), command.size(), command.width(),
-        command.height(), command.sha256(), now)) return;
-    media.save(item); item.registerChanged(command.commandId(), "AVAILABLE", command.clientAt(), now);
+    boolean changed = reviewRequired
+        ? item.confirmForReview(command.objectKey(), command.contentType(), command.size(), command.width(), command.height(), command.sha256(), now)
+        : item.confirm(command.objectKey(), command.contentType(), command.size(), command.width(), command.height(), command.sha256(), now);
+    if (!changed) return;
+    media.save(item); item.registerChanged(command.commandId(), item.snapshot().status().name(), command.clientAt(), now);
     ExperienceEvents.publish(item, events);
   }
 }
